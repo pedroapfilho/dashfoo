@@ -5,6 +5,7 @@ import type { ComponentType, ReactNode } from "react";
 import { useCallback, useMemo } from "react";
 
 import { DashfooContext } from "./context";
+import { DragProvider } from "./drag-adapter";
 import { RowView } from "./row-view";
 import { useDashfooStore } from "./store";
 
@@ -42,11 +43,15 @@ const DashfooLayout = (props: DashfooLayoutProps): ReactNode => {
     [store.dispatch, renderTab],
   );
 
+  const handleCommit = store.dispatch;
+
   return (
     <DashfooContext.Provider value={contextValue}>
-      <div data-dashfoo="layout" style={rootStyle}>
-        <RowView node={store.model.layout} />
-      </div>
+      <DragProvider onCommit={handleCommit}>
+        <div data-dashfoo="layout" style={rootStyle}>
+          <RowView node={store.model.layout} />
+        </div>
+      </DragProvider>
     </DashfooContext.Provider>
   );
 };
