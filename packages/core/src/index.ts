@@ -3,6 +3,7 @@
 // Phase 3: the XState actor system.
 
 export * from "./actions";
+export * from "./geometry";
 export { normalize } from "./invariants";
 export * from "./reducer";
 export * from "./schema";
