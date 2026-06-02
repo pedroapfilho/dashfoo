@@ -246,18 +246,18 @@ The Stately / Redux-DevTools inspector spans the **whole** engine — document a
 
 ### Adapters isolate the primitives
 The only modules that import the primitives are the adapters, which expose stable in-house interfaces:
-- `ResizeAdapter` wraps `react-resizable-panels` (`Group` / `Panel` / `Separator`), mapping `Dimension` sizes and feeding `resizeMachine`.
-- `DragAdapter` wraps `dnd-kit` (`DndContext`, sensors, custom collision, `DragOverlay`, `@dnd-kit/sortable`), feeding `dragDockMachine`.
+- `ResizeAdapter` wraps `react-resizable-panels` v4 (`Group` / `Panel` / `Separator`), mapping `Dimension` sizes and feeding `resizeMachine`.
+- `DragAdapter` wraps the new `dnd-kit` (`@dnd-kit/react` `DragDropProvider`, `useDraggable` / `useDroppable` / `useSortable`, per-droppable `CollisionDetector`s, `@dnd-kit/helpers` `move`). It forwards the drag lifecycle into `dragDockMachine` via **`useDragDropMonitor`** (`onDragStart` / `onDragMove` / `onDragOver` / `onCollision` / `onDragEnd`, with `event.canceled` distinguishing drop from cancel).
 
-A primitive version bump (rrp v4 → v2/3, dnd-kit legacy → `@dnd-kit/react` 1.0) touches one adapter file, not the engine.
+A primitive version bump (rrp v4 → v2/3, `@dnd-kit/react` 0.4 → 0.5/1.0) touches one adapter file, not the engine.
 
 ## 9. Docking and drag-and-drop
 
 - **Drop geometry is pure** in core: `resolveDockTarget(pointer, rect, opts) → { kind: "tab" | "split" | "edge"; edge? }`. Outer ~22% bands of a tabset = split (left/right → vertical, top/bottom → horizontal); center = add as tab; the frame's outer band = dock to a layout side / promote to border. **Hysteresis** at boundaries prevents flicker.
-- A **custom dnd-kit collision detector** calls `resolveDockTarget`, composed with `pointerWithin` → `closestCenter` fallbacks.
-- **Tab reorder** via `@dnd-kit/sortable` (`horizontalListSortingStrategy`); **`DragOverlay`** renders the ghost in a portal so it is never clipped; `restrictToWindowEdges` keeps it on screen.
-- **Indicators** are driven off the live collision result and rendered by the `DockIndicator` slot — `transform` / `opacity` only, `prefers-reduced-motion` honored.
-- **Keyboard docking:** dnd-kit `KeyboardSensor` + a custom coordinate-getter cycles dock targets with arrow keys; `aria-live` announces the zone. `dragDockMachine` tracks `via: "pointer" | "keyboard"`.
+- A **custom `CollisionDetector`** (`(input: CollisionDetectorInput) => Collision | null`) wraps `resolveDockTarget`, set **per droppable** so each tabset owns its own edge/center hit-testing — a better fit for docking than a single global detector. Built-ins (`shapeIntersection` default, `pointerIntersection`, `closestCenter`) compose as fallbacks.
+- **Tab reorder** via `useSortable` (from `@dnd-kit/react/sortable`) + the `move` helper from `@dnd-kit/helpers`. An unclipped drag preview (dnd-kit's drag feedback/overlay) carries the ghost across regions.
+- **Indicators** are driven off the live collision result (surfaced through `useDragDropMonitor`) and rendered by the `DockIndicator` slot — `transform` / `opacity` only, `prefers-reduced-motion` honored.
+- **Keyboard docking:** dnd-kit's built-in keyboard sensor cycles dock targets with arrow keys; `aria-live` announces the zone. `dragDockMachine` tracks `via: "pointer" | "keyboard"`.
 
 ## 10. Borders
 
@@ -294,8 +294,9 @@ Pure TS, ESM-only, framework-agnostic. Built with `tsdown` (ESM + bundled `.d.ts
 ### `@dashfoo/react`
 ESM-only, `'use client'`. `tsdown` build.
 - Exports: `.` (`DashfooLayout`, hooks), `./adapters` (advanced).
-- Dependencies: `@dashfoo/core` (`workspace:*`), `xstate`, `@xstate/react`.
-- Peer dependencies: `react` `^18.3.1 || ^19.0.0`, `react-resizable-panels` (v4, pinned), `@dnd-kit/core` `6.3.1`, `@dnd-kit/sortable`, `@dnd-kit/modifiers`, `@dnd-kit/utilities`.
+- Peer dependencies: `react` `^18.3.1 || ^19.0.0`, `react-dom` `^18.3.1 || ^19.0.0` — the only true peers (React must be a singleton shared with the host).
+- Dependencies (the primitives are internal implementation details, so they are bundled, not peers — one-line install for consumers): `@dashfoo/core` (`workspace:*`), `xstate`, `@xstate/react`, `react-resizable-panels` (v4, exact-pinned), `@dnd-kit/react` (exact `0.4.0`), `@dnd-kit/helpers` (exact `0.4.0`). `@dnd-kit/react` pulls `@dnd-kit/dom · abstract · state · collision · geometry` transitively (`@dnd-kit/state` brings `@preact/signals-core`).
+- The pre-1.0 dnd-kit packages are **exact-pinned** (no caret); a Renovate/Dependabot rule requires manual review before any 0.x minor bump.
 
 ### `@dashfoo/theme`
 ESM-only. `tsdown` build + a published `tokens.css`.
@@ -354,7 +355,7 @@ Matches `usebutr` exactly where it is the publishable-library template.
 | Document mutation | Pure reducer invoked inside the machine | Keep 12 actions testable as a function; machine is the actor shell |
 | Validation | zod schemas; `z.infer` for types | One source for schema + types; guards import / action payloads |
 | Resize primitive | `react-resizable-panels` **v4**, adapter-isolated | Native px/rem units (needed for px borders/sidebars), SSR/RSC; isolated so downgrade is one file |
-| DnD primitive | `dnd-kit` **legacy `@dnd-kit/core` 6.3.1**, adapter-isolated | Stable, React-19-ready, full custom-collision support; isolated for a future `@dnd-kit/react` 1.0 move |
+| DnD primitive | `dnd-kit` **new line — `@dnd-kit/react` 0.4.0** (exact-pinned), adapter-isolated | A greenfield lib shouldn't build on the feature-frozen legacy 6.x; the new line is maintainer-recommended for new projects, React-19-ready, and its **per-droppable collision detectors + `useDragDropMonitor`** fit a docking engine better. Pre-1.0 risk contained by exact pins + the adapter |
 | React support | peer `^18.3.1 || ^19.0.0` | Develop on 19, widen for adoption |
 | XState ecosystem | Internal **dependencies** (not peers) | Consumers never touch them; one-line install; peers stay react/rrp/dnd-kit |
 | Theme primitives | Base UI (`@base-ui-components/react`) + Tailwind v4 | Consistent with `acme` `@repo/ui`; tokens over class-string swapping |
@@ -364,7 +365,7 @@ Matches `usebutr` exactly where it is the publishable-library template.
 
 - **All-XState ceremony / contributor ramp.** Mitigation: keep document mutation in a pure reducer the machine invokes; machine definitions are small, pure, and individually tested; the inspector lowers the debugging cost.
 - **rrp v4 newness.** Mitigation: adapter isolation; pin an exact version; the swap to battle-tested v2/3 is a one-file change.
-- **dnd-kit legacy is feature-frozen.** Mitigation: it is stable and React-19-compatible today; adapter isolation hedges the eventual `@dnd-kit/react` 1.0 move.
+- **dnd-kit new line is pre-1.0 (0.4.0, active 0.5 beta).** Mitigation: exact-pin all `@dnd-kit/*` (no caret), gate 0.x bumps behind manual review, and isolate behind the `DragAdapter`; `@dnd-kit/react` already ships its own `'use client'` directive. Note `@preact/signals-core` enters the bundle transitively via `@dnd-kit/state`.
 - **Custom dock collision is the hard part.** Mitigation: geometry is a pure, unit-tested function with hysteresis; Playwright covers the integrated gesture.
 - **SSR / RSC.** Mitigation: `'use client'` boundary on `@dashfoo/react`; verified in `apps/demo-next`; rrp v4 SSR support.
 
