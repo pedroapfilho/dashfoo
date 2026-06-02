@@ -9,6 +9,7 @@
     "dev": "vite",
     "lint": "oxlint src",
     "start": "vite preview",
+    "test:e2e": "playwright test",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "tailwindcss": "^4.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "@repo/typescript-config": "workspace:*",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
