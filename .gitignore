@@ -1,0 +1,26 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# build
+dist/
+.turbo/
+*.tsbuildinfo
+
+# test
+coverage/
+test-results/
+playwright-report/
+
+# env
+.env
+.env.*
+!.env.example
+
+# editor / os
+.DS_Store
+.vscode/
+.idea/
+
+# brainstorming companion (not source)
+.superpowers/
