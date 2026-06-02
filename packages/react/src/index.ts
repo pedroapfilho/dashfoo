@@ -1,6 +1,9 @@
-// Public API barrel for @dashfoo/react.
-// Populated in Phase 4 (DashfooLayout, registry/factory, controlled/uncontrolled,
-// hooks, slots) and Phase 5 (ResizeAdapter + DragAdapter). Placeholder export
-// keeps the tsdown build entry valid until then.
+"use client";
 
-export const DASHFOO_REACT_VERSION = "0.0.0" as const;
+// Public API for @dashfoo/react.
+// Phase 4 (done): store binding · DashfooLayout · registry/factory · views.
+// Phase 5 (next): ResizeAdapter (rrp) + DragAdapter (dnd-kit), hooks, slots.
+
+export * from "./context";
+export * from "./dashfoo-layout";
+export * from "./store";
