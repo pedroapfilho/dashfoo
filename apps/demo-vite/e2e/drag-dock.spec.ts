@@ -45,6 +45,25 @@ test("dragging a tab to the center of another tabset stacks it there", async ({ 
   expect(tabs[0]).toContain("Trades");
 });
 
+test("dropping a tab onto another tabset's tab strip stacks it there (not a split)", async ({
+  page,
+}) => {
+  const first = page.locator('[data-dashfoo="tabset"]').first();
+  const strip = await first.locator('[data-dashfoo="tabstrip"]').boundingBox();
+  if (!strip) {
+    throw new Error("no tab strip box");
+  }
+
+  // drop onto the chart tab strip (right of its existing tabs)
+  await dragTabTo(page, "Trades", strip.x + strip.width - 24, strip.y + strip.height / 2);
+
+  await expect.poll(() => tradesCount(page)).toBe(1);
+  // it should join the chart tabset, keeping 3 tabsets (a split would make 4)
+  await expect.poll(() => tabsByTabset(page).then((tabs) => tabs.length)).toBe(3);
+  const tabs = await tabsByTabset(page);
+  expect(tabs[0]).toContain("Trades");
+});
+
 test("dragging a tab to the left edge of a tabset splits it into a new tabset", async ({
   page,
 }) => {

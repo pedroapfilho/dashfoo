@@ -1,6 +1,6 @@
 "use client";
 
-import type { Action } from "@dashfoo/core";
+import type { Action, DropIntent, Point } from "@dashfoo/core";
 import { dragDockMachine } from "@dashfoo/core";
 import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/react";
 import { DragDropProvider, useDraggable, useDroppable } from "@dnd-kit/react";
@@ -23,6 +23,19 @@ type DragContextValue = {
 };
 
 const DragContext = createContext<DragContextValue | null>(null);
+
+const pointInRect = (point: Point, rect: DOMRect): boolean =>
+  point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
+
+// The tab strip is always a "stack as a tab" target (center); only the content
+// area below it resolves to the center/split zones via resolveDockTarget.
+const intentForTabset = (id: string, element: HTMLElement, point: Point): DropIntent => {
+  const strip = element.querySelector('[data-dashfoo="tabstrip"]');
+  if (strip && pointInRect(point, strip.getBoundingClientRect())) {
+    return { location: "center", targetId: id };
+  }
+  return computeDropIntent(id, element.getBoundingClientRect(), point);
+};
 
 const indicatorStyle = (zone: {
   height: number;
@@ -108,11 +121,7 @@ const DragProvider = ({ children, onCommit }: DragProviderProps): ReactNode => {
       const target = op.target;
       const element = target ? tabsets.current.get(String(target.id)) : undefined;
       if (target && element) {
-        const intent = computeDropIntent(
-          String(target.id),
-          element.getBoundingClientRect(),
-          op.position.current,
-        );
+        const intent = intentForTabset(String(target.id), element, op.position.current);
         actorRef.send({ intent, type: "OVER" });
       } else {
         actorRef.send({ intent: null, type: "OVER" });
@@ -133,11 +142,7 @@ const DragProvider = ({ children, onCommit }: DragProviderProps): ReactNode => {
       const target = op.target;
       const element = target ? tabsets.current.get(String(target.id)) : undefined;
       if (target && element) {
-        const intent = computeDropIntent(
-          String(target.id),
-          element.getBoundingClientRect(),
-          op.position.current,
-        );
+        const intent = intentForTabset(String(target.id), element, op.position.current);
         actorRef.send({ intent, type: "OVER" });
       }
       actorRef.send({ type: "DROP" });
