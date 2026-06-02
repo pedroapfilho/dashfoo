@@ -162,6 +162,23 @@ test("dropping on a tab-strip slot inserts the tab at that position", async ({ p
     .toEqual(["Chart", "Trades", "Depth"]);
 });
 
+test("adjacent widgets are separated by a visible gutter", async ({ page }) => {
+  const tabsets = page.locator('[data-dashfoo="tabset"]');
+  const chart = await tabsets.nth(0).boundingBox(); // left
+  const book = await tabsets.nth(1).boundingBox(); // top-right
+  const positions = await tabsets.nth(2).boundingBox(); // bottom-right
+  if (!chart || !book || !positions) {
+    throw new Error("missing tabset boxes");
+  }
+
+  // a real resizable gutter sits between panels, not touching edges (the rrp
+  // separator must carry width/height — it collapses to 0 if the theme misses it).
+  const horizontalGutter = book.x - (chart.x + chart.width);
+  const verticalGutter = positions.y - (book.y + book.height);
+  expect(horizontalGutter).toBeGreaterThanOrEqual(12);
+  expect(verticalGutter).toBeGreaterThanOrEqual(12);
+});
+
 test("reordering a tab within its own tabset ignores the tab being moved", async ({ page }) => {
   const depth = await page.getByRole("tab", { name: "Depth" }).boundingBox();
   if (!depth) {

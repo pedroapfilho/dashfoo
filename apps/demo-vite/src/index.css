@@ -62,24 +62,26 @@
     @apply bg-df-surface;
   }
 
-  /* splitters (rrp separators) */
+  /* splitters (rrp separators) — rrp puts aria-orientation on the separator
+     itself: "vertical" is a vertical bar dividing side-by-side panels (needs
+     width), "horizontal" divides stacked panels (needs height). */
   [data-separator] {
     @apply relative flex items-center justify-center bg-transparent;
   }
-  [data-group][aria-orientation="horizontal"] > [data-separator] {
+  [data-separator][aria-orientation="vertical"] {
     @apply w-4 cursor-col-resize;
   }
-  [data-group][aria-orientation="vertical"] > [data-separator] {
+  [data-separator][aria-orientation="horizontal"] {
     @apply h-4 cursor-row-resize;
   }
   [data-separator]::before {
     @apply rounded-full bg-df-border-strong;
     content: "";
   }
-  [data-group][aria-orientation="horizontal"] > [data-separator]::before {
+  [data-separator][aria-orientation="vertical"]::before {
     @apply h-[30px] w-0.5;
   }
-  [data-group][aria-orientation="vertical"] > [data-separator]::before {
+  [data-separator][aria-orientation="horizontal"]::before {
     @apply h-0.5 w-[30px];
   }
   [data-separator]:hover::before {
