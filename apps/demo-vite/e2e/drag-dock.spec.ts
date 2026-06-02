@@ -69,3 +69,34 @@ test("clicking a tab still selects it (the drag sensor does not hijack the click
 
   await expect(page.getByRole("tab", { name: "Depth" })).toHaveAttribute("aria-selected", "true");
 });
+
+test("a dock indicator appears while dragging over a tabset and clears after drop", async ({
+  page,
+}) => {
+  const chart = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
+  const box = await page.getByRole("tab", { name: "Trades" }).boundingBox();
+  if (!chart || !box) {
+    throw new Error("missing boxes");
+  }
+  const indicator = page.locator('[data-dashfoo="dock-indicator"]');
+  await expect(indicator).toHaveCount(0);
+
+  const leftX = chart.x + chart.width * 0.06;
+  const midY = chart.y + chart.height / 2;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
+  await page.mouse.move(leftX, midY, { steps: 16 });
+  await page.mouse.move(leftX, midY); // settle so the throttled onDragMove lands here
+  await page.waitForTimeout(80);
+
+  await expect(indicator).toBeVisible();
+  // it should highlight the chart tabset's left half (split-left), not the
+  // tabset the drag started in nor the whole tabset (center).
+  const indicatorBox = await indicator.boundingBox();
+  expect(indicatorBox?.x ?? Infinity).toBeLessThan(chart.x + 40);
+  expect(indicatorBox?.width ?? Infinity).toBeLessThan(chart.width * 0.7);
+
+  await page.mouse.up();
+  await expect(indicator).toHaveCount(0);
+});
