@@ -9,4 +9,28 @@ const computeDropIntent = (targetId: string, rect: Rect, pointer: Point): DropIn
   return { location, targetId };
 };
 
-export { computeDropIntent };
+// The region the dock indicator highlights for a given location over a tabset:
+// the whole tabset for a center stack, the matching half for a split.
+const zoneRect = (rect: Rect, location: DockLocation): Rect => {
+  const halfW = rect.width / 2;
+  const halfH = rect.height / 2;
+  switch (location) {
+    case "split-bottom": {
+      return { height: halfH, width: rect.width, x: rect.x, y: rect.y + halfH };
+    }
+    case "split-left": {
+      return { height: rect.height, width: halfW, x: rect.x, y: rect.y };
+    }
+    case "split-right": {
+      return { height: rect.height, width: halfW, x: rect.x + halfW, y: rect.y };
+    }
+    case "split-top": {
+      return { height: halfH, width: rect.width, x: rect.x, y: rect.y };
+    }
+    default: {
+      return rect;
+    }
+  }
+};
+
+export { computeDropIntent, zoneRect };
