@@ -7,6 +7,10 @@ dist/
 .turbo/
 *.tsbuildinfo
 
+# tsc emit from config files (tsc -b)
+vite.config.js
+vite.config.d.ts
+
 # test
 coverage/
 test-results/
