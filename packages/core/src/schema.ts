@@ -52,6 +52,8 @@ const tabsetNodeSchema = z.object({
 
 // RowNode is recursive (a row may contain rows), so its type is declared
 // explicitly and the schema is built with z.lazy.
+// RowNode is recursive (a row may contain rows), so its type is declared
+// explicitly and the schema is built with z.lazy.
 type RowNode = {
   children: Array<RowNode | z.infer<typeof tabsetNodeSchema>>;
   id: string;
