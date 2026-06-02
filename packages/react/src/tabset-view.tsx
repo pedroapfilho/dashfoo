@@ -42,6 +42,7 @@ const TabButton = ({
       aria-selected={index === selected}
       data-dashfoo="tab"
       data-dragging={isDragging || undefined}
+      data-tab-id={tab.id}
       onClick={() => {
         dispatch({ index, tabsetId, type: "selectTab" });
       }}
