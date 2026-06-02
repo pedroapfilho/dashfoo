@@ -5,12 +5,16 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { useDashfooContext } from "./context";
 
+// height/width 100% (not flex:1) so the tabset fills its parent whether that
+// parent is a flex item or a plain block — rrp wraps panel content in a block
+// div, where flex:1 would collapse to content height.
 const tabsetStyle: CSSProperties = {
   display: "flex",
-  flex: 1,
   flexDirection: "column",
+  height: "100%",
   minHeight: 0,
   minWidth: 0,
+  width: "100%",
 };
 
 const stripStyle: CSSProperties = { display: "flex", flexShrink: 0 };
