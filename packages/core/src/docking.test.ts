@@ -92,11 +92,25 @@ describe("moveNode", () => {
     expect(next.layout.children.map((c) => c.id)).toEqual(["ts1"]);
   });
 
-  test("reorders a tab within its own tabset", () => {
+  test("reorders a tab to the end of its own tabset (index excludes the tab itself)", () => {
+    // ts1 is [t1, t2]; moving t1 to the end means dropping it after the one tab
+    // that remains, so the post-removal index is 1, not 2.
     const next = reducer(baseModel(), {
-      index: 2,
+      index: 1,
       location: "center",
       sourceId: "t1",
+      targetId: "ts1",
+      type: "moveNode",
+    });
+
+    expect(tabsetById(next, "ts1")?.children.map((t) => t.id)).toEqual(["t2", "t1"]);
+  });
+
+  test("reorders a tab to the front of its own tabset", () => {
+    const next = reducer(baseModel(), {
+      index: 0,
+      location: "center",
+      sourceId: "t2",
       targetId: "ts1",
       type: "moveNode",
     });

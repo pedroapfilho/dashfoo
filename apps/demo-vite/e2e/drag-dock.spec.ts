@@ -120,7 +120,7 @@ test("a dock indicator appears while dragging over a tabset and clears after dro
   await expect(indicator).toHaveCount(0);
 });
 
-test("the stack indicator highlights the tab strip, not the whole tabset", async ({ page }) => {
+test("the stack indicator is a thin insertion line in the tab bar", async ({ page }) => {
   const first = page.locator('[data-dashfoo="tabset"]').first();
   const chart = await first.boundingBox();
   const strip = await first.locator('[data-dashfoo="tabstrip"]').boundingBox();
@@ -141,8 +141,35 @@ test("the stack indicator highlights the tab strip, not the whole tabset", async
 
   await expect(indicator).toBeVisible();
   const ind = await indicator.boundingBox();
-  // the stack indicator covers the tab strip (short), not the full tabset height.
+  // a thin vertical line (not a block over the strip or the whole tabset).
+  expect(ind?.width ?? Infinity).toBeLessThan(8);
   expect(ind?.height ?? Infinity).toBeLessThan(chart.height * 0.3);
 
   await page.mouse.up();
+});
+
+test("dropping on a tab-strip slot inserts the tab at that position", async ({ page }) => {
+  const depth = await page.getByRole("tab", { name: "Depth" }).boundingBox();
+  if (!depth) {
+    throw new Error("no Depth tab box");
+  }
+
+  // drop on the boundary just left of Depth — index 1, between Chart and Depth.
+  await dragTabTo(page, "Trades", depth.x + 2, depth.y + depth.height / 2);
+
+  await expect
+    .poll(() => tabsByTabset(page).then((tabs) => tabs[0]))
+    .toEqual(["Chart", "Trades", "Depth"]);
+});
+
+test("reordering a tab within its own tabset ignores the tab being moved", async ({ page }) => {
+  const depth = await page.getByRole("tab", { name: "Depth" }).boundingBox();
+  if (!depth) {
+    throw new Error("no Depth tab box");
+  }
+
+  // drag Chart (the first tab) past Depth in its own strip → [Depth, Chart].
+  await dragTabTo(page, "Chart", depth.x + depth.width + 12, depth.y + depth.height / 2);
+
+  await expect.poll(() => tabsByTabset(page).then((tabs) => tabs[0])).toEqual(["Depth", "Chart"]);
 });

@@ -23,7 +23,7 @@
 
 @layer components {
   [data-dashfoo="layout"] {
-    @apply bg-df-bg p-2.5 font-sans text-[13px] text-df-text antialiased;
+    @apply bg-df-bg p-4 font-sans text-[13px] text-df-text antialiased;
   }
 
   /* tabset = a bordered surface card */
@@ -67,10 +67,10 @@
     @apply relative flex items-center justify-center bg-transparent;
   }
   [data-group][aria-orientation="horizontal"] > [data-separator] {
-    @apply w-2.5 cursor-col-resize;
+    @apply w-4 cursor-col-resize;
   }
   [data-group][aria-orientation="vertical"] > [data-separator] {
-    @apply h-2.5 cursor-row-resize;
+    @apply h-4 cursor-row-resize;
   }
   [data-separator]::before {
     @apply rounded-full bg-df-border-strong;

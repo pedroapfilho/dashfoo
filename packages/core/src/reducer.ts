@@ -240,21 +240,18 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       if (!source) {
         return;
       }
+      // Remove the source first; action.index is the destination slot measured
+      // against the tabs that remain (the drag adapter excludes the dragged tab),
+      // so it indexes the post-removal array directly — no reorder adjustment.
       const [removed] = source.container.children.splice(source.index, 1);
       if (!removed) {
         return;
       }
-      let index = action.index;
-      if (
-        action.location === "center" &&
-        source.container.type === "tabset" &&
-        source.container.id === action.targetId &&
-        index !== undefined &&
-        source.index < index
-      ) {
-        index -= 1;
-      }
-      insertTab(draft, removed, { id: action.targetId, index, location: action.location });
+      insertTab(draft, removed, {
+        id: action.targetId,
+        index: action.index,
+        location: action.location,
+      });
       return;
     }
     case "renameTab": {

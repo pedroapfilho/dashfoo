@@ -24,41 +24,94 @@ type DragContextValue = {
 
 const DragContext = createContext<DragContextValue | null>(null);
 
+type Zone = { height: number; width: number; x: number; y: number };
+
 const pointInRect = (point: Point, rect: DOMRect): boolean =>
   point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
 
-// The tab strip is always a "stack as a tab" target (center); only the content
-// area below it resolves to the center/split zones via resolveDockTarget.
-const intentForTabset = (id: string, element: HTMLElement, point: Point): DropIntent => {
-  const strip = element.querySelector('[data-dashfoo="tabstrip"]');
-  if (strip && pointInRect(point, strip.getBoundingClientRect())) {
-    return { location: "center", targetId: id };
-  }
-  return computeDropIntent(id, element.getBoundingClientRect(), point);
+// The dragged tab is excluded so its own slot never counts toward the order —
+// the insertion index and line are measured against the tabs it will land among.
+const tabRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
+  [...strip.querySelectorAll('[data-dashfoo="tab"]')]
+    .filter((tab) => tab.dataset.tabId !== excludeId)
+    .map((tab) => tab.getBoundingClientRect());
+
+// Which slot in the tab strip the pointer is over: the first tab whose midpoint
+// is right of the pointer, else the end.
+const insertionIndex = (strip: Element, pointerX: number, excludeId?: string): number => {
+  const rects = tabRects(strip, excludeId);
+  const found = rects.findIndex((rect) => pointerX < rect.left + rect.width / 2);
+  return found === -1 ? rects.length : found;
 };
 
-const indicatorStyle = (zone: {
-  height: number;
-  width: number;
-  x: number;
-  y: number;
-}): CSSProperties => ({
+// The tab strip is always a "stack as a tab" target, with an insertion index that
+// places the tab at a specific slot. Only the content area below it resolves to
+// the center/split zones via resolveDockTarget (content center appends).
+const intentForTabset = (
+  id: string,
+  element: HTMLElement,
+  point: Point,
+  draggedId?: string,
+): DropIntent => {
+  const strip = element.querySelector('[data-dashfoo="tabstrip"]');
+  if (strip && pointInRect(point, strip.getBoundingClientRect())) {
+    return { index: insertionIndex(strip, point.x, draggedId), location: "center", targetId: id };
+  }
+  const intent = computeDropIntent(id, element.getBoundingClientRect(), point);
+  return intent.location === "center" && strip
+    ? { ...intent, index: tabRects(strip, draggedId).length }
+    : intent;
+};
+
+// The thin vertical line marking where the tab will be inserted in the strip.
+const insertionLineRect = (
+  element: HTMLElement,
+  index: number,
+  excludeId?: string,
+): Zone | undefined => {
+  const strip = element.querySelector('[data-dashfoo="tabstrip"]');
+  if (!strip) {
+    return undefined;
+  }
+  const stripRect = strip.getBoundingClientRect();
+  const rects = tabRects(strip, excludeId);
+  const at: DOMRect | undefined = rects[index];
+  const last = rects.at(-1);
+  const x = at?.left ?? last?.right ?? stripRect.left;
+  return { height: stripRect.height, width: 2, x: x - 1, y: stripRect.top };
+};
+
+const overlayBase: CSSProperties = {
+  boxSizing: "border-box",
+  pointerEvents: "none",
+  position: "fixed",
+  transition: "left 60ms, top 60ms, width 60ms, height 60ms",
+  zIndex: 9999,
+};
+
+const paneStyle = (zone: Zone): CSSProperties => ({
+  ...overlayBase,
   background: "var(--dashfoo-dock-fill, rgba(91, 157, 255, 0.18))",
   border: "1px solid var(--dashfoo-dock-border, rgba(91, 157, 255, 0.7))",
   borderRadius: 6,
-  boxSizing: "border-box",
   height: zone.height,
   left: zone.x,
-  pointerEvents: "none",
-  position: "fixed",
   top: zone.y,
-  transition: "left 60ms, top 60ms, width 60ms, height 60ms",
   width: zone.width,
-  zIndex: 9999,
 });
 
-// A "where it will land" overlay driven off the machine's live intent: the whole
-// tabset for a center stack, the matching half for a split.
+const lineStyle = (zone: Zone): CSSProperties => ({
+  ...overlayBase,
+  background: "var(--dashfoo-dock-line, rgb(91, 157, 255))",
+  borderRadius: 2,
+  height: zone.height,
+  left: zone.x,
+  top: zone.y,
+  width: zone.width,
+});
+
+// A "where it will land" indicator driven off the machine's live intent: an
+// insertion line in the tab bar for a stack, the matching content half for a split.
 const DockIndicator = ({
   actorRef,
   getTabsetElement,
@@ -67,6 +120,7 @@ const DockIndicator = ({
   getTabsetElement: (id: string) => HTMLElement | undefined;
 }): ReactNode => {
   const intent = useSelector(actorRef, (snapshot) => snapshot.context.intent);
+  const draggedId = useSelector(actorRef, (snapshot) => snapshot.context.subject?.id);
   if (!intent) {
     return null;
   }
@@ -74,14 +128,14 @@ const DockIndicator = ({
   if (!element) {
     return null;
   }
-  // A stack lands in the tab bar, so highlight the strip; a split highlights the
-  // matching half of the content.
-  const stripRect = element.querySelector('[data-dashfoo="tabstrip"]')?.getBoundingClientRect();
-  const zone =
-    intent.location === "center" && stripRect
-      ? stripRect
-      : zoneRect(element.getBoundingClientRect(), intent.location);
-  return <div data-dashfoo="dock-indicator" style={indicatorStyle(zone)} />;
+  if (intent.location === "center") {
+    const line = insertionLineRect(element, intent.index ?? 0, draggedId);
+    if (line) {
+      return <div data-dashfoo="dock-indicator" style={lineStyle(line)} />;
+    }
+  }
+  const zone = zoneRect(element.getBoundingClientRect(), intent.location);
+  return <div data-dashfoo="dock-indicator" style={paneStyle(zone)} />;
 };
 
 type DragProviderProps = { children: ReactNode; onCommit: (action: Action) => void };
@@ -125,9 +179,10 @@ const DragProvider = ({ children, onCommit }: DragProviderProps): ReactNode => {
     (event: DragMoveEvent): void => {
       const op = event.operation;
       const target = op.target;
+      const draggedId = op.source ? String(op.source.id) : undefined;
       const element = target ? tabsets.current.get(String(target.id)) : undefined;
       if (target && element) {
-        const intent = intentForTabset(String(target.id), element, op.position.current);
+        const intent = intentForTabset(String(target.id), element, op.position.current, draggedId);
         actorRef.send({ intent, type: "OVER" });
       } else {
         actorRef.send({ intent: null, type: "OVER" });
@@ -146,9 +201,10 @@ const DragProvider = ({ children, onCommit }: DragProviderProps): ReactNode => {
       }
       const op = event.operation;
       const target = op.target;
+      const draggedId = op.source ? String(op.source.id) : undefined;
       const element = target ? tabsets.current.get(String(target.id)) : undefined;
       if (target && element) {
-        const intent = intentForTabset(String(target.id), element, op.position.current);
+        const intent = intentForTabset(String(target.id), element, op.position.current, draggedId);
         actorRef.send({ intent, type: "OVER" });
       }
       actorRef.send({ type: "DROP" });
