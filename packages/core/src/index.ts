@@ -6,6 +6,7 @@ export * from "./actions";
 export * from "./geometry";
 export * from "./history";
 export { normalize } from "./invariants";
+export * from "./machines";
 export * from "./reducer";
 export * from "./schema";
 export * from "./serialize";
