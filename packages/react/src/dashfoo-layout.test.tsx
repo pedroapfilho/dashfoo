@@ -68,4 +68,11 @@ describe("DashfooLayout", () => {
 
     expect(screen.getByText("F:chart")).toBeInTheDocument();
   });
+
+  test("renders resizable panels with a splitter between sibling regions", () => {
+    const { container } = render(<DashfooLayout components={components} defaultModel={model()} />);
+
+    expect(container.querySelectorAll("[data-panel]").length).toBeGreaterThanOrEqual(2);
+    expect(container.querySelector('[data-dashfoo="splitter"]')).toBeInTheDocument();
+  });
 });
