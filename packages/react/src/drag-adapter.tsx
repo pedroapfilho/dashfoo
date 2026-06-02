@@ -74,7 +74,13 @@ const DockIndicator = ({
   if (!element) {
     return null;
   }
-  const zone = zoneRect(element.getBoundingClientRect(), intent.location);
+  // A stack lands in the tab bar, so highlight the strip; a split highlights the
+  // matching half of the content.
+  const stripRect = element.querySelector('[data-dashfoo="tabstrip"]')?.getBoundingClientRect();
+  const zone =
+    intent.location === "center" && stripRect
+      ? stripRect
+      : zoneRect(element.getBoundingClientRect(), intent.location);
   return <div data-dashfoo="dock-indicator" style={indicatorStyle(zone)} />;
 };
 

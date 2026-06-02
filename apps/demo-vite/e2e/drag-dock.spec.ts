@@ -119,3 +119,30 @@ test("a dock indicator appears while dragging over a tabset and clears after dro
   await page.mouse.up();
   await expect(indicator).toHaveCount(0);
 });
+
+test("the stack indicator highlights the tab strip, not the whole tabset", async ({ page }) => {
+  const first = page.locator('[data-dashfoo="tabset"]').first();
+  const chart = await first.boundingBox();
+  const strip = await first.locator('[data-dashfoo="tabstrip"]').boundingBox();
+  const box = await page.getByRole("tab", { name: "Trades" }).boundingBox();
+  if (!chart || !strip || !box) {
+    throw new Error("missing boxes");
+  }
+  const indicator = page.locator('[data-dashfoo="dock-indicator"]');
+
+  const x = strip.x + strip.width - 24;
+  const y = strip.y + strip.height / 2;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
+  await page.mouse.move(x, y, { steps: 16 });
+  await page.mouse.move(x, y);
+  await page.waitForTimeout(80);
+
+  await expect(indicator).toBeVisible();
+  const ind = await indicator.boundingBox();
+  // the stack indicator covers the tab strip (short), not the full tabset height.
+  expect(ind?.height ?? Infinity).toBeLessThan(chart.height * 0.3);
+
+  await page.mouse.up();
+});
