@@ -51,7 +51,33 @@ const mutableNodeAttrsSchema = z.union([
 // Every document mutation is one of these immutable, discriminated actions. The
 // reducer is exhaustive over this union; the React layer validates untrusted
 // payloads against actionSchema before dispatch.
+const dockLocationSchema = z.enum([
+  "border-bottom",
+  "border-left",
+  "border-right",
+  "border-top",
+  "center",
+  "split-bottom",
+  "split-left",
+  "split-right",
+  "split-top",
+]);
+
 const actionSchema = z.discriminatedUnion("type", [
+  z.object({
+    index: z.number().int().optional(),
+    location: dockLocationSchema,
+    tab: tabNodeSchema,
+    targetId: z.string(),
+    type: z.literal("addNode"),
+  }),
+  z.object({
+    index: z.number().int().optional(),
+    location: dockLocationSchema,
+    sourceId: z.string(),
+    targetId: z.string(),
+    type: z.literal("moveNode"),
+  }),
   z.object({ index: z.number().int(), tabsetId: z.string(), type: z.literal("selectTab") }),
   z.object({ tabsetId: z.string(), type: z.literal("setActiveTabset") }),
   z.object({ tabsetId: z.string().nullable(), type: z.literal("setMaximizedTabset") }),
@@ -69,8 +95,9 @@ const actionSchema = z.discriminatedUnion("type", [
   z.object({ attrs: globalAttributesSchema.partial(), type: z.literal("updateGlobalAttributes") }),
 ]);
 
+type DockLocation = z.infer<typeof dockLocationSchema>;
 type MutableNodeAttrs = z.infer<typeof mutableNodeAttrsSchema>;
 type Action = z.infer<typeof actionSchema>;
 
-export { actionSchema, mutableNodeAttrsSchema };
-export type { Action, MutableNodeAttrs };
+export { actionSchema, dockLocationSchema, mutableNodeAttrsSchema };
+export type { Action, DockLocation, MutableNodeAttrs };

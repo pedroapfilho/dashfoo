@@ -1,6 +1,6 @@
-import type { Action } from "./actions";
+import type { Action, DockLocation } from "./actions";
 import { normalize } from "./invariants";
-import type { Dashfoo, RowNode, TabNode, TabsetNode } from "./schema";
+import type { Dashfoo, Edge, RowNode, TabNode, TabsetNode } from "./schema";
 import { findBorder, findTab, findTabset } from "./tree";
 
 const assertNever = (value: never): never => {
@@ -75,8 +75,134 @@ const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefi
   return undefined;
 };
 
+const genId = (prefix: string): string => `${prefix}-${crypto.randomUUID()}`;
+
+const findTabsetParent = (
+  row: RowNode,
+  tabsetId: string,
+): { index: number; parent: RowNode } | undefined => {
+  const index = row.children.findIndex((child) => child.type === "tabset" && child.id === tabsetId);
+  if (index !== -1) {
+    return { index, parent: row };
+  }
+  for (const child of row.children) {
+    if (child.type === "row") {
+      const found = findTabsetParent(child, tabsetId);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return undefined;
+};
+
+const splitOrientation = (location: DockLocation): "column" | "row" =>
+  location === "split-left" || location === "split-right" ? "row" : "column";
+
+const splitsBefore = (location: DockLocation): boolean =>
+  location === "split-left" || location === "split-top";
+
+const borderEdgeOf = (location: DockLocation): Edge | undefined => {
+  switch (location) {
+    case "border-bottom": {
+      return "bottom";
+    }
+    case "border-left": {
+      return "left";
+    }
+    case "border-right": {
+      return "right";
+    }
+    case "border-top": {
+      return "top";
+    }
+    default: {
+      return undefined;
+    }
+  }
+};
+
+// Insert a tab into the model at a dock target. center stacks it into the target
+// tabset; split-* creates a new tabset beside the target (reusing the parent row
+// when the orientation already matches, otherwise wrapping in a new row); border-*
+// docks it to a frame edge, creating the border on demand.
+type DropTarget = { id: string; index?: number; location: DockLocation };
+
+const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
+  const { id: targetId, index, location } = target;
+  const edge = borderEdgeOf(location);
+  if (edge) {
+    let border = findBorder(draft, edge);
+    if (!border) {
+      border = { children: [], edge, selected: -1, type: "border" };
+      draft.borders.push(border);
+    }
+    const at = index ?? border.children.length;
+    border.children.splice(at, 0, tab);
+    border.selected = at;
+    return;
+  }
+
+  const targetTabset = findTabset(draft, targetId);
+  if (!targetTabset) {
+    return;
+  }
+
+  if (location === "center") {
+    const at = index ?? targetTabset.children.length;
+    targetTabset.children.splice(at, 0, tab);
+    targetTabset.selected = at;
+    return;
+  }
+
+  const found = findTabsetParent(draft.layout, targetId);
+  if (!found) {
+    return;
+  }
+
+  const orientation = splitOrientation(location);
+  const before = splitsBefore(location);
+  const newTabset: TabsetNode = {
+    children: [tab],
+    id: genId("tabset"),
+    selected: 0,
+    type: "tabset",
+    weight: 50,
+  };
+
+  if (found.parent.orientation === orientation) {
+    const targetWeight = targetTabset.weight ?? 100;
+    targetTabset.weight = targetWeight / 2;
+    newTabset.weight = targetWeight / 2;
+    found.parent.children.splice(before ? found.index : found.index + 1, 0, newTabset);
+  } else {
+    const targetWeight = targetTabset.weight;
+    targetTabset.weight = 50;
+    const newRow: RowNode = {
+      children: before ? [newTabset, targetTabset] : [targetTabset, newTabset],
+      id: genId("row"),
+      orientation,
+      type: "row",
+    };
+    if (targetWeight !== undefined) {
+      newRow.weight = targetWeight;
+    }
+    found.parent.children.splice(found.index, 1, newRow);
+  }
+
+  draft.activeTabsetId = newTabset.id;
+};
+
 const applyAction = (draft: Dashfoo, action: Action): void => {
   switch (action.type) {
+    case "addNode": {
+      insertTab(draft, action.tab, {
+        id: action.targetId,
+        index: action.index,
+        location: action.location,
+      });
+      return;
+    }
     case "adjustBorderSize": {
       const border = findBorder(draft, action.edge);
       if (border) {
@@ -107,6 +233,28 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
     }
     case "deleteTabset": {
       removeTabset(draft.layout, action.tabsetId);
+      return;
+    }
+    case "moveNode": {
+      const source = findTab(draft, action.sourceId);
+      if (!source) {
+        return;
+      }
+      const [removed] = source.container.children.splice(source.index, 1);
+      if (!removed) {
+        return;
+      }
+      let index = action.index;
+      if (
+        action.location === "center" &&
+        source.container.type === "tabset" &&
+        source.container.id === action.targetId &&
+        index !== undefined &&
+        source.index < index
+      ) {
+        index -= 1;
+      }
+      insertTab(draft, removed, { id: action.targetId, index, location: action.location });
       return;
     }
     case "renameTab": {
