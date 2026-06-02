@@ -13,11 +13,12 @@ The reason to build it instead of using FlexLayout: dashfoo is **headless** (the
 ## 2. Goals and non-goals
 
 ### Goals (v1)
-- Tiled split layout: nested rows/columns, weight + pixel sizing, resizable splitters.
+
+- Tiled split layout: nested rows/columns, responsive weight sizing, optional fixed/constraint sizing, resizable splitters.
 - Tabsets: ordered tabs, select, drag-to-reorder within and across tabsets, overflow menu, wrap, rename, close.
 - Drag-docking: center (stack as tab), edges (split), frame edges (dock to a layout side / promote to border), with live indicators and keyboard docking.
 - Maximize / restore a tabset.
-- Border drawers on all four edges: collapsible, auto-hide.
+- Border drawers on all four edges: collapsible, pinned or auto-hide.
 - Serializable model: `toJSON` / `fromJSON`, zod-validated, schema-versioned with migrations.
 - Undo / redo.
 - Controlled and uncontrolled usage; content supplied by a registry.
@@ -25,6 +26,7 @@ The reason to build it instead of using FlexLayout: dashfoo is **headless** (the
 - Full keyboard + WAI-ARIA support; APCA contrast; reduced-motion.
 
 ### Non-goals (deliberately out of v1)
+
 - **Popout into native browser windows.** Removed: it drags in cross-document portals, ResizeObserver-bound-to-main-window bugs, background-timer throttling, and reload-while-maximized edge cases — the caveat-heavy 20% almost nobody needs.
 - **In-document floating panels.** A tabset cannot detach and float over the layout. Everything stays tiled.
 - **Nested sub-layouts** (a full dashfoo inside a tab).
@@ -47,7 +49,7 @@ Data flow is unidirectional:
 ```
 user gesture
   → dnd-kit / rrp sensor events
-    → an XState interaction machine (drag-dock / rename / resize / border-autohide)
+    → an XState interaction machine (drag-dock / rename / resize / border)
       → on a valid terminal transition, sends ONE document Action
         → root machine's document region runs the pure reducer (model, action) => model
           → React re-renders from the new model via @xstate/react selectors
@@ -61,84 +63,92 @@ Interaction machines hold transient state only and never mutate the document dir
 The model is the single source of truth and is fully serializable. Content is **never** stored in the model — only a `component` registry key. Types are derived from zod schemas via `z.infer`, so schema and types never drift.
 
 ```ts
-type Edge = "top" | "bottom" | "left" | "right"
-type Unit = "px" | "%" | "fr" | "rem"
-type Dimension = { value: number; unit: Unit }
+type Edge = "top" | "bottom" | "left" | "right";
+type Unit = "px" | "%" | "em" | "rem" | "vh" | "vw";
+type Dimension = { value: number; unit: Unit };
+type BorderMode = "pinned" | "auto-hide";
 
 type TabNode = {
-  type: "tab"
-  id: string
-  component: string          // registry key — resolves to a React element
-  name: string
-  config?: Json              // arbitrary per-tab app state, serialized with the model
-  icon?: string
-  enableClose?: boolean
-  enableRename?: boolean
-  enableDrag?: boolean
-}
+  type: "tab";
+  id: string;
+  component: string; // registry key — resolves to a React element
+  name: string;
+  config?: Json; // arbitrary per-tab app state, serialized with the model
+  icon?: string;
+  enableClose?: boolean;
+  enableRename?: boolean;
+  enableDrag?: boolean;
+};
 
 type TabsetNode = {
-  type: "tabset"
-  id: string
-  weight?: number            // proportional share within its parent row
-  size?: Dimension           // fixed size (overrides weight when present)
-  min?: Dimension
-  max?: Dimension
-  selected: number           // index of the active tab
-  active?: boolean           // is this the active tabset
-  enableMaximize?: boolean
-  enableClose?: boolean
-  children: TabNode[]
-}
+  type: "tabset";
+  id: string;
+  weight?: number; // proportional share within its parent row
+  size?: Dimension; // optional fixed size for intentional non-responsive panes
+  min?: Dimension;
+  max?: Dimension;
+  selected: number; // index of the active tab
+  enableMaximize?: boolean;
+  enableClose?: boolean;
+  children: TabNode[];
+};
 
 type RowNode = {
-  type: "row"
-  id: string
-  orientation: "row" | "column"   // explicit, not inferred from depth
-  weight?: number
-  children: Array<RowNode | TabsetNode>
-}
+  type: "row";
+  id: string;
+  orientation: "row" | "column"; // explicit, not inferred from depth
+  weight?: number;
+  children: Array<RowNode | TabsetNode>;
+};
 
 type BorderNode = {
-  type: "border"
-  edge: Edge
-  size?: Dimension
-  selected: number           // -1 = collapsed
-  autoHide?: boolean
-  children: TabNode[]
-}
+  type: "border";
+  edge: Edge;
+  size?: Dimension;
+  selected: number; // -1 = collapsed
+  mode?: BorderMode;
+  children: TabNode[];
+};
 
 type GlobalAttributes = {
-  tabEnableClose?: boolean
-  tabEnableRename?: boolean
-  tabSetEnableMaximize?: boolean
-  tabSetEnableTabStrip?: boolean   // false → pure resizable-pane grid (no tabs)
-  splitterSize?: number
-  splitterExtra?: number           // extra hit area
-  enableEdgeDock?: boolean
-  borderAutoHideDelay?: number     // ms
+  tabEnableClose?: boolean;
+  tabEnableRename?: boolean;
+  tabSetEnableMaximize?: boolean;
+  tabSetEnableTabStrip?: boolean; // false → pure resizable-pane grid (no tabs)
+  tabLocation?: "top" | "bottom";
+  splitterSize?: number;
+  splitterExtra?: number; // extra hit area
+  enableSplitDock?: boolean;
+  enableBorderDock?: boolean;
+  borderAutoHideDelayMs?: number;
   // …defaults cascade down to nodes that omit the attribute
-}
+};
 
 type Dashfoo = {
-  version: number            // schema version for migrations
-  global: GlobalAttributes
-  layout: RowNode            // root is always a row
-  borders: BorderNode[]      // 0–4, one per edge
-}
+  version: number; // schema version for migrations
+  global: GlobalAttributes;
+  layout: RowNode; // root is always a row
+  borders: BorderNode[]; // 0–4, one per edge
+  activeTabsetId?: string;
+  maximizedTabsetId?: string;
+};
 ```
 
 ### Sizing model
-- `weight` drives proportional sizing within a row (only ratios matter), mirroring FlexLayout.
-- `Dimension` is **unit-typed** (`px` / `%` / `fr` / `rem`) for fixed sizes and `min` / `max` constraints. A fixed-pixel sidebar or border "just works."
-- The unit-typed dimension is what the resize adapter maps onto whichever `react-resizable-panels` major is in use, so the core is sizing-engine-agnostic.
+
+- `weight` is the default and persisted split sizing model. Only ratios matter, so resized dashboards stay responsive as the container changes.
+- Resize gestures update row child weights via `adjustSplit`; the saved model does not become pixel-bound just because the user dragged a splitter.
+- `Dimension` is unit-typed for `min` / `max` constraints and intentionally fixed surfaces such as borders or explicit fixed sidebars. It is not the normal split-sizing path.
+- The resize adapter maps weights to `react-resizable-panels` `Group` percentage layout, and maps `Dimension` values to `Panel` fixed/default/min/max sizes where needed. The core stays sizing-engine-agnostic.
 
 ### Three deliberate departures from FlexLayout
+
 1. **Explicit `orientation`** on every row (FlexLayout alternates implicitly by depth) — easier to read, serialize, and reason about.
-2. **Unit-typed sizing** instead of percent-only.
+2. **Responsive weight sizing by default**, with unit-typed constraints and fixed edge/sidebar sizes when needed.
 3. **`component` is a registry key, content never in the model** — `toJSON()` is trivial and lossless.
 
 ### Identity
+
 Every node carries a stable string `id` (generated on import if absent). Ids are the currency of all actions and of dnd-kit / sortable / rrp keys.
 
 ## 5. Actions and the pure reducer
@@ -147,9 +157,28 @@ Every change to the document is an immutable `Action`. The reducer is a pure fun
 
 ```ts
 type DockLocation =
-  | "center"                                   // add as tab
-  | "left" | "right" | "top" | "bottom"        // split target tabset
-  | "edgeLeft" | "edgeRight" | "edgeTop" | "edgeBottom"  // dock to a frame edge / border
+  | "center" // add as tab
+  | "split-left"
+  | "split-right"
+  | "split-top"
+  | "split-bottom"
+  | "border-left"
+  | "border-right"
+  | "border-top"
+  | "border-bottom";
+
+type MutableTabAttrs = Partial<
+  Pick<TabNode, "name" | "config" | "icon" | "enableClose" | "enableRename" | "enableDrag">
+>;
+type MutableTabsetAttrs = Partial<
+  Pick<
+    TabsetNode,
+    "weight" | "size" | "min" | "max" | "selected" | "enableMaximize" | "enableClose"
+  >
+>;
+type MutableRowAttrs = Partial<Pick<RowNode, "orientation" | "weight">>;
+type MutableBorderAttrs = Partial<Pick<BorderNode, "size" | "selected" | "mode">>;
+type MutableNodeAttrs = MutableTabAttrs | MutableTabsetAttrs | MutableRowAttrs | MutableBorderAttrs;
 
 type Action =
   | { type: "addNode"; tab: TabNode; targetId: string; location: DockLocation; index?: number }
@@ -159,54 +188,61 @@ type Action =
   | { type: "renameTab"; tabId: string; name: string }
   | { type: "selectTab"; tabsetId: string; index: number }
   | { type: "setActiveTabset"; tabsetId: string }
-  | { type: "adjustSplit"; rowId: string; sizes: Dimension[] }
+  | { type: "adjustSplit"; rowId: string; weights: number[] }
   | { type: "adjustBorderSize"; edge: Edge; size: Dimension }
-  | { type: "setBorderSelected"; edge: Edge; index: number }   // open / collapse drawer
-  | { type: "maximizeToggle"; tabsetId: string }
-  | { type: "updateNodeAttributes"; nodeId: string; attrs: Partial<TabNode | TabsetNode | RowNode | BorderNode> }
-  | { type: "updateGlobalAttributes"; attrs: Partial<GlobalAttributes> }
+  | { type: "setBorderSelected"; edge: Edge; index: number } // open / collapse drawer
+  | { type: "setMaximizedTabset"; tabsetId: string | null }
+  | { type: "updateNodeAttributes"; nodeId: string; attrs: MutableNodeAttrs }
+  | { type: "updateGlobalAttributes"; attrs: Partial<GlobalAttributes> };
 
-const reducer: (model: Dashfoo, action: Action) => Dashfoo
+const reducer: (model: Dashfoo, action: Action) => Dashfoo;
 ```
 
 Reducer guarantees:
+
 - **Pure and immutable** (structural sharing; Immer via the machine's `assign`).
-- **Self-healing invariants** — empty tabsets are removed, single-child rows collapse, `selected` indices are clamped, an active tabset always exists. These run after every action so the tree stays canonical.
+- **Self-healing invariants** — empty tabsets are removed, single-child rows collapse, `selected` indices are clamped, `activeTabsetId` always points at an existing tabset when one exists, and `maximizedTabsetId` is cleared if its tabset disappears. These run after every action so the tree stays canonical.
 - **Action payloads are zod-validated** at the boundary; ids are checked to exist before mutation.
 
-History (undo / redo) is a pure helper around the reducer: `past[] · present · future[]`, with size mutations (resize/border-drag) coalesced so a drag is one undo step, not one per frame.
+History (undo / redo) is a pure helper around the reducer: `past[] · present · future[]`, with resize mutations (splitter/border drag) coalesced so a drag is one undo step, not one per frame.
 
 ## 6. State architecture — one XState actor system
 
 The entire engine is a single XState actor system. `@xstate/store` is subsumed: the document lives in the root machine's `context`. XState is internal — it never appears in the public API.
 
 ### Root: `dashfooMachine`
-Two parallel regions:
 
-- **`document`** — receives document events, and its transitions run the pure reducer inside `assign`. The reducer stays a pure function the machine invokes (12 action types are cleaner as one tested function than 12 hand-written transitions). Holds `{ model, history }`.
-- **`viewMode`** — `normal ↔ maximized(tabsetId)`. Maximize is a state, not a flag, so the engine is uniform.
+The root machine owns document state and spawned interactions:
+
+- **`document`** — receives document events, and its transitions run the pure reducer inside `assign`. The reducer stays a pure function the machine invokes, keeping the document action set testable as one unit instead of scattering mutation logic across transitions. Holds `{ model, history }`.
+- **`interactions`** — spawns / invokes drag, resize, rename, and border machines. Maximize / restore is document state, persisted as `model.maximizedTabsetId`; it is not a separate transient flag.
 
 ### Child interaction machines
+
 Spawned / invoked by the root, each fed by dnd-kit / rrp events, each committing exactly **one Action** back to the document region on success:
 
-| Machine | Lifecycle | Consumes | Commits |
-|---|---|---|---|
-| `dragDockMachine` | `idle → armed → dragging → evaluating(target, hysteresis, pointer/keyboard) → drop \| cancel` | dnd-kit sensors + pure `resolveDockTarget` geometry | `moveNode` / `addNode` |
-| `renameMachine` | `idle → editing → commit \| cancel` (empty-name guard) | input events | `renameTab` |
-| `resizeMachine` | `idle → resizing → commit` (realtime vs deferred) | rrp `onLayout(Changed)` | `adjustSplit` / `adjustBorderSize` |
-| `borderAutoHideMachine` (one per auto-hide border) | `collapsed → peek → expanded → (after delay) collapsed` | pointer enter/leave + `after` timers | `setBorderSelected` |
+| Machine                          | Lifecycle                                                                                     | Consumes                                            | Commits                            |
+| -------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------- | ---------------------------------- |
+| `dragDockMachine`                | `idle → armed → dragging → evaluating(target, hysteresis, pointer/keyboard) → drop \| cancel` | dnd-kit sensors + pure `resolveDockTarget` geometry | `moveNode` / `addNode`             |
+| `renameMachine`                  | `idle → editing → commit \| cancel` (empty-name guard)                                        | input events                                        | `renameTab`                        |
+| `resizeMachine`                  | `idle → resizing → commit` (realtime vs deferred)                                             | rrp `onLayout(Changed)`                             | `adjustSplit` / `adjustBorderSize` |
+| `borderMachine` (one per border) | `collapsed ↔ expanded`; auto-hide adds `peek` + delayed collapse                              | pointer enter/leave + `after` timers                | `setBorderSelected`                |
 
 Tab reorder folds into `dragDockMachine` (it is just a `moveNode` with `location: "center"` / index). The machines are the **coordinators**; dnd-kit and rrp remain the input transports — no lifecycle is duplicated.
 
 ### Machine definitions are pure and in core
+
 `@dashfoo/core/machines/*` are `setup().createMachine()` definitions with no DOM dependency. They are **unit-tested headlessly**: create an actor, send a scripted event sequence, assert the snapshot state and that the expected Action was emitted. The gnarliest code in the library gets deterministic tests with zero rendering.
 
 ### Persistence
+
 XState's first-class snapshot APIs (`actor.getPersistedSnapshot()` / `createActor(machine, { snapshot })`), **partialized to the model only** (transient interaction state is never persisted) and **zod-validated on hydrate** with `version` + `migrate`.
+
 - **Uncontrolled:** a persistence subscription saves the model to swappable storage (localStorage → cookie → server).
 - **Controlled:** `onModelChange` emits; the host owns persistence (backend / URL).
 
 ### Inspector
+
 The Stately / Redux-DevTools inspector spans the **whole** engine — document and every interaction — enabling end-to-end time-travel debugging of any layout bug. Wired via an optional `inspect` prop in dev.
 
 ## 7. Control API
@@ -218,15 +254,16 @@ The Stately / Redux-DevTools inspector spans the **whole** engine — document a
   onModelChange={(next, action) => setModel(next)}
   // … or uncontrolled
   defaultModel={initialModel}
-
-  components={{ chart: ChartPanel, book: OrderBook }}  // registry by key
+  components={{ chart: ChartPanel, book: OrderBook }} // registry by key
   // or: factory={(tab) => <…>}
 
   onAction={(action) => action /* return undefined to veto, or a replacement */}
-  ref={layoutRef}                                       // imperative API
+  ref={layoutRef} // imperative API
   slots={{ Tab, TabStrip, Splitter, DockIndicator, BorderTab }}
   inspect={import.meta.env.DEV}
-  onActorRef={(actor) => { /* power users: inspect / subscribe */ }}
+  onActorRef={(actor) => {
+    /* power users: inspect / subscribe */
+  }}
 />
 ```
 
@@ -245,15 +282,17 @@ The Stately / Redux-DevTools inspector spans the **whole** engine — document a
 2. **Hooks** — build entirely bespoke chrome: `useDashfoo()`, `useTabset(id)`, `useTab(id)`, `useTabStrip(id)`, `useDockDrop()`, `useMaximize()`, `useBorder(edge)`. Each returns state + behavior (handlers, ARIA props), no markup.
 
 ### Adapters isolate the primitives
+
 The only modules that import the primitives are the adapters, which expose stable in-house interfaces:
-- `ResizeAdapter` wraps `react-resizable-panels` v4 (`Group` / `Panel` / `Separator`), mapping `Dimension` sizes and feeding `resizeMachine`.
+
+- `ResizeAdapter` wraps `react-resizable-panels` v4 (`Group` / `Panel` / `Separator`), mapping responsive weights plus `Dimension` constraints/fixed sizes and feeding `resizeMachine`.
 - `DragAdapter` wraps the new `dnd-kit` (`@dnd-kit/react` `DragDropProvider`, `useDraggable` / `useDroppable` / `useSortable`, per-droppable `CollisionDetector`s, `@dnd-kit/helpers` `move`). It forwards the drag lifecycle into `dragDockMachine` via **`useDragDropMonitor`** (`onDragStart` / `onDragMove` / `onDragOver` / `onCollision` / `onDragEnd`, with `event.canceled` distinguishing drop from cancel).
 
 A primitive version bump (rrp v4 → v2/3, `@dnd-kit/react` 0.4 → 0.5/1.0) touches one adapter file, not the engine.
 
 ## 9. Docking and drag-and-drop
 
-- **Drop geometry is pure** in core: `resolveDockTarget(pointer, rect, opts) → { kind: "tab" | "split" | "edge"; edge? }`. Outer ~22% bands of a tabset = split (left/right → vertical, top/bottom → horizontal); center = add as tab; the frame's outer band = dock to a layout side / promote to border. **Hysteresis** at boundaries prevents flicker.
+- **Drop geometry is pure** in core: `resolveDockTarget(pointer, rect, opts) → { kind: "tab" | "split" | "border"; edge? }`. Outer ~22% bands of a tabset = split (`split-left` / `split-right` / `split-top` / `split-bottom`); center = add as tab; the frame's outer band = dock to a layout side / promote to border (`border-left` / `border-right` / `border-top` / `border-bottom`). **Hysteresis** at boundaries prevents flicker.
 - A **custom `CollisionDetector`** (`(input: CollisionDetectorInput) => Collision | null`) wraps `resolveDockTarget`, set **per droppable** so each tabset owns its own edge/center hit-testing — a better fit for docking than a single global detector. Built-ins (`shapeIntersection` default, `pointerIntersection`, `closestCenter`) compose as fallbacks.
 - **Tab reorder** via `useSortable` (from `@dnd-kit/react/sortable`) + the `move` helper from `@dnd-kit/helpers`. An unclipped drag preview (dnd-kit's drag feedback/overlay) carries the ghost across regions.
 - **Indicators** are driven off the live collision result (surfaced through `useDragDropMonitor`) and rendered by the `DockIndicator` slot — `transform` / `opacity` only, `prefers-reduced-motion` honored.
@@ -261,11 +300,11 @@ A primitive version bump (rrp v4 → v2/3, `@dnd-kit/react` 0.4 → 0.5/1.0) tou
 
 ## 10. Borders
 
-Edge-docked tab drawers on any of the four frame edges. Collapsible (`selected: -1`), optionally auto-hide. Auto-hide is the `borderAutoHideMachine` using `after` delayed transitions for peek/expand/collapse timing. Borders are sized with `Dimension` (fixed px is the common case) via the resize adapter.
+Edge-docked tab drawers on any of the four frame edges. Collapsible (`selected: -1`), either pinned or auto-hide via `mode`. Auto-hide is handled inside `borderMachine` using `after` delayed transitions for peek/expand/collapse timing. Borders are sized with `Dimension` (fixed px is the common case) via the resize adapter.
 
 ## 11. Theming — `@dashfoo/theme`
 
-- A skin **composed from** the headless components (never a fork). Uses **Base UI** (`@base-ui-components/react`) for the interactive bits — overflow menu, context menu, tooltips, rename popover — consistent with the user's `acme` `@repo/ui`. Layout and spacing via **Tailwind v4**.
+- A skin **composed from** the headless components (never a fork). Uses **Base UI** (`@base-ui/react`) for the interactive bits — overflow menu, context menu, tooltips, rename popover — consistent with the user's `acme` `@repo/ui`. Layout and spacing via **Tailwind v4**.
 - **`@dashfoo/theme/tokens.css`** — CSS custom properties: surfaces, borders, tab states, splitter, dock-indicator, radii, shadows, motion. Light / dark via `color-scheme` + token swap. Nested radii (child ≤ parent), layered shadows, **APCA** contrast, contrast bumped on `:hover` / `:focus` / `:active`. Drop it in, or map your own design system onto the same token names.
 
 ## 12. Accessibility and interaction
@@ -279,32 +318,39 @@ Edge-docked tab drawers on any of the four frame edges. Collapsible (`selected: 
 
 ## 13. FlexLayout parity checklist
 
-In v1: JSON model (global/layout/borders; row/tabset/tab/border nodes) · splitters + weight & px sizing + min/max · tab drag-reorder (within + across) · tabset move · center + edge + frame-edge docking with indicators · `enableDivide` / `enableEdgeDock` gating · allow-drop veto (`onAction`) · maximize/restore · active-tabset tracking · borders (4 edges, collapsible, auto-hide) · tab overflow menu + wheel scroll + wrap · double-click rename · close buttons · tab location top/bottom · single-tab stretch · render-on-demand · component-state preservation on move · `factory` content resolution · `toJSON`/`fromJSON` + per-tab `config` · Actions/dispatch with interceptable `onAction` + post-commit `onModelChange` · customization hooks (icons, classNames via slots, i18n) · per-node resize/close/visibility events.
+In v1: JSON model (global/layout/borders; row/tabset/tab/border nodes) · splitters + responsive weights + fixed border/sidebar sizing + min/max · tab drag-reorder (within + across) · tabset move · center + split + border docking with indicators · `enableSplitDock` / `enableBorderDock` gating · allow-drop veto (`onAction`) · maximize/restore · active-tabset tracking · borders (4 edges, collapsible, pinned or auto-hide) · tab overflow menu + wheel scroll + wrap · double-click rename · close buttons · tab location top/bottom · single-tab stretch · render-on-demand · `factory` content resolution · `toJSON`/`fromJSON` + per-tab `config` · Actions/dispatch with interceptable `onAction` + post-commit `onModelChange` · customization hooks (icons, classNames via slots, i18n) · per-node resize/close/visibility events.
 
 Out (per non-goals): popout to native window · floating panels · sub-layouts.
 
 ## 14. Packages
 
 ### `@dashfoo/core`
+
 Pure TS, ESM-only, framework-agnostic. Built with `tsdown` (ESM + bundled `.d.ts`, `sideEffects:false`, `files:["dist"]`).
+
 - Exports: `.` (model types, schemas, actions, reducer, serialize, geometry, machines, store factory).
 - Dependencies: `xstate`, `zod` (internal — consumers do not touch them).
 - No React.
 
 ### `@dashfoo/react`
+
 ESM-only, `'use client'`. `tsdown` build.
+
 - Exports: `.` (`DashfooLayout`, hooks), `./adapters` (advanced).
 - Peer dependencies: `react` `^18.3.1 || ^19.0.0`, `react-dom` `^18.3.1 || ^19.0.0` — the only true peers (React must be a singleton shared with the host).
 - Dependencies (the primitives are internal implementation details, so they are bundled, not peers — one-line install for consumers): `@dashfoo/core` (`workspace:*`), `xstate`, `@xstate/react`, `react-resizable-panels` (v4, exact-pinned), `@dnd-kit/react` (exact `0.4.0`), `@dnd-kit/helpers` (exact `0.4.0`). `@dnd-kit/react` pulls `@dnd-kit/dom · abstract · state · collision · geometry` transitively (`@dnd-kit/state` brings `@preact/signals-core`).
 - The pre-1.0 dnd-kit packages are **exact-pinned** (no caret); a Renovate/Dependabot rule requires manual review before any 0.x minor bump.
 
 ### `@dashfoo/theme`
+
 ESM-only. `tsdown` build + a published `tokens.css`.
+
 - Exports: `.` (themed components), `./tokens.css`.
-- Dependencies: `@base-ui-components/react`, `clsx`, `tailwind-merge`.
+- Dependencies: `@base-ui/react`, `clsx`, `tailwind-merge`.
 - Peer dependencies: `@dashfoo/react` (`workspace:*` in repo), `react`, `tailwindcss` `^4`.
 
 ### Internal config (private, `@repo/*`, version `0.0.0`)
+
 - `@repo/typescript-config` — `base.json` (strict, `moduleResolution: Bundler`, `isolatedModules`, `noEmit`), `react-library.json` (adds `jsx: react-jsx`).
 - `@repo/config-vitest` — `./node`, `./react`, `./setup-react` presets.
 
@@ -347,19 +393,19 @@ Matches `usebutr` exactly where it is the publishable-library template.
 
 ## 17. Technical decisions log
 
-| Decision | Choice | Rationale |
-|---|---|---|
-| Layout representation | Serializable model tree (single source of truth) | Trivial `toJSON`/`fromJSON`; controlled state; matches FlexLayout's strength |
-| Customization | Headless core + opt-in themeable skin | Directly fixes FlexLayout's un-restructurable chrome — dashfoo's reason to exist |
-| State foundation | One XState actor system (document + interactions) | User decision: uniform paradigm, statechart rigor, single inspector, first-class persistence |
-| Document mutation | Pure reducer invoked inside the machine | Keep 12 actions testable as a function; machine is the actor shell |
-| Validation | zod schemas; `z.infer` for types | One source for schema + types; guards import / action payloads |
-| Resize primitive | `react-resizable-panels` **v4**, adapter-isolated | Native px/rem units (needed for px borders/sidebars), SSR/RSC; isolated so downgrade is one file |
-| DnD primitive | `dnd-kit` **new line — `@dnd-kit/react` 0.4.0** (exact-pinned), adapter-isolated | A greenfield lib shouldn't build on the feature-frozen legacy 6.x; the new line is maintainer-recommended for new projects, React-19-ready, and its **per-droppable collision detectors + `useDragDropMonitor`** fit a docking engine better. Pre-1.0 risk contained by exact pins + the adapter |
-| React support | peer `^18.3.1 || ^19.0.0` | Develop on 19, widen for adoption |
-| XState ecosystem | Internal **dependencies** (not peers) | Consumers never touch them; one-line install; peers stay react/rrp/dnd-kit |
-| Theme primitives | Base UI (`@base-ui-components/react`) + Tailwind v4 | Consistent with `acme` `@repo/ui`; tokens over class-string swapping |
-| Publish | OSS, scoped `@dashfoo/*`, Changesets + provenance | Sits alongside the user's other OSS libs; usebutr pipeline |
+| Decision              | Choice                                                                           | Rationale                                                                                                                                                                                                                                                                                        |
+| --------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | --------------------------------- |
+| Layout representation | Serializable model tree (single source of truth)                                 | Trivial `toJSON`/`fromJSON`; controlled state; matches FlexLayout's strength                                                                                                                                                                                                                     |
+| Customization         | Headless core + opt-in themeable skin                                            | Directly fixes FlexLayout's un-restructurable chrome — dashfoo's reason to exist                                                                                                                                                                                                                 |
+| State foundation      | One XState actor system (document + interactions)                                | User decision: uniform paradigm, statechart rigor, single inspector, first-class persistence                                                                                                                                                                                                     |
+| Document mutation     | Pure reducer invoked inside the machine                                          | Keep document mutations testable as a function; machine is the actor shell                                                                                                                                                                                                                       |
+| Validation            | zod schemas; `z.infer` for types                                                 | One source for schema + types; guards import / action payloads                                                                                                                                                                                                                                   |
+| Resize primitive      | `react-resizable-panels` **v4**, adapter-isolated                                | Group layout remains percentage/weight-friendly, while panels support fixed units for constraints/borders/sidebars; SSR/RSC; isolated so downgrade is one file                                                                                                                                   |
+| DnD primitive         | `dnd-kit` **new line — `@dnd-kit/react` 0.4.0** (exact-pinned), adapter-isolated | A greenfield lib shouldn't build on the feature-frozen legacy 6.x; the new line is maintainer-recommended for new projects, React-19-ready, and its **per-droppable collision detectors + `useDragDropMonitor`** fit a docking engine better. Pre-1.0 risk contained by exact pins + the adapter |
+| React support         | peer `^18.3.1                                                                    |                                                                                                                                                                                                                                                                                                  | ^19.0.0` | Develop on 19, widen for adoption |
+| XState ecosystem      | Internal **dependencies** (not peers)                                            | Consumers never touch them; one-line install; peers stay react/rrp/dnd-kit                                                                                                                                                                                                                       |
+| Theme primitives      | Base UI (`@base-ui/react`) + Tailwind v4                                         | Consistent with `acme` `@repo/ui`; tokens over class-string swapping                                                                                                                                                                                                                             |
+| Publish               | OSS, scoped `@dashfoo/*`, Changesets + provenance                                | Sits alongside the user's other OSS libs; usebutr pipeline                                                                                                                                                                                                                                       |
 
 ## 18. Risks and mitigations
 

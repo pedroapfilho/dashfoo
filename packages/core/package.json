@@ -1,0 +1,49 @@
+{
+  "name": "@dashfoo/core",
+  "version": "0.0.0",
+  "description": "Headless docking-layout engine: model, actions, reducer, serialization, geometry, and the XState actor system. No React.",
+  "license": "MIT",
+  "author": "Pedro Filho <pedro@filho.me>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pedroapfilho/dashfoo.git",
+    "directory": "packages/core"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "clean": "rm -rf dist",
+    "dev": "tsdown --watch",
+    "lint": "oxlint src",
+    "prepack": "pnpm run build",
+    "prepare": "pnpm run build",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "immer": "^10.1.1",
+    "xstate": "^5.0.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@repo/config-vitest": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}

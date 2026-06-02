@@ -1,0 +1,11 @@
+/*
+ * dashfoo design tokens — placeholder.
+ * Phase 7 fills these in: surfaces, borders, tab states, splitter,
+ * dock-indicator, radii, shadows, motion. Light/dark via color-scheme + token
+ * swap. Consumers import this file or map their own design system onto the
+ * same custom-property names.
+ */
+
+:root {
+  color-scheme: light dark;
+}

@@ -22,5 +22,8 @@ playwright-report/
 .vscode/
 .idea/
 
+# claude code local
+.claude/
+
 # brainstorming companion (not source)
 .superpowers/

@@ -1,0 +1,62 @@
+{
+  "name": "@dashfoo/theme",
+  "version": "0.0.0",
+  "description": "Opt-in themeable skin for dashfoo, composed from the @dashfoo/react headless components. Base UI + Tailwind v4 + CSS design tokens.",
+  "license": "MIT",
+  "author": "Pedro Filho <pedro@filho.me>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pedroapfilho/dashfoo.git",
+    "directory": "packages/theme"
+  },
+  "files": [
+    "dist",
+    "tokens.css"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./tokens.css": "./tokens.css"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "clean": "rm -rf dist",
+    "dev": "tsdown --watch",
+    "lint": "oxlint src",
+    "prepack": "pnpm run build",
+    "prepare": "pnpm run build",
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.4.1",
+    "clsx": "^2.1.1"
+  },
+  "devDependencies": {
+    "@dashfoo/react": "workspace:*",
+    "@repo/config-vitest": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/react": "^19.2.15",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  },
+  "peerDependencies": {
+    "@dashfoo/react": "workspace:^",
+    "react": "^18.3.1 || ^19.0.0",
+    "tailwindcss": "^4"
+  }
+}
