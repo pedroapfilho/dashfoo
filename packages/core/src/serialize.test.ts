@@ -8,7 +8,7 @@ const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",
   borders: [],
-  global: { splitterSize: 6 },
+  global: { tabLocation: "top" },
   layout: {
     children: [{ children: [tab("t1"), tab("t2")], id: "ts1", selected: 0, type: "tabset" }],
     id: "root",

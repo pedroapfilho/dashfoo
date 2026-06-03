@@ -121,28 +121,41 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     [components, factory],
   );
 
+  // Model-level globals act as a default layer under the component props: a
+  // feature is on unless the prop, the global, or the per-node flag turns it off.
+  const global = store.model.global;
+  const effectiveClosable = closableTabs && global.tabEnableClose !== false;
+  const effectiveRenamable = renamableTabs && global.tabEnableRename !== false;
+  const effectiveMaximizable = maximizable && global.tabSetEnableMaximize !== false;
+  const tabLocation = global.tabLocation ?? "top";
+  const tabStripEnabled = global.tabSetEnableTabStrip !== false;
+
   const contextValue = useMemo(
     () => ({
-      closableTabs,
+      closableTabs: effectiveClosable,
       dispatch: store.dispatch,
-      maximizable,
+      maximizable: effectiveMaximizable,
       maximizedTabsetId: store.model.maximizedTabsetId,
-      renamableTabs,
+      renamableTabs: effectiveRenamable,
       renderTab,
+      tabLocation,
+      tabStripEnabled,
     }),
     [
-      closableTabs,
-      maximizable,
-      renamableTabs,
+      effectiveClosable,
+      effectiveMaximizable,
+      effectiveRenamable,
       renderTab,
       store.dispatch,
       store.model.maximizedTabsetId,
+      tabLocation,
+      tabStripEnabled,
     ],
   );
 
   const handleCommit = store.dispatch;
-  const borderDock = store.model.global.enableBorderDock !== false;
-  const splitDock = store.model.global.enableSplitDock !== false;
+  const borderDock = global.enableBorderDock !== false;
+  const splitDock = global.enableSplitDock !== false;
 
   return (
     <DashfooContext.Provider value={contextValue}>

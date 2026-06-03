@@ -220,8 +220,16 @@ const TabButton = ({
 };
 
 const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
-  const { closableTabs, dispatch, maximizable, maximizedTabsetId, renamableTabs, renderTab } =
-    useDashfooContext();
+  const {
+    closableTabs,
+    dispatch,
+    maximizable,
+    maximizedTabsetId,
+    renamableTabs,
+    renderTab,
+    tabLocation,
+    tabStripEnabled,
+  } = useDashfooContext();
   const { isDropTarget, ref } = useTabsetDroppable(node.id);
   const tablistRef = useRef<HTMLDivElement>(null);
   const active = node.children[node.selected];
@@ -260,62 +268,78 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
     }
   };
 
+  const strip = tabStripEnabled ? (
+    <div data-dashfoo="tabstrip" style={stripStyle}>
+      <div
+        aria-orientation="horizontal"
+        data-dashfoo="tablist"
+        onKeyDown={handleTablistKeyDown}
+        ref={tablistRef}
+        role="tablist"
+        style={tablistStyle}
+        tabIndex={-1}
+      >
+        {node.children.map((tab, index) => (
+          <TabButton
+            closable={tabsClosable && tab.enableClose !== false}
+            index={index}
+            key={tab.id}
+            renamable={renamableTabs && tab.enableRename !== false}
+            selected={node.selected}
+            tab={tab}
+            tabsetId={node.id}
+          />
+        ))}
+      </div>
+      {showMaximize ? (
+        <div data-dashfoo="tabset-toolbar" style={toolbarStyle}>
+          <button
+            aria-label={isMaximized ? "Restore" : "Maximize"}
+            aria-pressed={isMaximized}
+            data-dashfoo="tabset-maximize"
+            onClick={handleMaximize}
+            type="button"
+          >
+            <MaximizeIcon maximized={isMaximized} />
+          </button>
+        </div>
+      ) : null}
+    </div>
+  ) : null;
+
+  const content = active ? (
+    <div
+      aria-labelledby={tabDomId(node.id, active.id)}
+      data-dashfoo="tabcontent"
+      id={panelDomId(node.id)}
+      role="tabpanel"
+      style={contentStyle}
+      tabIndex={0}
+    >
+      {renderTab(active)}
+    </div>
+  ) : (
+    <div data-dashfoo="tabcontent" style={contentStyle} />
+  );
+
   return (
     <div
       data-dashfoo="tabset"
       data-drop-target={isDropTarget || undefined}
+      data-tab-location={tabLocation}
       ref={ref}
       style={tabsetStyle}
     >
-      <div data-dashfoo="tabstrip" style={stripStyle}>
-        <div
-          aria-orientation="horizontal"
-          data-dashfoo="tablist"
-          onKeyDown={handleTablistKeyDown}
-          ref={tablistRef}
-          role="tablist"
-          style={tablistStyle}
-          tabIndex={-1}
-        >
-          {node.children.map((tab, index) => (
-            <TabButton
-              closable={tabsClosable && tab.enableClose !== false}
-              index={index}
-              key={tab.id}
-              renamable={renamableTabs && tab.enableRename !== false}
-              selected={node.selected}
-              tab={tab}
-              tabsetId={node.id}
-            />
-          ))}
-        </div>
-        {showMaximize ? (
-          <div data-dashfoo="tabset-toolbar" style={toolbarStyle}>
-            <button
-              aria-label={isMaximized ? "Restore" : "Maximize"}
-              aria-pressed={isMaximized}
-              data-dashfoo="tabset-maximize"
-              onClick={handleMaximize}
-              type="button"
-            >
-              <MaximizeIcon maximized={isMaximized} />
-            </button>
-          </div>
-        ) : null}
-      </div>
-      {active ? (
-        <div
-          aria-labelledby={tabDomId(node.id, active.id)}
-          data-dashfoo="tabcontent"
-          id={panelDomId(node.id)}
-          role="tabpanel"
-          style={contentStyle}
-          tabIndex={0}
-        >
-          {renderTab(active)}
-        </div>
+      {tabLocation === "bottom" ? (
+        <>
+          {content}
+          {strip}
+        </>
       ) : (
-        <div data-dashfoo="tabcontent" style={contentStyle} />
+        <>
+          {strip}
+          {content}
+        </>
       )}
     </div>
   );

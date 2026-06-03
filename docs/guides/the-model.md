@@ -79,15 +79,14 @@ type TabsetNode = {
   max?: Dimension;
   min?: Dimension;
   selected: number;
-  size?: Dimension;
   type: "tabset";
   weight?: number;
 };
 ```
 
 A tabset is one pane with a tab strip. `children` is its tabs; `selected` is the
-index of the visible one (zero-based). `weight` works as it does on rows. `min`,
-`max`, and `size` are optional `Dimension` constraints — see [Dimensions](#dimensions)
+index of the visible one (zero-based). `weight` works as it does on rows. `min`
+and `max` are optional `Dimension` constraints — see [Dimensions](#dimensions)
 below. The two flags gate this tabset's chrome:
 
 | Flag             | Effect when `false`                    |
@@ -107,7 +106,6 @@ type TabNode = {
   enableClose?: boolean;
   enableDrag?: boolean;
   enableRename?: boolean;
-  icon?: string;
   id: string;
   name: string;
   type: "tab";
@@ -116,8 +114,7 @@ type TabNode = {
 
 A tab is one document. `component` is a string key your renderer maps to a React
 component; dashfoo stores the key, never the component itself, which is what
-keeps the model serializable. `name` is the label shown in the strip, `icon` an
-optional string your renderer resolves. `config` is arbitrary per-tab state, but
+keeps the model serializable. `name` is the label shown in the strip. `config` is arbitrary per-tab state, but
 it is validated against a JSON schema (`jsonValueSchema`), so a function or a
 `Symbol` in `config` fails parsing rather than silently breaking serialization.
 
@@ -135,7 +132,6 @@ The three per-tab flags:
 type BorderNode = {
   children: TabNode[];
   edge: "top" | "bottom" | "left" | "right";
-  mode?: "pinned" | "auto-hide";
   selected: number;
   size?: Dimension;
   type: "border";
@@ -144,9 +140,8 @@ type BorderNode = {
 
 A border is a strip of tabs docked to one `edge` of the layout. Unlike a tabset,
 a border has no `id` and no `weight` — it is addressed by its `edge`, and there
-is at most one per edge. `mode` controls behavior: `"pinned"` keeps the panel
-open; `"auto-hide"` collapses it to the edge until invoked. The auto-hide delay
-comes from `global.borderAutoHideDelayMs`.
+is at most one per edge. `size` is the drawer's extent (width for left/right,
+height for top/bottom) when a tab is open.
 
 `selected` carries one extra convention for borders. A tabset always shows
 something, so its `selected` is a valid index. A border can be fully collapsed
@@ -155,7 +150,8 @@ in the demo's `bordersModel` ships collapsed exactly this way.
 
 ### Dimensions
 
-`min`, `max`, and `size` are `Dimension` values, not raw numbers:
+A tabset's `min` / `max` and a border's `size` are `Dimension` values, not raw
+numbers:
 
 ```ts
 type Dimension = {
@@ -164,9 +160,9 @@ type Dimension = {
 };
 ```
 
-Carrying the unit alongside the value lets a tabset be sized `{ unit: "px", value: 320 }`
+Carrying the unit alongside the value lets a constraint read `{ unit: "px", value: 320 }`
 or `{ unit: "%", value: 30 }` without an out-of-band convention about what the
-number means.
+number means. (rrp's panel `min` / `max` honor `px` and `%`.)
 
 ## Global attributes
 
@@ -176,11 +172,8 @@ built-in defaults."
 
 ```ts
 type GlobalAttributes = {
-  borderAutoHideDelayMs?: number;
   enableBorderDock?: boolean;
   enableSplitDock?: boolean;
-  splitterExtra?: number;
-  splitterSize?: number;
   tabEnableClose?: boolean;
   tabEnableRename?: boolean;
   tabLocation?: "top" | "bottom";
@@ -189,11 +182,12 @@ type GlobalAttributes = {
 };
 ```
 
-The `tab*` and `tabSet*` keys are the tree-wide fallbacks for the per-node
-`enable*` flags above. `splitterSize` is the hit area of a resize handle;
-`splitterExtra` widens the invisible grab zone around it without changing the
-visible size. `enableSplitDock` and `enableBorderDock` toggle whether drops can
-split a tabset or dock to an edge at all.
+The `tabEnable*` and `tabSetEnable*` keys are the tree-wide fallbacks for the
+per-node `enable*` flags above (set one to `false` to turn the feature off
+everywhere). `tabLocation: "bottom"` moves the tab strip below the content;
+`tabSetEnableTabStrip: false` hides the strip entirely (a pure resizable-pane
+grid). `enableSplitDock` and `enableBorderDock` toggle whether drops can split a
+tabset or dock to an edge at all.
 
 ## A real model
 

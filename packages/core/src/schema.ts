@@ -17,7 +17,6 @@ const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
 
 const edgeSchema = z.enum(["top", "bottom", "left", "right"]);
 const unitSchema = z.enum(["px", "%", "em", "rem", "vh", "vw"]);
-const borderModeSchema = z.enum(["pinned", "auto-hide"]);
 const orientationSchema = z.enum(["row", "column"]);
 
 const dimensionSchema = z.object({
@@ -31,7 +30,6 @@ const tabNodeSchema = z.object({
   enableClose: z.boolean().optional(),
   enableDrag: z.boolean().optional(),
   enableRename: z.boolean().optional(),
-  icon: z.string().optional(),
   id: z.string(),
   name: z.string(),
   type: z.literal("tab"),
@@ -45,7 +43,6 @@ const tabsetNodeSchema = z.object({
   max: dimensionSchema.optional(),
   min: dimensionSchema.optional(),
   selected: z.number().int(),
-  size: dimensionSchema.optional(),
   type: z.literal("tabset"),
   weight: z.number().optional(),
 });
@@ -75,18 +72,14 @@ const rowNodeSchema: z.ZodType<RowNode> = z.lazy(() =>
 const borderNodeSchema = z.object({
   children: z.array(tabNodeSchema),
   edge: edgeSchema,
-  mode: borderModeSchema.optional(),
   selected: z.number().int(),
   size: dimensionSchema.optional(),
   type: z.literal("border"),
 });
 
 const globalAttributesSchema = z.object({
-  borderAutoHideDelayMs: z.number().optional(),
   enableBorderDock: z.boolean().optional(),
   enableSplitDock: z.boolean().optional(),
-  splitterExtra: z.number().optional(),
-  splitterSize: z.number().optional(),
   tabEnableClose: z.boolean().optional(),
   tabEnableRename: z.boolean().optional(),
   tabLocation: z.enum(["top", "bottom"]).optional(),
@@ -106,7 +99,6 @@ const dashfooSchema = z.object({
 type Json = JsonValue;
 type Edge = z.infer<typeof edgeSchema>;
 type Unit = z.infer<typeof unitSchema>;
-type BorderMode = z.infer<typeof borderModeSchema>;
 type Orientation = z.infer<typeof orientationSchema>;
 type Dimension = z.infer<typeof dimensionSchema>;
 type TabNode = z.infer<typeof tabNodeSchema>;
@@ -117,7 +109,6 @@ type Dashfoo = z.infer<typeof dashfooSchema>;
 type Node = RowNode | TabsetNode | TabNode;
 
 export {
-  borderModeSchema,
   borderNodeSchema,
   dashfooSchema,
   dimensionSchema,
@@ -132,7 +123,6 @@ export {
 };
 
 export type {
-  BorderMode,
   BorderNode,
   Dashfoo,
   Dimension,

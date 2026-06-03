@@ -16,7 +16,6 @@ const mutableTabAttrsSchema = tabNodeSchema
     enableClose: true,
     enableDrag: true,
     enableRename: true,
-    icon: true,
     name: true,
   })
   .partial();
@@ -28,7 +27,6 @@ const mutableTabsetAttrsSchema = tabsetNodeSchema
     max: true,
     min: true,
     selected: true,
-    size: true,
     weight: true,
   })
   .partial();
@@ -37,9 +35,7 @@ const mutableRowAttrsSchema = z
   .object({ orientation: orientationSchema, weight: z.number() })
   .partial();
 
-const mutableBorderAttrsSchema = borderNodeSchema
-  .pick({ mode: true, selected: true, size: true })
-  .partial();
+const mutableBorderAttrsSchema = borderNodeSchema.pick({ selected: true, size: true }).partial();
 
 const mutableNodeAttrsSchema = z.union([
   mutableTabAttrsSchema,
