@@ -17,6 +17,9 @@ type DashfooStore = {
 type UseDashfooStoreOptions = {
   defaultModel?: Dashfoo;
   model?: Dashfoo;
+  onAction?: (action: Action) => Action | null;
+  onActiveTabsetChange?: (tabsetId: string | undefined) => void;
+  onMaximizedTabsetChange?: (tabsetId: string | undefined) => void;
   onModelChange?: (model: Dashfoo, action?: Action) => void;
 };
 
@@ -25,7 +28,14 @@ type UseDashfooStoreOptions = {
 // the source of truth and routes every change through onModelChange, keeping the
 // actor synced so the inspector still sees it.
 const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
-  const { defaultModel, model: controlledModel, onModelChange } = options;
+  const {
+    defaultModel,
+    model: controlledModel,
+    onAction,
+    onActiveTabsetChange,
+    onMaximizedTabsetChange,
+    onModelChange,
+  } = options;
   const initialModel = controlledModel ?? defaultModel;
   if (initialModel === undefined) {
     throw new Error("useDashfooStore requires either a `model` or a `defaultModel`.");
@@ -47,14 +57,35 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
 
   const dispatch = useCallback(
     (action: Action) => {
-      if (controlledModel !== undefined) {
-        onModelChange?.(reducer(controlledModel, action), action);
+      // onAction may veto (null) or replace the action before it mutates anything.
+      const resolved = onAction ? onAction(action) : action;
+      if (!resolved) {
         return;
       }
-      actorRef.send({ action, type: "DISPATCH" });
-      onModelChange?.(actorRef.getSnapshot().context.history.present, action);
+      const before = controlledModel ?? actorRef.getSnapshot().context.history.present;
+      let after: Dashfoo;
+      if (controlledModel === undefined) {
+        actorRef.send({ action: resolved, type: "DISPATCH" });
+        after = actorRef.getSnapshot().context.history.present;
+      } else {
+        after = reducer(controlledModel, resolved);
+      }
+      onModelChange?.(after, resolved);
+      if (after.activeTabsetId !== before.activeTabsetId) {
+        onActiveTabsetChange?.(after.activeTabsetId);
+      }
+      if (after.maximizedTabsetId !== before.maximizedTabsetId) {
+        onMaximizedTabsetChange?.(after.maximizedTabsetId);
+      }
     },
-    [actorRef, controlledModel, onModelChange],
+    [
+      actorRef,
+      controlledModel,
+      onAction,
+      onActiveTabsetChange,
+      onMaximizedTabsetChange,
+      onModelChange,
+    ],
   );
 
   const undo = useCallback(() => {
