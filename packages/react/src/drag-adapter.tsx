@@ -2,6 +2,7 @@
 
 import type { Action, DropIntent, Point } from "@dashfoo/core";
 import { dragDockMachine } from "@dashfoo/core";
+import { Accessibility } from "@dnd-kit/dom";
 import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/react";
 import { DragDropProvider, useDraggable, useDroppable } from "@dnd-kit/react";
 import { useActorRef, useSelector } from "@xstate/react";
@@ -85,7 +86,8 @@ const overlayBase: CSSProperties = {
   boxSizing: "border-box",
   pointerEvents: "none",
   position: "fixed",
-  transition: "left 60ms, top 60ms, width 60ms, height 60ms",
+  // Overridable so a theme can drop it under prefers-reduced-motion.
+  transition: "var(--dashfoo-dock-transition, left 60ms, top 60ms, width 60ms, height 60ms)",
   zIndex: 9999,
 };
 
@@ -268,6 +270,11 @@ const DragProvider = ({
         onDragEnd={handleDragEnd}
         onDragMove={handleDragMove}
         onDragStart={handleDragStart}
+        // dnd-kit's default Accessibility plugin stamps aria-pressed / aria-grabbed
+        // / aria-roledescription onto the draggable — invalid on our role="tab"
+        // buttons — and announces raw ids. Drop it; the tab keyboard model and
+        // labels are owned by TabsetView.
+        plugins={(defaults) => defaults.filter((plugin) => plugin !== Accessibility)}
       >
         {children}
         <DockIndicator

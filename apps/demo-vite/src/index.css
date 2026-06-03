@@ -176,7 +176,18 @@
   [data-separator][aria-orientation="horizontal"]::before {
     @apply h-0.5 w-[30px];
   }
-  [data-separator]:hover::before {
+  [data-separator]:hover::before,
+  [data-separator]:focus-visible::before {
     @apply bg-df-emphasis;
+  }
+  [data-separator]:focus-visible {
+    @apply outline-2 outline-offset-[-2px] outline-df-emphasis;
+  }
+}
+
+/* Respect reduced-motion: stop the dock indicator gliding between positions. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dashfoo-dock-transition: none;
   }
 }
