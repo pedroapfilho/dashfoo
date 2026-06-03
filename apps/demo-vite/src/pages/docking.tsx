@@ -16,7 +16,7 @@ const DockingPage = (): ReactNode => {
   return (
     <DemoStage
       actions={<Button onClick={handleReset}>Reset layout</Button>}
-      description="Drag a tab onto another tab strip to stack it (an insertion line shows where it lands). Drag toward a tabset edge to split, or to the outer gutter to dock as a border. Drag within a strip to reorder."
+      description="Drag a tab onto another tab strip to stack it (an insertion line shows where it lands). Drag toward a tabset edge to split. Drag within a strip to reorder, or drag a tabset by its grip to move the whole panel."
       title="Docking & drag"
     >
       <DashfooLayout defaultModel={dockingModel()} factory={renderPanel} key={resetKey} />

@@ -5,9 +5,9 @@ const NAV = [
   { exact: true, label: "Overview", to: "/" },
   { exact: false, label: "Docking & drag", to: "/docking" },
   { exact: false, label: "Tabset chrome", to: "/chrome" },
-  { exact: false, label: "Borders & edges", to: "/borders" },
   { exact: false, label: "Persistence", to: "/persistence" },
   { exact: false, label: "Imperative control", to: "/controlled" },
+  { exact: false, label: "Responsive", to: "/responsive" },
 ] as const;
 
 const linkClass =

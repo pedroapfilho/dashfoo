@@ -7,7 +7,6 @@ import { memoryStorageAdapter, usePersistedModel } from "./persistence";
 
 const modelWith = (tabName: string): Dashfoo => ({
   activeTabsetId: "ts1",
-  borders: [],
   global: {},
   layout: {
     children: [

@@ -1,8 +1,8 @@
 import type { Action, DockLocation } from "./actions";
 import { createNodeId } from "./ids";
 import { normalize } from "./invariants";
-import type { Dashfoo, Edge, RowNode, TabNode, TabsetNode } from "./schema";
-import { findBorder, findTab, findTabset } from "./tree";
+import type { Dashfoo, RowNode, TabNode, TabsetNode } from "./schema";
+import { findTab, findTabset } from "./tree";
 
 const assertNever = (value: never): never => {
   throw new Error(`Unhandled action: ${JSON.stringify(value)}`);
@@ -37,6 +37,24 @@ const removeTabset = (row: RowNode, tabsetId: string): boolean => {
   return false;
 };
 
+// Detach a tabset from the tree and return it (for moving a whole tabset).
+const removeTabsetReturning = (row: RowNode, tabsetId: string): TabsetNode | undefined => {
+  const index = row.children.findIndex((child) => child.type === "tabset" && child.id === tabsetId);
+  if (index !== -1) {
+    const [removed] = row.children.splice(index, 1);
+    return removed?.type === "tabset" ? removed : undefined;
+  }
+  for (const child of row.children) {
+    if (child.type === "row") {
+      const found = removeTabsetReturning(child, tabsetId);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return undefined;
+};
+
 type AttributedNode = RowNode | TabNode | TabsetNode;
 
 const findAttributedNodeInRow = (row: RowNode, id: string): AttributedNode | undefined => {
@@ -62,19 +80,8 @@ const findAttributedNodeInRow = (row: RowNode, id: string): AttributedNode | und
   return undefined;
 };
 
-const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefined => {
-  const inLayout = findAttributedNodeInRow(model.layout, id);
-  if (inLayout) {
-    return inLayout;
-  }
-  for (const border of model.borders) {
-    const tab = border.children.find((candidate) => candidate.id === id);
-    if (tab) {
-      return tab;
-    }
-  }
-  return undefined;
-};
+const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefined =>
+  findAttributedNodeInRow(model.layout, id);
 
 const findTabsetParent = (
   row: RowNode,
@@ -101,47 +108,55 @@ const splitOrientation = (location: DockLocation): "column" | "row" =>
 const splitsBefore = (location: DockLocation): boolean =>
   location === "split-left" || location === "split-top";
 
-const borderEdgeOf = (location: DockLocation): Edge | undefined => {
-  switch (location) {
-    case "border-bottom": {
-      return "bottom";
-    }
-    case "border-left": {
-      return "left";
-    }
-    case "border-right": {
-      return "right";
-    }
-    case "border-top": {
-      return "top";
-    }
-    default: {
-      return undefined;
-    }
+// Place an (already-detached) tabset beside the target for a split-* location:
+// reuse the parent row when the orientation already matches, else wrap the target
+// in a new row. Shared by insertTab (a fresh tabset) and moveTabset (an existing
+// one). Splits the target's space in half.
+const placeBesideTarget = (
+  draft: Dashfoo,
+  placed: TabsetNode,
+  targetId: string,
+  location: DockLocation,
+): void => {
+  const targetTabset = findTabset(draft, targetId);
+  const found = findTabsetParent(draft.layout, targetId);
+  if (!targetTabset || !found) {
+    return;
   }
+
+  const orientation = splitOrientation(location);
+  const before = splitsBefore(location);
+
+  if (found.parent.orientation === orientation) {
+    const targetWeight = targetTabset.weight ?? 100;
+    targetTabset.weight = targetWeight / 2;
+    placed.weight = targetWeight / 2;
+    found.parent.children.splice(before ? found.index : found.index + 1, 0, placed);
+  } else {
+    const targetWeight = targetTabset.weight;
+    targetTabset.weight = 50;
+    placed.weight = 50;
+    const newRow: RowNode = {
+      children: before ? [placed, targetTabset] : [targetTabset, placed],
+      id: createNodeId("row"),
+      orientation,
+      type: "row",
+    };
+    if (targetWeight !== undefined) {
+      newRow.weight = targetWeight;
+    }
+    found.parent.children.splice(found.index, 1, newRow);
+  }
+
+  draft.activeTabsetId = placed.id;
 };
 
 // Insert a tab into the model at a dock target. center stacks it into the target
-// tabset; split-* creates a new tabset beside the target (reusing the parent row
-// when the orientation already matches, otherwise wrapping in a new row); border-*
-// docks it to a frame edge, creating the border on demand.
+// tabset; split-* creates a new tabset beside the target.
 type DropTarget = { id: string; index?: number; location: DockLocation };
 
 const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
   const { id: targetId, index, location } = target;
-  const edge = borderEdgeOf(location);
-  if (edge) {
-    let border = findBorder(draft, edge);
-    if (!border) {
-      border = { children: [], edge, selected: -1, type: "border" };
-      draft.borders.push(border);
-    }
-    const at = index ?? border.children.length;
-    border.children.splice(at, 0, tab);
-    border.selected = at;
-    return;
-  }
-
   const targetTabset = findTabset(draft, targetId);
   if (!targetTabset) {
     return;
@@ -154,13 +169,6 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
     return;
   }
 
-  const found = findTabsetParent(draft.layout, targetId);
-  if (!found) {
-    return;
-  }
-
-  const orientation = splitOrientation(location);
-  const before = splitsBefore(location);
   const newTabset: TabsetNode = {
     children: [tab],
     id: createNodeId("tabset"),
@@ -168,28 +176,7 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
     type: "tabset",
     weight: 50,
   };
-
-  if (found.parent.orientation === orientation) {
-    const targetWeight = targetTabset.weight ?? 100;
-    targetTabset.weight = targetWeight / 2;
-    newTabset.weight = targetWeight / 2;
-    found.parent.children.splice(before ? found.index : found.index + 1, 0, newTabset);
-  } else {
-    const targetWeight = targetTabset.weight;
-    targetTabset.weight = 50;
-    const newRow: RowNode = {
-      children: before ? [newTabset, targetTabset] : [targetTabset, newTabset],
-      id: createNodeId("row"),
-      orientation,
-      type: "row",
-    };
-    if (targetWeight !== undefined) {
-      newRow.weight = targetWeight;
-    }
-    found.parent.children.splice(found.index, 1, newRow);
-  }
-
-  draft.activeTabsetId = newTabset.id;
+  placeBesideTarget(draft, newTabset, targetId, location);
 };
 
 const applyAction = (draft: Dashfoo, action: Action): void => {
@@ -200,13 +187,6 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
         index: action.index,
         location: action.location,
       });
-      return;
-    }
-    case "adjustBorderSize": {
-      const border = findBorder(draft, action.edge);
-      if (border) {
-        border.size = action.size;
-      }
       return;
     }
     case "adjustSplit": {
@@ -253,6 +233,31 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       });
       return;
     }
+    case "moveTabset": {
+      if (action.sourceId === action.targetId) {
+        return;
+      }
+      const source = findTabset(draft, action.sourceId);
+      if (!source) {
+        return;
+      }
+      if (action.location === "center") {
+        const target = findTabset(draft, action.targetId);
+        if (target) {
+          target.children.push(...source.children);
+          removeTabset(draft.layout, action.sourceId);
+        }
+        return;
+      }
+      // split-* moves the whole tabset beside the target.
+      if (action.location.startsWith("split-")) {
+        const detached = removeTabsetReturning(draft.layout, action.sourceId);
+        if (detached) {
+          placeBesideTarget(draft, detached, action.targetId, action.location);
+        }
+      }
+      return;
+    }
     case "renameTab": {
       const location = findTab(draft, action.tabId);
       if (location) {
@@ -270,13 +275,6 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
     case "setActiveTabset": {
       if (findTabset(draft, action.tabsetId)) {
         draft.activeTabsetId = action.tabsetId;
-      }
-      return;
-    }
-    case "setBorderSelected": {
-      const border = findBorder(draft, action.edge);
-      if (border) {
-        border.selected = action.index;
       }
       return;
     }

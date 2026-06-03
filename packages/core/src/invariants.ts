@@ -77,11 +77,6 @@ const normalize = (model: Dashfoo): Dashfoo => {
   const tabsetIds = new Set(collectTabsets(withLayout).map((tabset) => tabset.id));
   const firstTabsetId = collectTabsets(withLayout)[0]?.id;
 
-  const borders = model.borders.map((border) => ({
-    ...border,
-    selected: border.selected < 0 ? -1 : clampSelected(border.children.length, border.selected),
-  }));
-
   const activeTabsetId =
     model.activeTabsetId !== undefined && tabsetIds.has(model.activeTabsetId)
       ? model.activeTabsetId
@@ -92,7 +87,7 @@ const normalize = (model: Dashfoo): Dashfoo => {
       ? model.maximizedTabsetId
       : undefined;
 
-  return { ...withLayout, activeTabsetId, borders, maximizedTabsetId };
+  return { ...withLayout, activeTabsetId, maximizedTabsetId };
 };
 
 export { normalize };

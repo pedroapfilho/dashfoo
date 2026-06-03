@@ -61,17 +61,14 @@ up the actor's own history. The actor stays the source of truth.
 
 ### How drags collapse into one undo step
 
-Resize actions are the only coalescable ones. A splitter or border drag
-emits many actions per frame, but should undo as a single step. The
-history keys them by the node being resized:
+Resize actions are the only coalescable ones. A splitter drag emits many
+actions per frame, but should undo as a single step. The history keys
+them by the node being resized:
 
 ```ts
 const coalesceKey = (action: Action): string | undefined => {
   if (action.type === "adjustSplit") {
     return `adjustSplit:${action.rowId}`;
-  }
-  if (action.type === "adjustBorderSize") {
-    return `adjustBorderSize:${action.edge}`;
   }
   return undefined;
 };

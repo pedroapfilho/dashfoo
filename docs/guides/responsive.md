@@ -1,0 +1,73 @@
+# Adaptive (responsive) layouts
+
+A dashfoo layout is already fluid: panels are weight-based percentages, so the
+whole tree scales with its container at any size. What it does not do on its own
+is _restructure_ at a breakpoint — collapse a three-pane terminal into a single
+scrollable column on a phone. That is what `useResponsiveModel` and `stackModel`
+add, and they stay headless: you describe the breakpoints and the models; the
+library decides which one is active.
+
+## The two pieces
+
+- **`stackModel(model, orientation?)`** (`@dashfoo/core`) — a pure transform that
+  flattens any layout into a single column (default) of all its tabsets, in
+  document order. It is the "mobile layout from a
+  desktop layout" building block.
+- **`useResponsiveModel({ breakpoints })`** (`@dashfoo/react`) — picks the model
+  for the active breakpoint and returns props to spread onto `<DashfooLayout>`.
+
+## Wiring it up
+
+A breakpoint is `{ id, model, query? }`. The `query` is **either** a container
+width (`{ maxWidth: number }`, measured with a `ResizeObserver` on the element you
+attach `containerRef` to) **or** a media query (`{ media: string }`, via
+`matchMedia`). Omit `query` on the last breakpoint to make it the catch-all.
+Breakpoints are evaluated top to bottom; the first match wins.
+
+```tsx
+import { stackModel } from "@dashfoo/core";
+import { DashfooLayout, useResponsiveModel } from "@dashfoo/react";
+import { useMemo } from "react";
+
+const Dashboard = ({ base }: { base: Dashfoo }) => {
+  // Memoize so the breakpoints array is stable across renders.
+  const breakpoints = useMemo(
+    () => [
+      { id: "mobile", query: { maxWidth: 720 }, model: stackModel(base) },
+      { id: "desktop", model: base },
+    ],
+    [base],
+  );
+  const { containerRef, defaultModel, key } = useResponsiveModel({ breakpoints });
+
+  return (
+    <div ref={containerRef} style={{ height: "100%" }}>
+      {/* remount on `key` so the new breakpoint's model is seeded */}
+      <DashfooLayout key={key} defaultModel={defaultModel} factory={renderPanel} />
+    </div>
+  );
+};
+```
+
+Keying off `containerRef` (not the viewport) is deliberate: a docking layout often
+lives inside a sidebar or split, so it should react to _its own_ width, not the
+window's. If you do want the window, use a `{ media: "(max-width: 720px)" }` query
+instead — the two kinds mix freely in one `breakpoints` array.
+
+## The state tradeoff
+
+Switching breakpoints swaps the whole model, so a rearrangement the user made on
+desktop is not carried into the mobile layout (and back). That is usually what you
+want — the two layouts are different on purpose. If you need per-breakpoint
+rearrangements to persist, pair each breakpoint with
+[`usePersistedModel`](./persistence.md) under a per-breakpoint storage key, and
+feed the persisted model into the breakpoint's `model`.
+
+## Custom transforms
+
+`stackModel` is one transform; you are not limited to it. A breakpoint's `model`
+is just a `Dashfoo`, so you can hand-author a tablet layout, or write your own
+transform over the base model (hide a panel, change weights, move a tabset).
+Anything that produces a valid model works.
+
+See also: [The layout model](./the-model.md) · [Persisting layouts](./persistence.md).

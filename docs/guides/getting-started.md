@@ -45,7 +45,6 @@ const tab = (id: string, name: string, component = id): TabNode => ({
 
 const startingModel = (): Dashfoo => ({
   activeTabsetId: "main",
-  borders: [],
   global: {},
   layout: {
     children: [
@@ -219,8 +218,7 @@ The attributes you'll style most:
 | `[data-dashfoo="tabset-maximize"]` | Maximize control in the tabset toolbar.         |
 | `[data-separator]`                 | A resize splitter (orientation on the element). |
 
-The selected tab carries `aria-selected="true"`; the active border tab carries
-`aria-pressed="true"`; a splitter exposes its axis as
+The selected tab carries `aria-selected="true"`; a splitter exposes its axis as
 `[data-separator][aria-orientation="vertical"]` or `"horizontal"`. Style states
 off those, never off a class dashfoo adds — there isn't one.
 
@@ -311,14 +309,14 @@ maximize, and resize, with content resolved through your registry.
 
 The demo's stylesheet (`apps/demo-vite/src/index.css`) is the same idea written
 with Tailwind's `@apply` against custom properties. It's worth reading once you
-want close controls, the maximize button, border drawers, and dock indicators
+want close controls, the maximize button, and dock indicators
 styled — every one of those is a `data-dashfoo` selector you target the same
 way.
 
 ## What to read next
 
 - **The model** (`docs/guides/the-model.md`) — the full node schema, how
-  `row` / `tabset` / `tab` / `border` nest, what every field controls, and how
+  `row` / `tabset` / `tab` nest, what every field controls, and how
   the reducer transforms the tree on each action.
 - **Theming** (`docs/guides/theming.md`) — the complete `data-dashfoo`
   attribute surface, the dock-indicator custom properties
