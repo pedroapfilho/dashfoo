@@ -5,7 +5,12 @@ import type { CSSProperties, FocusEvent, KeyboardEvent, MouseEvent, ReactNode } 
 import { useEffect, useRef, useState } from "react";
 
 import { useDashfooContext } from "./context";
-import { useTabDraggable, useTabsetDraggable, useTabsetDroppable } from "./drag-adapter";
+import {
+  useDragSubject,
+  useTabDraggable,
+  useTabsetDraggable,
+  useTabsetDroppable,
+} from "./drag-adapter";
 import { TabOverflowMenu, useTabOverflow } from "./tab-overflow";
 
 // height/width 100% (not flex:1) so the tabset fills its parent whether that
@@ -41,6 +46,11 @@ const iconStyle: CSSProperties = { pointerEvents: "none" };
 // Stable ids wiring each tab to its panel (aria-controls / aria-labelledby).
 const tabDomId = (tabsetId: string, tabId: string): string => `dashfoo-tab-${tabsetId}-${tabId}`;
 const panelDomId = (tabsetId: string): string => `dashfoo-panel-${tabsetId}`;
+
+// The neighbour to show as active when the selected tab is dragged out: the next
+// tab if there is one, else the previous, else -1 (the tabset is emptying).
+const fallbackSelectedIndex = (count: number, removedIndex: number): number =>
+  removedIndex + 1 < count ? removedIndex + 1 : removedIndex - 1;
 
 const CloseIcon = (): ReactNode => (
   <svg aria-hidden="true" height="10" viewBox="0 0 10 10" width="10">
@@ -150,7 +160,13 @@ const TabButton = ({
   tabsetId: string;
 }): ReactNode => {
   const { dispatch, renderTabLabel } = useDashfooContext();
-  const { isDragging, ref } = useTabDraggable(tab.id, tab.enableDrag === false);
+  const { ref } = useTabDraggable(tab.id, tab.enableDrag === false);
+  // `data-dragging` is driven off the drag machine's subject, not dnd-kit's
+  // per-draggable isDragging: with feedback:'move' the tab's own re-render (e.g.
+  // when the selected tab is dragged and the strip reactivates a neighbour)
+  // desyncs that flag, but the subject is authoritative for the whole drag.
+  const dragSubject = useDragSubject();
+  const isDragging = dragSubject?.kind === "tab" && dragSubject.id === tab.id;
   const [editing, setEditing] = useState(false);
   const itemRef = useRef<HTMLSpanElement>(null);
   const wasEditing = useRef(false);
@@ -245,12 +261,25 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
     tabStripEnabled,
   } = useDashfooContext();
   const { isDropTarget, ref } = useTabsetDroppable(node.id);
-  const { ref: gripRef } = useTabsetDraggable(node.id, !draggableTabsets);
+  const dragSubject = useDragSubject();
+  const isMaximized = maximizedTabsetId === node.id;
+  const { ref: gripRef } = useTabsetDraggable(node.id, !draggableTabsets || isMaximized);
   const tablistRef = useRef<HTMLDivElement>(null);
-  const active = node.children[node.selected];
   const tabsClosable = closableTabs && node.enableClose !== false;
   const showMaximize = maximizable && node.enableMaximize !== false;
-  const isMaximized = maximizedTabsetId === node.id;
+
+  // While the selected tab is being dragged out of THIS tabset, show a neighbour
+  // as active so the strip + content read "as if that tab isn't here" (the tab
+  // collapses via dnd-kit feedback:'move'). Purely visual — the model selection is
+  // untouched and resumes on drop/cancel.
+  const draggingTabIndex =
+    dragSubject?.kind === "tab" ? node.children.findIndex((tab) => tab.id === dragSubject.id) : -1;
+  const visualSelected =
+    draggingTabIndex !== -1 && draggingTabIndex === node.selected
+      ? fallbackSelectedIndex(node.children.length, draggingTabIndex)
+      : node.selected;
+  const active = node.children[visualSelected];
+  const isDragSource = dragSubject?.kind === "tabset" && dragSubject.id === node.id;
 
   const handleMaximize = (): void => {
     dispatch({ tabsetId: isMaximized ? null : node.id, type: "setMaximizedTabset" });
@@ -317,20 +346,24 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
             index={index}
             key={tab.id}
             renamable={renamableTabs && tab.enableRename !== false}
-            selected={node.selected}
+            selected={visualSelected}
             tab={tab}
             tabsetId={node.id}
           />
         ))}
       </div>
-      {showMaximize || renderTabsetToolbar || overflowItems.length > 0 || draggableTabsets ? (
+      {showMaximize ||
+      renderTabsetToolbar ||
+      overflowItems.length > 0 ||
+      (draggableTabsets && !isMaximized) ? (
         <div data-dashfoo="tabset-toolbar" style={toolbarStyle}>
           {overflowItems.length > 0 ? (
             <TabOverflowMenu items={overflowItems} onSelect={handleOverflowSelect} />
           ) : null}
-          {draggableTabsets ? (
+          {draggableTabsets && !isMaximized ? (
             <button aria-label="Move tabset" data-dashfoo="tabset-grip" ref={gripRef} type="button">
               <GripIcon />
+              <span data-dashfoo="tabset-grip-label">{active?.name}</span>
             </button>
           ) : null}
           {renderTabsetToolbar?.(node)}
@@ -358,12 +391,12 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
         <div
           aria-labelledby={tabDomId(node.id, tab.id)}
           data-dashfoo="tabcontent"
-          hidden={index !== node.selected || undefined}
-          id={index === node.selected ? panelDomId(node.id) : undefined}
+          hidden={index !== visualSelected || undefined}
+          id={index === visualSelected ? panelDomId(node.id) : undefined}
           key={tab.id}
-          role={index === node.selected ? "tabpanel" : undefined}
+          role={index === visualSelected ? "tabpanel" : undefined}
           style={contentStyle}
-          tabIndex={index === node.selected ? 0 : undefined}
+          tabIndex={index === visualSelected ? 0 : undefined}
         >
           {renderTab(tab)}
         </div>
@@ -391,6 +424,7 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
   return (
     <div
       data-dashfoo="tabset"
+      data-dragging-source={isDragSource || undefined}
       data-drop-target={isDropTarget || undefined}
       data-tab-location={tabLocation}
       ref={ref}
@@ -411,4 +445,4 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
   );
 };
 
-export { TabsetView };
+export { fallbackSelectedIndex, TabsetView };

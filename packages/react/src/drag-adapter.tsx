@@ -1,8 +1,8 @@
 "use client";
 
-import type { Action, DockLocation, DropIntent, Point } from "@dashfoo/core";
+import type { Action, DockLocation, DragSubject, DropIntent, Point } from "@dashfoo/core";
 import { dragDockMachine, resolveDockTarget, zoneRect } from "@dashfoo/core";
-import { Accessibility } from "@dnd-kit/dom";
+import { Accessibility, Feedback } from "@dnd-kit/dom";
 import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/react";
 import { DragDropProvider, useDraggable, useDroppable } from "@dnd-kit/react";
 import { useActorRef, useSelector } from "@xstate/react";
@@ -26,10 +26,12 @@ type DragContextValue = {
 
 const DragContext = createContext<DragContextValue | null>(null);
 
+const DragSubjectContext = createContext<DragSubject | null>(null);
+
 // The dragged tab is excluded so its own slot never counts toward the order —
 // the insertion index and line are measured against the tabs it will land among.
 const tabRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
-  [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')]
+  [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]:not([data-dnd-placeholder])')]
     .filter((tab) => tab.dataset.tabId !== excludeId)
     .map((tab) => tab.getBoundingClientRect());
 
@@ -145,6 +147,7 @@ type DragProviderProps = {
 
 const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProps): ReactNode => {
   const actorRef = useActorRef(dragDockMachine);
+  const dragSubject = useSelector(actorRef, (snapshot) => snapshot.context.subject);
   const tabsets = useRef(new Map<string, HTMLElement>());
 
   useEffect(() => {
@@ -176,9 +179,13 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
       point: Point,
       draggedId?: string,
     ): DropIntent | null => {
-      const tabIds = [...element.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].map(
-        (tab) => tab.dataset.tabId ?? "",
-      );
+      // Exclude dnd-kit's placeholder clone (it carries the dragged tab's id), so a
+      // sole-tab tabset still reads as one tab and the self-drop no-op is detected.
+      const tabIds = [
+        ...element.querySelectorAll<HTMLElement>(
+          '[data-dashfoo="tab"]:not([data-dnd-placeholder])',
+        ),
+      ].map((tab) => tab.dataset.tabId ?? "");
       if (!shouldAllowDrop(draggedId, targetId, tabIds)) {
         return null;
       }
@@ -254,19 +261,29 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
 
   return (
     <DragContext.Provider value={contextValue}>
-      <DragDropProvider
-        onDragEnd={handleDragEnd}
-        onDragMove={handleDragMove}
-        onDragStart={handleDragStart}
-        // dnd-kit's default Accessibility plugin stamps aria-pressed / aria-grabbed
-        // / aria-roledescription onto the draggable — invalid on our role="tab"
-        // buttons — and announces raw ids. Drop it; the tab keyboard model and
-        // labels are owned by TabsetView.
-        plugins={(defaults) => defaults.filter((plugin) => plugin !== Accessibility)}
-      >
-        {children}
-        <DockIndicator actorRef={actorRef} getTabsetElement={getTabsetElement} />
-      </DragDropProvider>
+      <DragSubjectContext.Provider value={dragSubject}>
+        <DragDropProvider
+          onDragEnd={handleDragEnd}
+          onDragMove={handleDragMove}
+          onDragStart={handleDragStart}
+          // dnd-kit's default Accessibility plugin stamps aria-pressed / aria-grabbed
+          // / aria-roledescription onto the draggable — invalid on our role="tab"
+          // buttons — and announces raw ids. Drop it; the tab keyboard model and
+          // labels are owned by TabsetView.
+          // Keep the default feedback type ('default'): it leaves a placeholder
+          // that is dnd-kit's restore anchor, so a drop always finalizes even when
+          // the strip re-renders mid-drag (the reactivation below). The placeholder's
+          // slot is collapsed in CSS so the strip still closes up. dropAnimation is
+          // off — the model relocates the tab on drop, so a fly-back would fight it.
+          plugins={(defaults) => [
+            ...defaults.filter((plugin) => plugin !== Accessibility && plugin !== Feedback),
+            Feedback.configure({ dropAnimation: null }),
+          ]}
+        >
+          {children}
+          <DockIndicator actorRef={actorRef} getTabsetElement={getTabsetElement} />
+        </DragDropProvider>
+      </DragSubjectContext.Provider>
     </DragContext.Provider>
   );
 };
@@ -311,4 +328,6 @@ const useTabsetDroppable = (
   return { isDropTarget, ref };
 };
 
-export { DragProvider, useTabDraggable, useTabsetDraggable, useTabsetDroppable };
+const useDragSubject = (): DragSubject | null => useContext(DragSubjectContext);
+
+export { DragProvider, useDragSubject, useTabDraggable, useTabsetDraggable, useTabsetDroppable };

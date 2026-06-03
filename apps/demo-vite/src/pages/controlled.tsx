@@ -72,7 +72,7 @@ const ImperativeControlPage = (): ReactNode => {
       description="DashfooLayout exposes an imperative handle via ref — undo/redo, getModel, addTab, maximizeTabset, and more. These buttons and ⌘Z / ⇧⌘Z drive the engine's own history; no external state is rebuilt. The live model is mirrored in the inspector."
       title="Imperative control & history"
     >
-      <div className="flex h-full min-h-0 gap-3 px-6 pb-6">
+      <div className="flex h-full min-h-0 gap-3">
         <div className="min-h-0 min-w-0 flex-1">
           <DashfooLayout
             defaultModel={initial}
