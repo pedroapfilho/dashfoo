@@ -1,24 +1,31 @@
 @import "tailwindcss";
 
 /*
- * dashfoo demo theme — a preview of @dashfoo/theme (Phase 7), in Tailwind v4.
- * Tokens live in @theme; the headless `data-dashfoo` chrome is styled with
- * @apply (it has no className prop until the Phase 6 slot system). Content I own
- * (DemoPanel) uses utility classes directly.
+ * dashfoo demo theme — fully neutral (grayscale). No hue anywhere: selection,
+ * focus, and data direction read through lightness, weight, and glyphs. The
+ * headless `data-dashfoo` chrome is styled with @apply; content the demo owns
+ * uses utility classes directly.
  */
 
 @theme {
-  --color-df-bg: #0a0b0e;
-  --color-df-surface: #15171d;
-  --color-df-strip: #0f1116;
-  --color-df-border: rgba(255, 255, 255, 0.07);
-  --color-df-border-strong: rgba(255, 255, 255, 0.14);
-  --color-df-text: #e7e9ef;
-  --color-df-muted: #8a93a6;
-  --color-df-accent: #5b9dff;
-  --color-df-positive: #4ade80;
-  --color-df-negative: #f87171;
+  --color-df-bg: #0a0a0b;
+  --color-df-surface: #161617;
+  --color-df-strip: #101011;
+  --color-df-border: rgba(255, 255, 255, 0.08);
+  --color-df-border-strong: rgba(255, 255, 255, 0.16);
+  --color-df-text: #ededee;
+  --color-df-muted: #8b8b8f;
+  --color-df-faint: #5f5f63;
+  --color-df-emphasis: #fafafa;
   --radius-df: 10px;
+}
+
+:root {
+  color-scheme: dark;
+  /* dock indicators, neutral */
+  --dashfoo-dock-fill: rgba(255, 255, 255, 0.1);
+  --dashfoo-dock-border: rgba(255, 255, 255, 0.4);
+  --dashfoo-dock-line: rgba(255, 255, 255, 0.85);
 }
 
 @layer components {
@@ -34,27 +41,62 @@
     @apply border-df-border-strong;
   }
 
-  /* tab strip */
+  /* strip row = tablist + trailing toolbar */
   [data-dashfoo="tabstrip"] {
-    @apply gap-0.5 border-b border-df-border bg-df-strip px-[5px] pt-[5px];
+    @apply items-stretch border-b border-df-border bg-df-strip pr-1.5;
+  }
+  [data-dashfoo="tablist"] {
+    @apply gap-0.5 px-[5px] pt-[5px];
   }
 
-  /* tabs */
-  [data-dashfoo="tab"] {
-    @apply relative cursor-pointer rounded-t-md border-0 bg-transparent px-3 pt-[7px] pb-[9px] text-[12.5px] text-df-muted;
+  /* tab = label + close, grouped */
+  [data-dashfoo="tab-item"] {
+    @apply relative flex items-center;
   }
-  [data-dashfoo="tab"]:hover {
-    @apply bg-white/5 text-df-text;
+  [data-dashfoo="tab"] {
+    @apply cursor-pointer rounded-t-md border-0 bg-transparent py-[7px] pr-1.5 pl-3 text-[12.5px] text-df-muted;
+  }
+  [data-dashfoo="tab-item"]:hover [data-dashfoo="tab"] {
+    @apply text-df-text;
   }
   [data-dashfoo="tab"]:focus-visible {
-    @apply outline-2 outline-offset-[-2px] outline-df-accent;
+    @apply rounded-sm outline-2 outline-offset-[-2px] outline-df-emphasis;
   }
   [data-dashfoo="tab"][aria-selected="true"] {
-    @apply bg-df-surface text-df-text;
+    @apply font-medium text-df-emphasis;
   }
-  [data-dashfoo="tab"][aria-selected="true"]::after {
-    @apply absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-df-accent;
+  [data-dashfoo="tab-item"]:has([aria-selected="true"]) {
+    @apply bg-df-surface;
+  }
+  [data-dashfoo="tab-item"]:has([aria-selected="true"])::after {
+    @apply absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-df-emphasis;
     content: "";
+  }
+
+  /* close + rename + maximize controls */
+  [data-dashfoo="tab-close"] {
+    @apply mr-1.5 flex size-4 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-df-faint;
+  }
+  [data-dashfoo="tab-close"]:hover {
+    @apply bg-white/10 text-df-text;
+  }
+  [data-dashfoo="tab-close"]:focus-visible {
+    @apply outline-2 outline-df-emphasis;
+  }
+  [data-dashfoo="tab-rename"] {
+    @apply m-[3px] w-24 rounded-sm border border-df-border-strong bg-df-bg px-2 py-1 text-[12.5px] text-df-text outline-none;
+  }
+  [data-dashfoo="tabset-toolbar"] {
+    @apply gap-0.5 pl-1;
+  }
+  [data-dashfoo="tabset-maximize"] {
+    @apply flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-df-faint;
+  }
+  [data-dashfoo="tabset-maximize"]:hover {
+    @apply bg-white/10 text-df-text;
+  }
+  [data-dashfoo="tabset-maximize"]:focus-visible {
+    @apply outline-2 outline-df-emphasis;
   }
 
   /* tab content */
@@ -62,9 +104,59 @@
     @apply bg-df-surface;
   }
 
-  /* splitters (rrp separators) — rrp puts aria-orientation on the separator
-     itself: "vertical" is a vertical bar dividing side-by-side panels (needs
-     width), "horizontal" divides stacked panels (needs height). */
+  /* borders / edge panels */
+  [data-dashfoo="border-strip"] {
+    @apply gap-1 bg-df-strip p-1;
+  }
+  [data-dashfoo="border-strip"][data-edge="left"],
+  [data-dashfoo="border-strip"][data-edge="right"] {
+    @apply h-full flex-col border-df-border;
+  }
+  [data-dashfoo="border-strip"][data-edge="left"] {
+    @apply border-r;
+  }
+  [data-dashfoo="border-strip"][data-edge="right"] {
+    @apply border-l;
+  }
+  [data-dashfoo="border-strip"][data-edge="top"] {
+    @apply border-b border-df-border;
+  }
+  [data-dashfoo="border-strip"][data-edge="bottom"] {
+    @apply border-t border-df-border;
+  }
+  [data-dashfoo="border-tab"] {
+    @apply cursor-pointer rounded border border-transparent bg-transparent px-2 py-1.5 text-[12px] text-df-muted;
+  }
+  [data-dashfoo="border-tab"]:hover {
+    @apply text-df-text;
+  }
+  [data-dashfoo="border-tab"][aria-pressed="true"] {
+    @apply border-df-border-strong bg-df-surface text-df-emphasis;
+  }
+  [data-dashfoo="border-tab"]:focus-visible {
+    @apply outline-2 outline-df-emphasis;
+  }
+  [data-dashfoo="border-strip"][data-edge="left"] [data-dashfoo="border-tab"],
+  [data-dashfoo="border-strip"][data-edge="right"] [data-dashfoo="border-tab"] {
+    writing-mode: vertical-rl;
+  }
+  [data-dashfoo="border-drawer"] {
+    @apply border-df-border bg-df-surface;
+  }
+  [data-dashfoo="border-drawer"][data-edge="left"] {
+    @apply border-r;
+  }
+  [data-dashfoo="border-drawer"][data-edge="right"] {
+    @apply border-l;
+  }
+  [data-dashfoo="border-drawer"][data-edge="top"] {
+    @apply border-b;
+  }
+  [data-dashfoo="border-drawer"][data-edge="bottom"] {
+    @apply border-t;
+  }
+
+  /* splitters (rrp separators) — orientation lives on the separator itself */
   [data-separator] {
     @apply relative flex items-center justify-center bg-transparent;
   }
@@ -85,6 +177,6 @@
     @apply h-0.5 w-[30px];
   }
   [data-separator]:hover::before {
-    @apply bg-df-accent;
+    @apply bg-df-emphasis;
   }
 }
