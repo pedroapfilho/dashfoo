@@ -63,5 +63,41 @@ const findTab = (model: Dashfoo, tabId: string): TabLocation | undefined => {
   return undefined;
 };
 
-export { collectTabsets, findBorder, findTab, findTabset, getFirstTabset };
+const collectIdsInRow = (row: RowNode, acc: Array<string>): void => {
+  acc.push(row.id);
+  for (const child of row.children) {
+    if (child.type === "row") {
+      collectIdsInRow(child, acc);
+    } else {
+      acc.push(child.id);
+      for (const tab of child.children) {
+        acc.push(tab.id);
+      }
+    }
+  }
+};
+
+// Ids that appear more than once across the whole model (rows, tabsets, tabs,
+// border tabs). Duplicate ids produce duplicate React keys and corrupt the
+// resize/drag plumbing, so this backs a load-time diagnostic.
+const findDuplicateIds = (model: Dashfoo): Array<string> => {
+  const ids: Array<string> = [];
+  collectIdsInRow(model.layout, ids);
+  for (const border of model.borders) {
+    for (const tab of border.children) {
+      ids.push(tab.id);
+    }
+  }
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const id of ids) {
+    if (seen.has(id)) {
+      duplicates.add(id);
+    }
+    seen.add(id);
+  }
+  return [...duplicates];
+};
+
+export { collectTabsets, findBorder, findDuplicateIds, findTab, findTabset, getFirstTabset };
 export type { TabContainer, TabLocation };
