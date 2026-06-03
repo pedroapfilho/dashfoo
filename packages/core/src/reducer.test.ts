@@ -7,16 +7,7 @@ const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab
 
 const baseModel = (): Dashfoo => ({
   activeTabsetId: "ts1",
-  borders: [
-    {
-      children: [tab("bt1")],
-      edge: "left",
-      selected: -1,
-      size: { unit: "px", value: 240 },
-      type: "border",
-    },
-  ],
-  global: { splitterSize: 6 },
+  global: { tabLocation: "top" },
   layout: {
     children: [
       { children: [tab("t1"), tab("t2")], id: "ts1", selected: 0, type: "tabset", weight: 60 },
@@ -95,22 +86,6 @@ describe("reducer", () => {
     expect(next.layout.children.map((c) => c.weight)).toEqual([70, 30]);
   });
 
-  test("setBorderSelected opens a collapsed border drawer", () => {
-    const next = reducer(baseModel(), { edge: "left", index: 0, type: "setBorderSelected" });
-
-    expect(next.borders[0]?.selected).toBe(0);
-  });
-
-  test("adjustBorderSize resizes a border", () => {
-    const next = reducer(baseModel(), {
-      edge: "left",
-      size: { unit: "px", value: 320 },
-      type: "adjustBorderSize",
-    });
-
-    expect(next.borders[0]?.size).toEqual({ unit: "px", value: 320 });
-  });
-
   test("updateNodeAttributes merges attributes into a tabset", () => {
     const next = reducer(baseModel(), {
       attrs: { weight: 80 },
@@ -128,7 +103,7 @@ describe("reducer", () => {
     });
 
     expect(next.global.tabEnableClose).toBe(true);
-    expect(next.global.splitterSize).toBe(6);
+    expect(next.global.tabLocation).toBe("top");
   });
 
   test("does not mutate the input model", () => {

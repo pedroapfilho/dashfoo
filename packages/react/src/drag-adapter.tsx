@@ -10,7 +10,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import type { ActorRefFrom } from "xstate";
 
-import { borderZoneRect, computeDropIntent, frameEdgeIntent, zoneRect } from "./dock-geometry";
+import { computeDropIntent, zoneRect } from "./dock-geometry";
 
 // This module is the drag adapter: the only place that imports @dnd-kit/react.
 // It feeds the (already unit-tested) dragDockMachine — dnd-kit supplies the
@@ -36,6 +36,17 @@ const tabRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
   [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')]
     .filter((tab) => tab.dataset.tabId !== excludeId)
     .map((tab) => tab.getBoundingClientRect());
+
+// Whole-tab-item rects (label + close button), excluding the dragged tab. The
+// insertion line lands on these boundaries so the "after the last tab" position
+// sits past the close button, not between the label and the close.
+const tabItemRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
+  [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab-item"]')]
+    .filter(
+      (item) =>
+        item.querySelector<HTMLElement>('[data-dashfoo="tab"]')?.dataset.tabId !== excludeId,
+    )
+    .map((item) => item.getBoundingClientRect());
 
 // Which slot in the tab strip the pointer is over: the first tab whose midpoint
 // is right of the pointer, else the end.
@@ -75,7 +86,7 @@ const insertionLineRect = (
     return undefined;
   }
   const stripRect = strip.getBoundingClientRect();
-  const rects = tabRects(strip, excludeId);
+  const rects = tabItemRects(strip, excludeId);
   const at: DOMRect | undefined = rects[index];
   const last = rects.at(-1);
   const x = at?.left ?? last?.right ?? stripRect.left;
@@ -120,25 +131,15 @@ const lineStyle = (zone: Zone): CSSProperties => ({
 // insertion line in the tab bar for a stack, the matching content half for a split.
 const DockIndicator = ({
   actorRef,
-  getFrameElement,
   getTabsetElement,
 }: {
   actorRef: DragActor;
-  getFrameElement: () => HTMLElement | null;
   getTabsetElement: (id: string) => HTMLElement | undefined;
 }): ReactNode => {
   const intent = useSelector(actorRef, (snapshot) => snapshot.context.intent);
   const draggedId = useSelector(actorRef, (snapshot) => snapshot.context.subject?.id);
   if (!intent) {
     return null;
-  }
-  if (intent.location.startsWith("border-")) {
-    const frame = getFrameElement();
-    if (!frame) {
-      return null;
-    }
-    const band = borderZoneRect(frame.getBoundingClientRect(), intent.location);
-    return <div data-dashfoo="dock-indicator" style={paneStyle(band)} />;
   }
   const element = getTabsetElement(intent.targetId);
   if (!element) {
@@ -155,21 +156,14 @@ const DockIndicator = ({
 };
 
 type DragProviderProps = {
-  borderDock?: boolean;
   children: ReactNode;
   onCommit: (action: Action) => void;
   splitDock?: boolean;
 };
 
-const DragProvider = ({
-  borderDock = true,
-  children,
-  onCommit,
-  splitDock = true,
-}: DragProviderProps): ReactNode => {
+const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProps): ReactNode => {
   const actorRef = useActorRef(dragDockMachine);
   const tabsets = useRef(new Map<string, HTMLElement>());
-  const frame = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const subscription = actorRef.on("COMMIT", (emitted) => {
@@ -189,19 +183,26 @@ const DragProvider = ({
   }, []);
 
   const getTabsetElement = useCallback((id: string) => tabsets.current.get(id), []);
-  const getFrameElement = useCallback(() => frame.current, []);
 
-  // The dock intent for a pointer over a tabset: the outer frame sliver docks to
-  // a border (it wins over the tabset's own zones), otherwise the tabset resolves
-  // center/split. Caches the frame element so the indicator can paint the band.
+  // The dock intent for a pointer over a tabset, or null when the drop would be a
+  // no-op: a tabset dragged onto itself, or the sole tab of a tabset dropped back
+  // onto that same tabset. Otherwise the tabset resolves to center/split.
   const resolveIntent = useCallback(
-    (targetId: string, element: HTMLElement, point: Point, draggedId?: string): DropIntent => {
-      const layout = element.closest<HTMLElement>('[data-dashfoo="layout"]');
-      frame.current = layout;
-      const border =
-        borderDock && layout ? frameEdgeIntent(layout.getBoundingClientRect(), point) : null;
-      if (border) {
-        return border;
+    (
+      targetId: string,
+      element: HTMLElement,
+      point: Point,
+      draggedId?: string,
+    ): DropIntent | null => {
+      // A tabset dragged onto its own tabset (the grip id is `grip-${tabsetId}`).
+      if (draggedId === `grip-${targetId}`) {
+        return null;
+      }
+      // The sole tab of this tabset dropped back onto it: splitting it off beside
+      // itself or stacking it into itself changes nothing once empties collapse.
+      const tabs = element.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]');
+      if (tabs.length === 1 && tabs[0]?.dataset.tabId === draggedId) {
+        return null;
       }
       const intent = intentForTabset(targetId, element, point, draggedId);
       // When splitting is disabled, a drop over the body stacks instead of splits.
@@ -210,15 +211,24 @@ const DragProvider = ({
       }
       return intent;
     },
-    [borderDock, splitDock],
+    [splitDock],
   );
 
   const handleDragStart = useCallback(
     (event: DragStartEvent): void => {
       const source = event.operation.source;
-      if (source) {
-        actorRef.send({ subject: { id: String(source.id), kind: "tab" }, type: "START" });
+      if (!source) {
+        return;
       }
+      // A tabset grip carries { tabsetId, type: "tabset" }; a tab carries its id.
+      const isTabset = source.data?.type === "tabset";
+      actorRef.send({
+        subject: {
+          id: isTabset ? String(source.data.tabsetId) : String(source.id),
+          kind: isTabset ? "tabset" : "tab",
+        },
+        type: "START",
+      });
     },
     [actorRef],
   );
@@ -277,11 +287,7 @@ const DragProvider = ({
         plugins={(defaults) => defaults.filter((plugin) => plugin !== Accessibility)}
       >
         {children}
-        <DockIndicator
-          actorRef={actorRef}
-          getFrameElement={getFrameElement}
-          getTabsetElement={getTabsetElement}
-        />
+        <DockIndicator actorRef={actorRef} getTabsetElement={getTabsetElement} />
       </DragDropProvider>
     </DragContext.Provider>
   );
@@ -292,6 +298,21 @@ const useTabDraggable = (
   disabled = false,
 ): { isDragging: boolean; ref: (element: Element | null) => void } => {
   const { isDragging, ref } = useDraggable({ data: { type: "tab" }, disabled, id: tabId });
+  return { isDragging, ref };
+};
+
+// The whole tabset is draggable from its grip. A distinct dnd-kit id (grip-*)
+// avoids colliding with the tabset's own droppable id; the real tabset id rides
+// in `data` and becomes the moveTabset subject.
+const useTabsetDraggable = (
+  tabsetId: string,
+  disabled = false,
+): { isDragging: boolean; ref: (element: Element | null) => void } => {
+  const { isDragging, ref } = useDraggable({
+    data: { tabsetId, type: "tabset" },
+    disabled,
+    id: `grip-${tabsetId}`,
+  });
   return { isDragging, ref };
 };
 
@@ -312,4 +333,4 @@ const useTabsetDroppable = (
   return { isDropTarget, ref };
 };
 
-export { DragProvider, useTabDraggable, useTabsetDroppable };
+export { DragProvider, useTabDraggable, useTabsetDraggable, useTabsetDroppable };

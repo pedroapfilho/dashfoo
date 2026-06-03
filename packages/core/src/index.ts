@@ -11,4 +11,5 @@ export * from "./machines";
 export * from "./reducer";
 export * from "./schema";
 export * from "./serialize";
+export * from "./stack";
 export * from "./tree";

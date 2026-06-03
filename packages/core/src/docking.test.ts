@@ -8,7 +8,6 @@ const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab
 
 const baseModel = (): Dashfoo => ({
   activeTabsetId: "ts1",
-  borders: [],
   global: {},
   layout: {
     children: [
@@ -66,17 +65,6 @@ describe("addNode", () => {
     expect((wrapped as RowNode).orientation).toBe("column");
     expect((wrapped as RowNode).children.map((c) => c.id)).toContain("ts1");
   });
-
-  test("border-left creates a left border holding the tab", () => {
-    const next = reducer(baseModel(), {
-      location: "border-left",
-      tab: tab("nav"),
-      targetId: "ts1",
-      type: "addNode",
-    });
-
-    expect(next.borders.find((b) => b.edge === "left")?.children.map((t) => t.id)).toEqual(["nav"]);
-  });
 });
 
 describe("moveNode", () => {
@@ -128,5 +116,43 @@ describe("moveNode", () => {
 
     expect(findTab(next, "t1")?.container.id).not.toBe("ts1");
     expect(tabsetById(next, "ts1")?.children.map((t) => t.id)).toEqual(["t2"]);
+  });
+});
+
+describe("moveTabset", () => {
+  test("center merges the source tabset's tabs into the target and drops the source", () => {
+    const next = reducer(baseModel(), {
+      location: "center",
+      sourceId: "ts2",
+      targetId: "ts1",
+      type: "moveTabset",
+    });
+
+    expect(tabsetById(next, "ts1")?.children.map((t) => t.id)).toEqual(["t1", "t2", "t3"]);
+    expect(next.layout.children.map((c) => c.id)).toEqual(["ts1"]);
+  });
+
+  test("split-right moves the whole tabset beside the target", () => {
+    const next = reducer(baseModel(), {
+      location: "split-right",
+      sourceId: "ts1",
+      targetId: "ts2",
+      type: "moveTabset",
+    });
+
+    expect(findTab(next, "t1")?.container.id).toBe("ts1");
+    expect(tabsetById(next, "ts1")?.children.map((t) => t.id)).toEqual(["t1", "t2"]);
+    expect(tabsetById(next, "ts2")?.children.map((t) => t.id)).toEqual(["t3"]);
+  });
+
+  test("same source and target is a no-op", () => {
+    const next = reducer(baseModel(), {
+      location: "center",
+      sourceId: "ts1",
+      targetId: "ts1",
+      type: "moveTabset",
+    });
+
+    expect(next.layout.children.map((c) => c.id)).toEqual(["ts1", "ts2"]);
   });
 });

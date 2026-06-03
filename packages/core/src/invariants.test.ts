@@ -22,7 +22,6 @@ const row = (id: string, children: RowNode["children"], extra: Partial<RowNode> 
 });
 
 const model = (layout: RowNode, extra: Partial<Dashfoo> = {}): Dashfoo => ({
-  borders: [],
   global: {},
   layout,
   version: 1,

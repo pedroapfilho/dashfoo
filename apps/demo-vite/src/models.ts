@@ -11,7 +11,6 @@ const tab = (id: string, name: string, component = id): TabNode => ({
 // positions/orders/balances.
 const tradingModel = (): Dashfoo => ({
   activeTabsetId: "ts-chart",
-  borders: [],
   global: {},
   layout: {
     children: [
@@ -59,7 +58,6 @@ const tradingModel = (): Dashfoo => ({
 // A sandbox for stacking/splitting/reordering by dragging tabs.
 const dockingModel = (): Dashfoo => ({
   activeTabsetId: "a",
-  borders: [],
   global: {},
   layout: {
     children: [
@@ -88,7 +86,6 @@ const dockingModel = (): Dashfoo => ({
 // Exercises the tabset chrome: close, rename (double-click), maximize.
 const chromeModel = (): Dashfoo => ({
   activeTabsetId: "main",
-  borders: [],
   global: {},
   layout: {
     children: [
@@ -114,48 +111,9 @@ const chromeModel = (): Dashfoo => ({
   version: 1,
 });
 
-// Left nav + bottom console border panels around a center document.
-const bordersModel = (): Dashfoo => ({
-  activeTabsetId: "editor",
-  borders: [
-    {
-      children: [tab("files", "Files"), tab("outline", "Outline"), tab("explorer", "Explorer")],
-      edge: "left",
-      selected: 0,
-      type: "border",
-    },
-    {
-      children: [
-        tab("console", "Console"),
-        tab("problems", "Problems"),
-        tab("terminal", "Terminal"),
-      ],
-      edge: "bottom",
-      selected: -1,
-      type: "border",
-    },
-  ],
-  global: {},
-  layout: {
-    children: [
-      {
-        children: [tab("chart", "Chart"), tab("trades", "Trades")],
-        id: "editor",
-        selected: 0,
-        type: "tabset",
-      },
-    ],
-    id: "root",
-    orientation: "row",
-    type: "row",
-  },
-  version: 1,
-});
-
 // A small layout used to demonstrate persistence and controlled mode.
 const playgroundModel = (): Dashfoo => ({
   activeTabsetId: "left",
-  borders: [],
   global: {},
   layout: {
     children: [
@@ -181,4 +139,4 @@ const playgroundModel = (): Dashfoo => ({
   version: 1,
 });
 
-export { bordersModel, chromeModel, dockingModel, playgroundModel, tradingModel };
+export { chromeModel, dockingModel, playgroundModel, tradingModel };

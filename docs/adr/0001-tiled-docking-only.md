@@ -7,7 +7,7 @@ Accepted · 2026-06-02
 ## Context
 
 dashfoo exists because FlexLayout has the right model and the wrong chrome. Its
-serializable layout tree (rows of tabsets, four border edges, a `toJSON` /
+serializable layout tree (rows of tabsets, a `toJSON` /
 `fromJSON` round-trip) is exactly what a dashboard library needs. Its appearance
 is baked in: the chrome cannot be restructured, only re-skinned at the edges.
 dashfoo keeps the model and throws out the fixed chrome. What remains is a
@@ -30,16 +30,14 @@ tree, each with its own invariant-breaking cost.
 
 **dashfoo v1 models exactly one thing: a single tiled docking tree.**
 
-A layout is a tree of rows, tabsets, and tabs, plus zero to four border drawers.
-The `Dashfoo` model in `packages/core/src/schema.ts` encodes precisely this and
-nothing wider:
+A layout is a tree of rows, tabsets, and tabs. The `Dashfoo` model in
+`packages/core/src/schema.ts` encodes precisely this and nothing wider:
 
 ```ts
 type Dashfoo = {
   version: number;
   global: GlobalAttributes;
   layout: RowNode; // root is always a row
-  borders: BorderNode[]; // 0–4, one per edge
   activeTabsetId?: string;
   maximizedTabsetId?: string;
 };
@@ -55,7 +53,6 @@ The shape of the tree is fixed by the node schemas:
   `max` / `size` `Dimension` constraints). It has no `x` / `y` / `z` position.
 - `TabNode` carries a `component` registry key and serializable `config`, never a
   React element and never a nested layout.
-- `BorderNode` docks `TabNode[]` to an `edge` and collapses via `selected: -1`.
 
 There is no node type for a floating panel, a popout window, a sub-document, or a
 grid cell. The serializable tree is the entire contract, and it is one tiled tree.
@@ -80,10 +77,10 @@ The four capabilities that fall outside it are non-goals for v1:
   defined over one tree. A second coordinate space (floating, grid, or a child
   document) would multiply the invariant surface and the cases every action has to
   re-canonicalize.
-- `resolveDockTarget` has a closed set of outcomes: center (stack as tab), the
-  four `split-*` edges, and the four `border-*` edges, matching the
-  `DockLocation` union exactly. No drop can land "between" tiles or at a free
-  coordinate, so the geometry stays a pure, unit-tested function.
+- `resolveDockTarget` has a closed set of outcomes: center (stack as tab) and the
+  four `split-*` edges, matching the `DockLocation` union exactly. No drop can land
+  "between" tiles or at a free coordinate, so the geometry stays a pure, unit-tested
+  function.
 - `toJSON` / `fromJSON` stay trivial and lossless. There is no live window handle,
   no DOM rect, and no element reference to serialize around, only the tree and
   registry keys.

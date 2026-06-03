@@ -1,9 +1,6 @@
 import { z } from "zod";
 
 import {
-  borderNodeSchema,
-  dimensionSchema,
-  edgeSchema,
   globalAttributesSchema,
   orientationSchema,
   tabNodeSchema,
@@ -35,23 +32,16 @@ const mutableRowAttrsSchema = z
   .object({ orientation: orientationSchema, weight: z.number() })
   .partial();
 
-const mutableBorderAttrsSchema = borderNodeSchema.pick({ selected: true, size: true }).partial();
-
 const mutableNodeAttrsSchema = z.union([
   mutableTabAttrsSchema,
   mutableTabsetAttrsSchema,
   mutableRowAttrsSchema,
-  mutableBorderAttrsSchema,
 ]);
 
 // Every document mutation is one of these immutable, discriminated actions. The
 // reducer is exhaustive over this union; the React layer validates untrusted
 // payloads against actionSchema before dispatch.
 const dockLocationSchema = z.enum([
-  "border-bottom",
-  "border-left",
-  "border-right",
-  "border-top",
   "center",
   "split-bottom",
   "split-left",
@@ -74,6 +64,13 @@ const actionSchema = z.discriminatedUnion("type", [
     targetId: z.string(),
     type: z.literal("moveNode"),
   }),
+  z.object({
+    index: z.number().int().optional(),
+    location: dockLocationSchema,
+    sourceId: z.string(),
+    targetId: z.string(),
+    type: z.literal("moveTabset"),
+  }),
   z.object({ index: z.number().int(), tabsetId: z.string(), type: z.literal("selectTab") }),
   z.object({ tabsetId: z.string(), type: z.literal("setActiveTabset") }),
   z.object({ tabsetId: z.string().nullable(), type: z.literal("setMaximizedTabset") }),
@@ -81,8 +78,6 @@ const actionSchema = z.discriminatedUnion("type", [
   z.object({ tabId: z.string(), type: z.literal("deleteTab") }),
   z.object({ tabsetId: z.string(), type: z.literal("deleteTabset") }),
   z.object({ rowId: z.string(), type: z.literal("adjustSplit"), weights: z.array(z.number()) }),
-  z.object({ edge: edgeSchema, size: dimensionSchema, type: z.literal("adjustBorderSize") }),
-  z.object({ edge: edgeSchema, index: z.number().int(), type: z.literal("setBorderSelected") }),
   z.object({
     attrs: mutableNodeAttrsSchema,
     nodeId: z.string(),

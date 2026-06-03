@@ -17,7 +17,6 @@ describe("createNodeId / createTabId", () => {
 });
 
 const modelWith = (firstId: string, secondId: string): Dashfoo => ({
-  borders: [],
   global: {},
   layout: {
     children: [

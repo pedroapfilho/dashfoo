@@ -69,4 +69,18 @@ describe("dragDockMachine", () => {
       type: "moveNode",
     });
   });
+
+  test("a tabset subject emits a moveTabset commit on drop", () => {
+    const { actor, committed } = startDrag();
+    actor.send({ subject: { id: "ts1", kind: "tabset" }, type: "START" });
+    actor.send({ intent: { location: "center", targetId: "ts2" }, type: "OVER" });
+    actor.send({ type: "DROP" });
+
+    expect(committed[0]).toEqual({
+      location: "center",
+      sourceId: "ts1",
+      targetId: "ts2",
+      type: "moveTabset",
+    });
+  });
 });

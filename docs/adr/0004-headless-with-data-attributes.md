@@ -38,7 +38,6 @@ internal class names (there are none). The values shipped today:
 | `data-dashfoo`    | Element                       | Source               |
 | ----------------- | ----------------------------- | -------------------- |
 | `layout`          | layout root                   | `dashfoo-layout.tsx` |
-| `frame`           | inner frame wrapper           | `layout-frame.tsx`   |
 | `row`             | the rrp `Group`               | `row-view.tsx`       |
 | `splitter`        | the rrp `Separator`           | `row-view.tsx`       |
 | `tabset`          | tabset container              | `tabset-view.tsx`    |
@@ -51,16 +50,12 @@ internal class names (there are none). The values shipped today:
 | `tabset-toolbar`  | trailing toolbar              | `tabset-view.tsx`    |
 | `tabset-maximize` | maximize / restore button     | `tabset-view.tsx`    |
 | `tabcontent`      | the `role="tabpanel"`         | `tabset-view.tsx`    |
-| `border`          | one frame edge container      | `border-view.tsx`    |
-| `border-strip`    | edge toggle-button strip      | `border-view.tsx`    |
-| `border-tab`      | one edge toggle button        | `border-view.tsx`    |
-| `border-drawer`   | the opened drawer `<section>` | `border-view.tsx`    |
 | `dock-indicator`  | the drag drop-zone overlay    | `drag-adapter.tsx`   |
 
 State that the consumer styles against rides on standard ARIA and small data
 attributes, not class toggles: `aria-selected` / `aria-pressed` for the active
-tab and edge, `data-edge="left|right|top|bottom"` on borders, `data-dragging` on a
-tab mid-drag, `data-drop-target` on a hovered tabset, `data-separator` /
+tab, `data-dragging` on a tab-item mid-drag, `data-drop-target` on a hovered tabset,
+`data-separator` /
 `aria-orientation` on the rrp splitters. The demo's selection underline is a pure
 CSS read of that contract:
 
@@ -76,10 +71,8 @@ CSS read of that contract:
 The inline `style` objects in the views set flex / grid / sizing / position and
 nothing else. `tabsetStyle` is `display: flex; flex-direction: column;
 height/width: 100%; min-height/width: 0` so the tabset fills its parent whether
-that parent is a flex item or rrp's block wrapper. `BorderView` computes
-`drawerStyle` from the model's `Dimension` (`width` for left/right, `height` for
-top/bottom) so the drawer sizes to its edge. None of these objects carry a color,
-font, border, radius, or shadow. Those belong to the consumer.
+that parent is a flex item or rrp's block wrapper. None of these objects carry a
+color, font, border, radius, or shadow. Those belong to the consumer.
 
 ### 3. The one painted element exposes overridable CSS variables
 

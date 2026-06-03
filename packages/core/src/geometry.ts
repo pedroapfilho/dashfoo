@@ -43,19 +43,5 @@ const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): Dock
   return { edge: closestEdge(distances), kind: "split" };
 };
 
-// Which frame edge a drag should dock to as a border, or null when the pointer
-// is in the interior or outside the frame. The band here is the thin outer
-// sliver of the whole layout (default 5%).
-const resolveBorderEdge = (pointer: Point, frame: Rect, opts?: BandOptions): Edge | null => {
-  const band = opts?.bandFraction ?? 0.05;
-  const distances = edgeDistances(pointer, frame);
-  const min = Math.min(distances.left, distances.right, distances.top, distances.bottom);
-
-  if (min < 0 || min > band) {
-    return null;
-  }
-  return closestEdge(distances);
-};
-
-export { resolveBorderEdge, resolveDockTarget };
+export { resolveDockTarget };
 export type { BandOptions, DockTarget, Point, Rect };
