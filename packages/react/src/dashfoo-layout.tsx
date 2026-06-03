@@ -6,7 +6,7 @@ import { useCallback, useMemo } from "react";
 
 import { DashfooContext } from "./context";
 import { DragProvider } from "./drag-adapter";
-import { RowView } from "./row-view";
+import { LayoutFrame } from "./layout-frame";
 import { useDashfooStore } from "./store";
 
 type TabComponent = ComponentType<{ node: TabNode }>;
@@ -75,7 +75,7 @@ const DashfooLayout = (props: DashfooLayoutProps): ReactNode => {
     <DashfooContext.Provider value={contextValue}>
       <DragProvider onCommit={handleCommit}>
         <div data-dashfoo="layout" style={rootStyle}>
-          <RowView node={store.model.layout} />
+          <LayoutFrame model={store.model} />
         </div>
       </DragProvider>
     </DashfooContext.Provider>

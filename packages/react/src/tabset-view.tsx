@@ -28,11 +28,43 @@ const tablistStyle: CSSProperties = { display: "flex", minWidth: 0, overflow: "h
 
 const contentStyle: CSSProperties = { flex: 1, minHeight: 0, overflow: "auto" };
 
+const toolbarStyle: CSSProperties = {
+  alignItems: "center",
+  display: "flex",
+  flexShrink: 0,
+  marginInlineStart: "auto",
+};
+
 const CloseIcon = (): ReactNode => (
   <svg aria-hidden="true" height="10" viewBox="0 0 10 10" width="10">
     <path d="M1.5 1.5l7 7m0-7l-7 7" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
   </svg>
 );
+
+const MaximizeIcon = ({ maximized }: { maximized: boolean }): ReactNode =>
+  maximized ? (
+    <svg aria-hidden="true" height="10" viewBox="0 0 10 10" width="10">
+      <path
+        d="M4 1v3H1m5 5V6h3"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.2"
+      />
+    </svg>
+  ) : (
+    <svg aria-hidden="true" height="10" viewBox="0 0 10 10" width="10">
+      <rect
+        fill="none"
+        height="7"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        width="7"
+        x="1.5"
+        y="1.5"
+      />
+    </svg>
+  );
 
 // Inline rename editor. Enter/Escape set `done` so the unmount blur does not
 // re-commit after a deliberate commit or cancel.
@@ -181,10 +213,17 @@ const TabButton = ({
 };
 
 const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
-  const { closableTabs, renamableTabs, renderTab } = useDashfooContext();
+  const { closableTabs, dispatch, maximizable, maximizedTabsetId, renamableTabs, renderTab } =
+    useDashfooContext();
   const { isDropTarget, ref } = useTabsetDroppable(node.id);
   const active = node.children[node.selected];
   const tabsClosable = closableTabs && node.enableClose !== false;
+  const showMaximize = maximizable && node.enableMaximize !== false;
+  const isMaximized = maximizedTabsetId === node.id;
+
+  const handleMaximize = (): void => {
+    dispatch({ tabsetId: isMaximized ? null : node.id, type: "setMaximizedTabset" });
+  };
 
   return (
     <div
@@ -207,6 +246,19 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
             />
           ))}
         </div>
+        {showMaximize ? (
+          <div data-dashfoo="tabset-toolbar" style={toolbarStyle}>
+            <button
+              aria-label={isMaximized ? "Restore" : "Maximize"}
+              aria-pressed={isMaximized}
+              data-dashfoo="tabset-maximize"
+              onClick={handleMaximize}
+              type="button"
+            >
+              <MaximizeIcon maximized={isMaximized} />
+            </button>
+          </div>
+        ) : null}
       </div>
       <div data-dashfoo="tabcontent" role="tabpanel" style={contentStyle}>
         {active ? renderTab(active) : null}
