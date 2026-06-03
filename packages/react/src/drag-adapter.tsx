@@ -32,7 +32,7 @@ const pointInRect = (point: Point, rect: DOMRect): boolean =>
 // The dragged tab is excluded so its own slot never counts toward the order —
 // the insertion index and line are measured against the tabs it will land among.
 const tabRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
-  [...strip.querySelectorAll('[data-dashfoo="tab"]')]
+  [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')]
     .filter((tab) => tab.dataset.tabId !== excludeId)
     .map((tab) => tab.getBoundingClientRect());
 

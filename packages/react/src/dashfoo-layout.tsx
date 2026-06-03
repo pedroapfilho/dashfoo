@@ -12,11 +12,14 @@ import { useDashfooStore } from "./store";
 type TabComponent = ComponentType<{ node: TabNode }>;
 
 type DashfooLayoutProps = {
+  closableTabs?: boolean;
   components?: Record<string, TabComponent>;
   defaultModel?: Dashfoo;
   factory?: (tab: TabNode) => ReactNode;
+  maximizable?: boolean;
   model?: Dashfoo;
   onModelChange?: (model: Dashfoo, action?: Action) => void;
+  renamableTabs?: boolean;
 };
 
 const rootStyle = { display: "flex", height: "100%", width: "100%" } as const;
@@ -24,7 +27,16 @@ const rootStyle = { display: "flex", height: "100%", width: "100%" } as const;
 // The top-level component. Owns the store (controlled or uncontrolled), resolves
 // tab content via a components registry or a factory, and renders the layout tree.
 const DashfooLayout = (props: DashfooLayoutProps): ReactNode => {
-  const { components, defaultModel, factory, model, onModelChange } = props;
+  const {
+    closableTabs = true,
+    components,
+    defaultModel,
+    factory,
+    maximizable = true,
+    model,
+    onModelChange,
+    renamableTabs = true,
+  } = props;
   const store = useDashfooStore({ defaultModel, model, onModelChange });
 
   const renderTab = useCallback(
@@ -39,8 +51,22 @@ const DashfooLayout = (props: DashfooLayoutProps): ReactNode => {
   );
 
   const contextValue = useMemo(
-    () => ({ dispatch: store.dispatch, renderTab }),
-    [store.dispatch, renderTab],
+    () => ({
+      closableTabs,
+      dispatch: store.dispatch,
+      maximizable,
+      maximizedTabsetId: store.model.maximizedTabsetId,
+      renamableTabs,
+      renderTab,
+    }),
+    [
+      closableTabs,
+      maximizable,
+      renamableTabs,
+      renderTab,
+      store.dispatch,
+      store.model.maximizedTabsetId,
+    ],
   );
 
   const handleCommit = store.dispatch;
