@@ -1,4 +1,5 @@
 import type { Action, DockLocation } from "./actions";
+import { createNodeId } from "./ids";
 import { normalize } from "./invariants";
 import type { Dashfoo, Edge, RowNode, TabNode, TabsetNode } from "./schema";
 import { findBorder, findTab, findTabset } from "./tree";
@@ -74,8 +75,6 @@ const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefi
   }
   return undefined;
 };
-
-const genId = (prefix: string): string => `${prefix}-${crypto.randomUUID()}`;
 
 const findTabsetParent = (
   row: RowNode,
@@ -164,7 +163,7 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
   const before = splitsBefore(location);
   const newTabset: TabsetNode = {
     children: [tab],
-    id: genId("tabset"),
+    id: createNodeId("tabset"),
     selected: 0,
     type: "tabset",
     weight: 50,
@@ -180,7 +179,7 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
     targetTabset.weight = 50;
     const newRow: RowNode = {
       children: before ? [newTabset, targetTabset] : [targetTabset, newTabset],
-      id: genId("row"),
+      id: createNodeId("row"),
       orientation,
       type: "row",
     };
