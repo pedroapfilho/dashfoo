@@ -11,6 +11,8 @@ type DashfooContextValue = {
   maximizedTabsetId?: string;
   renamableTabs: boolean;
   renderTab: (tab: TabNode) => ReactNode;
+  tabLocation: "bottom" | "top";
+  tabStripEnabled: boolean;
 };
 
 const DashfooContext = createContext<DashfooContextValue | null>(null);

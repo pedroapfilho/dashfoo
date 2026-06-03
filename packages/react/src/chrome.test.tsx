@@ -157,3 +157,43 @@ describe("tabset maximize", () => {
     expect(screen.queryByRole("button", { name: "Maximize" })).not.toBeInTheDocument();
   });
 });
+
+describe("global attribute defaults", () => {
+  const withGlobal = (global: Dashfoo["global"]): Dashfoo => ({ ...model(), global });
+
+  test("tabSetEnableTabStrip: false hides the strip but keeps content", () => {
+    render(
+      <DashfooLayout
+        components={components}
+        defaultModel={withGlobal({ tabSetEnableTabStrip: false })}
+      />,
+    );
+
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    expect(screen.getByText("CHART")).toBeInTheDocument();
+  });
+
+  test("global tabEnableClose: false removes every close button", () => {
+    render(
+      <DashfooLayout
+        components={components}
+        defaultModel={withGlobal({ tabEnableClose: false })}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Close Chart" })).not.toBeInTheDocument();
+  });
+
+  test("tabLocation: bottom tags the tabset for theming", () => {
+    const { container } = render(
+      <DashfooLayout
+        components={components}
+        defaultModel={withGlobal({ tabLocation: "bottom" })}
+      />,
+    );
+
+    expect(
+      container.querySelector('[data-dashfoo="tabset"][data-tab-location="bottom"]'),
+    ).toBeInTheDocument();
+  });
+});
