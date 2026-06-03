@@ -109,6 +109,32 @@ describe("tab rename", () => {
   });
 });
 
+describe("tab keyboard navigation (WAI-ARIA Tabs)", () => {
+  test("only the selected tab is tabbable, and arrows move and select", () => {
+    renderLayout();
+
+    expect(screen.getByRole("tab", { name: "Chart" })).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("tab", { name: "Book" })).toHaveAttribute("tabindex", "-1");
+
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Chart" }), { key: "ArrowRight" });
+
+    expect(screen.getByText("BOOK")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Book" })).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("tab", { name: "Chart" })).toHaveAttribute("tabindex", "-1");
+  });
+
+  test("each tab is wired to its panel via aria-controls / aria-labelledby", () => {
+    renderLayout();
+
+    const chart = screen.getByRole("tab", { name: "Chart" });
+    const controls = chart.getAttribute("aria-controls");
+    expect(controls).toBeTruthy();
+    const panel = controls ? document.querySelector(`#${controls}`) : null;
+    expect(panel).toHaveAttribute("aria-labelledby", chart.getAttribute("id"));
+    expect(panel).toHaveAttribute("tabindex", "0");
+  });
+});
+
 describe("tabset maximize", () => {
   test("maximizing a tabset hides the others; restore brings them back", () => {
     renderLayout();
