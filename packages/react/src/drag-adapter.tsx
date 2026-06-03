@@ -37,6 +37,17 @@ const tabRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
     .filter((tab) => tab.dataset.tabId !== excludeId)
     .map((tab) => tab.getBoundingClientRect());
 
+// Whole-tab-item rects (label + close button), excluding the dragged tab. The
+// insertion line lands on these boundaries so the "after the last tab" position
+// sits past the close button, not between the label and the close.
+const tabItemRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
+  [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab-item"]')]
+    .filter(
+      (item) =>
+        item.querySelector<HTMLElement>('[data-dashfoo="tab"]')?.dataset.tabId !== excludeId,
+    )
+    .map((item) => item.getBoundingClientRect());
+
 // Which slot in the tab strip the pointer is over: the first tab whose midpoint
 // is right of the pointer, else the end.
 const insertionIndex = (strip: Element, pointerX: number, excludeId?: string): number => {
@@ -75,7 +86,7 @@ const insertionLineRect = (
     return undefined;
   }
   const stripRect = strip.getBoundingClientRect();
-  const rects = tabRects(strip, excludeId);
+  const rects = tabItemRects(strip, excludeId);
   const at: DOMRect | undefined = rects[index];
   const last = rects.at(-1);
   const x = at?.left ?? last?.right ?? stripRect.left;
