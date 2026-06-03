@@ -9,7 +9,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import type { ActorRefFrom } from "xstate";
 
-import { computeDropIntent, zoneRect } from "./dock-geometry";
+import { borderZoneRect, computeDropIntent, frameEdgeIntent, zoneRect } from "./dock-geometry";
 
 // This module is the drag adapter: the only place that imports @dnd-kit/react.
 // It feeds the (already unit-tested) dragDockMachine — dnd-kit supplies the
@@ -114,15 +114,25 @@ const lineStyle = (zone: Zone): CSSProperties => ({
 // insertion line in the tab bar for a stack, the matching content half for a split.
 const DockIndicator = ({
   actorRef,
+  getFrameElement,
   getTabsetElement,
 }: {
   actorRef: DragActor;
+  getFrameElement: () => HTMLElement | null;
   getTabsetElement: (id: string) => HTMLElement | undefined;
 }): ReactNode => {
   const intent = useSelector(actorRef, (snapshot) => snapshot.context.intent);
   const draggedId = useSelector(actorRef, (snapshot) => snapshot.context.subject?.id);
   if (!intent) {
     return null;
+  }
+  if (intent.location.startsWith("border-")) {
+    const frame = getFrameElement();
+    if (!frame) {
+      return null;
+    }
+    const band = borderZoneRect(frame.getBoundingClientRect(), intent.location);
+    return <div data-dashfoo="dock-indicator" style={paneStyle(band)} />;
   }
   const element = getTabsetElement(intent.targetId);
   if (!element) {
@@ -143,6 +153,7 @@ type DragProviderProps = { children: ReactNode; onCommit: (action: Action) => vo
 const DragProvider = ({ children, onCommit }: DragProviderProps): ReactNode => {
   const actorRef = useActorRef(dragDockMachine);
   const tabsets = useRef(new Map<string, HTMLElement>());
+  const frame = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const subscription = actorRef.on("COMMIT", (emitted) => {
@@ -162,6 +173,20 @@ const DragProvider = ({ children, onCommit }: DragProviderProps): ReactNode => {
   }, []);
 
   const getTabsetElement = useCallback((id: string) => tabsets.current.get(id), []);
+  const getFrameElement = useCallback(() => frame.current, []);
+
+  // The dock intent for a pointer over a tabset: the outer frame sliver docks to
+  // a border (it wins over the tabset's own zones), otherwise the tabset resolves
+  // center/split. Caches the frame element so the indicator can paint the band.
+  const resolveIntent = useCallback(
+    (targetId: string, element: HTMLElement, point: Point, draggedId?: string): DropIntent => {
+      const layout = element.closest<HTMLElement>('[data-dashfoo="layout"]');
+      frame.current = layout;
+      const border = layout ? frameEdgeIntent(layout.getBoundingClientRect(), point) : null;
+      return border ?? intentForTabset(targetId, element, point, draggedId);
+    },
+    [],
+  );
 
   const handleDragStart = useCallback(
     (event: DragStartEvent): void => {
@@ -182,13 +207,13 @@ const DragProvider = ({ children, onCommit }: DragProviderProps): ReactNode => {
       const draggedId = op.source ? String(op.source.id) : undefined;
       const element = target ? tabsets.current.get(String(target.id)) : undefined;
       if (target && element) {
-        const intent = intentForTabset(String(target.id), element, op.position.current, draggedId);
+        const intent = resolveIntent(String(target.id), element, op.position.current, draggedId);
         actorRef.send({ intent, type: "OVER" });
       } else {
         actorRef.send({ intent: null, type: "OVER" });
       }
     },
-    [actorRef],
+    [actorRef, resolveIntent],
   );
 
   // Recompute the dock zone from dnd-kit's authoritative final target + pointer,
@@ -204,12 +229,12 @@ const DragProvider = ({ children, onCommit }: DragProviderProps): ReactNode => {
       const draggedId = op.source ? String(op.source.id) : undefined;
       const element = target ? tabsets.current.get(String(target.id)) : undefined;
       if (target && element) {
-        const intent = intentForTabset(String(target.id), element, op.position.current, draggedId);
+        const intent = resolveIntent(String(target.id), element, op.position.current, draggedId);
         actorRef.send({ intent, type: "OVER" });
       }
       actorRef.send({ type: "DROP" });
     },
-    [actorRef],
+    [actorRef, resolveIntent],
   );
 
   const contextValue = useMemo(() => ({ registerTabset }), [registerTabset]);
@@ -222,7 +247,11 @@ const DragProvider = ({ children, onCommit }: DragProviderProps): ReactNode => {
         onDragStart={handleDragStart}
       >
         {children}
-        <DockIndicator actorRef={actorRef} getTabsetElement={getTabsetElement} />
+        <DockIndicator
+          actorRef={actorRef}
+          getFrameElement={getFrameElement}
+          getTabsetElement={getTabsetElement}
+        />
       </DragDropProvider>
     </DragContext.Provider>
   );
