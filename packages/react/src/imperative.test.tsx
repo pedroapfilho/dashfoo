@@ -55,9 +55,12 @@ describe("imperative handle", () => {
 
     act(() => ref.current?.undo());
     expect(screen.getByText("CHART")).toBeInTheDocument();
+    expect(ref.current?.canUndo()).toBe(false);
+    expect(ref.current?.canRedo()).toBe(true);
 
     act(() => ref.current?.redo());
     expect(screen.getByText("BOOK")).toBeInTheDocument();
+    expect(ref.current?.canRedo()).toBe(false);
   });
 
   test("closeTab removes a tab via the handle", () => {
