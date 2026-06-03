@@ -28,3 +28,26 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+      # Packaging hygiene for the published packages (ESM-only, "use client").
+      - name: publint
+        run: for pkg in core react theme; do (cd "packages/$pkg" && pnpm dlx publint --strict); done
+      - name: are-the-types-wrong
+        run: for pkg in core react theme; do (cd "packages/$pkg" && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only); done
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm --filter demo-vite exec playwright install --with-deps chromium
+      - run: pnpm --filter demo-vite test:e2e
