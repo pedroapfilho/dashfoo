@@ -63,3 +63,48 @@ describe("tab close", () => {
     expect(screen.queryByRole("button", { name: "Close Chart" })).not.toBeInTheDocument();
   });
 });
+
+describe("tab rename", () => {
+  test("double-clicking a tab opens an inline editor that commits on Enter", () => {
+    renderLayout();
+
+    fireEvent.doubleClick(screen.getByRole("tab", { name: "Chart" }));
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "Candles" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(screen.getByRole("tab", { name: "Candles" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Chart" })).not.toBeInTheDocument();
+  });
+
+  test("Escape cancels the rename and keeps the original name", () => {
+    renderLayout();
+
+    fireEvent.doubleClick(screen.getByRole("tab", { name: "Chart" }));
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "Candles" } });
+    fireEvent.keyDown(input, { key: "Escape" });
+
+    expect(screen.getByRole("tab", { name: "Chart" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Candles" })).not.toBeInTheDocument();
+  });
+
+  test("an empty name is rejected (keeps the original)", () => {
+    renderLayout();
+
+    fireEvent.doubleClick(screen.getByRole("tab", { name: "Chart" }));
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "   " } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(screen.getByRole("tab", { name: "Chart" })).toBeInTheDocument();
+  });
+
+  test("rename can be suppressed for the whole layout", () => {
+    renderLayout({ renamableTabs: false });
+
+    fireEvent.doubleClick(screen.getByRole("tab", { name: "Chart" }));
+
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+});
