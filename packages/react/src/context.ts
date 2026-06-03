@@ -5,7 +5,11 @@ import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 
 type DashfooContextValue = {
+  closableTabs: boolean;
   dispatch: (action: Action) => void;
+  maximizable: boolean;
+  maximizedTabsetId?: string;
+  renamableTabs: boolean;
   renderTab: (tab: TabNode) => ReactNode;
 };
 
