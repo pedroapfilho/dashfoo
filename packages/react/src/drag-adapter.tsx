@@ -1,7 +1,7 @@
 "use client";
 
-import type { Action, DropIntent, Point } from "@dashfoo/core";
-import { dragDockMachine } from "@dashfoo/core";
+import type { Action, DockLocation, DropIntent, Point } from "@dashfoo/core";
+import { dragDockMachine, resolveDockTarget, zoneRect } from "@dashfoo/core";
 import { Accessibility } from "@dnd-kit/dom";
 import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/react";
 import { DragDropProvider, useDraggable, useDroppable } from "@dnd-kit/react";
@@ -10,7 +10,8 @@ import type { CSSProperties, ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import type { ActorRefFrom } from "xstate";
 
-import { computeDropIntent, zoneRect } from "./dock-geometry";
+import type { Zone } from "./tab-insertion";
+import { insertionIndex, insertionLineRect, pointInRect, shouldAllowDrop } from "./tab-insertion";
 
 // This module is the drag adapter: the only place that imports @dnd-kit/react.
 // It feeds the (already unit-tested) dragDockMachine — dnd-kit supplies the
@@ -24,11 +25,6 @@ type DragContextValue = {
 };
 
 const DragContext = createContext<DragContextValue | null>(null);
-
-type Zone = { height: number; width: number; x: number; y: number };
-
-const pointInRect = (point: Point, rect: DOMRect): boolean =>
-  point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
 
 // The dragged tab is excluded so its own slot never counts toward the order —
 // the insertion index and line are measured against the tabs it will land among.
@@ -48,17 +44,10 @@ const tabItemRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
     )
     .map((item) => item.getBoundingClientRect());
 
-// Which slot in the tab strip the pointer is over: the first tab whose midpoint
-// is right of the pointer, else the end.
-const insertionIndex = (strip: Element, pointerX: number, excludeId?: string): number => {
-  const rects = tabRects(strip, excludeId);
-  const found = rects.findIndex((rect) => pointerX < rect.left + rect.width / 2);
-  return found === -1 ? rects.length : found;
-};
-
 // The tab strip is always a "stack as a tab" target, with an insertion index that
 // places the tab at a specific slot. Only the content area below it resolves to
-// the center/split zones via resolveDockTarget (content center appends).
+// the center/split zones via resolveDockTarget (content center appends). The
+// adapter gathers rects from the DOM; the pure math lives in ./tab-insertion.
 const intentForTabset = (
   id: string,
   element: HTMLElement,
@@ -67,30 +56,18 @@ const intentForTabset = (
 ): DropIntent => {
   const strip = element.querySelector('[data-dashfoo="tabstrip"]');
   if (strip && pointInRect(point, strip.getBoundingClientRect())) {
-    return { index: insertionIndex(strip, point.x, draggedId), location: "center", targetId: id };
+    return {
+      index: insertionIndex(tabRects(strip, draggedId), point.x),
+      location: "center",
+      targetId: id,
+    };
   }
-  const intent = computeDropIntent(id, element.getBoundingClientRect(), point);
-  return intent.location === "center" && strip
-    ? { ...intent, index: tabRects(strip, draggedId).length }
-    : intent;
-};
-
-// The thin vertical line marking where the tab will be inserted in the strip.
-const insertionLineRect = (
-  element: HTMLElement,
-  index: number,
-  excludeId?: string,
-): Zone | undefined => {
-  const strip = element.querySelector('[data-dashfoo="tabstrip"]');
-  if (!strip) {
-    return undefined;
+  const target = resolveDockTarget(point, element.getBoundingClientRect());
+  const location: DockLocation = target.kind === "tab" ? "center" : `split-${target.edge}`;
+  if (location === "center" && strip) {
+    return { index: tabRects(strip, draggedId).length, location, targetId: id };
   }
-  const stripRect = strip.getBoundingClientRect();
-  const rects = tabItemRects(strip, excludeId);
-  const at: DOMRect | undefined = rects[index];
-  const last = rects.at(-1);
-  const x = at?.left ?? last?.right ?? stripRect.left;
-  return { height: stripRect.height, width: 2, x: x - 1, y: stripRect.top };
+  return { location, targetId: id };
 };
 
 const overlayBase: CSSProperties = {
@@ -146,8 +123,13 @@ const DockIndicator = ({
     return null;
   }
   if (intent.location === "center") {
-    const line = insertionLineRect(element, intent.index ?? 0, draggedId);
-    if (line) {
+    const strip = element.querySelector('[data-dashfoo="tabstrip"]');
+    if (strip) {
+      const line = insertionLineRect(
+        strip.getBoundingClientRect(),
+        tabItemRects(strip, draggedId),
+        intent.index ?? 0,
+      );
       return <div data-dashfoo="dock-indicator" style={lineStyle(line)} />;
     }
   }
@@ -194,14 +176,10 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
       point: Point,
       draggedId?: string,
     ): DropIntent | null => {
-      // A tabset dragged onto its own tabset (the grip id is `grip-${tabsetId}`).
-      if (draggedId === `grip-${targetId}`) {
-        return null;
-      }
-      // The sole tab of this tabset dropped back onto it: splitting it off beside
-      // itself or stacking it into itself changes nothing once empties collapse.
-      const tabs = element.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]');
-      if (tabs.length === 1 && tabs[0]?.dataset.tabId === draggedId) {
+      const tabIds = [...element.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].map(
+        (tab) => tab.dataset.tabId ?? "",
+      );
+      if (!shouldAllowDrop(draggedId, targetId, tabIds)) {
         return null;
       }
       const intent = intentForTabset(targetId, element, point, draggedId);

@@ -90,5 +90,10 @@ type DockLocation = z.infer<typeof dockLocationSchema>;
 type MutableNodeAttrs = z.infer<typeof mutableNodeAttrsSchema>;
 type Action = z.infer<typeof actionSchema>;
 
+// Where a drag will land: the dock location, the target tabset, and (for a tab
+// stack) the slot index. Co-located with DockLocation; the drag machine and the
+// React adapter both consume it.
+type DropIntent = { index?: number; location: DockLocation; targetId: string };
+
 export { actionSchema, dockLocationSchema, mutableNodeAttrsSchema };
-export type { Action, DockLocation, MutableNodeAttrs };
+export type { Action, DockLocation, DropIntent, MutableNodeAttrs };

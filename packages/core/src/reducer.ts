@@ -2,25 +2,10 @@ import type { Action, DockLocation } from "./actions";
 import { createNodeId } from "./ids";
 import { normalize } from "./invariants";
 import type { Dashfoo, RowNode, TabNode, TabsetNode } from "./schema";
-import { findTab, findTabset } from "./tree";
+import { findAttributedNode, findRow, findTab, findTabset, findTabsetParent } from "./tree";
 
 const assertNever = (value: never): never => {
   throw new Error(`Unhandled action: ${JSON.stringify(value)}`);
-};
-
-const findRow = (row: RowNode, id: string): RowNode | undefined => {
-  if (row.id === id) {
-    return row;
-  }
-  for (const child of row.children) {
-    if (child.type === "row") {
-      const found = findRow(child, id);
-      if (found) {
-        return found;
-      }
-    }
-  }
-  return undefined;
 };
 
 const removeTabset = (row: RowNode, tabsetId: string): boolean => {
@@ -47,53 +32,6 @@ const removeTabsetReturning = (row: RowNode, tabsetId: string): TabsetNode | und
   for (const child of row.children) {
     if (child.type === "row") {
       const found = removeTabsetReturning(child, tabsetId);
-      if (found) {
-        return found;
-      }
-    }
-  }
-  return undefined;
-};
-
-type AttributedNode = RowNode | TabNode | TabsetNode;
-
-const findAttributedNodeInRow = (row: RowNode, id: string): AttributedNode | undefined => {
-  if (row.id === id) {
-    return row;
-  }
-  for (const child of row.children) {
-    if (child.type === "row") {
-      const found = findAttributedNodeInRow(child, id);
-      if (found) {
-        return found;
-      }
-      continue;
-    }
-    if (child.id === id) {
-      return child;
-    }
-    const tab = child.children.find((candidate) => candidate.id === id);
-    if (tab) {
-      return tab;
-    }
-  }
-  return undefined;
-};
-
-const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefined =>
-  findAttributedNodeInRow(model.layout, id);
-
-const findTabsetParent = (
-  row: RowNode,
-  tabsetId: string,
-): { index: number; parent: RowNode } | undefined => {
-  const index = row.children.findIndex((child) => child.type === "tabset" && child.id === tabsetId);
-  if (index !== -1) {
-    return { index, parent: row };
-  }
-  for (const child of row.children) {
-    if (child.type === "row") {
-      const found = findTabsetParent(child, tabsetId);
       if (found) {
         return found;
       }

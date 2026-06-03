@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import type { Rect } from "./geometry";
-import { resolveDockTarget } from "./geometry";
+import { resolveDockTarget, zoneRect } from "./geometry";
 
 const rect: Rect = { height: 100, width: 200, x: 0, y: 0 };
 
@@ -30,5 +30,25 @@ describe("resolveDockTarget", () => {
     expect(resolveDockTarget({ x: 30, y: 50 }, rect, { bandFraction: 0.1 })).toEqual({
       kind: "tab",
     });
+  });
+});
+
+describe("zoneRect", () => {
+  const r: Rect = { height: 100, width: 200, x: 10, y: 20 };
+
+  test("center highlights the whole tabset", () => {
+    expect(zoneRect(r, "center")).toEqual(r);
+  });
+
+  test("split-left highlights the left half", () => {
+    expect(zoneRect(r, "split-left")).toEqual({ height: 100, width: 100, x: 10, y: 20 });
+  });
+
+  test("split-right highlights the right half", () => {
+    expect(zoneRect(r, "split-right")).toEqual({ height: 100, width: 100, x: 110, y: 20 });
+  });
+
+  test("split-bottom highlights the bottom half", () => {
+    expect(zoneRect(r, "split-bottom")).toEqual({ height: 50, width: 200, x: 10, y: 70 });
   });
 });
