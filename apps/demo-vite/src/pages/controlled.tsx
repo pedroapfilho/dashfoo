@@ -1,56 +1,35 @@
 import type { Dashfoo } from "@dashfoo/core";
+import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooLayout } from "@dashfoo/react";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { renderPanel } from "../components/panels";
 import { Button, DemoStage } from "../components/ui";
 import { playgroundModel } from "../models";
 
-type History = { future: Array<Dashfoo>; past: Array<Dashfoo>; present: Dashfoo };
+type View = { canRedo: boolean; canUndo: boolean; model: Dashfoo };
 
-const ControlledPage = (): ReactNode => {
+const ImperativeControlPage = (): ReactNode => {
   const initial = useMemo(() => playgroundModel(), []);
-  const [history, setHistory] = useState<History>(() => ({
-    future: [],
-    past: [],
-    present: initial,
-  }));
+  const layout = useRef<DashfooHandle>(null);
+  const [view, setView] = useState<View>({ canRedo: false, canUndo: false, model: initial });
 
-  const handleChange = useCallback((model: Dashfoo): void => {
-    setHistory((current) => ({
-      future: [],
-      past: [...current.past, current.present],
-      present: model,
-    }));
+  // Read history flags off the handle at change time (an event, not render).
+  const handleModelChange = useCallback((model: Dashfoo): void => {
+    setView({
+      canRedo: layout.current?.canRedo() ?? false,
+      canUndo: layout.current?.canUndo() ?? false,
+      model,
+    });
   }, []);
 
   const handleUndo = useCallback((): void => {
-    setHistory((current) => {
-      const previous = current.past.at(-1);
-      if (!previous) {
-        return current;
-      }
-      return {
-        future: [current.present, ...current.future],
-        past: current.past.slice(0, -1),
-        present: previous,
-      };
-    });
+    layout.current?.undo();
   }, []);
 
   const handleRedo = useCallback((): void => {
-    setHistory((current) => {
-      const next = current.future[0];
-      if (!next) {
-        return current;
-      }
-      return {
-        future: current.future.slice(1),
-        past: [...current.past, current.present],
-        present: next,
-      };
-    });
+    layout.current?.redo();
   }, []);
 
   // ⌘Z / ⇧⌘Z, ignored while typing (e.g. renaming a tab).
@@ -82,31 +61,32 @@ const ControlledPage = (): ReactNode => {
     <DemoStage
       actions={
         <>
-          <Button disabled={history.past.length === 0} onClick={handleUndo}>
+          <Button disabled={!view.canUndo} onClick={handleUndo}>
             Undo
           </Button>
-          <Button disabled={history.future.length === 0} onClick={handleRedo}>
+          <Button disabled={!view.canRedo} onClick={handleRedo}>
             Redo
           </Button>
         </>
       }
-      description="The layout is fully controlled: every change flows out through onModelChange into external state, with undo/redo (⌘Z / ⇧⌘Z) kept by this page. The model is the single source of truth — mirrored live in the inspector."
-      title="Controlled & history"
+      description="DashfooLayout exposes an imperative handle via ref — undo/redo, getModel, addTab, maximizeTabset, and more. These buttons and ⌘Z / ⇧⌘Z drive the engine's own history; no external state is rebuilt. The live model is mirrored in the inspector."
+      title="Imperative control & history"
     >
       <div className="flex h-full min-h-0 gap-3 px-6 pb-6">
         <div className="min-h-0 min-w-0 flex-1">
           <DashfooLayout
+            defaultModel={initial}
             factory={renderPanel}
-            model={history.present}
-            onModelChange={handleChange}
+            onModelChange={handleModelChange}
+            ref={layout}
           />
         </div>
         <pre className="rounded-df border-df-border bg-df-surface text-df-muted hidden w-80 shrink-0 overflow-auto border p-3 text-[10px] leading-relaxed lg:block">
-          {JSON.stringify(history.present, null, 2)}
+          {JSON.stringify(view.model, null, 2)}
         </pre>
       </div>
     </DemoStage>
   );
 };
 
-export { ControlledPage };
+export { ImperativeControlPage };

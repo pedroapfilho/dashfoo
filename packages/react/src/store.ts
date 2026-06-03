@@ -6,8 +6,8 @@ import { useActorRef, useSelector } from "@xstate/react";
 import { useCallback, useEffect } from "react";
 
 type DashfooStore = {
-  canRedo: boolean;
-  canUndo: boolean;
+  canRedo: () => boolean;
+  canUndo: () => boolean;
   dispatch: (action: Action) => void;
   model: Dashfoo;
   redo: () => void;
@@ -98,9 +98,12 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
     onModelChange?.(actorRef.getSnapshot().context.history.present);
   }, [actorRef, onModelChange]);
 
+  // Functions, not booleans: they read the live actor snapshot so a caller
+  // reading them right after undo/redo (e.g. inside onModelChange) sees the fresh
+  // value, not the one-render-stale useSelector result.
   return {
-    canRedo: canRedo(history),
-    canUndo: canUndo(history),
+    canRedo: () => canRedo(actorRef.getSnapshot().context.history),
+    canUndo: () => canUndo(actorRef.getSnapshot().context.history),
     dispatch,
     model,
     redo,

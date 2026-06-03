@@ -2,7 +2,7 @@
 
 import type { Dimension, RowNode } from "@dashfoo/core";
 import type { CSSProperties, ReactNode } from "react";
-import { Fragment } from "react";
+import { Fragment, useRef } from "react";
 import type { Layout, Orientation } from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
@@ -23,7 +23,16 @@ const RowView = ({ node }: { node: RowNode }): ReactNode => {
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
   const total = node.children.reduce((sum, child) => sum + (child.weight ?? 1), 0);
 
+  // rrp fires onLayoutChanged once on mount with its measured layout. That is not
+  // a user resize — committing it would rewrite the authored weights and push a
+  // spurious undo entry — so the first call (per mount) is ignored.
+  const measured = useRef(false);
+
   const handleLayoutChanged = (layout: Layout): void => {
+    if (!measured.current) {
+      measured.current = true;
+      return;
+    }
     const weights = node.children.map((child) => layout[child.id] ?? child.weight ?? 1);
     dispatch({ rowId: node.id, type: "adjustSplit", weights });
   };

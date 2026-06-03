@@ -2,7 +2,7 @@ import { createRootRoute, createRoute, createRouter } from "@tanstack/react-rout
 
 import { BordersPage } from "./pages/borders";
 import { ChromePage } from "./pages/chrome";
-import { ControlledPage } from "./pages/controlled";
+import { ImperativeControlPage } from "./pages/controlled";
 import { DockingPage } from "./pages/docking";
 import { OverviewPage } from "./pages/overview";
 import { PersistencePage } from "./pages/persistence";
@@ -36,7 +36,7 @@ const persistenceRoute = createRoute({
   path: "/persistence",
 });
 const controlledRoute = createRoute({
-  component: ControlledPage,
+  component: ImperativeControlPage,
   getParentRoute: () => rootRoute,
   path: "/controlled",
 });

@@ -7,7 +7,7 @@ const NAV = [
   { exact: false, label: "Tabset chrome", to: "/chrome" },
   { exact: false, label: "Borders & edges", to: "/borders" },
   { exact: false, label: "Persistence", to: "/persistence" },
-  { exact: false, label: "Controlled & history", to: "/controlled" },
+  { exact: false, label: "Imperative control", to: "/controlled" },
 ] as const;
 
 const linkClass =

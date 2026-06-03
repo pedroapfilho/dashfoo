@@ -60,7 +60,7 @@ describe("useDashfooStore (uncontrolled)", () => {
     act(() => {
       result.current.dispatch({ tabsetId: "ts2", type: "setActiveTabset" });
     });
-    expect(result.current.canUndo).toBe(true);
+    expect(result.current.canUndo()).toBe(true);
 
     act(() => {
       result.current.undo();
