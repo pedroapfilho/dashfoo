@@ -108,3 +108,26 @@ describe("tab rename", () => {
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 });
+
+describe("tabset maximize", () => {
+  test("maximizing a tabset hides the others; restore brings them back", () => {
+    renderLayout();
+    expect(screen.getByRole("tab", { name: "Trades" })).toBeInTheDocument();
+
+    // first tabset's maximize button
+    fireEvent.click(screen.getAllByRole("button", { name: "Maximize" })[0]);
+
+    expect(screen.queryByRole("tab", { name: "Trades" })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Chart" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
+
+    expect(screen.getByRole("tab", { name: "Trades" })).toBeInTheDocument();
+  });
+
+  test("maximize can be suppressed for the whole layout", () => {
+    renderLayout({ maximizable: false });
+
+    expect(screen.queryByRole("button", { name: "Maximize" })).not.toBeInTheDocument();
+  });
+});
