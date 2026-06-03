@@ -1,3 +1,4 @@
+import type { DockLocation } from "./actions";
 import type { Edge } from "./schema";
 
 type Point = { x: number; y: number };
@@ -43,5 +44,29 @@ const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): Dock
   return { edge: closestEdge(distances), kind: "split" };
 };
 
-export { resolveDockTarget };
+// The region the dock indicator highlights for a given location over a tabset:
+// the whole tabset for a center stack, the matching half for a split.
+const zoneRect = (rect: Rect, location: DockLocation): Rect => {
+  const halfW = rect.width / 2;
+  const halfH = rect.height / 2;
+  switch (location) {
+    case "split-bottom": {
+      return { height: halfH, width: rect.width, x: rect.x, y: rect.y + halfH };
+    }
+    case "split-left": {
+      return { height: rect.height, width: halfW, x: rect.x, y: rect.y };
+    }
+    case "split-right": {
+      return { height: rect.height, width: halfW, x: rect.x + halfW, y: rect.y };
+    }
+    case "split-top": {
+      return { height: halfH, width: rect.width, x: rect.x, y: rect.y };
+    }
+    default: {
+      return rect;
+    }
+  }
+};
+
+export { resolveDockTarget, zoneRect };
 export type { BandOptions, DockTarget, Point, Rect };
