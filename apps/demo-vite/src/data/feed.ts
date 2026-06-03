@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRef } from "react";
 
 // A deterministic mock "live feed": values wobble as a function of a tick that
 // advances on each refetch, so the demo animates without randomness (stable for
@@ -52,19 +51,23 @@ const buildChart = (tick: number): Array<number> =>
     (_, index) => 50 + 16 * Math.sin(index * 0.28 + tick * 0.25) + 7 * Math.sin(index * 0.13 + 1),
   );
 
+// The tick lives at query scope (keyed by queryKey), not per component, so two
+// observers of the same feed advance one shared counter aligned with the cache.
+const ticks = new Map<string, number>();
+
 const usePolledData = <T>(key: string, build: (tick: number) => T, intervalMs: number): T => {
-  const tick = useRef(0);
   const { data } = useQuery({
-    initialData: () => build(0),
+    initialData: () => build(ticks.get(key) ?? 0),
     queryFn: () => {
-      tick.current += 1;
-      return build(tick.current);
+      const next = (ticks.get(key) ?? 0) + 1;
+      ticks.set(key, next);
+      return build(next);
     },
     queryKey: [key],
     refetchInterval: intervalMs,
   });
   // initialData guarantees data; the fallback only satisfies the generic narrowing.
-  return data ?? build(0);
+  return data ?? build(ticks.get(key) ?? 0);
 };
 
 const useOrderBook = () => usePolledData("orderbook", buildBook, 1500);

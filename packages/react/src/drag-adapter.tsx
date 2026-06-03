@@ -89,11 +89,15 @@ const overlayBase: CSSProperties = {
   zIndex: 9999,
 };
 
+// Only position/size are fixed inline; every visual property is an overridable
+// CSS var with a neutral fallback, so a consumer's data-dashfoo="dock-indicator"
+// theme fully owns the look.
 const paneStyle = (zone: Zone): CSSProperties => ({
   ...overlayBase,
-  background: "var(--dashfoo-dock-fill, rgba(91, 157, 255, 0.18))",
-  border: "1px solid var(--dashfoo-dock-border, rgba(91, 157, 255, 0.7))",
-  borderRadius: 6,
+  background: "var(--dashfoo-dock-fill, rgba(125, 125, 135, 0.18))",
+  border:
+    "var(--dashfoo-dock-border-width, 1px) solid var(--dashfoo-dock-border, rgba(160, 160, 170, 0.75))",
+  borderRadius: "var(--dashfoo-dock-radius, 6px)",
   height: zone.height,
   left: zone.x,
   top: zone.y,
@@ -102,8 +106,8 @@ const paneStyle = (zone: Zone): CSSProperties => ({
 
 const lineStyle = (zone: Zone): CSSProperties => ({
   ...overlayBase,
-  background: "var(--dashfoo-dock-line, rgb(91, 157, 255))",
-  borderRadius: 2,
+  background: "var(--dashfoo-dock-line, rgb(140, 140, 150))",
+  borderRadius: "var(--dashfoo-dock-line-radius, 2px)",
   height: zone.height,
   left: zone.x,
   top: zone.y,
@@ -148,9 +152,19 @@ const DockIndicator = ({
   return <div data-dashfoo="dock-indicator" style={paneStyle(zone)} />;
 };
 
-type DragProviderProps = { children: ReactNode; onCommit: (action: Action) => void };
+type DragProviderProps = {
+  borderDock?: boolean;
+  children: ReactNode;
+  onCommit: (action: Action) => void;
+  splitDock?: boolean;
+};
 
-const DragProvider = ({ children, onCommit }: DragProviderProps): ReactNode => {
+const DragProvider = ({
+  borderDock = true,
+  children,
+  onCommit,
+  splitDock = true,
+}: DragProviderProps): ReactNode => {
   const actorRef = useActorRef(dragDockMachine);
   const tabsets = useRef(new Map<string, HTMLElement>());
   const frame = useRef<HTMLElement | null>(null);
@@ -182,10 +196,19 @@ const DragProvider = ({ children, onCommit }: DragProviderProps): ReactNode => {
     (targetId: string, element: HTMLElement, point: Point, draggedId?: string): DropIntent => {
       const layout = element.closest<HTMLElement>('[data-dashfoo="layout"]');
       frame.current = layout;
-      const border = layout ? frameEdgeIntent(layout.getBoundingClientRect(), point) : null;
-      return border ?? intentForTabset(targetId, element, point, draggedId);
+      const border =
+        borderDock && layout ? frameEdgeIntent(layout.getBoundingClientRect(), point) : null;
+      if (border) {
+        return border;
+      }
+      const intent = intentForTabset(targetId, element, point, draggedId);
+      // When splitting is disabled, a drop over the body stacks instead of splits.
+      if (!splitDock && intent.location.startsWith("split-")) {
+        return { location: "center", targetId };
+      }
+      return intent;
     },
-    [],
+    [borderDock, splitDock],
   );
 
   const handleDragStart = useCallback(
@@ -259,8 +282,9 @@ const DragProvider = ({ children, onCommit }: DragProviderProps): ReactNode => {
 
 const useTabDraggable = (
   tabId: string,
+  disabled = false,
 ): { isDragging: boolean; ref: (element: Element | null) => void } => {
-  const { isDragging, ref } = useDraggable({ data: { type: "tab" }, id: tabId });
+  const { isDragging, ref } = useDraggable({ data: { type: "tab" }, disabled, id: tabId });
   return { isDragging, ref };
 };
 

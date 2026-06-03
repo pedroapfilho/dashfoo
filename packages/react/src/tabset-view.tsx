@@ -35,6 +35,10 @@ const toolbarStyle: CSSProperties = {
   marginInlineStart: "auto",
 };
 
+// Stable ids wiring each tab to its panel (aria-controls / aria-labelledby).
+const tabDomId = (tabsetId: string, tabId: string): string => `dashfoo-tab-${tabsetId}-${tabId}`;
+const panelDomId = (tabsetId: string): string => `dashfoo-panel-${tabsetId}`;
+
 const CloseIcon = (): ReactNode => (
   <svg aria-hidden="true" height="10" viewBox="0 0 10 10" width="10">
     <path d="M1.5 1.5l7 7m0-7l-7 7" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
@@ -135,7 +139,7 @@ const TabButton = ({
   tabsetId: string;
 }): ReactNode => {
   const { dispatch } = useDashfooContext();
-  const { isDragging, ref } = useTabDraggable(tab.id);
+  const { isDragging, ref } = useTabDraggable(tab.id, tab.enableDrag === false);
   const [editing, setEditing] = useState(false);
   const itemRef = useRef<HTMLSpanElement>(null);
   const wasEditing = useRef(false);
@@ -185,14 +189,17 @@ const TabButton = ({
         />
       ) : (
         <button
+          aria-controls={panelDomId(tabsetId)}
           aria-selected={index === selected}
           data-dashfoo="tab"
           data-dragging={isDragging || undefined}
           data-tab-id={tab.id}
+          id={tabDomId(tabsetId, tab.id)}
           onClick={handleSelect}
           onDoubleClick={handleDoubleClick}
           ref={ref}
           role="tab"
+          tabIndex={index === selected ? 0 : -1}
           type="button"
         >
           {tab.name}
@@ -216,6 +223,7 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
   const { closableTabs, dispatch, maximizable, maximizedTabsetId, renamableTabs, renderTab } =
     useDashfooContext();
   const { isDropTarget, ref } = useTabsetDroppable(node.id);
+  const tablistRef = useRef<HTMLDivElement>(null);
   const active = node.children[node.selected];
   const tabsClosable = closableTabs && node.enableClose !== false;
   const showMaximize = maximizable && node.enableMaximize !== false;
@@ -223,6 +231,33 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
 
   const handleMaximize = (): void => {
     dispatch({ tabsetId: isMaximized ? null : node.id, type: "setMaximizedTabset" });
+  };
+
+  // Roving-tabindex keyboard model (WAI-ARIA APG Tabs): arrows move and select,
+  // Home/End jump to the ends, and focus follows the new selection.
+  const handleTablistKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    const count = node.children.length;
+    if (count === 0) {
+      return;
+    }
+    const targets: Record<string, number> = {
+      ArrowLeft: (node.selected - 1 + count) % count,
+      ArrowRight: (node.selected + 1) % count,
+      End: count - 1,
+      Home: 0,
+    };
+    const next = targets[event.key];
+    if (next === undefined) {
+      return;
+    }
+    event.preventDefault();
+    dispatch({ index: next, tabsetId: node.id, type: "selectTab" });
+    const tabId = node.children[next]?.id;
+    if (tabId) {
+      tablistRef.current
+        ?.querySelector<HTMLElement>(`#${CSS.escape(tabDomId(node.id, tabId))}`)
+        ?.focus();
+    }
   };
 
   return (
@@ -233,13 +268,21 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
       style={tabsetStyle}
     >
       <div data-dashfoo="tabstrip" style={stripStyle}>
-        <div data-dashfoo="tablist" role="tablist" style={tablistStyle}>
+        <div
+          aria-orientation="horizontal"
+          data-dashfoo="tablist"
+          onKeyDown={handleTablistKeyDown}
+          ref={tablistRef}
+          role="tablist"
+          style={tablistStyle}
+          tabIndex={-1}
+        >
           {node.children.map((tab, index) => (
             <TabButton
-              closable={tabsClosable}
+              closable={tabsClosable && tab.enableClose !== false}
               index={index}
               key={tab.id}
-              renamable={renamableTabs}
+              renamable={renamableTabs && tab.enableRename !== false}
               selected={node.selected}
               tab={tab}
               tabsetId={node.id}
@@ -260,9 +303,20 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
           </div>
         ) : null}
       </div>
-      <div data-dashfoo="tabcontent" role="tabpanel" style={contentStyle}>
-        {active ? renderTab(active) : null}
-      </div>
+      {active ? (
+        <div
+          aria-labelledby={tabDomId(node.id, active.id)}
+          data-dashfoo="tabcontent"
+          id={panelDomId(node.id)}
+          role="tabpanel"
+          style={contentStyle}
+          tabIndex={0}
+        >
+          {renderTab(active)}
+        </div>
+      ) : (
+        <div data-dashfoo="tabcontent" style={contentStyle} />
+      )}
     </div>
   );
 };

@@ -98,7 +98,8 @@ const usePersistedModel = (options: UsePersistedModelOptions): PersistedModel =>
     defaultRef.current = defaultModel;
   });
 
-  // Load the saved model once, from the first-render props.
+  // Load the saved model once. The initializer stays pure (no writes during
+  // render); a corrupt stored value is pruned in the mount effect below.
   const [model, setModel] = useState<Dashfoo>(() => {
     const raw = storage.getItem(key);
     if (raw === null) {
@@ -107,14 +108,27 @@ const usePersistedModel = (options: UsePersistedModelOptions): PersistedModel =>
     try {
       return fromJSON(raw);
     } catch {
-      storage.removeItem(key);
       return defaultModel;
     }
   });
   const [resetKey, setResetKey] = useState(0);
 
+  useEffect(() => {
+    const raw = storageRef.current.getItem(keyRef.current);
+    if (raw === null) {
+      return;
+    }
+    try {
+      fromJSON(raw);
+    } catch {
+      storageRef.current.removeItem(keyRef.current);
+    }
+  }, []);
+
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pending = useRef<string | null>(null);
+  // The pending write carries the key it was produced for, so a key change while
+  // a save is queued cannot write the old value under the new key.
+  const pending = useRef<{ key: string; value: string } | null>(null);
 
   const flush = useCallback((): void => {
     if (timer.current !== null) {
@@ -122,14 +136,14 @@ const usePersistedModel = (options: UsePersistedModelOptions): PersistedModel =>
       timer.current = null;
     }
     if (pending.current !== null) {
-      storageRef.current.setItem(keyRef.current, pending.current);
+      storageRef.current.setItem(pending.current.key, pending.current.value);
       pending.current = null;
     }
   }, []);
 
   const onModelChange = useCallback(
     (next: Dashfoo): void => {
-      pending.current = toJSON(next);
+      pending.current = { key: keyRef.current, value: toJSON(next) };
       if (timer.current !== null) {
         clearTimeout(timer.current);
       }

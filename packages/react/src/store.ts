@@ -1,7 +1,7 @@
 "use client";
 
 import type { Action, Dashfoo } from "@dashfoo/core";
-import { canRedo, canUndo, dashfooMachine, reducer } from "@dashfoo/core";
+import { canRedo, canUndo, dashfooMachine, normalize, reducer } from "@dashfoo/core";
 import { useActorRef, useSelector } from "@xstate/react";
 import { useCallback, useEffect } from "react";
 
@@ -31,12 +31,15 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
     throw new Error("useDashfooStore requires either a `model` or a `defaultModel`.");
   }
 
-  const actorRef = useActorRef(dashfooMachine, { input: { model: initialModel } });
+  // Normalize at the boundary so a host-supplied model satisfies the same
+  // invariants (clamped selection, no empty tabsets, live maximizedTabsetId) the
+  // reducer guarantees — every entry point holds a canonical model.
+  const actorRef = useActorRef(dashfooMachine, { input: { model: normalize(initialModel) } });
   const history = useSelector(actorRef, (snapshot) => snapshot.context.history);
 
   useEffect(() => {
     if (controlledModel !== undefined) {
-      actorRef.send({ model: controlledModel, type: "SET_MODEL" });
+      actorRef.send({ model: normalize(controlledModel), type: "SET_MODEL" });
     }
   }, [actorRef, controlledModel]);
 

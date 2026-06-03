@@ -11,6 +11,9 @@ import { useDashfooStore } from "./store";
 
 type TabComponent = ComponentType<{ node: TabNode }>;
 
+// Component names already warned about, so the dev warning fires at most once each.
+const warnedComponents = new Set<string>();
+
 type DashfooLayoutProps = {
   closableTabs?: boolean;
   components?: Record<string, TabComponent>;
@@ -45,7 +48,17 @@ const DashfooLayout = (props: DashfooLayoutProps): ReactNode => {
         return factory(tab);
       }
       const Component = components?.[tab.component];
-      return Component ? <Component node={tab} /> : null;
+      if (!Component) {
+        if (components && !warnedComponents.has(tab.component)) {
+          warnedComponents.add(tab.component);
+          // A tab whose component is not registered renders nothing — surface it
+          // once so the misconfiguration is not silent.
+          // oxlint-disable-next-line no-console
+          console.warn(`[dashfoo] no component registered for "${tab.component}"`);
+        }
+        return null;
+      }
+      return <Component node={tab} />;
     },
     [components, factory],
   );
@@ -70,10 +83,12 @@ const DashfooLayout = (props: DashfooLayoutProps): ReactNode => {
   );
 
   const handleCommit = store.dispatch;
+  const borderDock = store.model.global.enableBorderDock !== false;
+  const splitDock = store.model.global.enableSplitDock !== false;
 
   return (
     <DashfooContext.Provider value={contextValue}>
-      <DragProvider onCommit={handleCommit}>
+      <DragProvider borderDock={borderDock} onCommit={handleCommit} splitDock={splitDock}>
         <div data-dashfoo="layout" style={rootStyle}>
           <LayoutFrame model={store.model} />
         </div>
