@@ -1,11 +1,11 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 
-import { BordersPage } from "./pages/borders";
 import { ChromePage } from "./pages/chrome";
 import { ImperativeControlPage } from "./pages/controlled";
 import { DockingPage } from "./pages/docking";
 import { OverviewPage } from "./pages/overview";
 import { PersistencePage } from "./pages/persistence";
+import { ResponsivePage } from "./pages/responsive";
 import { RootLayout } from "./root";
 
 const rootRoute = createRootRoute({ component: RootLayout });
@@ -25,11 +25,6 @@ const chromeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/chrome",
 });
-const bordersRoute = createRoute({
-  component: BordersPage,
-  getParentRoute: () => rootRoute,
-  path: "/borders",
-});
 const persistenceRoute = createRoute({
   component: PersistencePage,
   getParentRoute: () => rootRoute,
@@ -40,14 +35,19 @@ const controlledRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/controlled",
 });
+const responsiveRoute = createRoute({
+  component: ResponsivePage,
+  getParentRoute: () => rootRoute,
+  path: "/responsive",
+});
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dockingRoute,
   chromeRoute,
-  bordersRoute,
   persistenceRoute,
   controlledRoute,
+  responsiveRoute,
 ]);
 
 const router = createRouter({ defaultPreload: "intent", routeTree });

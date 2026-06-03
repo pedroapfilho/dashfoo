@@ -12,7 +12,7 @@ It exists to deliver FlexLayout's power without FlexLayout's central weakness, c
 
 **At a glance**
 
-- **What it is.** A headless docking-layout engine for React: split/tab tree, drag-docking, resizable splitters, border drawers, maximize, undo/redo.
+- **What it is.** A headless docking-layout engine for React: split/tab tree, drag-docking, resizable splitters, maximize, undo/redo.
 - **What it gives you.** A serializable zod-validated model, a typed `<DashfooLayout>` component, controlled or uncontrolled state, and a `data-dashfoo` markup contract you style however you want.
 - **Who it's for.** Apps that need real docking — trading terminals, IDEs, dashboards, monitoring consoles — and teams who want to own the look instead of fighting a prebuilt skin.
 - **Built on.** `react-resizable-panels` (resize), `@dnd-kit/react` `0.4.0` (drag), XState v5 (state), zod (schema). All bundled, none exposed.
@@ -33,7 +33,6 @@ import { DashfooLayout } from "@dashfoo/react";
 const tab = (id: string, name: string): TabNode => ({ component: id, id, name, type: "tab" });
 
 const model: Dashfoo = {
-  borders: [],
   global: {},
   version: 1,
   layout: {
@@ -131,14 +130,13 @@ Three published packages, plus the demo apps that exercise them.
 
 ### Model as the source of truth
 
-A `Dashfoo` model is a plain object: a `version`, a `global` attributes bag, a root `layout` row, and zero-to-four `borders`. The tree nests three node kinds.
+A `Dashfoo` model is a plain object: a `version`, a `global` attributes bag, and a root `layout` row. The tree nests three node kinds.
 
 ```ts
 type Dashfoo = {
   version: number;
   global: GlobalAttributes;
   layout: RowNode; // root is always a row
-  borders: BorderNode[]; // 0–4, one per edge
   activeTabsetId?: string;
   maximizedTabsetId?: string;
 };
@@ -150,11 +148,11 @@ type Dashfoo = {
 | `TabsetNode` | `{ type: "tabset"; id; selected: number; weight?; size?; min?; max?; children: TabNode[] }` — a pane holding ordered tabs.                                |
 | `TabNode`    | `{ type: "tab"; id; component: string; name: string; config?: Json; icon? }` — `component` is a registry key; content is resolved at render.              |
 
-Sizing is responsive by default: `weight` is a proportional share within a row, so resized layouts stay fluid as the container changes. `Dimension` (`{ value, unit }`, with units `px` / `%` / `em` / `rem` / `vh` / `vw`) is reserved for `min` / `max` constraints, border sizes, and intentionally fixed panes.
+Sizing is responsive by default: `weight` is a proportional share within a row, so resized layouts stay fluid as the container changes. `Dimension` (`{ value, unit }`, with units `px` / `%` / `em` / `rem` / `vh` / `vw`) is reserved for `min` / `max` constraints and intentionally fixed panes.
 
 ### The core engine
 
-`@dashfoo/core` is pure TypeScript with no React. Every document change is one immutable `Action` from a discriminated union — `addNode`, `moveNode`, `deleteTab`, `deleteTabset`, `renameTab`, `selectTab`, `setActiveTabset`, `adjustSplit`, `adjustBorderSize`, `setBorderSelected`, `setMaximizedTabset`, `updateNodeAttributes`, `updateGlobalAttributes`. The engine is a pure function:
+`@dashfoo/core` is pure TypeScript with no React. Every document change is one immutable `Action` from a discriminated union — `addNode`, `moveNode`, `deleteTab`, `deleteTabset`, `renameTab`, `selectTab`, `setActiveTabset`, `adjustSplit`, `setMaximizedTabset`, `updateNodeAttributes`, `updateGlobalAttributes`. The engine is a pure function:
 
 ```ts
 import { reducer, normalize, toJSON, fromJSON } from "@dashfoo/core";
@@ -162,13 +160,13 @@ import { reducer, normalize, toJSON, fromJSON } from "@dashfoo/core";
 const next = reducer(model, { type: "renameTab", tabId: "chart", name: "Price" });
 ```
 
-The reducer is pure and immutable, runs the self-healing invariants (`normalize`) after every action, and validates action payloads against `actionSchema` at the boundary. `resolveDockTarget` is a pure geometry function: outer bands of a tabset resolve to a split, the center to a tab stack, the frame's outer band to a border dock. Undo/redo is a pure helper over `past · present · future`, with resize drags coalesced into a single step. Serialization is `toJSON` / `fromJSON`, the latter validating and migrating an untrusted payload to the current schema version.
+The reducer is pure and immutable, runs the self-healing invariants (`normalize`) after every action, and validates action payloads against `actionSchema` at the boundary. `resolveDockTarget` is a pure geometry function: outer bands of a tabset resolve to a split, the center to a tab stack. Undo/redo is a pure helper over `past · present · future`, with resize drags coalesced into a single step. Serialization is `toJSON` / `fromJSON`, the latter validating and migrating an untrusted payload to the current schema version.
 
 ### The react adapters
 
 `@dashfoo/react` binds a `dashfooMachine` actor to React. The two primitives are isolated behind adapters so the engine never imports them directly:
 
-- The **resize adapter** wraps `react-resizable-panels`, mapping `weight` to percentage layout and `Dimension` to fixed/min/max panel sizes, and commits `adjustSplit` / `adjustBorderSize`.
+- The **resize adapter** wraps `react-resizable-panels`, mapping `weight` to percentage layout and `Dimension` to fixed/min/max panel sizes, and commits `adjustSplit`.
 - The **drag adapter** wraps `@dnd-kit/react` `0.4.0`, forwarding the drag lifecycle into the dock machine via a per-droppable collision detector built on `resolveDockTarget`, and commits `moveNode` / `addNode`.
 
 XState is internal — it never appears in the public API. `useDashfooStore` exposes `{ model, dispatch, undo, redo, canUndo, canRedo }`; in controlled mode every change routes through `onModelChange`, in uncontrolled mode the actor owns the document with full undo/redo. `usePersistedModel` debounce-saves the model to a swappable `StorageAdapter` (localStorage, sessionStorage, in-memory, or your own), validating and migrating on load.
@@ -193,10 +191,6 @@ XState is internal — it never appears in the public API. `useDashfooStore` exp
 | `tabset-toolbar`   | The tabset's toolbar                     |
 | `tabset-maximize`  | The maximize/restore button              |
 | `dock-indicator`   | The live drag-dock indicator             |
-| `border`           | A border edge                            |
-| `border-strip`     | A border's tab strip                     |
-| `border-tab`       | A single border tab                      |
-| `border-drawer`    | An expanded border drawer                |
 
 ```css
 [data-dashfoo="tabset"] {
@@ -216,7 +210,7 @@ XState is internal — it never appears in the public API. `useDashfooStore` exp
 
 ## Demo
 
-`apps/demo-vite` is a neutral TanStack Router + Query showcase that drives dashfoo across a trading-terminal overview, a docking sandbox, the tabset chrome, border drawers, and persistence/controlled mode.
+`apps/demo-vite` is a neutral TanStack Router + Query showcase that drives dashfoo across a trading-terminal overview, a docking sandbox, the tabset chrome, and persistence/controlled mode.
 
 ```bash
 pnpm install

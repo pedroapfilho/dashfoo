@@ -11,15 +11,12 @@ type History = {
   present: Dashfoo;
 };
 
-// Resize actions are the only coalescable ones: a splitter/border drag emits many
-// per frame, but should undo as one. Keyed by the node being resized so resizing
-// a different splitter starts a new undo step.
+// Resize actions are the only coalescable ones: a splitter drag emits many per
+// frame, but should undo as one. Keyed by the node being resized so resizing a
+// different splitter starts a new undo step.
 const coalesceKey = (action: Action): string | undefined => {
   if (action.type === "adjustSplit") {
     return `adjustSplit:${action.rowId}`;
-  }
-  if (action.type === "adjustBorderSize") {
-    return `adjustBorderSize:${action.edge}`;
   }
   return undefined;
 };

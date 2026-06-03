@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import type { Rect } from "./geometry";
-import { resolveBorderEdge, resolveDockTarget } from "./geometry";
+import { resolveDockTarget } from "./geometry";
 
 const rect: Rect = { height: 100, width: 200, x: 0, y: 0 };
 
@@ -30,25 +30,5 @@ describe("resolveDockTarget", () => {
     expect(resolveDockTarget({ x: 30, y: 50 }, rect, { bandFraction: 0.1 })).toEqual({
       kind: "tab",
     });
-  });
-});
-
-describe("resolveBorderEdge", () => {
-  const frame: Rect = { height: 1000, width: 1000, x: 0, y: 0 };
-
-  test("detects the left frame edge", () => {
-    expect(resolveBorderEdge({ x: 20, y: 500 }, frame)).toBe("left");
-  });
-
-  test("detects the bottom frame edge", () => {
-    expect(resolveBorderEdge({ x: 500, y: 980 }, frame)).toBe("bottom");
-  });
-
-  test("returns null in the interior", () => {
-    expect(resolveBorderEdge({ x: 500, y: 500 }, frame)).toBeNull();
-  });
-
-  test("returns null outside the frame", () => {
-    expect(resolveBorderEdge({ x: -10, y: 500 }, frame)).toBeNull();
   });
 });

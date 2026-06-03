@@ -1,13 +1,15 @@
 "use client";
 
-import type { Action, Dashfoo, DockLocation, TabNode } from "@dashfoo/core";
+import type { Action, Dashfoo, DockLocation, TabNode, TabsetNode } from "@dashfoo/core";
+import { findTabset } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useMemo } from "react";
 
 import { DashfooContext } from "./context";
 import { DragProvider } from "./drag-adapter";
-import { LayoutFrame } from "./layout-frame";
+import { RowView } from "./row-view";
 import { useDashfooStore } from "./store";
+import { TabsetView } from "./tabset-view";
 
 type TabComponent = ComponentType<{ node: TabNode }>;
 
@@ -37,7 +39,9 @@ type DashfooLayoutProps = {
   closableTabs?: boolean;
   components?: Record<string, TabComponent>;
   defaultModel?: Dashfoo;
+  draggableTabsets?: boolean;
   factory?: (tab: TabNode) => ReactNode;
+  keepMounted?: boolean;
   maximizable?: boolean;
   model?: Dashfoo;
   onAction?: (action: Action) => Action | null;
@@ -45,6 +49,8 @@ type DashfooLayoutProps = {
   onMaximizedTabsetChange?: (tabsetId: string | undefined) => void;
   onModelChange?: (model: Dashfoo, action?: Action) => void;
   renamableTabs?: boolean;
+  renderTabLabel?: (tab: TabNode) => ReactNode;
+  renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
 };
 
 const rootStyle = { display: "flex", height: "100%", width: "100%" } as const;
@@ -57,7 +63,9 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     closableTabs = true,
     components,
     defaultModel,
+    draggableTabsets = true,
     factory,
+    keepMounted = false,
     maximizable = true,
     model,
     onAction,
@@ -65,6 +73,8 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     onMaximizedTabsetChange,
     onModelChange,
     renamableTabs = true,
+    renderTabLabel,
+    renderTabsetToolbar,
   } = props;
   const store = useDashfooStore({
     defaultModel,
@@ -134,18 +144,26 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     () => ({
       closableTabs: effectiveClosable,
       dispatch: store.dispatch,
+      draggableTabsets,
+      keepMounted,
       maximizable: effectiveMaximizable,
       maximizedTabsetId: store.model.maximizedTabsetId,
       renamableTabs: effectiveRenamable,
       renderTab,
+      renderTabLabel,
+      renderTabsetToolbar,
       tabLocation,
       tabStripEnabled,
     }),
     [
+      draggableTabsets,
       effectiveClosable,
       effectiveMaximizable,
       effectiveRenamable,
+      keepMounted,
       renderTab,
+      renderTabLabel,
+      renderTabsetToolbar,
       store.dispatch,
       store.model.maximizedTabsetId,
       tabLocation,
@@ -154,14 +172,18 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
   );
 
   const handleCommit = store.dispatch;
-  const borderDock = global.enableBorderDock !== false;
   const splitDock = global.enableSplitDock !== false;
+
+  // A maximized tabset fills the frame on its own; otherwise the row tree renders.
+  const maximized = store.model.maximizedTabsetId
+    ? findTabset(store.model, store.model.maximizedTabsetId)
+    : undefined;
 
   return (
     <DashfooContext.Provider value={contextValue}>
-      <DragProvider borderDock={borderDock} onCommit={handleCommit} splitDock={splitDock}>
+      <DragProvider onCommit={handleCommit} splitDock={splitDock}>
         <div data-dashfoo="layout" style={rootStyle}>
-          <LayoutFrame model={store.model} />
+          {maximized ? <TabsetView node={maximized} /> : <RowView node={store.model.layout} />}
         </div>
       </DragProvider>
     </DashfooContext.Provider>

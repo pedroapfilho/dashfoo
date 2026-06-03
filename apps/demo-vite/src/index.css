@@ -72,6 +72,21 @@
     @apply absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-df-emphasis;
     content: "";
   }
+  /* While the tab's label is lifted into the drag preview, hide the bits it
+     leaves behind (close button, selection underline) so the slot reads as a
+     clean placeholder, not a half-tab with an orphaned close button. */
+  [data-dashfoo="tab-item"][data-dragging] [data-dashfoo="tab-close"] {
+    @apply invisible;
+  }
+  [data-dashfoo="tab-item"][data-dragging]::after {
+    display: none;
+  }
+  /* The lifted label is the drag preview — give it a tab-chip look (surface,
+     border, shadow) so it reads as a tab being moved, not loose text. w-max
+     keeps the label on one line instead of wrapping in the tab's narrow slot. */
+  [data-dashfoo="tab-item"][data-dragging] [data-dashfoo="tab"] {
+    @apply w-max whitespace-nowrap rounded-md border border-df-border-strong bg-df-surface px-3 text-df-emphasis shadow-lg;
+  }
 
   /* close + rename + maximize controls */
   [data-dashfoo="tab-close"] {
@@ -99,61 +114,45 @@
     @apply outline-2 outline-df-emphasis;
   }
 
+  /* tabset drag grip + tab overflow menu share the icon-button look */
+  [data-dashfoo="tabset-grip"],
+  [data-dashfoo="tab-overflow"] {
+    @apply flex size-6 items-center justify-center rounded border-0 bg-transparent text-df-faint;
+  }
+  [data-dashfoo="tabset-grip"] {
+    @apply cursor-grab;
+  }
+  [data-dashfoo="tab-overflow"] {
+    @apply cursor-pointer;
+  }
+  [data-dashfoo="tabset-grip"]:hover,
+  [data-dashfoo="tab-overflow"]:hover {
+    @apply bg-white/10 text-df-text;
+  }
+  [data-dashfoo="tabset-grip"]:focus-visible,
+  [data-dashfoo="tab-overflow"]:focus-visible {
+    @apply outline-2 outline-df-emphasis;
+  }
+  /* hide the tablist scrollbar; the overflow menu is the affordance */
+  [data-dashfoo="tablist"] {
+    scrollbar-width: none;
+  }
+  [data-dashfoo="tablist"]::-webkit-scrollbar {
+    display: none;
+  }
+  [data-dashfoo="tab-overflow-menu"] {
+    @apply mt-1 flex min-w-32 flex-col gap-0.5 rounded-df border border-df-border-strong bg-df-surface p-1 shadow-lg;
+  }
+  [data-dashfoo="tab-overflow-item"] {
+    @apply cursor-pointer rounded border-0 bg-transparent px-2 py-1.5 text-left text-[12px] text-df-muted;
+  }
+  [data-dashfoo="tab-overflow-item"]:hover {
+    @apply bg-white/5 text-df-text;
+  }
+
   /* tab content */
   [data-dashfoo="tabcontent"] {
     @apply bg-df-surface;
-  }
-
-  /* borders / edge panels */
-  [data-dashfoo="border-strip"] {
-    @apply gap-1 bg-df-strip p-1;
-  }
-  [data-dashfoo="border-strip"][data-edge="left"],
-  [data-dashfoo="border-strip"][data-edge="right"] {
-    @apply h-full flex-col border-df-border;
-  }
-  [data-dashfoo="border-strip"][data-edge="left"] {
-    @apply border-r;
-  }
-  [data-dashfoo="border-strip"][data-edge="right"] {
-    @apply border-l;
-  }
-  [data-dashfoo="border-strip"][data-edge="top"] {
-    @apply border-b border-df-border;
-  }
-  [data-dashfoo="border-strip"][data-edge="bottom"] {
-    @apply border-t border-df-border;
-  }
-  [data-dashfoo="border-tab"] {
-    @apply cursor-pointer rounded border border-transparent bg-transparent px-2 py-1.5 text-[12px] text-df-muted;
-  }
-  [data-dashfoo="border-tab"]:hover {
-    @apply text-df-text;
-  }
-  [data-dashfoo="border-tab"][aria-pressed="true"] {
-    @apply border-df-border-strong bg-df-surface text-df-emphasis;
-  }
-  [data-dashfoo="border-tab"]:focus-visible {
-    @apply outline-2 outline-df-emphasis;
-  }
-  [data-dashfoo="border-strip"][data-edge="left"] [data-dashfoo="border-tab"],
-  [data-dashfoo="border-strip"][data-edge="right"] [data-dashfoo="border-tab"] {
-    writing-mode: vertical-rl;
-  }
-  [data-dashfoo="border-drawer"] {
-    @apply border-df-border bg-df-surface;
-  }
-  [data-dashfoo="border-drawer"][data-edge="left"] {
-    @apply border-r;
-  }
-  [data-dashfoo="border-drawer"][data-edge="right"] {
-    @apply border-l;
-  }
-  [data-dashfoo="border-drawer"][data-edge="top"] {
-    @apply border-b;
-  }
-  [data-dashfoo="border-drawer"][data-edge="bottom"] {
-    @apply border-t;
   }
 
   /* splitters (rrp separators) — orientation lives on the separator itself */

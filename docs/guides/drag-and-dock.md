@@ -1,43 +1,32 @@
 # Drag and dock
 
-A tab drag in dashfoo has three possible outcomes, and which one fires depends
+A tab drag in dashfoo has two possible outcomes, and which one fires depends
 entirely on where the pointer is when you let go:
 
 - **Over a tab strip.** The tab stacks into that tabset at a specific
   insertion index, with a thin insertion line showing the slot.
 - **Over a tabset body.** The tab splits the tabset, creating a new region
   to the left, right, top, or bottom.
-- **Into the outer frame gutter.** The tab docks as a border along that edge
-  of the whole layout.
 
 This guide explains how the pointer position resolves to one of those
 outcomes, the pipeline that carries a drag from `useTabDraggable` to a
 committed model change, and the gates that turn each outcome on or off.
 
-The geometry lives in `@dashfoo/core` (`resolveDockTarget`, `resolveBorderEdge`)
-and `@dashfoo/react` (`dock-geometry.ts`, the drag adapter). The drag adapter
-is the only module in the library that imports `@dnd-kit/react`; everything it
-touches downstream is pure and unit-tested.
+The geometry lives in `@dashfoo/core` (`resolveDockTarget`) and `@dashfoo/react`
+(`dock-geometry.ts`, the drag adapter). The drag adapter is the only module in
+the library that imports `@dnd-kit/react`; everything it touches downstream is
+pure and unit-tested.
 
-## The three landing zones
+## The two landing zones
 
 Every drop resolves to one `DockLocation`, the union the reducer understands:
 
 ```ts
-type DockLocation =
-  | "center"
-  | "split-left"
-  | "split-right"
-  | "split-top"
-  | "split-bottom"
-  | "border-left"
-  | "border-right"
-  | "border-top"
-  | "border-bottom";
+type DockLocation = "center" | "split-left" | "split-right" | "split-top" | "split-bottom";
 ```
 
-`center` stacks. `split-*` splits. `border-*` docks to the frame. The pointer's
-position inside a tabset's rect, and the layout frame's rect, picks which one.
+`center` stacks. `split-*` splits. The pointer's position inside a tabset's rect
+picks which one.
 
 ### Over a tab strip: stack at an insertion index
 
@@ -104,55 +93,18 @@ The indicator for a split highlights the matching half of the tabset:
 `split-left` paints the left half, `split-top` the top half, and so on
 (`zoneRect`).
 
-### Into the frame gutter: dock as a border
-
-Border docking is checked first, against the whole layout, and it wins over the
-tabset's own zones. `resolveBorderEdge` looks at the pointer's distance from the
-edges of the `data-dashfoo="layout"` frame and returns an edge only when the
-pointer is in the thin outer sliver (5% of the frame by default):
-
-```ts
-const resolveBorderEdge = (pointer, frame, opts) => {
-  const band = opts?.bandFraction ?? 0.05;
-  const distances = edgeDistances(pointer, frame);
-  const min = Math.min(distances.left, distances.right, distances.top, distances.bottom);
-  if (min < 0 || min > band) {
-    return null;
-  }
-  return closestEdge(distances);
-};
-```
-
-`null` means the pointer is in the interior, so border docking doesn't apply and
-the tabset's own resolution runs. A non-null edge produces a `border-${edge}`
-intent with an **empty** `targetId`. The reducer finds or creates the border by
-its edge, so the id is irrelevant here.
-
-The indicator paints a band along the chosen frame edge (`borderZoneRect`, 8% of
-the frame thickness).
-
 ## How resolution layers
 
 For a pointer over a tabset, the adapter's `resolveIntent` runs the checks in a
 fixed order:
 
-1. **Border first.** If border docking is enabled and the pointer is in the
-   frame's outer sliver, return the `border-*` intent. The frame's edge beats
-   the tabset's edge, so a tab near both the layout's left gutter and a tabset's
-   left band docks to the border, not the split.
-2. **Tab strip.** Inside the strip, return a `center` stack at the insertion
+1. **Tab strip.** Inside the strip, return a `center` stack at the insertion
    index.
-3. **Tabset body.** Otherwise resolve `center` (append) or `split-*` from the
+2. **Tabset body.** Otherwise resolve `center` (append) or `split-*` from the
    tabset rect.
 
 ```ts
 const resolveIntent = (targetId, element, point, draggedId) => {
-  const layout = element.closest('[data-dashfoo="layout"]');
-  const border =
-    borderDock && layout ? frameEdgeIntent(layout.getBoundingClientRect(), point) : null;
-  if (border) {
-    return border;
-  }
   const intent = intentForTabset(targetId, element, point, draggedId);
   if (!splitDock && intent.location.startsWith("split-")) {
     return { location: "center", targetId };
@@ -239,9 +191,9 @@ The reducer deep-copies the model (`structuredClone`, so the input is never
 mutated), removes the source tab from wherever it lives, then re-inserts it at
 the drop target. `center` stacks into the target tabset at `index`; `split-*`
 creates a new tabset beside the target (reusing the parent row when the
-orientation already matches, otherwise wrapping both in a new row); `border-*`
-finds or creates the border for that edge. After the action, self-healing
-invariants run (`normalize`) so the result is always a valid, canonical model.
+orientation already matches, otherwise wrapping both in a new row). After the
+action, self-healing invariants run (`normalize`) so the result is always a
+valid, canonical model.
 
 #### Why the index needs no adjustment
 
@@ -258,28 +210,24 @@ off-by-one correction is needed when a tab moves within its own strip.
 
 ## Gates
 
-Three flags decide what a drag can do. Two are global; one is per tab.
+Two flags decide what a drag can do. One is global; one is per tab.
 
-| Gate               | Scope   | Where it lives            | Default | Effect when off                                        |
-| ------------------ | ------- | ------------------------- | ------- | ------------------------------------------------------ |
-| `enableSplitDock`  | global  | `global.enableSplitDock`  | on      | A drop over a tabset body stacks instead of splitting. |
-| `enableBorderDock` | global  | `global.enableBorderDock` | on      | The frame gutter no longer docks tabs as borders.      |
-| `enableDrag`       | per tab | `tab.enableDrag`          | on      | That tab can't be picked up at all.                    |
+| Gate              | Scope   | Where it lives           | Default | Effect when off                                        |
+| ----------------- | ------- | ------------------------ | ------- | ------------------------------------------------------ |
+| `enableSplitDock` | global  | `global.enableSplitDock` | on      | A drop over a tabset body stacks instead of splitting. |
+| `enableDrag`      | per tab | `tab.enableDrag`         | on      | That tab can't be picked up at all.                    |
 
-### Global gates
+### Global gate
 
-`DashfooLayout` reads the global flags and passes them to `DragProvider`. Both
-default to enabled. The check is `!== false`, so an absent flag means on:
+`DashfooLayout` reads the global flag and passes it to `DragProvider`. It
+defaults to enabled. The check is `!== false`, so an absent flag means on:
 
 ```ts
-const borderDock = store.model.global.enableBorderDock !== false;
 const splitDock = store.model.global.enableSplitDock !== false;
 ```
 
 When `enableSplitDock` is off, `resolveIntent` rewrites any `split-*` result back
-to a `center` stack, so a drop over the body lands as a tab. When
-`enableBorderDock` is off, the frame-edge check is skipped entirely and a drag
-near the gutter falls through to the tabset's own zones.
+to a `center` stack, so a drop over the body lands as a tab.
 
 ### Per-tab gate
 
@@ -302,10 +250,10 @@ property is an overridable CSS custom property with a neutral fallback:
 
 | Variable                      | Default                     | Applies to               |
 | ----------------------------- | --------------------------- | ------------------------ |
-| `--dashfoo-dock-fill`         | `rgba(125, 125, 135, 0.18)` | split / border band      |
-| `--dashfoo-dock-border`       | `rgba(160, 160, 170, 0.75)` | split / border band      |
-| `--dashfoo-dock-border-width` | `1px`                       | split / border band      |
-| `--dashfoo-dock-radius`       | `6px`                       | split / border band      |
+| `--dashfoo-dock-fill`         | `rgba(125, 125, 135, 0.18)` | split band               |
+| `--dashfoo-dock-border`       | `rgba(160, 160, 170, 0.75)` | split band               |
+| `--dashfoo-dock-border-width` | `1px`                       | split band               |
+| `--dashfoo-dock-radius`       | `6px`                       | split band               |
 | `--dashfoo-dock-line`         | `rgb(140, 140, 150)`        | tab-strip insertion line |
 | `--dashfoo-dock-line-radius`  | `2px`                       | tab-strip insertion line |
 
@@ -314,8 +262,7 @@ own the look.
 
 ## See also
 
-- `resolveDockTarget` and `resolveBorderEdge` in `@dashfoo/core` for the band
-  math and `BandOptions`.
+- `resolveDockTarget` in `@dashfoo/core` for the band math and `BandOptions`.
 - `dock-geometry.ts` in `@dashfoo/react` for the indicator rects.
 - `dragDockMachine` in `@dashfoo/core` for the interaction lifecycle.
 - The `moveNode` and `insertTab` paths in the reducer for how a drop reshapes

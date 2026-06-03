@@ -7,7 +7,7 @@ and returns a new `Dashfoo` (via `structuredClone`, never mutation), so the same
 value round-trips through `JSON.stringify`, a database column, a postMessage, or
 React state without losing anything.
 
-This guide walks the shape of that tree, the four node types and their per-node
+This guide walks the shape of that tree, the three node types and their per-node
 `enable*` flags, how `normalize()` keeps the tree canonical after every action,
 and the serialization helpers (`toJSON` / `fromJSON` / `migrate`) that move a
 model in and out of storage.
@@ -20,7 +20,6 @@ defined in `packages/core/src/schema.ts`.
 ```ts
 type Dashfoo = {
   activeTabsetId?: string;
-  borders: BorderNode[];
   global: GlobalAttributes;
   layout: RowNode;
   maximizedTabsetId?: string;
@@ -31,23 +30,21 @@ type Dashfoo = {
 | Field               | Type               | What it holds                                               |
 | ------------------- | ------------------ | ----------------------------------------------------------- |
 | `layout`            | `RowNode`          | The tiled center area. Always a row at the root.            |
-| `borders`           | `BorderNode[]`     | Edge-docked panel strips (left / right / top / bottom).     |
 | `global`            | `GlobalAttributes` | Defaults that apply tree-wide unless a node overrides them. |
 | `version`           | `number`           | Schema version of this payload. The current version is `1`. |
 | `activeTabsetId`    | `string?`          | Id of the tabset that currently has focus.                  |
 | `maximizedTabsetId` | `string?`          | Id of the tabset rendered full-area, hiding its siblings.   |
 
 `layout` is the part most people picture: a recursive grid of rows and tabsets.
-`borders` is a separate, flat list because edge strips are not tiled into the
-grid — they dock to a side of the whole layout. Both `activeTabsetId` and
-`maximizedTabsetId` are id references, not nested objects, which is why
-`normalize()` has to check that they still point at a tabset that exists.
+Both `activeTabsetId` and `maximizedTabsetId` are id references, not nested
+objects, which is why `normalize()` has to check that they still point at a
+tabset that exists.
 
 ## Node types
 
-There are four node types, discriminated by their `type` field: `row`,
-`tabset`, `tab`, and `border`. Tabs are the leaves. Tabsets hold tabs. Rows hold
-tabsets and other rows. Borders hold tabs but live outside the row tree.
+There are three node types, discriminated by their `type` field: `row`,
+`tabset`, and `tab`. Tabs are the leaves. Tabsets hold tabs. Rows hold
+tabsets and other rows.
 
 ### `RowNode` — the recursive container
 
@@ -126,31 +123,9 @@ The three per-tab flags:
 | `enableDrag`   | The tab cannot be dragged to another tabset. |
 | `enableRename` | Double-clicking the tab will not rename it.  |
 
-### `BorderNode` — an edge strip
-
-```ts
-type BorderNode = {
-  children: TabNode[];
-  edge: "top" | "bottom" | "left" | "right";
-  selected: number;
-  size?: Dimension;
-  type: "border";
-};
-```
-
-A border is a strip of tabs docked to one `edge` of the layout. Unlike a tabset,
-a border has no `id` and no `weight` — it is addressed by its `edge`, and there
-is at most one per edge. `size` is the drawer's extent (width for left/right,
-height for top/bottom) when a tab is open.
-
-`selected` carries one extra convention for borders. A tabset always shows
-something, so its `selected` is a valid index. A border can be fully collapsed
-with no panel open, and that state is `selected: -1`. The `bottom` console border
-in the demo's `bordersModel` ships collapsed exactly this way.
-
 ### Dimensions
 
-A tabset's `min` / `max` and a border's `size` are `Dimension` values, not raw
+A tabset's `min` / `max` are `Dimension` values, not raw
 numbers:
 
 ```ts
@@ -172,7 +147,6 @@ built-in defaults."
 
 ```ts
 type GlobalAttributes = {
-  enableBorderDock?: boolean;
   enableSplitDock?: boolean;
   tabEnableClose?: boolean;
   tabEnableRename?: boolean;
@@ -186,8 +160,7 @@ The `tabEnable*` and `tabSetEnable*` keys are the tree-wide fallbacks for the
 per-node `enable*` flags above (set one to `false` to turn the feature off
 everywhere). `tabLocation: "bottom"` moves the tab strip below the content;
 `tabSetEnableTabStrip: false` hides the strip entirely (a pure resizable-pane
-grid). `enableSplitDock` and `enableBorderDock` toggle whether drops can split a
-tabset or dock to an edge at all.
+grid). `enableSplitDock` toggles whether drops can split a tabset at all.
 
 ## A real model
 
@@ -201,7 +174,6 @@ import type { Dashfoo } from "@dashfoo/core";
 
 const tradingModel: Dashfoo = {
   activeTabsetId: "ts-chart",
-  borders: [],
   global: {},
   layout: {
     children: [
@@ -271,8 +243,7 @@ The pass enforces five invariants.
 **1. Clamp every `selected` into range.** A tabset's `selected` is forced into
 `[0, children.length - 1]`. An out-of-range index (say the selected tab was the
 one that got closed) snaps to the nearest valid tab instead of pointing at
-nothing. Borders get the same clamp, except `selected: -1` is preserved as the
-deliberate "collapsed" state.
+nothing.
 
 **2. Drop empty tabsets.** A tabset whose `children` array is empty is removed
 from its parent row. Closing the last tab in a pane removes the pane, rather than
@@ -358,6 +329,6 @@ renderer a tree with a stale `selected` index.
 - `packages/core/src/invariants.ts` — the full `normalize()` implementation.
 - `packages/core/src/serialize.ts` — `toJSON`, `fromJSON`, `migrate`, `parseModel`,
   `CURRENT_VERSION`.
-- `apps/demo-vite/src/models.ts` — the five demo models (`tradingModel`,
-  `dockingModel`, `chromeModel`, `bordersModel`, `playgroundModel`) as real
+- `apps/demo-vite/src/models.ts` — the four demo models (`tradingModel`,
+  `dockingModel`, `chromeModel`, `playgroundModel`) as real
   literals you can copy from.

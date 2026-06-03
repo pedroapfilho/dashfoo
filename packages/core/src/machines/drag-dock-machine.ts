@@ -53,7 +53,7 @@ const dragDockMachine = setup({
                   location: intent.location,
                   sourceId: subject.id,
                   targetId: intent.targetId,
-                  type: "moveNode",
+                  type: subject.kind === "tabset" ? "moveTabset" : "moveNode",
                 },
                 type: "COMMIT",
               };

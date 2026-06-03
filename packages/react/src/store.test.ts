@@ -6,7 +6,6 @@ import { useDashfooStore } from "./store";
 
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",
-  borders: [],
   global: {},
   layout: {
     children: [

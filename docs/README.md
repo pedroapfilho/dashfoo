@@ -9,6 +9,7 @@ A headless React docking-layout library — tiled, resizable, tabbed regions wit
 - [Drag and dock](./guides/drag-and-dock.md)
 - [Controlled mode and undo/redo](./guides/controlled-and-history.md)
 - [Persisting layouts](./guides/persistence.md)
+- [Adaptive (responsive) layouts](./guides/responsive.md)
 - [Theming the headless chrome](./guides/theming.md)
 
 Folder: [`docs/guides`](./guides)

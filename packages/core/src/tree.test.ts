@@ -1,17 +1,9 @@
 import { describe, expect, test } from "vitest";
 
 import type { Dashfoo } from "./schema";
-import { collectTabsets, findBorder, findTab, findTabset, getFirstTabset } from "./tree";
+import { collectTabsets, findTab, findTabset, getFirstTabset } from "./tree";
 
 const model: Dashfoo = {
-  borders: [
-    {
-      children: [{ component: "explorer", id: "bt1", name: "Explorer", type: "tab" }],
-      edge: "left",
-      selected: -1,
-      type: "border",
-    },
-  ],
   global: {},
   layout: {
     children: [
@@ -49,7 +41,7 @@ const model: Dashfoo = {
 };
 
 describe("collectTabsets", () => {
-  test("returns every tabset across nested rows, depth-first, excluding borders", () => {
+  test("returns every tabset across nested rows, depth-first", () => {
     expect(collectTabsets(model).map((ts) => ts.id)).toEqual(["ts1", "ts2"]);
   });
 });
@@ -79,24 +71,7 @@ describe("findTab", () => {
     expect(found?.tab.name).toBe("Book");
   });
 
-  test("locates a tab inside a border", () => {
-    const found = findTab(model, "bt1");
-
-    expect(found?.container.type).toBe("border");
-    expect(found?.index).toBe(0);
-  });
-
   test("returns undefined for an unknown tab id", () => {
     expect(findTab(model, "nope")).toBeUndefined();
-  });
-});
-
-describe("findBorder", () => {
-  test("finds a border by edge", () => {
-    expect(findBorder(model, "left")?.children).toHaveLength(1);
-  });
-
-  test("returns undefined when no border is docked on that edge", () => {
-    expect(findBorder(model, "right")).toBeUndefined();
   });
 });

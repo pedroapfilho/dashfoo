@@ -4,17 +4,7 @@ import { dashfooSchema, tabNodeSchema } from "./schema";
 
 const validModel = {
   activeTabsetId: "ts1",
-  borders: [
-    {
-      children: [{ component: "explorer", id: "t4", name: "Explorer", type: "tab" }],
-      edge: "left",
-      mode: "auto-hide",
-      selected: -1,
-      size: { unit: "px", value: 240 },
-      type: "border",
-    },
-  ],
-  global: { splitterSize: 6, tabEnableClose: true },
+  global: { tabEnableClose: true },
   layout: {
     children: [
       {
@@ -51,11 +41,11 @@ const validModel = {
 };
 
 describe("dashfooSchema", () => {
-  test("parses a valid model with nested rows, a tabset, and a border", () => {
+  test("parses a valid model with nested rows and tabsets", () => {
     const result = dashfooSchema.parse(validModel);
 
     expect(result.layout.children).toHaveLength(2);
-    expect(result.borders[0]?.edge).toBe("left");
+    expect(result.layout.children[0]?.type).toBe("tabset");
   });
 
   test("rejects a model missing the version field", () => {
@@ -66,7 +56,11 @@ describe("dashfooSchema", () => {
 
   test("rejects an unknown dimension unit", () => {
     const badUnit = structuredClone(validModel);
-    badUnit.borders[0].size = { unit: "parsecs", value: 240 } as never;
+    // ts2 carries a `min` dimension; corrupt its unit.
+    (badUnit.layout.children[1] as { children: Array<{ min: unknown }> }).children[0].min = {
+      unit: "parsecs",
+      value: 240,
+    };
 
     expect(() => dashfooSchema.parse(badUnit)).toThrow();
   });

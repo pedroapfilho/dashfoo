@@ -35,30 +35,26 @@ contract stable and lets the demo prove out the selector surface first.
 The skin styles elements by their `data-dashfoo` attribute. These are the values
 the demo theme targets today:
 
-| Selector                           | What it is                                         |
-| ---------------------------------- | -------------------------------------------------- |
-| `[data-dashfoo="layout"]`          | Root layout container                              |
-| `[data-dashfoo="tabset"]`          | A tabbed region (the bordered surface card)        |
-| `[data-dashfoo="tabstrip"]`        | Tab strip row: tablist plus trailing toolbar       |
-| `[data-dashfoo="tablist"]`         | The list of tabs                                   |
-| `[data-dashfoo="tab-item"]`        | A single tab's wrapper (label plus close)          |
-| `[data-dashfoo="tab"]`             | The tab button itself                              |
-| `[data-dashfoo="tab-close"]`       | Close-tab control                                  |
-| `[data-dashfoo="tab-rename"]`      | Inline rename input                                |
-| `[data-dashfoo="tabset-toolbar"]`  | Trailing toolbar in the strip                      |
-| `[data-dashfoo="tabset-maximize"]` | Maximize-tabset control                            |
-| `[data-dashfoo="tabcontent"]`      | Active tab's content area                          |
-| `[data-dashfoo="border-strip"]`    | Edge dock strip (carries `data-edge`)              |
-| `[data-dashfoo="border-tab"]`      | A tab pinned to an edge strip                      |
-| `[data-dashfoo="border-drawer"]`   | The drawer an edge tab opens (carries `data-edge`) |
-| `[data-separator]`                 | A resize splitter (carries `aria-orientation`)     |
+| Selector                           | What it is                                     |
+| ---------------------------------- | ---------------------------------------------- |
+| `[data-dashfoo="layout"]`          | Root layout container                          |
+| `[data-dashfoo="tabset"]`          | A tabbed region (the bordered surface card)    |
+| `[data-dashfoo="tabstrip"]`        | Tab strip row: tablist plus trailing toolbar   |
+| `[data-dashfoo="tablist"]`         | The list of tabs                               |
+| `[data-dashfoo="tab-item"]`        | A single tab's wrapper (label plus close)      |
+| `[data-dashfoo="tab"]`             | The tab button itself                          |
+| `[data-dashfoo="tab-close"]`       | Close-tab control                              |
+| `[data-dashfoo="tab-rename"]`      | Inline rename input                            |
+| `[data-dashfoo="tabset-toolbar"]`  | Trailing toolbar in the strip                  |
+| `[data-dashfoo="tabset-maximize"]` | Maximize-tabset control                        |
+| `[data-dashfoo="tabcontent"]`      | Active tab's content area                      |
+| `[data-separator]`                 | A resize splitter (carries `aria-orientation`) |
 
 State reads off standard ARIA and data attributes, so you select against them
 directly:
 
 - `[data-dashfoo="tab"][aria-selected="true"]` — the active tab
-- `[data-dashfoo="border-tab"][aria-pressed="true"]` — an open edge tab
-- `[data-dashfoo="border-strip"][data-edge="left"]` — strip docked left (also `right`, `top`, `bottom`)
+- `[data-dashfoo="tabset-maximize"][aria-pressed="true"]` — a maximized tabset's toggle
 - `[data-separator][aria-orientation="vertical"]` — a column resize handle (also `horizontal`)
 - `:focus-visible` and `:focus-within` for focus rings
 

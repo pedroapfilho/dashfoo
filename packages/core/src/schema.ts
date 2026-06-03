@@ -69,16 +69,7 @@ const rowNodeSchema: z.ZodType<RowNode> = z.lazy(() =>
   }),
 );
 
-const borderNodeSchema = z.object({
-  children: z.array(tabNodeSchema),
-  edge: edgeSchema,
-  selected: z.number().int(),
-  size: dimensionSchema.optional(),
-  type: z.literal("border"),
-});
-
 const globalAttributesSchema = z.object({
-  enableBorderDock: z.boolean().optional(),
   enableSplitDock: z.boolean().optional(),
   tabEnableClose: z.boolean().optional(),
   tabEnableRename: z.boolean().optional(),
@@ -89,7 +80,6 @@ const globalAttributesSchema = z.object({
 
 const dashfooSchema = z.object({
   activeTabsetId: z.string().optional(),
-  borders: z.array(borderNodeSchema),
   global: globalAttributesSchema,
   layout: rowNodeSchema,
   maximizedTabsetId: z.string().optional(),
@@ -103,13 +93,11 @@ type Orientation = z.infer<typeof orientationSchema>;
 type Dimension = z.infer<typeof dimensionSchema>;
 type TabNode = z.infer<typeof tabNodeSchema>;
 type TabsetNode = z.infer<typeof tabsetNodeSchema>;
-type BorderNode = z.infer<typeof borderNodeSchema>;
 type GlobalAttributes = z.infer<typeof globalAttributesSchema>;
 type Dashfoo = z.infer<typeof dashfooSchema>;
 type Node = RowNode | TabsetNode | TabNode;
 
 export {
-  borderNodeSchema,
   dashfooSchema,
   dimensionSchema,
   edgeSchema,
@@ -123,7 +111,6 @@ export {
 };
 
 export type {
-  BorderNode,
   Dashfoo,
   Dimension,
   Edge,

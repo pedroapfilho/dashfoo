@@ -6,7 +6,6 @@ import { DashfooLayout } from "./dashfoo-layout";
 
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",
-  borders: [],
   global: {},
   layout: {
     children: [

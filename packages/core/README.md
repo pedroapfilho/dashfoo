@@ -27,25 +27,22 @@ type Dashfoo = {
   version: number;
   global: GlobalAttributes;
   layout: RowNode; // the root is always a row
-  borders: Array<BorderNode>;
   activeTabsetId?: string;
   maximizedTabsetId?: string;
 };
 ```
 
-The tree has four node kinds, each discriminated by `type`:
+The tree has three node kinds, each discriminated by `type`:
 
 | Node         | `type`     | Holds                                                                     |
 | ------------ | ---------- | ------------------------------------------------------------------------- |
 | `RowNode`    | `"row"`    | `children` (rows or tabsets), `orientation` (`row`/`column`), `weight?`   |
 | `TabsetNode` | `"tabset"` | `children` (tabs), `selected` index, optional `size`/`min`/`max`/`weight` |
 | `TabNode`    | `"tab"`    | `component`, `name`, `id`, optional `config`/`icon`/enable flags          |
-| `BorderNode` | `"border"` | `children` (tabs), `edge` (`top`/`bottom`/`left`/`right`), `selected`     |
 
 Rows nest (a row's child can be another row), which is how arbitrary tiled splits
 are represented. Sizes are `Dimension` values (`{ unit, value }`) where `unit` is
-one of `px`, `%`, `em`, `rem`, `vh`, `vw`. Borders dock tabs to a frame edge and
-sit outside the row tree.
+one of `px`, `%`, `em`, `rem`, `vh`, `vw`.
 
 Every schema is exported as a zod object plus an inferred type, so untrusted input
 can be validated before it reaches the reducer:
@@ -70,28 +67,25 @@ Every mutation is one immutable, discriminated `Action`. The reducer is exhausti
 over the union; an unhandled case throws at runtime via `assertNever`. Validate
 untrusted payloads against `actionSchema` before dispatch.
 
-| `action.type`            | Effect                                                           |
-| ------------------------ | ---------------------------------------------------------------- |
-| `addNode`                | Insert a tab at a `DockLocation` (center / split-\* / border-\*) |
-| `moveNode`               | Remove a tab by `sourceId`, re-insert it at a dock target        |
-| `selectTab`              | Set a tabset's `selected` index                                  |
-| `setActiveTabset`        | Mark the focused tabset                                          |
-| `setMaximizedTabset`     | Maximize one tabset (or clear with `null`)                       |
-| `renameTab`              | Change a tab's `name`                                            |
-| `deleteTab`              | Remove a tab                                                     |
-| `deleteTabset`           | Remove a whole tabset                                            |
-| `adjustSplit`            | Set the `weights` of a row's children (splitter drag)            |
-| `adjustBorderSize`       | Resize a border by `edge`                                        |
-| `setBorderSelected`      | Select (or collapse with `-1`) a border tab by `edge`            |
-| `updateNodeAttributes`   | Patch mutable attrs on a tab / tabset / row / border             |
-| `updateGlobalAttributes` | Patch the `global` block                                         |
+| `action.type`            | Effect                                                    |
+| ------------------------ | --------------------------------------------------------- |
+| `addNode`                | Insert a tab at a `DockLocation` (center / split-\*)      |
+| `moveNode`               | Remove a tab by `sourceId`, re-insert it at a dock target |
+| `selectTab`              | Set a tabset's `selected` index                           |
+| `setActiveTabset`        | Mark the focused tabset                                   |
+| `setMaximizedTabset`     | Maximize one tabset (or clear with `null`)                |
+| `renameTab`              | Change a tab's `name`                                     |
+| `deleteTab`              | Remove a tab                                              |
+| `deleteTabset`           | Remove a whole tabset                                     |
+| `adjustSplit`            | Set the `weights` of a row's children (splitter drag)     |
+| `updateNodeAttributes`   | Patch mutable attrs on a tab / tabset / row               |
+| `updateGlobalAttributes` | Patch the `global` block                                  |
 
-The `DockLocation` union is `center`, `split-top`/`split-bottom`/`split-left`/`split-right`,
-and `border-top`/`border-bottom`/`border-left`/`border-right`. A `center` drop
+The `DockLocation` union is `center` and
+`split-top`/`split-bottom`/`split-left`/`split-right`. A `center` drop
 stacks the tab into the target tabset. A `split-*` drop creates a new tabset beside
 the target, reusing the parent row when its orientation already matches, otherwise
-wrapping both in a fresh row. A `border-*` drop docks the tab to a frame edge,
-creating the border on demand.
+wrapping both in a fresh row.
 
 ### Use the reducer directly
 
@@ -101,7 +95,6 @@ import { reducer, parseModel, type Action, type Dashfoo } from "@dashfoo/core";
 const model: Dashfoo = parseModel({
   version: 1,
   global: {},
-  borders: [],
   layout: {
     type: "row",
     id: "root",
@@ -152,30 +145,26 @@ Read-only lookups over a model, all exported:
 collectTabsets(model): Array<TabsetNode>;       // depth-first, layout only
 getFirstTabset(model): TabsetNode | undefined;
 findTabset(model, tabsetId): TabsetNode | undefined;
-findBorder(model, edge): BorderNode | undefined;
-findTab(model, tabId): TabLocation | undefined; // searches tabsets and borders
+findTab(model, tabId): TabLocation | undefined; // searches tabsets
 ```
 
 `findTab` returns `{ container, index, tab }` so a caller knows where the tab
-lives (a tabset in the layout, or a border).
+lives (a tabset in the layout).
 
 ## Geometry
 
-Two pure functions translate a pointer position into a drop intent. The
-@dnd-kit adapter in `@dashfoo/react` feeds them rects; you can call them directly
+A pure function translates a pointer position into a drop intent. The
+@dnd-kit adapter in `@dashfoo/react` feeds it rects; you can call it directly
 for custom drag logic.
 
 ```ts
 resolveDockTarget(pointer, rect, opts?): DockTarget;
-resolveBorderEdge(pointer, frame, opts?): Edge | null;
 ```
 
 `resolveDockTarget` decides where a drag over a tabset should land: `{ kind: "tab" }`
 when the pointer is in the interior, or `{ kind: "split", edge }` when it is within
 an outer band of one of the four edges (default 22%; the closer edge wins in
-corners). `resolveBorderEdge` checks the thin outer sliver of the whole frame
-(default 5%) and returns the edge to dock to, or `null` when the pointer is
-interior or outside. Both accept `{ bandFraction }` to tune the band. `Point` and
+corners). It accepts `{ bandFraction }` to tune the band. `Point` and
 `Rect` are exported.
 
 ## History (undo / redo)
@@ -193,7 +182,7 @@ if (canUndo(history)) history = undo(history);
 if (canRedo(history)) history = redo(history);
 ```
 
-`dispatch` coalesces resize actions. A continuous `adjustSplit` or `adjustBorderSize`
+`dispatch` coalesces resize actions. A continuous `adjustSplit`
 drag emits many actions per frame but collapses into a single undo step, keyed by
 the node being resized (so dragging a different splitter starts a new step). Any
 new dispatch clears the redo `future`.
@@ -258,10 +247,10 @@ to `dashfooMachine`.
 ## Public exports
 
 `schema` — `dashfooSchema`, `rowNodeSchema`, `tabsetNodeSchema`, `tabNodeSchema`,
-`borderNodeSchema`, `dimensionSchema`, `edgeSchema`, `unitSchema`,
-`orientationSchema`, `borderModeSchema`, `globalAttributesSchema`,
+`dimensionSchema`, `edgeSchema`, `unitSchema`,
+`orientationSchema`, `globalAttributesSchema`,
 `jsonValueSchema`; types `Dashfoo`, `RowNode`, `TabsetNode`, `TabNode`,
-`BorderNode`, `Dimension`, `Edge`, `Unit`, `Orientation`, `BorderMode`,
+`Dimension`, `Edge`, `Unit`, `Orientation`,
 `GlobalAttributes`, `Node`, `Json`.
 
 `actions` — `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`; types
@@ -269,10 +258,10 @@ to `dashfooMachine`.
 
 `reducer` — `reducer`. `invariants` — `normalize`.
 
-`tree` — `collectTabsets`, `getFirstTabset`, `findTabset`, `findBorder`, `findTab`;
+`tree` — `collectTabsets`, `getFirstTabset`, `findTabset`, `findTab`;
 types `TabContainer`, `TabLocation`.
 
-`geometry` — `resolveDockTarget`, `resolveBorderEdge`; types `DockTarget`,
+`geometry` — `resolveDockTarget`; types `DockTarget`,
 `BandOptions`, `Point`, `Rect`.
 
 `history` — `createHistory`, `dispatch`, `undo`, `redo`, `canUndo`, `canRedo`;

@@ -48,26 +48,22 @@ Every value of `data-dashfoo` the renderer emits, what element carries it, and
 where it comes from. Read the right-hand column against the source files if you
 want to confirm a selector before you write the rule.
 
-| `data-dashfoo` value | Element                 | Role                                                                                                  |
-| -------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
-| `layout`             | root `<div>`            | The whole frame. Also the geometry anchor for border docking (`.closest('[data-dashfoo="layout"]')`). |
-| `row`                | rrp `<Group>`           | A horizontal or vertical split container.                                                             |
-| `tabset`             | `<div>`                 | One tiled region: a strip of tabs over a content panel.                                               |
-| `tabstrip`           | `<div>`                 | The strip row: tablist plus trailing toolbar.                                                         |
-| `tablist`            | `<div role="tablist">`  | The scrollable run of tabs.                                                                           |
-| `tab-item`           | `<span>`                | One tab's group: the tab button and its close button.                                                 |
-| `tab`                | `<button role="tab">`   | The selectable tab itself.                                                                            |
-| `tab-close`          | `<button>`              | Per-tab close control.                                                                                |
-| `tab-rename`         | `<input>`               | Inline rename editor, mounted on double-click.                                                        |
-| `tabset-toolbar`     | `<div>`                 | Trailing controls area in the strip.                                                                  |
-| `tabset-maximize`    | `<button>`              | Maximize / restore toggle.                                                                            |
-| `tabcontent`         | `<div role="tabpanel">` | The active tab's content panel.                                                                       |
-| `border`             | `<div>`                 | One frame edge: its strip plus optional drawer.                                                       |
-| `border-strip`       | `<div>`                 | The run of edge-toggle buttons.                                                                       |
-| `border-tab`         | `<button>`              | One edge toggle.                                                                                      |
-| `border-drawer`      | `<section>`             | The panel a selected border tab opens.                                                                |
-| `dock-indicator`     | `<div>`                 | The drag overlay: insertion line or drop-zone pane.                                                   |
-| `splitter`           | rrp `<Separator>`       | The resize handle between panels. Also matchable as `[data-separator]`.                               |
+| `data-dashfoo` value | Element                 | Role                                                                                           |
+| -------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `layout`             | root `<div>`            | The whole frame. Also the geometry anchor for docking (`.closest('[data-dashfoo="layout"]')`). |
+| `row`                | rrp `<Group>`           | A horizontal or vertical split container.                                                      |
+| `tabset`             | `<div>`                 | One tiled region: a strip of tabs over a content panel.                                        |
+| `tabstrip`           | `<div>`                 | The strip row: tablist plus trailing toolbar.                                                  |
+| `tablist`            | `<div role="tablist">`  | The scrollable run of tabs.                                                                    |
+| `tab-item`           | `<span>`                | One tab's group: the tab button and its close button.                                          |
+| `tab`                | `<button role="tab">`   | The selectable tab itself.                                                                     |
+| `tab-close`          | `<button>`              | Per-tab close control.                                                                         |
+| `tab-rename`         | `<input>`               | Inline rename editor, mounted on double-click.                                                 |
+| `tabset-toolbar`     | `<div>`                 | Trailing controls area in the strip.                                                           |
+| `tabset-maximize`    | `<button>`              | Maximize / restore toggle.                                                                     |
+| `tabcontent`         | `<div role="tabpanel">` | The active tab's content panel.                                                                |
+| `dock-indicator`     | `<div>`                 | The drag overlay: insertion line or drop-zone pane.                                            |
+| `splitter`           | rrp `<Separator>`       | The resize handle between panels. Also matchable as `[data-separator]`.                        |
 
 A few of these warrant detail.
 
@@ -126,15 +122,13 @@ State does not arrive as extra `data-dashfoo` values. It rides on the native
 ARIA and `data-*` attributes the elements already set, so your selectors compose
 the structural attribute with the state attribute.
 
-| State                  | Lives on                                  | Set when                                              | Source of truth                          |
-| ---------------------- | ----------------------------------------- | ----------------------------------------------------- | ---------------------------------------- | --- | ----------- |
-| `aria-selected="true"` | `[data-dashfoo="tab"]`                    | The tab is the active one in its tabset               | `aria-selected={index === selected}`     |
-| `aria-pressed="true"`  | `[data-dashfoo="border-tab"]`             | The edge drawer for that tab is open                  | `aria-pressed={index === selected}`      |
-| `aria-pressed="true"`  | `[data-dashfoo="tabset-maximize"]`        | The tabset is maximized                               | `aria-pressed={isMaximized}`             |
-| `data-dragging`        | `[data-dashfoo="tab"]`                    | The tab is being dragged                              | `data-dragging={isDragging               |     | undefined}` |
-| `data-drop-target`     | `[data-dashfoo="tabset"]`                 | A dragged tab is hovering this tabset                 | `data-drop-target={isDropTarget          |     | undefined}` |
-| `data-edge`            | `border`, `border-strip`, `border-drawer` | Which frame edge: `left`, `right`, `top`, `bottom`    | `data-edge={node.edge}`                  |
-| `tabIndex={0 / -1}`    | `[data-dashfoo="tab"]`                    | Roving tabindex: the selected tab is the one tab stop | `tabIndex={index === selected ? 0 : -1}` |
+| State                  | Lives on                           | Set when                                              | Source of truth                          |
+| ---------------------- | ---------------------------------- | ----------------------------------------------------- | ---------------------------------------- | --- | ----------- |
+| `aria-selected="true"` | `[data-dashfoo="tab"]`             | The tab is the active one in its tabset               | `aria-selected={index === selected}`     |
+| `aria-pressed="true"`  | `[data-dashfoo="tabset-maximize"]` | The tabset is maximized                               | `aria-pressed={isMaximized}`             |
+| `data-dragging`        | `[data-dashfoo="tab-item"]`        | The tab is being dragged                              | `data-dragging={isDragging               |     | undefined}` |
+| `data-drop-target`     | `[data-dashfoo="tabset"]`          | A dragged tab is hovering this tabset                 | `data-drop-target={isDropTarget          |     | undefined}` |
+| `tabIndex={0 / -1}`    | `[data-dashfoo="tab"]`             | Roving tabindex: the selected tab is the one tab stop | `tabIndex={index === selected ? 0 : -1}` |
 
 Two notes on the boolean `data-*` attributes. `data-dragging` and
 `data-drop-target` are only present when true; they are set to `undefined`
@@ -142,7 +136,7 @@ otherwise, so the attribute is absent rather than `="false"`. Select on
 presence:
 
 ```css
-[data-dashfoo="tab"][data-dragging] {
+[data-dashfoo="tab-item"][data-dragging] {
   opacity: 0.5;
 }
 [data-dashfoo="tabset"][data-drop-target] {
@@ -176,50 +170,14 @@ The `:has()` rule is worth calling out. The active surface and the underline wan
 to sit on the `tab-item` wrapper, but the state lives on the inner `tab` button.
 `:has()` lifts the state up one level without any extra attribute on the wrapper.
 
-### Pressed border tab and maximize toggle
+### Pressed maximize toggle
 
-Both the edge toggles and the maximize button report their on/off state through
-`aria-pressed`. The demo gives a pressed border tab a visible surface and border:
+The maximize button reports its on/off state through `aria-pressed`. The demo
+gives the pressed toggle a visible surface:
 
 ```css
-[data-dashfoo="border-tab"][aria-pressed="true"] {
+[data-dashfoo="tabset-maximize"][aria-pressed="true"] {
   @apply border-df-border-strong bg-df-surface text-df-emphasis;
-}
-```
-
-### Edge-aware borders
-
-A `border` and everything inside it carry `data-edge`. Use it to flip orientation
-and to put the divider on the correct side. The demo runs the left and right edge
-labels vertically and pins the divider toward the frame:
-
-```css
-[data-dashfoo="border-strip"][data-edge="left"],
-[data-dashfoo="border-strip"][data-edge="right"] {
-  @apply h-full flex-col border-df-border;
-}
-[data-dashfoo="border-strip"][data-edge="left"] {
-  @apply border-r;
-}
-[data-dashfoo="border-strip"][data-edge="right"] {
-  @apply border-l;
-}
-[data-dashfoo="border-strip"][data-edge="left"] [data-dashfoo="border-tab"],
-[data-dashfoo="border-strip"][data-edge="right"] [data-dashfoo="border-tab"] {
-  writing-mode: vertical-rl;
-}
-```
-
-The drawer size comes from the model (`node.size`, defaulting to 240px), applied
-inline as `width` or `height` depending on the edge. The skin only owns the
-border and the surface:
-
-```css
-[data-dashfoo="border-drawer"][data-edge="left"] {
-  @apply border-r;
-}
-[data-dashfoo="border-drawer"] {
-  @apply border-df-border bg-df-surface;
 }
 ```
 
@@ -288,8 +246,8 @@ without touching the element's selector.
 | `--dashfoo-dock-line-radius`  | `2px`                       | Insertion line corner radius.   |
 
 The indicator takes two visual forms from the same element. Dropping onto a tab
-strip paints a thin insertion line (`--dashfoo-dock-line`); dropping onto the body
-or a frame edge paints a filled pane (`--dashfoo-dock-fill` plus the border vars).
+strip paints a thin insertion line (`--dashfoo-dock-line`); dropping onto the tabset
+body to split paints a filled pane (`--dashfoo-dock-fill` plus the border vars).
 You do not select between them; setting the variables covers both.
 
 The demo sets three of them on `:root` to keep the indicators grayscale:
@@ -334,9 +292,6 @@ controls without clipping:
   @apply outline-2 outline-df-emphasis;
 }
 [data-dashfoo="tabset-maximize"]:focus-visible {
-  @apply outline-2 outline-df-emphasis;
-}
-[data-dashfoo="border-tab"]:focus-visible {
   @apply outline-2 outline-df-emphasis;
 }
 ```
@@ -385,13 +340,12 @@ with their selected state, and the splitter. Everything else is refinement.
 ```
 
 Add the dock variables on `:root`, then fill in `tab-close`, `tabset-maximize`,
-`border-*`, focus rings, and hover states as you go. The full reference for what
+focus rings, and hover states as you go. The full reference for what
 you can target is the two tables above.
 
 ## See also
 
 - `apps/demo-vite/src/index.css` for the complete worked skin.
 - `packages/react/src/tabset-view.tsx` for the tabset markup and ARIA wiring.
-- `packages/react/src/border-view.tsx` for the edge strip and drawer markup.
 - `packages/react/src/row-view.tsx` for the splitter (`<Separator data-dashfoo="splitter">`).
 - `packages/react/src/drag-adapter.tsx` for the dock indicator and the `--dashfoo-dock-*` fallbacks.

@@ -5,7 +5,8 @@ import type { CSSProperties, FocusEvent, KeyboardEvent, MouseEvent, ReactNode } 
 import { useEffect, useRef, useState } from "react";
 
 import { useDashfooContext } from "./context";
-import { useTabDraggable, useTabsetDroppable } from "./drag-adapter";
+import { useTabDraggable, useTabsetDraggable, useTabsetDroppable } from "./drag-adapter";
+import { TabOverflowMenu, useTabOverflow } from "./tab-overflow";
 
 // height/width 100% (not flex:1) so the tabset fills its parent whether that
 // parent is a flex item or a plain block — rrp wraps panel content in a block
@@ -24,7 +25,7 @@ const tabsetStyle: CSSProperties = {
 // not announced as a tab.
 const stripStyle: CSSProperties = { display: "flex", flexShrink: 0 };
 
-const tablistStyle: CSSProperties = { display: "flex", minWidth: 0, overflow: "hidden" };
+const tablistStyle: CSSProperties = { display: "flex", minWidth: 0, overflowX: "auto" };
 
 const contentStyle: CSSProperties = { flex: 1, minHeight: 0, overflow: "auto" };
 
@@ -35,6 +36,8 @@ const toolbarStyle: CSSProperties = {
   marginInlineStart: "auto",
 };
 
+const iconStyle: CSSProperties = { pointerEvents: "none" };
+
 // Stable ids wiring each tab to its panel (aria-controls / aria-labelledby).
 const tabDomId = (tabsetId: string, tabId: string): string => `dashfoo-tab-${tabsetId}-${tabId}`;
 const panelDomId = (tabsetId: string): string => `dashfoo-panel-${tabsetId}`;
@@ -42,6 +45,14 @@ const panelDomId = (tabsetId: string): string => `dashfoo-panel-${tabsetId}`;
 const CloseIcon = (): ReactNode => (
   <svg aria-hidden="true" height="10" viewBox="0 0 10 10" width="10">
     <path d="M1.5 1.5l7 7m0-7l-7 7" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
+  </svg>
+);
+
+// pointer-events:none so a pointerdown lands on the button (the dnd-kit
+// draggable), not on the svg path — otherwise the drag sensor never activates.
+const GripIcon = (): ReactNode => (
+  <svg aria-hidden="true" height="10" style={iconStyle} viewBox="0 0 10 10" width="10">
+    <path d="M3 2v6M5 2v6M7 2v6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.2" />
   </svg>
 );
 
@@ -138,7 +149,7 @@ const TabButton = ({
   tab: TabNode;
   tabsetId: string;
 }): ReactNode => {
-  const { dispatch } = useDashfooContext();
+  const { dispatch, renderTabLabel } = useDashfooContext();
   const { isDragging, ref } = useTabDraggable(tab.id, tab.enableDrag === false);
   const [editing, setEditing] = useState(false);
   const itemRef = useRef<HTMLSpanElement>(null);
@@ -180,7 +191,7 @@ const TabButton = ({
   };
 
   return (
-    <span data-dashfoo="tab-item" ref={itemRef}>
+    <span data-dashfoo="tab-item" data-dragging={isDragging || undefined} ref={itemRef}>
       {editing ? (
         <TabRenameInput
           name={tab.name}
@@ -190,9 +201,9 @@ const TabButton = ({
       ) : (
         <button
           aria-controls={panelDomId(tabsetId)}
+          aria-label={renderTabLabel ? tab.name : undefined}
           aria-selected={index === selected}
           data-dashfoo="tab"
-          data-dragging={isDragging || undefined}
           data-tab-id={tab.id}
           id={tabDomId(tabsetId, tab.id)}
           onClick={handleSelect}
@@ -202,7 +213,7 @@ const TabButton = ({
           tabIndex={index === selected ? 0 : -1}
           type="button"
         >
-          {tab.name}
+          {renderTabLabel ? renderTabLabel(tab) : tab.name}
         </button>
       )}
       {closable && !editing ? (
@@ -223,14 +234,18 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
   const {
     closableTabs,
     dispatch,
+    draggableTabsets,
+    keepMounted,
     maximizable,
     maximizedTabsetId,
     renamableTabs,
     renderTab,
+    renderTabsetToolbar,
     tabLocation,
     tabStripEnabled,
   } = useDashfooContext();
   const { isDropTarget, ref } = useTabsetDroppable(node.id);
+  const { ref: gripRef } = useTabsetDraggable(node.id, !draggableTabsets);
   const tablistRef = useRef<HTMLDivElement>(null);
   const active = node.children[node.selected];
   const tabsClosable = closableTabs && node.enableClose !== false;
@@ -239,6 +254,23 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
 
   const handleMaximize = (): void => {
     dispatch({ tabsetId: isMaximized ? null : node.id, type: "setMaximizedTabset" });
+  };
+
+  const overflow = useTabOverflow(tablistRef, node.children.length);
+  const overflowItems = overflow.map((id) => ({
+    id,
+    name: node.children.find((tab) => tab.id === id)?.name ?? id,
+  }));
+
+  const handleOverflowSelect = (id: string): void => {
+    const index = node.children.findIndex((tab) => tab.id === id);
+    if (index === -1) {
+      return;
+    }
+    dispatch({ index, tabsetId: node.id, type: "selectTab" });
+    tablistRef.current
+      ?.querySelector<HTMLElement>(`#${CSS.escape(tabDomId(node.id, id))}`)
+      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
   };
 
   // Roving-tabindex keyboard model (WAI-ARIA APG Tabs): arrows move and select,
@@ -291,36 +323,70 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
           />
         ))}
       </div>
-      {showMaximize ? (
+      {showMaximize || renderTabsetToolbar || overflowItems.length > 0 || draggableTabsets ? (
         <div data-dashfoo="tabset-toolbar" style={toolbarStyle}>
-          <button
-            aria-label={isMaximized ? "Restore" : "Maximize"}
-            aria-pressed={isMaximized}
-            data-dashfoo="tabset-maximize"
-            onClick={handleMaximize}
-            type="button"
-          >
-            <MaximizeIcon maximized={isMaximized} />
-          </button>
+          {overflowItems.length > 0 ? (
+            <TabOverflowMenu items={overflowItems} onSelect={handleOverflowSelect} />
+          ) : null}
+          {draggableTabsets ? (
+            <button aria-label="Move tabset" data-dashfoo="tabset-grip" ref={gripRef} type="button">
+              <GripIcon />
+            </button>
+          ) : null}
+          {renderTabsetToolbar?.(node)}
+          {showMaximize ? (
+            <button
+              aria-label={isMaximized ? "Restore" : "Maximize"}
+              aria-pressed={isMaximized}
+              data-dashfoo="tabset-maximize"
+              onClick={handleMaximize}
+              type="button"
+            >
+              <MaximizeIcon maximized={isMaximized} />
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
   ) : null;
 
-  const content = active ? (
-    <div
-      aria-labelledby={tabDomId(node.id, active.id)}
-      data-dashfoo="tabcontent"
-      id={panelDomId(node.id)}
-      role="tabpanel"
-      style={contentStyle}
-      tabIndex={0}
-    >
-      {renderTab(active)}
-    </div>
-  ) : (
-    <div data-dashfoo="tabcontent" style={contentStyle} />
-  );
+  // keepMounted renders every panel (inactive ones hidden) so their state
+  // survives a tab switch; otherwise only the active panel mounts.
+  const renderContent = (): ReactNode => {
+    if (keepMounted && node.children.length > 0) {
+      return node.children.map((tab, index) => (
+        <div
+          aria-labelledby={tabDomId(node.id, tab.id)}
+          data-dashfoo="tabcontent"
+          hidden={index !== node.selected || undefined}
+          id={index === node.selected ? panelDomId(node.id) : undefined}
+          key={tab.id}
+          role={index === node.selected ? "tabpanel" : undefined}
+          style={contentStyle}
+          tabIndex={index === node.selected ? 0 : undefined}
+        >
+          {renderTab(tab)}
+        </div>
+      ));
+    }
+    if (active) {
+      return (
+        <div
+          aria-labelledby={tabDomId(node.id, active.id)}
+          data-dashfoo="tabcontent"
+          id={panelDomId(node.id)}
+          role="tabpanel"
+          style={contentStyle}
+          tabIndex={0}
+        >
+          {renderTab(active)}
+        </div>
+      );
+    }
+    return <div data-dashfoo="tabcontent" style={contentStyle} />;
+  };
+
+  const content = renderContent();
 
   return (
     <div
