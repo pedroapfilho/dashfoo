@@ -53,6 +53,71 @@ const findTab = (model: Dashfoo, tabId: string): TabLocation | undefined => {
   return undefined;
 };
 
+type AttributedNode = RowNode | TabNode | TabsetNode;
+
+// Find a row anywhere in the layout tree by id.
+const findRow = (row: RowNode, id: string): RowNode | undefined => {
+  if (row.id === id) {
+    return row;
+  }
+  for (const child of row.children) {
+    if (child.type === "row") {
+      const found = findRow(child, id);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return undefined;
+};
+
+const findAttributedNodeInRow = (row: RowNode, id: string): AttributedNode | undefined => {
+  if (row.id === id) {
+    return row;
+  }
+  for (const child of row.children) {
+    if (child.type === "row") {
+      const found = findAttributedNodeInRow(child, id);
+      if (found) {
+        return found;
+      }
+      continue;
+    }
+    if (child.id === id) {
+      return child;
+    }
+    const tab = child.children.find((candidate) => candidate.id === id);
+    if (tab) {
+      return tab;
+    }
+  }
+  return undefined;
+};
+
+// Locate any attributed node (row, tabset, or tab) by id — backs updateNodeAttributes.
+const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefined =>
+  findAttributedNodeInRow(model.layout, id);
+
+// The row holding a tabset, and the tabset's index within it — backs split placement.
+const findTabsetParent = (
+  row: RowNode,
+  tabsetId: string,
+): { index: number; parent: RowNode } | undefined => {
+  const index = row.children.findIndex((child) => child.type === "tabset" && child.id === tabsetId);
+  if (index !== -1) {
+    return { index, parent: row };
+  }
+  for (const child of row.children) {
+    if (child.type === "row") {
+      const found = findTabsetParent(child, tabsetId);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return undefined;
+};
+
 const collectIdsInRow = (row: RowNode, acc: Array<string>): void => {
   acc.push(row.id);
   for (const child of row.children) {
@@ -84,5 +149,14 @@ const findDuplicateIds = (model: Dashfoo): Array<string> => {
   return [...duplicates];
 };
 
-export { collectTabsets, findDuplicateIds, findTab, findTabset, getFirstTabset };
-export type { TabContainer, TabLocation };
+export {
+  collectTabsets,
+  findAttributedNode,
+  findDuplicateIds,
+  findRow,
+  findTab,
+  findTabset,
+  findTabsetParent,
+  getFirstTabset,
+};
+export type { AttributedNode, TabContainer, TabLocation };

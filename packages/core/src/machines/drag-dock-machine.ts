@@ -1,9 +1,8 @@
 import { assign, emit, setup } from "xstate";
 
-import type { Action, DockLocation } from "../actions";
+import type { Action, DropIntent } from "../actions";
 
 type DragSubject = { id: string; kind: "tab" | "tabset" };
-type DropIntent = { index?: number; location: DockLocation; targetId: string };
 
 type DragContext = { intent: DropIntent | null; subject: DragSubject | null };
 
@@ -76,4 +75,4 @@ const dragDockMachine = setup({
 });
 
 export { dragDockMachine };
-export type { DragContext, DragEmitted, DragEvent, DragSubject, DropIntent };
+export type { DragContext, DragEmitted, DragEvent, DragSubject };
