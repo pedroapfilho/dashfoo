@@ -33,7 +33,11 @@ jobs:
       - name: publint
         run: for pkg in core react theme; do (cd "packages/$pkg" && pnpm dlx publint --strict); done
       - name: are-the-types-wrong
-        run: for pkg in core react theme; do (cd "packages/$pkg" && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only); done
+        run: |
+          (cd packages/core && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only)
+          (cd packages/react && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only)
+          # tokens.css is a CSS-only export with no types/JS for attw to resolve.
+          (cd packages/theme && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only --exclude-entrypoints ./tokens.css)
 
   e2e:
     runs-on: ubuntu-latest

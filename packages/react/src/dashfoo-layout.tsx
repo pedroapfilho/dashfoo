@@ -1,13 +1,15 @@
 "use client";
 
 import type { Action, Dashfoo, DockLocation, TabNode, TabsetNode } from "@dashfoo/core";
+import { findTabset } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useMemo } from "react";
 
 import { DashfooContext } from "./context";
 import { DragProvider } from "./drag-adapter";
-import { LayoutFrame } from "./layout-frame";
+import { RowView } from "./row-view";
 import { useDashfooStore } from "./store";
+import { TabsetView } from "./tabset-view";
 
 type TabComponent = ComponentType<{ node: TabNode }>;
 
@@ -172,11 +174,16 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
   const handleCommit = store.dispatch;
   const splitDock = global.enableSplitDock !== false;
 
+  // A maximized tabset fills the frame on its own; otherwise the row tree renders.
+  const maximized = store.model.maximizedTabsetId
+    ? findTabset(store.model, store.model.maximizedTabsetId)
+    : undefined;
+
   return (
     <DashfooContext.Provider value={contextValue}>
       <DragProvider onCommit={handleCommit} splitDock={splitDock}>
         <div data-dashfoo="layout" style={rootStyle}>
-          <LayoutFrame model={store.model} />
+          {maximized ? <TabsetView node={maximized} /> : <RowView node={store.model.layout} />}
         </div>
       </DragProvider>
     </DashfooContext.Provider>

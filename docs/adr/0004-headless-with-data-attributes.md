@@ -38,7 +38,6 @@ internal class names (there are none). The values shipped today:
 | `data-dashfoo`    | Element                       | Source               |
 | ----------------- | ----------------------------- | -------------------- |
 | `layout`          | layout root                   | `dashfoo-layout.tsx` |
-| `frame`           | inner frame wrapper           | `layout-frame.tsx`   |
 | `row`             | the rrp `Group`               | `row-view.tsx`       |
 | `splitter`        | the rrp `Separator`           | `row-view.tsx`       |
 | `tabset`          | tabset container              | `tabset-view.tsx`    |
