@@ -11,7 +11,9 @@ import {
   useTabsetDraggable,
   useTabsetDroppable,
 } from "./drag-adapter";
-import { TabOverflowMenu, useTabOverflow } from "./tab-overflow";
+import { TabOverflowMenu } from "./tab-overflow";
+import { fallbackSelectedIndex } from "./tab-selection";
+import { useTabOverflow } from "./use-tab-overflow";
 
 // height/width 100% (not flex:1) so the tabset fills its parent whether that
 // parent is a flex item or a plain block — rrp wraps panel content in a block
@@ -46,11 +48,6 @@ const iconStyle: CSSProperties = { pointerEvents: "none" };
 // Stable ids wiring each tab to its panel (aria-controls / aria-labelledby).
 const tabDomId = (tabsetId: string, tabId: string): string => `dashfoo-tab-${tabsetId}-${tabId}`;
 const panelDomId = (tabsetId: string): string => `dashfoo-panel-${tabsetId}`;
-
-// The neighbour to show as active when the selected tab is dragged out: the next
-// tab if there is one, else the previous, else -1 (the tabset is emptying).
-const fallbackSelectedIndex = (count: number, removedIndex: number): number =>
-  removedIndex + 1 < count ? removedIndex + 1 : removedIndex - 1;
 
 const CloseIcon = (): ReactNode => (
   <svg aria-hidden="true" height="10" viewBox="0 0 10 10" width="10">
@@ -120,7 +117,7 @@ const TabRenameInput = ({
     }
   };
 
-  const handleBlur = (event: FocusEvent<HTMLInputElement>): void => {
+  const handleCommitOnBlur = (event: FocusEvent<HTMLInputElement>): void => {
     if (done.current) {
       return;
     }
@@ -133,7 +130,7 @@ const TabRenameInput = ({
       aria-label={`Rename ${name}`}
       data-dashfoo="tab-rename"
       defaultValue={name}
-      onBlur={handleBlur}
+      onBlur={handleCommitOnBlur}
       onKeyDown={handleKeyDown}
       ref={ref}
       type="text"
@@ -246,6 +243,14 @@ const TabButton = ({
   );
 };
 
+// renderTab is the consumer's content factory; calling it through a component (not
+// inline) gives the panel a stable identity so React keeps its state across
+// TabsetView re-renders instead of remounting the inline result.
+const TabPanel = ({ tab }: { tab: TabNode }): ReactNode => {
+  const { renderTab } = useDashfooContext();
+  return renderTab(tab);
+};
+
 const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
   const {
     closableTabs,
@@ -255,7 +260,6 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
     maximizable,
     maximizedTabsetId,
     renamableTabs,
-    renderTab,
     renderTabsetToolbar,
     tabLocation,
     tabStripEnabled,
@@ -398,7 +402,7 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
           style={contentStyle}
           tabIndex={index === visualSelected ? 0 : undefined}
         >
-          {renderTab(tab)}
+          <TabPanel tab={tab} />
         </div>
       ));
     }
@@ -412,7 +416,7 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
           style={contentStyle}
           tabIndex={0}
         >
-          {renderTab(active)}
+          <TabPanel tab={active} />
         </div>
       );
     }
@@ -445,4 +449,4 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
   );
 };
 
-export { fallbackSelectedIndex, TabsetView };
+export { TabsetView };

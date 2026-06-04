@@ -31,20 +31,19 @@ const DragSubjectContext = createContext<DragSubject | null>(null);
 // The dragged tab is excluded so its own slot never counts toward the order —
 // the insertion index and line are measured against the tabs it will land among.
 const tabRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
-  [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]:not([data-dnd-placeholder])')]
-    .filter((tab) => tab.dataset.tabId !== excludeId)
-    .map((tab) => tab.getBoundingClientRect());
+  [
+    ...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]:not([data-dnd-placeholder])'),
+  ].flatMap((tab) => (tab.dataset.tabId === excludeId ? [] : [tab.getBoundingClientRect()]));
 
 // Whole-tab-item rects (label + close button), excluding the dragged tab. The
 // insertion line lands on these boundaries so the "after the last tab" position
 // sits past the close button, not between the label and the close.
 const tabItemRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
-  [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab-item"]')]
-    .filter(
-      (item) =>
-        item.querySelector<HTMLElement>('[data-dashfoo="tab"]')?.dataset.tabId !== excludeId,
-    )
-    .map((item) => item.getBoundingClientRect());
+  [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab-item"]')].flatMap((item) =>
+    item.querySelector<HTMLElement>('[data-dashfoo="tab"]')?.dataset.tabId === excludeId
+      ? []
+      : [item.getBoundingClientRect()],
+  );
 
 // The tab strip is always a "stack as a tab" target, with an insertion index that
 // places the tab at a specific slot. Only the content area below it resolves to
