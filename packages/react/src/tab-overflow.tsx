@@ -41,7 +41,7 @@ const useTabOverflow = (
 };
 
 const OverflowIcon = (): ReactNode => (
-  <svg aria-hidden="true" height="10" viewBox="0 0 10 10" width="10">
+  <svg aria-hidden="true" fill="currentColor" height="10" viewBox="0 0 10 10" width="10">
     <circle cx="2" cy="5" r="1" />
     <circle cx="5" cy="5" r="1" />
     <circle cx="8" cy="5" r="1" />

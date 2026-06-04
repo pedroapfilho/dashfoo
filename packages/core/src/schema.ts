@@ -71,6 +71,7 @@ const rowNodeSchema: z.ZodType<RowNode> = z.lazy(() =>
 
 const globalAttributesSchema = z.object({
   enableSplitDock: z.boolean().optional(),
+  splitterSize: z.number().optional(),
   tabEnableClose: z.boolean().optional(),
   tabEnableRename: z.boolean().optional(),
   tabLocation: z.enum(["top", "bottom"]).optional(),

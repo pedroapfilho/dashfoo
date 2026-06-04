@@ -39,7 +39,7 @@ const DemoStage = ({
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </header>
-    <div className="min-h-0 flex-1">{children}</div>
+    <div className="min-h-0 flex-1 px-6 pb-6">{children}</div>
   </div>
 );
 

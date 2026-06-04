@@ -54,6 +54,14 @@ describe("dashfooSchema", () => {
     expect(() => dashfooSchema.parse(withoutVersion)).toThrow();
   });
 
+  test("global.splitterSize is accepted and preserved", () => {
+    const parsed = dashfooSchema.parse({
+      ...validModel,
+      global: { splitterSize: 6 },
+    });
+    expect(parsed.global.splitterSize).toBe(6);
+  });
+
   test("rejects an unknown dimension unit", () => {
     const badUnit = structuredClone(validModel);
     // ts2 carries a `min` dimension; corrupt its unit.
