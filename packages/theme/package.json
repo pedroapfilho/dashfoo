@@ -39,10 +39,6 @@
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "dependencies": {
-    "@base-ui/react": "^1.4.1",
-    "clsx": "^2.1.1"
-  },
   "devDependencies": {
     "@dashfoo/react": "workspace:*",
     "@repo/config-vitest": "workspace:*",

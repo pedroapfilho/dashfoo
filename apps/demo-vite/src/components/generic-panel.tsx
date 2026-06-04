@@ -1,0 +1,31 @@
+import type { ReactNode } from "react";
+
+import { PanelFrame } from "./panel-frame";
+import type { PanelProps } from "./panel-types";
+
+const TEXT_CONTENT: Record<string, Array<string>> = {
+  balances: ["BTC   1.284", "ETH   18.40", "USDC  42,910"],
+  console: ["› build finished in 1.2s", "› 0 errors · 0 warnings", "› watching for changes…"],
+  explorer: ["src/", "  router.tsx", "  pages/", "package.json", "vite.config.ts"],
+  files: ["README.md", "index.html", "src/main.tsx", "src/index.css"],
+  notes: ["Drag a tab onto another panel to stack it.", "Drag to an edge to split or dock."],
+  orders: ["Limit buy   0.50", "Stop sell   0.25"],
+  outline: ["# Overview", "## Layout model", "## Docking", "## Persistence"],
+  problems: ["No problems detected."],
+  terminal: ["$ pnpm dev", "VITE ready in 240 ms", "➜ local: http://localhost:5174/"],
+};
+
+const GenericPanel = ({ node }: PanelProps): ReactNode => {
+  const lines = TEXT_CONTENT[node.component] ?? [`${node.name} panel`];
+  return (
+    <PanelFrame title={node.name}>
+      <div className="text-df-muted flex flex-col gap-1 font-mono text-[11px] leading-relaxed">
+        {lines.map((line) => (
+          <div key={line}>{line}</div>
+        ))}
+      </div>
+    </PanelFrame>
+  );
+};
+
+export { GenericPanel };
