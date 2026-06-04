@@ -1,44 +1,7 @@
 "use client";
 
-import type { CSSProperties, ReactNode, RefObject } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-
-// The ids of the tabs whose right edge is past the tablist's visible right edge
-// (i.e. clipped). +1 absorbs sub-pixel rounding.
-const overflowingIds = (tablist: Element): Array<string> => {
-  const rightEdge = tablist.getBoundingClientRect().right;
-  return [...tablist.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')]
-    .filter((tab) => tab.getBoundingClientRect().right > rightEdge + 1)
-    .map((tab) => tab.dataset.tabId ?? "")
-    .filter(Boolean);
-};
-
-// Recomputes the overflowing ids when the tablist resizes or its tab count
-// changes. Returns [] until measured (and in jsdom, where rects are 0).
-const useTabOverflow = (
-  tablistRef: RefObject<HTMLElement | null>,
-  tabCount: number,
-): Array<string> => {
-  const [overflow, setOverflow] = useState<Array<string>>([]);
-
-  useEffect(() => {
-    const element = tablistRef.current;
-    if (!element) {
-      return;
-    }
-    const recompute = (): void => {
-      setOverflow(overflowingIds(element));
-    };
-    recompute();
-    const observer = new ResizeObserver(recompute);
-    observer.observe(element);
-    return () => {
-      observer.disconnect();
-    };
-  }, [tablistRef, tabCount]);
-
-  return overflow;
-};
 
 const OverflowIcon = (): ReactNode => (
   <svg aria-hidden="true" fill="currentColor" height="10" viewBox="0 0 10 10" width="10">
@@ -64,12 +27,12 @@ const TabOverflowItem = ({
   item: OverflowItem;
   onSelect: (id: string) => void;
 }): ReactNode => {
-  const handleClick = (): void => {
+  const handleSelect = (): void => {
     onSelect(item.id);
   };
 
   return (
-    <button data-dashfoo="tab-overflow-item" onClick={handleClick} role="menuitem" type="button">
+    <button data-dashfoo="tab-overflow-item" onClick={handleSelect} role="menuitem" type="button">
       {item.name}
     </button>
   );
@@ -141,5 +104,5 @@ const TabOverflowMenu = ({
   );
 };
 
-export { overflowingIds, TabOverflowMenu, useTabOverflow };
+export { TabOverflowMenu };
 export type { OverflowItem };
