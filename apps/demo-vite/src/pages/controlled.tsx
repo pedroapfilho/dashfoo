@@ -1,6 +1,7 @@
 import type { Dashfoo } from "@dashfoo/core";
 import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooLayout } from "@dashfoo/react";
+import { Redo2, Undo2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -61,10 +62,10 @@ const ImperativeControlPage = (): ReactNode => {
     <DemoStage
       actions={
         <>
-          <Button disabled={!view.canUndo} onClick={handleUndo}>
+          <Button disabled={!view.canUndo} icon={<Undo2 size={14} />} onClick={handleUndo}>
             Undo
           </Button>
-          <Button disabled={!view.canRedo} onClick={handleRedo}>
+          <Button disabled={!view.canRedo} icon={<Redo2 size={14} />} onClick={handleRedo}>
             Redo
           </Button>
         </>

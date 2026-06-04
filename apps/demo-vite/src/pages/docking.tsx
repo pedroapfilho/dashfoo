@@ -1,4 +1,5 @@
 import { DashfooLayout } from "@dashfoo/react";
+import { RotateCcw } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -15,7 +16,11 @@ const DockingPage = (): ReactNode => {
 
   return (
     <DemoStage
-      actions={<Button onClick={handleReset}>Reset layout</Button>}
+      actions={
+        <Button icon={<RotateCcw size={14} />} onClick={handleReset}>
+          Reset layout
+        </Button>
+      }
       description="Drag a tab onto another tab strip to stack it (an insertion line shows where it lands). Drag toward a tabset edge to split. Drag within a strip to reorder, or drag a tabset by its grip to move the whole panel."
       title="Docking & drag"
     >
