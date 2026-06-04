@@ -2,7 +2,7 @@
 
 import type { Action, Dashfoo, DockLocation, TabNode, TabsetNode } from "@dashfoo/core";
 import { findTabset } from "@dashfoo/core";
-import type { ComponentType, ReactNode } from "react";
+import type { ComponentType, CSSProperties, ReactNode } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useMemo } from "react";
 
 import { DashfooContext } from "./context";
@@ -174,6 +174,11 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
   const handleCommit = store.dispatch;
   const splitDock = global.enableSplitDock !== false;
 
+  const layoutStyle: CSSProperties =
+    global.splitterSize === undefined
+      ? rootStyle
+      : ({ ...rootStyle, "--dashfoo-splitter-size": `${global.splitterSize}px` } as CSSProperties);
+
   // A maximized tabset fills the frame on its own; otherwise the row tree renders.
   const maximized = store.model.maximizedTabsetId
     ? findTabset(store.model, store.model.maximizedTabsetId)
@@ -182,7 +187,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
   return (
     <DashfooContext.Provider value={contextValue}>
       <DragProvider onCommit={handleCommit} splitDock={splitDock}>
-        <div data-dashfoo="layout" style={rootStyle}>
+        <div data-dashfoo="layout" style={layoutStyle}>
           {maximized ? <TabsetView node={maximized} /> : <RowView node={store.model.layout} />}
         </div>
       </DragProvider>
