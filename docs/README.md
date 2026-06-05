@@ -20,7 +20,7 @@ Folder: [`docs/guides`](./guides)
 - [ADR 0002 — XState v5 for state, not zustand](./adr/0002-xstate-for-everything.md)
 - [ADR 0003 — structuredClone over Immer for the reducer](./adr/0003-structuredclone-over-immer.md)
 - [ADR 0004 — Headless components with a `data-dashfoo` attribute skin](./adr/0004-headless-with-data-attributes.md)
-- [ADR 0005 — Build on @dnd-kit/react 0.4 and react-resizable-panels v4, behind adapters](./adr/0005-dnd-kit-04-and-rrp-v4.md)
+- [ADR 0005 — Build on @dnd-kit 0.4 and react-resizable-panels v4, behind adapters](./adr/0005-dnd-kit-04-and-rrp-v4.md) (amended: now the `@dnd-kit/dom` core)
 
 Folder: [`docs/adr`](./adr)
 
@@ -28,8 +28,8 @@ Folder: [`docs/adr`](./adr)
 
 - [dashfoo (repository overview)](../README.md)
 - [@dashfoo/core](../packages/core/README.md) — pure TypeScript engine: zod schema, pure reducer, geometry, undo/redo history, serialize
-- [@dashfoo/react](../packages/react/README.md) — `DashfooLayout`, hooks, and the rrp / dnd-kit adapters; headless `data-dashfoo` markup
-- [@dashfoo/theme](../packages/theme/README.md) — drop-in skin for the headless components (placeholder today)
+- [@dashfoo/react](../packages/react/README.md) — `DashfooLayout`, the `Panel` helper, the `persist` prop, hooks, and the rrp / `@dnd-kit/dom` adapters; headless `data-dashfoo` markup
+- [@dashfoo/theme](../packages/theme/README.md) — the opt-in default skin: framework-agnostic plain CSS over overridable `--dashfoo-*` tokens, with a light variant
 
 ## Specs
 

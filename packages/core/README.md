@@ -34,15 +34,15 @@ type Dashfoo = {
 
 The tree has three node kinds, each discriminated by `type`:
 
-| Node         | `type`     | Holds                                                                     |
-| ------------ | ---------- | ------------------------------------------------------------------------- |
-| `RowNode`    | `"row"`    | `children` (rows or tabsets), `orientation` (`row`/`column`), `weight?`   |
-| `TabsetNode` | `"tabset"` | `children` (tabs), `selected` index, optional `size`/`min`/`max`/`weight` |
-| `TabNode`    | `"tab"`    | `component`, `name`, `id`, optional `config`/`icon`/enable flags          |
+| Node         | `type`     | Holds                                                                   |
+| ------------ | ---------- | ----------------------------------------------------------------------- |
+| `RowNode`    | `"row"`    | `children` (rows or tabsets), `orientation` (`row`/`column`), `weight?` |
+| `TabsetNode` | `"tabset"` | `children` (tabs), `selected` index, optional `min`/`max`/`weight`      |
+| `TabNode`    | `"tab"`    | `component`, `name`, `id`, optional `config` + `enable*` flags          |
 
 Rows nest (a row's child can be another row), which is how arbitrary tiled splits
-are represented. Sizes are `Dimension` values (`{ unit, value }`) where `unit` is
-one of `px`, `%`, `em`, `rem`, `vh`, `vw`.
+are represented. `min`/`max` are `Dimension` values (`{ unit, value }`) where
+`unit` is one of `px`, `%`, `em`, `rem`, `vh`, `vw`.
 
 Every schema is exported as a zod object plus an inferred type, so untrusted input
 can be validated before it reaches the reducer:
@@ -52,6 +52,26 @@ import { dashfooSchema, type Dashfoo } from "@dashfoo/core";
 
 const model: Dashfoo = dashfooSchema.parse(untrustedJson);
 ```
+
+### Builders
+
+`model` / `row` / `tabset` / `tab` construct a valid model without the
+`type`/`version`/`selected` boilerplate:
+
+```ts
+import { model, row, tabset, tab } from "@dashfoo/core";
+
+const m = model(
+  row([
+    tabset([tab("chart", "Chart"), tab("depth", "Depth")], { id: "left", weight: 2 }),
+    tabset([tab("book", "Order Book")], { id: "right" }),
+  ]),
+  { activeTabsetId: "left" },
+);
+```
+
+A `tab`'s id defaults to its component name; `tabset`/`row` auto-generate an id
+when omitted. Output is schema-valid by construction.
 
 ## The pure reducer
 
@@ -252,6 +272,11 @@ to `dashfooMachine`.
 `jsonValueSchema`; types `Dashfoo`, `RowNode`, `TabsetNode`, `TabNode`,
 `Dimension`, `Edge`, `Unit`, `Orientation`,
 `GlobalAttributes`, `Node`, `Json`.
+
+`builders` — `model`, `row`, `tabset`, `tab`; option types `ModelOptions`,
+`RowOptions`, `TabsetOptions`, `TabOptions`.
+
+`ids` — `createNodeId`, `createTabId`.
 
 `actions` — `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`; types
 `Action`, `DockLocation`, `MutableNodeAttrs`.

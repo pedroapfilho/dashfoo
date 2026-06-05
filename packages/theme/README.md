@@ -1,127 +1,153 @@
 # @dashfoo/theme
 
-A drop-in skin for the `@dashfoo/react` headless docking components.
+The opt-in default skin for the `@dashfoo/react` headless docking chrome.
 
-This package is a **placeholder today**. It ships one export and no styles. The
-real theme lands in Phase 7: a Base-UI-composed skin over the `data-dashfoo`
-markup that `@dashfoo/react` renders. Until then, copy the demo's neutral theme
-(see below) as your starting skin.
+Framework-agnostic **plain CSS** — no Tailwind, no Base UI, no build step. It
+styles every `data-dashfoo` element through overridable `--dashfoo-*` design
+tokens, ships a neutral grayscale dark theme by default, and an opt-in light
+variant. Import it and the layout is styled; remap a few tokens to make it yours.
 
-## What ships today
+## Install
 
-```ts
-import { DASHFOO_THEME_VERSION } from "@dashfoo/theme";
-
-console.log(DASHFOO_THEME_VERSION); // "0.0.0"
+```bash
+pnpm add @dashfoo/theme
 ```
 
-That constant is the entire public API. It keeps the `tsdown` build entry valid
-while the skin is still being built. There are no components, no token files,
-and no CSS imports yet. Importing this package will not style anything.
+## Use
 
-## Why it's empty
+Import the full skin once, anywhere in your app's entry:
 
-`@dashfoo/react` renders headless markup. Every structural element carries a
-`data-dashfoo="..."` attribute and zero imposed styling — no colors, no borders,
-no spacing. You attach the look. That contract is what `@dashfoo/theme` will
-target: a styled layer you opt into, composed with Base UI primitives, that you
-can drop over the headless tree without rewriting your own CSS.
+```ts
+import "@dashfoo/theme/dashfoo.css";
+```
 
-Shipping the skin later (rather than a half-styled one now) keeps the headless
-contract stable and lets the demo prove out the selector surface first.
+That's it — `dashfoo.css` already `@import`s the tokens, so every `data-dashfoo`
+element from `@dashfoo/react` is styled. The chrome is dark grayscale by default.
 
-## The contract to style against
+### Light theme
 
-The skin styles elements by their `data-dashfoo` attribute. These are the values
-the demo theme targets today:
+Light is opt-in. Set `data-dashfoo-theme="light"` on any ancestor (typically
+`<html>`); everything inside inverts:
 
-| Selector                           | What it is                                     |
-| ---------------------------------- | ---------------------------------------------- |
-| `[data-dashfoo="layout"]`          | Root layout container                          |
-| `[data-dashfoo="tabset"]`          | A tabbed region (the bordered surface card)    |
-| `[data-dashfoo="tabstrip"]`        | Tab strip row: tablist plus trailing toolbar   |
-| `[data-dashfoo="tablist"]`         | The list of tabs                               |
-| `[data-dashfoo="tab-item"]`        | A single tab's wrapper (label plus close)      |
-| `[data-dashfoo="tab"]`             | The tab button itself                          |
-| `[data-dashfoo="tab-close"]`       | Close-tab control                              |
-| `[data-dashfoo="tab-rename"]`      | Inline rename input                            |
-| `[data-dashfoo="tabset-toolbar"]`  | Trailing toolbar in the strip                  |
-| `[data-dashfoo="tabset-maximize"]` | Maximize-tabset control                        |
-| `[data-dashfoo="tabcontent"]`      | Active tab's content area                      |
-| `[data-separator]`                 | A resize splitter (carries `aria-orientation`) |
+```html
+<html data-dashfoo-theme="light"></html>
+```
 
-State reads off standard ARIA and data attributes, so you select against them
-directly:
+Scope it to a subtree instead by putting the attribute on a wrapping element.
 
-- `[data-dashfoo="tab"][aria-selected="true"]` — the active tab
-- `[data-dashfoo="tabset-maximize"][aria-pressed="true"]` — a maximized tabset's toggle
-- `[data-separator][aria-orientation="vertical"]` — a column resize handle (also `horizontal`)
-- `:focus-visible` and `:focus-within` for focus rings
+### Tokens only
 
-Dock-target indicators (shown while dragging) read three CSS custom properties
-you can set on `:root`:
+Want the headless structure styled by your own rules but with the dashfoo token
+palette available? Import just the tokens:
+
+```ts
+import "@dashfoo/theme/tokens.css";
+```
+
+## Customize
+
+Every value in the skin resolves through a `--dashfoo-*` custom property.
+Reskinning is a token remap — you never touch the chrome rules. Override on
+`:root` (or any scope):
 
 ```css
 :root {
-  --dashfoo-dock-fill: rgba(255, 255, 255, 0.1);
-  --dashfoo-dock-border: rgba(255, 255, 255, 0.4);
-  --dashfoo-dock-line: rgba(255, 255, 255, 0.85);
+  --dashfoo-bg: #0b0f17;
+  --dashfoo-surface: #131a26;
+  --dashfoo-text-emphasis: #e8f0ff;
+  --dashfoo-radius: 6px;
 }
 ```
 
-## Reference skin: copy the demo theme
+### Token reference
 
-`apps/demo-vite/src/index.css` is a complete, neutral (grayscale) skin over the
-full `data-dashfoo` surface. It is the canonical reference until `@dashfoo/theme`
-ships. Selection, focus, and data direction read through lightness, weight, and
-glyphs — no hue anywhere — so it drops into most apps without a palette fight.
+These are defined in `tokens.css` and are the intended override surface.
 
-It's written with Tailwind v4 `@apply` inside `@layer components`, but the
-selectors are plain CSS. Lift them into vanilla CSS, CSS Modules, or another
-utility framework as needed. A trimmed sample:
+| Token                     | Default (dark)                | Controls                             |
+| ------------------------- | ----------------------------- | ------------------------------------ |
+| `--dashfoo-bg`            | `#0a0a0b`                     | Layout background                    |
+| `--dashfoo-surface`       | `#161617`                     | Tabset + panel + tab-content surface |
+| `--dashfoo-strip`         | `#101011`                     | Tab strip background                 |
+| `--dashfoo-border`        | `rgba(255,255,255,0.08)`      | Default borders                      |
+| `--dashfoo-border-strong` | `rgba(255,255,255,0.16)`      | Focused / emphasized borders         |
+| `--dashfoo-text`          | `#ededee`                     | Primary text                         |
+| `--dashfoo-text-muted`    | `#8b8b8f`                     | Idle tabs, secondary text            |
+| `--dashfoo-text-faint`    | `#5f5f63`                     | Icons, close/grip/maximize controls  |
+| `--dashfoo-text-emphasis` | `#fafafa`                     | Active tab, focus ring, selection    |
+| `--dashfoo-radius`        | `10px`                        | Tabset / menu corner radius          |
+| `--dashfoo-font`          | `ui-sans-serif, system-ui, …` | Chrome font family                   |
+| `--dashfoo-font-size`     | `13px`                        | Base chrome font size                |
+| `--dashfoo-splitter-size` | `1rem`                        | Resize-handle hit area (see note)    |
+| `--dashfoo-dock-fill`     | `rgba(255,255,255,0.1)`       | Split-zone fill while dragging       |
+| `--dashfoo-dock-border`   | `rgba(255,255,255,0.4)`       | Split-zone border                    |
+| `--dashfoo-dock-line`     | `rgba(255,255,255,0.85)`      | Tab insertion line                   |
 
-```css
-[data-dashfoo="tabset"] {
-  min-height: 0;
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #161617;
-}
+The drag/dock indicators also read four **optional** properties that are unset by
+default (they fall back to the value shown). Override them only to retune the
+indicator look:
 
-[data-dashfoo="tabset"]:focus-within {
-  border-color: rgba(255, 255, 255, 0.16);
-}
+| Token                         | Fallback                                       | Controls                               |
+| ----------------------------- | ---------------------------------------------- | -------------------------------------- |
+| `--dashfoo-dock-border-width` | `1px`                                          | Split-zone border width                |
+| `--dashfoo-dock-radius`       | `6px`                                          | Split-zone corner radius               |
+| `--dashfoo-dock-line-radius`  | `2px`                                          | Insertion-line corner radius           |
+| `--dashfoo-dock-transition`   | `left 60ms, top 60ms, width 60ms, height 60ms` | Indicator glide; set `none` to disable |
 
-[data-dashfoo="tab"][aria-selected="true"] {
-  font-weight: 500;
-  color: #fafafa;
-}
+> **Splitter size.** `--dashfoo-splitter-size` is the default; the model's
+> `global.splitterSize` (a number, in px) overrides it per-layout via an inline
+> CSS var on the layout root.
 
-[data-separator][aria-orientation="vertical"] {
-  width: 1rem;
-  cursor: col-resize;
-}
-```
+## The `data-dashfoo` contract
 
-To use it as-is:
+If you'd rather write your own skin, target these attributes — they're stable and
+emitted by `@dashfoo/react` with zero imposed styling.
 
-1. Open `apps/demo-vite/src/index.css`.
-2. Copy the `@theme` block (color and radius tokens), the `:root` block (the
-   `--dashfoo-dock-*` indicator variables), and the `@layer components` block.
-3. Paste into your app's stylesheet and adjust the token values.
+| Selector                             | Element                                                                 |
+| ------------------------------------ | ----------------------------------------------------------------------- |
+| `[data-dashfoo="layout"]`            | Root layout container                                                   |
+| `[data-dashfoo="row"]`               | A resizable row/column group                                            |
+| `[data-dashfoo="splitter"]`          | Resize handle (also carries rrp's `[data-separator][aria-orientation]`) |
+| `[data-dashfoo="tabset"]`            | A tabbed pane (bordered surface)                                        |
+| `[data-dashfoo="tabstrip"]`          | Tab strip row (tablist + trailing toolbar)                              |
+| `[data-dashfoo="tablist"]`           | The ARIA tablist                                                        |
+| `[data-dashfoo="tab-item"]`          | A tab wrapper (label + close)                                           |
+| `[data-dashfoo="tab"]`               | The tab button                                                          |
+| `[data-dashfoo="tab-close"]`         | Close-tab control                                                       |
+| `[data-dashfoo="tab-rename"]`        | Inline rename input                                                     |
+| `[data-dashfoo="tabset-toolbar"]`    | Trailing toolbar in the strip                                           |
+| `[data-dashfoo="tabset-grip"]`       | Drag grip that moves the whole tabset                                   |
+| `[data-dashfoo="tabset-maximize"]`   | Maximize/restore toggle                                                 |
+| `[data-dashfoo="tabcontent"]`        | Active tab's content region                                             |
+| `[data-dashfoo="tab-overflow"]`      | "More tabs" overflow button                                             |
+| `[data-dashfoo="tab-overflow-root"]` | Overflow popper root                                                    |
+| `[data-dashfoo="tab-overflow-menu"]` | Overflow dropdown menu                                                  |
+| `[data-dashfoo="tab-overflow-item"]` | An overflow menu item                                                   |
+| `[data-dashfoo="panel"]`             | `Panel` helper root                                                     |
+| `[data-dashfoo="panel-header"]`      | `Panel` header row                                                      |
+| `[data-dashfoo="panel-title"]`       | `Panel` title                                                           |
+| `[data-dashfoo="panel-icon"]`        | `Panel` leading-icon slot                                               |
+| `[data-dashfoo="panel-badge"]`       | `Panel` live badge                                                      |
+| `[data-dashfoo="panel-body"]`        | `Panel` scrollable body                                                 |
+| `[data-dashfoo="dock-indicator"]`    | Live dock indicator (insertion line / split zone)                       |
+| `[data-dashfoo="drag-preview"]`      | The chip that follows the pointer while dragging                        |
 
-The headless tree owns its structure; you own every pixel of the look.
+### State selectors
 
-## Roadmap
+Read state off standard ARIA and data attributes:
 
-Phase 7 replaces this placeholder with:
+- `[data-dashfoo="tab"][aria-selected="true"]` — the active tab
+- `[data-dashfoo="tabset-maximize"][aria-pressed="true"]` — a maximized tabset's toggle
+- `[data-dashfoo="tab-item"][data-dragging]` — a tab being lifted into the drag preview (the source, dimmed)
+- `[data-dashfoo="tabset"][data-dragging-source]` — a tabset being dragged by its grip
+- `[data-dashfoo="tabset"][data-tab-location="bottom"]` — a tabset with its strip on the bottom
+- `[data-separator][aria-orientation="vertical"]` — a column resize handle (also `horizontal`)
+- `:focus-visible` / `:focus-within` for focus rings
 
-- A Base-UI-composed component skin over the `@dashfoo/react` headless tree.
-- Design tokens shipped separately as `./tokens.css`.
+## Notes
 
-Until then, `@dashfoo/theme` exports `DASHFOO_THEME_VERSION` and nothing else.
-Build your skin against the `data-dashfoo` contract above, using the demo CSS as
-the reference.
+- **Tab labels live in the model, not the content.** The `Panel` helper and tab
+  chrome are styled here; the panel _content_ is yours.
+- **No JS API.** The package exports a `DASHFOO_THEME_VERSION` constant for
+  tooling; everything else is CSS. There are no React components to import.
+- **Reduced motion** is honored: `@media (prefers-reduced-motion: reduce)` drops
+  the dock-indicator glide.

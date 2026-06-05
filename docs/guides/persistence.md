@@ -5,46 +5,60 @@ drags a panel to a new region, drags a splitter, and each of those changes
 produces a new `Dashfoo` value. Persisting the layout means saving that
 value somewhere on every change and loading it back on the next visit.
 
-`usePersistedModel` wraps the whole loop: load once, validate and migrate
-the stored payload, debounce-save every change, and flush the last save on
-unmount. You spread its result onto an **uncontrolled** `DashfooLayout` and
-remount on a counter so `clear()` visibly resets the tree.
+The easiest way is the **`persist` prop**: pass a localStorage key and
+`DashfooLayout` wires up the whole loop — load once, validate and migrate the
+stored payload, debounce-save every change, and flush on unmount. A `ref` exposes
+`resetLayout()` to clear the saved copy and return to the default.
 
 ```tsx
-import { DashfooLayout, usePersistedModel } from "@dashfoo/react";
+import type { DashfooHandle } from "@dashfoo/react";
+import { DashfooLayout } from "@dashfoo/react";
+import { useRef } from "react";
 
+const layout = useRef<DashfooHandle>(null);
+
+<DashfooLayout
+  defaultModel={defaultModel}
+  factory={renderPanel}
+  persist="dashfoo:my-app"
+  ref={layout}
+/>;
+
+// elsewhere — e.g. a "Reset layout" button:
+layout.current?.resetLayout();
+```
+
+`persist` accepts a bare key (localStorage) or a full target with a custom store
+and debounce:
+
+```tsx
+persist={{ key: "dashfoo:my-app", storage: sessionStorage, debounceMs: 500 }}
+```
+
+It works in **uncontrolled** mode (you pass `defaultModel`). In controlled mode —
+where you pass `model` + `onModelChange` and already own the state — skip `persist`
+and save the model yourself in `onModelChange`.
+
+Everything below maps to [`packages/react/src/persistence.ts`](../../packages/react/src/persistence.ts)
+and the validation pipeline in [`packages/core/src/serialize.ts`](../../packages/core/src/serialize.ts).
+The `persist` prop is built on the shared `usePersistence` primitive in that file;
+the storage seam, validation, and debounce below apply to it directly.
+
+## The lower-level hook (`usePersistedModel`)
+
+> **Deprecated.** Prefer the `persist` prop above. `usePersistedModel` remains for
+> hosts that need to own the remount themselves; it resets by remounting on a
+> `resetKey` counter rather than via `resetLayout()`.
+
+```ts
 const persisted = usePersistedModel({ defaultModel, key: "dashfoo:my-app" });
 
 <DashfooLayout
-  defaultModel={persisted.defaultModel}
-  factory={renderPanel}
-  key={persisted.resetKey}
+  defaultModel={persisted.defaultModel} // the LOADED model, validated + migrated
+  key={persisted.resetKey} // remount so clear() visibly resets
   onModelChange={persisted.onModelChange}
+  factory={renderPanel}
 />;
-```
-
-The hook lives in [`packages/react/src/persistence.ts`](../../packages/react/src/persistence.ts).
-Everything below maps to that file and to the validation pipeline in
-[`packages/core/src/serialize.ts`](../../packages/core/src/serialize.ts).
-
-## The hook
-
-```ts
-type UsePersistedModelOptions = {
-  debounceMs?: number;
-  defaultModel: Dashfoo;
-  key: string;
-  storage?: StorageAdapter;
-};
-
-type PersistedModel = {
-  clear: () => void;
-  defaultModel: Dashfoo;
-  onModelChange: (model: Dashfoo) => void;
-  resetKey: number;
-};
-
-const usePersistedModel: (options: UsePersistedModelOptions) => PersistedModel;
 ```
 
 | Option         | Type             | Default               | Purpose                                               |
@@ -53,39 +67,6 @@ const usePersistedModel: (options: UsePersistedModelOptions) => PersistedModel;
 | `key`          | `string`         | required              | Storage key the model is saved under                  |
 | `storage`      | `StorageAdapter` | `localStorageAdapter` | Where reads and writes go (see the seam below)        |
 | `debounceMs`   | `number`         | `300`                 | Delay before a change is written                      |
-
-The returned `defaultModel` is not your input — it is the **loaded** model,
-already validated and migrated. The prop is named `defaultModel` because
-that is the prop `DashfooLayout` reads when running uncontrolled, so the
-return spreads onto the component directly. Pass a stable input (memoize it,
-as the demo does), since it is captured once for the `clear()` fallback.
-
-## Why uncontrolled, and why `resetKey`
-
-`DashfooLayout` reads `defaultModel` once and then owns its own state.
-That is the right mode here: the hook seeds the initial model from storage,
-the component drives every interaction after that, and `onModelChange` fires
-on each change so the hook can save it. You are not mirroring the model into
-React state on every drag.
-
-The catch is `clear()`. Clearing has to push a different model back into a
-component that already ignored its `defaultModel` prop. The fix is the
-React remount idiom: `clear()` bumps an internal counter, that counter is
-returned as `resetKey`, and `resetKey` is your `key` on `DashfooLayout`.
-A new `key` is a new component instance, so it reads the freshly reset
-`defaultModel`. Without the `key`, `clear()` would update storage and the
-hook's state but leave the rendered tree untouched.
-
-```tsx
-const persisted = usePersistedModel({ defaultModel, key: "dashfoo:my-app" });
-
-<DashfooLayout
-  defaultModel={persisted.defaultModel}
-  key={persisted.resetKey} // remount on clear()
-  onModelChange={persisted.onModelChange}
-  factory={renderPanel}
-/>;
-```
 
 ## The storage seam
 
@@ -194,8 +175,9 @@ The demo's persistence route
 is the whole pattern in one component:
 
 ```tsx
-import { DashfooLayout, usePersistedModel } from "@dashfoo/react";
-import { useMemo } from "react";
+import type { DashfooHandle } from "@dashfoo/react";
+import { DashfooLayout } from "@dashfoo/react";
+import { useMemo, useRef } from "react";
 
 import { renderPanel } from "../components/panels";
 import { Button, DemoStage } from "../components/ui";
@@ -203,22 +185,19 @@ import { playgroundModel } from "../models";
 
 const PersistencePage = () => {
   const defaultModel = useMemo(() => playgroundModel(), []);
-  const persisted = usePersistedModel({
-    defaultModel,
-    key: "dashfoo:demo:persistence",
-  });
+  const layout = useRef<DashfooHandle>(null);
 
   return (
     <DemoStage
-      actions={<Button onClick={persisted.clear}>Clear saved layout</Button>}
+      actions={<Button onClick={() => layout.current?.resetLayout()}>Clear saved layout</Button>}
       description="Saved to localStorage on every change (validated and version-migrated). Rearrange it, then reload — your arrangement survives."
       title="Persistence"
     >
       <DashfooLayout
-        defaultModel={persisted.defaultModel}
+        defaultModel={defaultModel}
         factory={renderPanel}
-        key={persisted.resetKey}
-        onModelChange={persisted.onModelChange}
+        persist="dashfoo:demo:persistence"
+        ref={layout}
       />
     </DemoStage>
   );
@@ -227,12 +206,12 @@ const PersistencePage = () => {
 
 Points worth copying:
 
-- `defaultModel` is wrapped in `useMemo` so the captured fallback is stable
-  across renders.
-- The page passes no `storage`, so it gets `localStorageAdapter`. Rearrange
-  the layout, reload, and the arrangement is restored from `localStorage`.
-- "Clear saved layout" calls `persisted.clear` directly. The remount via
-  `key={persisted.resetKey}` is what makes the reset visible.
+- `defaultModel` is wrapped in `useMemo` so the model identity is stable across
+  renders (the `persist` prop loads from storage once on mount).
+- `persist="…"` passes a bare key, so it uses `localStorageAdapter`. Rearrange the
+  layout, reload, and the arrangement is restored from `localStorage`.
+- "Clear saved layout" calls `ref.current.resetLayout()` — it clears the saved copy
+  and resets the live model to `defaultModel` without a remount.
 
 ## SSR safety
 

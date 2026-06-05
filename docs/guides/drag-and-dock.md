@@ -13,9 +13,16 @@ outcomes, the pipeline that carries a drag from `useTabDraggable` to a
 committed model change, and the gates that turn each outcome on or off.
 
 The geometry lives in `@dashfoo/core` (`resolveDockTarget`) and `@dashfoo/react`
-(`dock-geometry.ts`, the drag adapter). The drag adapter is the only module in
-the library that imports `@dnd-kit/react`; everything it touches downstream is
-pure and unit-tested.
+(the drag adapter). The drag adapter is the only module in the library that
+touches `@dnd-kit` — and it drives the framework-agnostic `@dnd-kit/dom` core
+imperatively (no React bindings). Everything it touches downstream is pure and
+unit-tested.
+
+> **Pointer-only.** Drag-docking uses a pointer sensor; there is no keyboard
+> drag. The arrow keys are already bound to roving-tabindex tab navigation, and
+> dnd-kit's keyboard nudge model conflicts with that, so keyboard docking would
+> need its own interaction design. All other chrome (select, close, rename,
+> maximize, overflow) stays fully keyboard-operable.
 
 ## The two landing zones
 
@@ -115,43 +122,47 @@ const resolveIntent = (targetId, element, point, draggedId) => {
 
 ## The pipeline
 
-A drag travels through five stages. The split is deliberate: `@dnd-kit/react`
-owns pointer and keyboard input, `dragDockMachine` owns the interaction
-lifecycle and never touches the document, and the reducer owns the model.
+A drag travels through five stages. The split is deliberate: the `@dnd-kit/dom`
+pointer sensor owns input, `dragDockMachine` owns the interaction lifecycle and
+never touches the document, and the reducer owns the model.
 
 ```
-useTabDraggable  →  dnd-kit  →  dragDockMachine  →  COMMIT  →  reducer
-  (tab is        (source id,   (OVER / DROP      (moveNode   (moveNode
-   draggable)     pointer,      lifecycle)        action)     applied)
-                  target id)
+useTabDraggable  →  dnd-kit/dom  →  dragDockMachine  →  COMMIT  →  reducer
+  (tab is         (pointer +       (OVER / DROP      (moveNode   (moveNode
+   draggable)      hit-test)        lifecycle)        action)     applied)
 ```
 
 ### 1. `useTabDraggable` marks the tab
 
-Each tab registers itself as a draggable. The hook is a thin wrapper over
-dnd-kit's `useDraggable`, keyed by the tab id:
+Each tab registers itself as a `@dnd-kit/dom` `Draggable`, created imperatively in
+an effect and keyed by the tab id. The hook also carries the tab's name as the
+drag-preview label:
 
 ```ts
-const useTabDraggable = (tabId, disabled = false) => {
-  const { isDragging, ref } = useDraggable({ data: { type: "tab" }, disabled, id: tabId });
-  return { isDragging, ref };
+const useTabDraggable = (tabId, disabled = false, label = "") => {
+  // creates `new Draggable({ data: { label, type: "tab" }, id: tabId }, manager)`
+  // in a useEffect, binds the element via a ref, and destroys it on cleanup.
+  return { ref };
 };
 ```
 
-Tabsets register the matching drop target with `useTabsetDroppable`, which also
-caches the tabset's DOM element so the geometry helpers can read its rect.
+Tabsets register their DOM element with `useTabsetDroppable` so the adapter can
+hit-test the pointer against each tabset's rect — there are no dnd-kit droppables
+or collision detectors; targeting is our own point-in-rect test.
 
-### 2. dnd-kit reports source, target, and pointer
+### 2. The adapter reads the pointer and hit-tests
 
-`DragProvider` wraps the tree in dnd-kit's `DragDropProvider` and handles three
-events. On `onDragStart` it sends `START` with the dragged tab's id. On
-`onDragMove` it reads the current target and pointer, resolves an intent, and
-sends `OVER`. On `onDragEnd` it re-resolves from the authoritative final pointer,
-sends a last `OVER`, then `DROP`.
+`DragProvider` constructs one `@dnd-kit/dom` `DragDropManager` (minus the
+`Feedback` and `Accessibility` plugins and the keyboard sensor) and subscribes to
+its monitor for three events. On `dragstart` it sends `START` with the dragged
+subject and shows its own `data-dashfoo="drag-preview"` chip. On `dragmove` it
+reads the live pointer, finds the tabset under it, resolves an intent, and sends
+`OVER` (positioning the preview chip imperatively, no re-render). On `dragend` it
+re-resolves from the final pointer, sends a last `OVER`, then `DROP`.
 
-The final recompute matters: the drop uses dnd-kit's final target and pointer,
-not whatever the last `onDragMove` happened to report, so the committed location
-matches where the user actually released.
+The final recompute matters: the drop uses the authoritative final pointer, not
+whatever the last `dragmove` happened to report, so the committed location matches
+where the user actually released.
 
 ### 3. `dragDockMachine` runs the lifecycle
 

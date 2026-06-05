@@ -263,6 +263,28 @@ Because `present` is the same object the layout renders from, the inspector
 is exact. There is no separate projection to keep in sync. The model you
 read is the model on screen.
 
+## Observing and intercepting changes
+
+Beyond `onModelChange`, `DashfooLayout` exposes hooks that work in either mode:
+
+| Prop                      | When it fires / what it does                                                        |
+| ------------------------- | ----------------------------------------------------------------------------------- |
+| `onAction`                | Before each action commits. Return the action, a replacement, or `null` to veto it. |
+| `onActiveTabsetChange`    | When the active tabset id changes.                                                  |
+| `onMaximizedTabsetChange` | When a tabset is maximized or restored.                                             |
+| `renderTabLabel`          | Override a tab's rendered label (the accessible name stays `tab.name`).             |
+| `renderTabsetToolbar`     | Inject custom controls into a tabset's toolbar.                                     |
+
+`onAction` is the interception point — e.g. confirm before a `deleteTab`, or
+remap a drop:
+
+```tsx
+<DashfooLayout
+  defaultModel={model}
+  onAction={(action) => (action.type === "deleteTab" && !confirm("Close tab?") ? null : action)}
+/>
+```
+
 ## Choosing a mode
 
 | Question                                            | Mode         |

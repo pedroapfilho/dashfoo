@@ -15,7 +15,7 @@ paint.
 It builds on three engines:
 
 - **[react-resizable-panels](https://github.com/bvaughn/react-resizable-panels)** for splitter resize (the resize adapter is the only file that imports it).
-- **[@dnd-kit/react](https://github.com/clauderic/dnd-kit) 0.4** for drag (the drag adapter is the only file that imports it).
+- **[@dnd-kit/dom](https://github.com/clauderic/dnd-kit) 0.4** — the framework-agnostic core (no React bindings) — for drag (the drag adapter is the only file that touches it; pointer-only).
 - **[@dashfoo/core](https://www.npmjs.com/package/@dashfoo/core)** for the document: a zod schema, a pure reducer, and the XState machines that drive state and the drag lifecycle.
 
 ## Install
@@ -33,55 +33,64 @@ through the `components` registry; each component receives the live `TabNode`.
 
 ```tsx
 import { DashfooLayout } from "@dashfoo/react";
-import type { Dashfoo, TabNode } from "@dashfoo/core";
+import type { TabNode } from "@dashfoo/core";
+import { model, row, tabset, tab } from "@dashfoo/core";
 
-const model: Dashfoo = {
-  version: 1,
-  global: {},
-  layout: {
-    id: "root",
-    type: "row",
-    orientation: "row",
-    children: [
-      {
-        id: "ts1",
-        type: "tabset",
-        selected: 0,
-        children: [
-          { id: "t1", type: "tab", name: "Editor", component: "editor" },
-          { id: "t2", type: "tab", name: "Preview", component: "preview" },
-        ],
-      },
-    ],
-  },
-};
+// Optional default skin — without it the chrome is unstyled (headless).
+import "@dashfoo/theme/dashfoo.css";
+
+const startingModel = model(
+  row([tabset([tab("editor", "Editor"), tab("preview", "Preview")], { id: "ts1" })]),
+);
 
 const Editor = ({ node }: { node: TabNode }) => <div>editing {node.name}</div>;
 const Preview = ({ node }: { node: TabNode }) => <div>preview of {node.name}</div>;
 
 export const App = () => (
-  <DashfooLayout defaultModel={model} components={{ editor: Editor, preview: Preview }} />
+  <DashfooLayout defaultModel={startingModel} components={{ editor: Editor, preview: Preview }} />
 );
 ```
 
-Nothing renders until you style it. The container is `[data-dashfoo="layout"]`
-with `display: flex; height: 100%; width: 100%` — give it a sized parent and add
-your CSS (see the [attribute reference](#data-dashfoo-attribute-reference)).
+The `model` / `row` / `tabset` / `tab` builders come from `@dashfoo/core`; they
+produce the same plain object you could write by hand. If you don't import
+`@dashfoo/theme`, nothing renders until you style it: the container is
+`[data-dashfoo="layout"]` with `display: flex; height: 100%; width: 100%` — give it
+a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-attribute-reference)).
 
 ## `DashfooLayout` props
 
-| Prop            | Type                                               | Default | Description                                                                        |
-| --------------- | -------------------------------------------------- | ------- | ---------------------------------------------------------------------------------- |
-| `model`         | `Dashfoo`                                          | —       | Controlled document. When set, the prop is the source of truth.                    |
-| `defaultModel`  | `Dashfoo`                                          | —       | Uncontrolled initial document. The component owns it from there.                   |
-| `onModelChange` | `(model: Dashfoo, action?: Action) => void`        | —       | Called after every change with the next model and the action that caused it.       |
-| `components`    | `Record<string, ComponentType<{ node: TabNode }>>` | —       | Registry mapping `tab.component` keys to components.                               |
-| `factory`       | `(tab: TabNode) => ReactNode`                      | —       | Render override. When provided, it resolves every tab and `components` is ignored. |
-| `closableTabs`  | `boolean`                                          | `true`  | Show the per-tab close control.                                                    |
-| `renamableTabs` | `boolean`                                          | `true`  | Allow double-click inline rename.                                                  |
-| `maximizable`   | `boolean`                                          | `true`  | Show the tabset maximize/restore control.                                          |
+| Prop                      | Type                                               | Default | Description                                                                            |
+| ------------------------- | -------------------------------------------------- | ------- | -------------------------------------------------------------------------------------- |
+| `model`                   | `Dashfoo`                                          | —       | Controlled document. When set, the prop is the source of truth.                        |
+| `defaultModel`            | `Dashfoo`                                          | —       | Uncontrolled initial document. The component owns it from there.                       |
+| `onModelChange`           | `(model: Dashfoo, action?: Action) => void`        | —       | Called after every change with the next model and the action that caused it.           |
+| `components`              | `Record<string, ComponentType<{ node: TabNode }>>` | —       | Registry mapping `tab.component` keys to components.                                   |
+| `factory`                 | `(tab: TabNode) => ReactNode`                      | —       | Render override. When provided, it resolves every tab and `components` is ignored.     |
+| `persist`                 | `string \| { key; storage?; debounceMs? }`         | —       | Auto-save the model (uncontrolled mode only). A bare string is a localStorage key.     |
+| `onAction`                | `(action: Action) => Action \| null`               | —       | Intercept each action before it commits — return it, a replacement, or `null` to veto. |
+| `onActiveTabsetChange`    | `(id: string \| undefined) => void`                | —       | Fires when the active tabset changes.                                                  |
+| `onMaximizedTabsetChange` | `(id: string \| undefined) => void`                | —       | Fires when a tabset is maximized or restored.                                          |
+| `renderTabLabel`          | `(tab: TabNode) => ReactNode`                      | —       | Override the tab label (the accessible name stays `tab.name`).                         |
+| `renderTabsetToolbar`     | `(tabset: TabsetNode) => ReactNode`                | —       | Inject custom controls into a tabset's toolbar.                                        |
+| `closableTabs`            | `boolean`                                          | `true`  | Show the per-tab close control.                                                        |
+| `renamableTabs`           | `boolean`                                          | `true`  | Allow double-click inline rename.                                                      |
+| `maximizable`             | `boolean`                                          | `true`  | Show the tabset maximize/restore control.                                              |
+| `draggableTabsets`        | `boolean`                                          | `true`  | Show the grip that drags a whole tabset.                                               |
+| `keepMounted`             | `boolean`                                          | `false` | Keep inactive tab panels mounted (hidden) so their state survives a tab switch.        |
 
 You must pass either `model` or `defaultModel`. Passing neither throws.
+
+A `ref` exposes a `DashfooHandle` for imperative control:
+`addTab`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `dispatch`,
+`getModel`, `undo` / `redo` / `canUndo` / `canRedo`, and `resetLayout()` (reset to
+the original `defaultModel`, clearing undo history and any persisted copy).
+
+```tsx
+const ref = useRef<DashfooHandle>(null);
+<DashfooLayout defaultModel={model} ref={ref} ... />;
+ref.current?.undo();
+ref.current?.resetLayout();
+```
 
 ### Controlled vs. uncontrolled
 
@@ -121,6 +130,29 @@ is not registered renders nothing and logs a one-time dev warning:
 <DashfooLayout factory={(tab) => <Pane id={tab.id}>{tab.name}</Pane>} ... />
 ```
 
+### `Panel` — common panel chrome
+
+`Panel` is an optional helper for the most common panel shape: a titled header
+(with an optional leading icon and a live badge) over a scrollable body. It's
+headless — it emits `data-dashfoo="panel*"` attributes and the theme styles them.
+
+```tsx
+import { Panel } from "@dashfoo/react";
+
+const ChartPanel = ({ node }: { node: TabNode }) => (
+  <Panel title={node.name} icon={<MyIcon />} live>
+    {/* your content */}
+  </Panel>
+);
+```
+
+| Prop       | Type        | Description                                                                     |
+| ---------- | ----------- | ------------------------------------------------------------------------------- |
+| `title`    | `ReactNode` | Header title.                                                                   |
+| `icon`     | `ReactNode` | Optional leading icon (kept a slot so the library pulls in no icon dependency). |
+| `live`     | `boolean`   | Show a "Live" badge in the header.                                              |
+| `children` | `ReactNode` | The scrollable body content.                                                    |
+
 ## The chrome
 
 The component renders interactive controls into the markup. Each is plain HTML
@@ -154,26 +186,23 @@ node's flag allow it.
 
 ## Persistence
 
-`usePersistedModel` saves an uncontrolled layout and restores it on load. It
-loads once (validated and migrated through `@dashfoo/core`'s serialize, falling
-back to `defaultModel` on a cache miss or corrupt value) and debounce-saves every
-change.
+The `persist` prop saves an uncontrolled layout and restores it on load. It loads
+once (validated and migrated through `@dashfoo/core`'s serialize, falling back to
+`defaultModel` on a miss or corrupt value) and debounce-saves every change. A
+`ref` exposes `resetLayout()` to clear the saved copy and return to the default.
 
 ```tsx
-import { DashfooLayout, usePersistedModel } from "@dashfoo/react";
+import type { DashfooHandle } from "@dashfoo/react";
+import { DashfooLayout } from "@dashfoo/react";
+import { useRef } from "react";
 
 const Layout = () => {
-  const persisted = usePersistedModel({ defaultModel: model, key: "my-app:layout" });
+  const ref = useRef<DashfooHandle>(null);
 
   return (
     <>
-      <DashfooLayout
-        key={persisted.resetKey}
-        defaultModel={persisted.defaultModel}
-        onModelChange={persisted.onModelChange}
-        components={registry}
-      />
-      <button type="button" onClick={persisted.clear}>
+      <DashfooLayout defaultModel={model} persist="my-app:layout" ref={ref} components={registry} />
+      <button type="button" onClick={() => ref.current?.resetLayout()}>
         Reset layout
       </button>
     </>
@@ -181,9 +210,16 @@ const Layout = () => {
 };
 ```
 
-`clear()` removes the saved value and bumps `resetKey`. Using `resetKey` as the
-`key` remounts `DashfooLayout` so the reset is visible. A pending save flushes on
-unmount, so the last change is never lost.
+`persist` accepts a bare localStorage key or `{ key, storage?, debounceMs? }` for
+a custom store (sessionStorage, in-memory, your own). A pending save flushes on
+unmount, so the last change is never lost. It applies to uncontrolled mode only;
+in controlled mode, save the model yourself in `onModelChange`.
+
+The lower-level building blocks — `usePersistence` (the load/save primitive) and
+`usePersistedModel` (the older remount-based hook, now **deprecated** in favor of
+`persist`) — are also exported. See the
+[persistence guide](../../docs/guides/persistence.md) for the storage seam,
+validation pipeline, and SSR notes.
 
 ### Options
 
@@ -283,7 +319,7 @@ need the store's controls (undo/redo, raw dispatch) outside the default chrome.
 
 ```ts
 const store = useDashfooStore({ defaultModel });
-// store: { model, dispatch, undo, redo, canUndo, canRedo }
+// store: { model, dispatch, undo, redo, canUndo, canRedo, setModel }
 ```
 
 It binds an XState actor to React, normalizes the incoming model, and exposes
@@ -301,7 +337,12 @@ From the package root:
 // Component + types
 DashfooLayout;
 type DashfooLayoutProps;
+type DashfooHandle; // the imperative ref handle (undo/redo, addTab, resetLayout, …)
 type TabComponent;
+
+// Panel helper
+Panel;
+type PanelProps;
 
 // Store
 useDashfooStore;
@@ -314,12 +355,19 @@ useDashfooContext;
 type DashfooContextValue;
 
 // Persistence
-usePersistedModel;
+usePersistence; // load/save primitive (the `persist` prop builds on this)
+usePersistedModel; // deprecated — prefer the `persist` prop
 localStorageAdapter;
 memoryStorageAdapter;
 type StorageAdapter;
+type Persistence;
+type PersistConfig;
 type PersistedModel;
 type UsePersistedModelOptions;
+
+// Responsive
+useResponsiveModel;
+type Breakpoint;
 ```
 
 The document type `Dashfoo`, node types (`TabNode`, `TabsetNode`, `RowNode`),

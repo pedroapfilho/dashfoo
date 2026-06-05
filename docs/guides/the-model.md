@@ -15,6 +15,42 @@ model in and out of storage.
 Every type and schema referenced here is exported from `@dashfoo/core` and
 defined in `packages/core/src/schema.ts`.
 
+## Building a model: the builders
+
+You can write the tree as a plain object (the rest of this guide shows the full
+shape), but the **builders** make it terse by filling the mechanical fields
+(`type`, `version`, `selected`, default `global`). They're the recommended way to
+author a model:
+
+```ts
+import { model, row, tabset, tab } from "@dashfoo/core";
+
+const m = model(
+  row(
+    [
+      tabset([tab("chart", "Chart"), tab("depth", "Depth")], { id: "left", weight: 2 }),
+      tabset([tab("book", "Order Book")], { id: "right" }),
+    ],
+    { id: "root" },
+  ),
+  { activeTabsetId: "left" },
+);
+```
+
+| Builder                       | Returns      | Defaults it fills                                        |
+| ----------------------------- | ------------ | -------------------------------------------------------- |
+| `tab(component, name, opts?)` | `TabNode`    | `type: "tab"`; `id` defaults to `component`              |
+| `tabset(children, opts?)`     | `TabsetNode` | `type: "tabset"`; `selected: 0`; auto `id` (`tabset-…`)  |
+| `row(children, opts?)`        | `RowNode`    | `type: "row"`; `orientation: "row"`; auto `id` (`row-…`) |
+| `model(layout, opts?)`        | `Dashfoo`    | `version: 1`; `global: {}`                               |
+
+`opts` carries the meaningful fields — `id` (pass one for any node you reference,
+e.g. via `activeTabsetId`), `weight`, `selected`, `orientation`, per-node
+`enable*` flags, `min`/`max`, `config`, and on `model`: `activeTabsetId`,
+`maximizedTabsetId`, `global`. The output is exactly the plain object documented
+below — validate it with `dashfooSchema.parse` if you like. The raw form remains
+fully supported (e.g. for models loaded from JSON).
+
 ## The root: `Dashfoo`
 
 ```ts

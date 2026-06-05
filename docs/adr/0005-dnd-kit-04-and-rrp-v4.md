@@ -1,8 +1,19 @@
-# ADR 0005 — Build on @dnd-kit/react 0.4 and react-resizable-panels v4, behind adapters
+# ADR 0005 — Build on @dnd-kit 0.4 and react-resizable-panels v4, behind adapters
 
 ## Status
 
-Accepted · 2026-06-02
+Accepted · 2026-06-02 · **Amended 2026-06** (see update below)
+
+> **Update (2026-06).** The drag layer was re-architected off the `@dnd-kit/react`
+> bindings onto the framework-agnostic **`@dnd-kit/dom` 0.4 core**, driven
+> imperatively from the adapter. The adapter now renders its own drag-preview
+> overlay and hit-tests the pointer against registered tabsets (no dnd-kit
+> droppables/collision/Feedback plugin), which removed a class of React-reconciliation
+> workarounds. The `KeyboardSensor` was also dropped, so drag is **pointer-only**.
+> The decision below — pin the new dnd-kit line, isolate it behind one adapter
+> file — stands; only the specific entry point changed (`@dnd-kit/react` →
+> `@dnd-kit/dom`). The adapter-isolation thesis is exactly what made this swap a
+> one-file change.
 
 ## Context
 

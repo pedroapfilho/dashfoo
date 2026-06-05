@@ -20,7 +20,7 @@ pnpm add @dashfoo/core @dashfoo/react react react-dom
 ```
 
 `react` and `react-dom` are peer dependencies. The drag and resize machinery
-(`@dnd-kit/react`, `react-resizable-panels`, `xstate`, `zod`) comes in as
+(`@dnd-kit/dom`, `react-resizable-panels`, `xstate`, `zod`) comes in as
 dependencies of the two dashfoo packages, so you don't install them yourself.
 
 ## Step 2 — Define a model
@@ -30,41 +30,30 @@ The model is a plain serializable object typed as `Dashfoo` from
 and the `tab`s inside those. Nothing here is React — it's data you could load
 from a file or a database.
 
-Start with one row holding a single tabset of three tabs:
+Start with one row holding a single tabset of three tabs. The **builders** —
+`model` / `row` / `tabset` / `tab` from `@dashfoo/core` — fill the mechanical
+fields (`type`, `version`, `selected`) so you write only what matters:
 
 ```ts
 // src/model.ts
-import type { Dashfoo, TabNode } from "@dashfoo/core";
+import type { Dashfoo } from "@dashfoo/core";
+import { model, row, tabset, tab } from "@dashfoo/core";
 
-const tab = (id: string, name: string, component = id): TabNode => ({
-  component,
-  id,
-  name,
-  type: "tab",
-});
-
-const startingModel = (): Dashfoo => ({
-  activeTabsetId: "main",
-  global: {},
-  layout: {
-    children: [
-      {
-        children: [tab("chart", "Chart"), tab("depth", "Depth"), tab("notes", "Notes")],
-        id: "main",
-        selected: 0,
-        type: "tabset",
-        weight: 1,
-      },
-    ],
-    id: "root",
-    orientation: "row",
-    type: "row",
-  },
-  version: 1,
-});
+const startingModel = (): Dashfoo =>
+  model(
+    row([
+      tabset([tab("chart", "Chart"), tab("depth", "Depth"), tab("notes", "Notes")], { id: "main" }),
+    ]),
+    { activeTabsetId: "main" },
+  );
 
 export { startingModel };
 ```
+
+A `tab`'s id defaults to its component name; `tabset` and `row` auto-generate an
+id when you omit one (pass an explicit `id` for nodes you reference, like
+`activeTabsetId`). The builders return the same plain object you could also write
+by hand — see [the model guide](./the-model.md) for the raw shape.
 
 A few fields to know:
 
@@ -76,22 +65,18 @@ A few fields to know:
 | `tabset.weight`      | Relative share of space when siblings split a row.           |
 | `layout.orientation` | `"row"` lays children left-to-right; `"column"` stacks them. |
 
-To put two tabsets side by side, give the root `row` a second tabset child.
-Each `weight` is relative, so two tabsets at `weight: 2` and `weight: 1` split
-the space two-to-one:
+To put two tabsets side by side, give the root `row` a second tabset child. Each
+`weight` is relative, so `weight: 2` and `weight: 1` split the space two-to-one:
 
 ```ts
-children: [
-  { id: "left", type: "tabset", selected: 0, weight: 2,
-    children: [tab("chart", "Chart"), tab("depth", "Depth")] },
-  { id: "right", type: "tabset", selected: 0, weight: 1,
-    children: [tab("book", "Order Book"), tab("trades", "Trades")] },
-],
+row([
+  tabset([tab("chart", "Chart"), tab("depth", "Depth")], { id: "left", weight: 2 }),
+  tabset([tab("book", "Order Book"), tab("trades", "Trades")], { id: "right", weight: 1 }),
+]);
 ```
 
-Nest a `row` inside the root to stack tabsets vertically in one column. The
-`type` discriminant (`row` / `tabset` / `tab`) is what the schema validates
-against, so keep it on every node.
+Nest a `row(..., { orientation: "column" })` inside the root to stack tabsets
+vertically in one column.
 
 ## Step 3 — Map components to tabs
 
@@ -183,16 +168,23 @@ Using a factory instead of the registry, the demo's Overview page is one line:
 
 The props you'll reach for first:
 
-| Prop            | Type                                      | Default | Purpose                                                              |
-| --------------- | ----------------------------------------- | ------- | -------------------------------------------------------------------- |
-| `defaultModel`  | `Dashfoo`                                 | —       | Initial model in uncontrolled mode.                                  |
-| `model`         | `Dashfoo`                                 | —       | Current model in controlled mode.                                    |
-| `onModelChange` | `(model, action?) => void`                | —       | Fires on every change. Required for controlled mode and persistence. |
-| `components`    | `Record<string, ComponentType<{ node }>>` | —       | The registry.                                                        |
-| `factory`       | `(tab: TabNode) => ReactNode`             | —       | Resolver function; wins over `components`.                           |
-| `closableTabs`  | `boolean`                                 | `true`  | Show the per-tab close control.                                      |
-| `renamableTabs` | `boolean`                                 | `true`  | Double-click a tab to rename it.                                     |
-| `maximizable`   | `boolean`                                 | `true`  | Show the tabset maximize control.                                    |
+| Prop            | Type                                       | Default | Purpose                                                              |
+| --------------- | ------------------------------------------ | ------- | -------------------------------------------------------------------- |
+| `defaultModel`  | `Dashfoo`                                  | —       | Initial model in uncontrolled mode.                                  |
+| `model`         | `Dashfoo`                                  | —       | Current model in controlled mode.                                    |
+| `onModelChange` | `(model, action?) => void`                 | —       | Fires on every change. Required for controlled mode and persistence. |
+| `components`    | `Record<string, ComponentType<{ node }>>`  | —       | The registry.                                                        |
+| `factory`       | `(tab: TabNode) => ReactNode`              | —       | Resolver function; wins over `components`.                           |
+| `persist`       | `string \| { key; storage?; debounceMs? }` | —       | Auto-save to storage (uncontrolled only). See the persistence guide. |
+| `closableTabs`  | `boolean`                                  | `true`  | Show the per-tab close control.                                      |
+| `renamableTabs` | `boolean`                                  | `true`  | Double-click a tab to rename it.                                     |
+| `maximizable`   | `boolean`                                  | `true`  | Show the tabset maximize control.                                    |
+
+A `ref` exposes an imperative handle (`addTab`, `closeTab`, `selectTab`, `undo`,
+`redo`, `maximizeTabset`, `resetLayout`, …) — see the
+[controlled & history guide](./controlled-and-history.md). For common panel chrome
+(titled header + scrollable body), wrap your content in the `Panel` helper from
+`@dashfoo/react`.
 
 The root renders a single flex container, `<div data-dashfoo="layout">`, sized
 to `100%` of its parent in both axes. Give that parent a real height — a layout
@@ -202,7 +194,21 @@ in a zero-height box paints nothing.
 
 This is the headless part. dashfoo gives you structure and `data-dashfoo`
 attributes; it gives you no colors, borders, or spacing. Until you add CSS, the
-markup is there but invisible. Style by targeting the attributes.
+markup is there but invisible.
+
+**The fast path:** install the default skin and import it once.
+
+```bash
+pnpm add @dashfoo/theme
+```
+
+```ts
+import "@dashfoo/theme/dashfoo.css"; // dark grayscale; opt into light with <html data-dashfoo-theme="light">
+```
+
+That styles the whole chrome. Remap `--dashfoo-*` tokens to make it yours (see
+the [theming guide](./theming.md)). The rest of this step shows how to write your
+own skin instead — skip it if the theme is enough.
 
 The attributes you'll style most:
 
@@ -307,11 +313,10 @@ body,
 That's a working dashfoo layout: three tabs in a tabset you can rename, close,
 maximize, and resize, with content resolved through your registry.
 
-The demo's stylesheet (`apps/demo-vite/src/index.css`) is the same idea written
-with Tailwind's `@apply` against custom properties. It's worth reading once you
-want close controls, the maximize button, and dock indicators
-styled — every one of those is a `data-dashfoo` selector you target the same
-way.
+The shipped theme (`packages/theme/dashfoo.css`) is the same idea written out in
+full plain CSS over `--dashfoo-*` tokens. It's worth reading once you want close
+controls, the grip, the maximize button, the overflow menu, and dock indicators
+styled — every one of those is a `data-dashfoo` selector you target the same way.
 
 ## What to read next
 
@@ -323,6 +328,6 @@ way.
   (`--dashfoo-dock-fill`, `--dashfoo-dock-border`, `--dashfoo-dock-line`), and
   the path to `@dashfoo/theme`.
 - **Persistence** (`docs/guides/persistence.md`) — saving and restoring a
-  layout with `usePersistedModel`, `localStorageAdapter`, and
-  `memoryStorageAdapter`, plus the controlled-mode `model` / `onModelChange`
-  pairing for syncing layout to your own store.
+  layout with the `persist` prop (and the lower-level `usePersistence` /
+  `usePersistedModel` hooks, `localStorageAdapter`, `memoryStorageAdapter`), plus
+  the controlled-mode `model` / `onModelChange` pairing for your own store.

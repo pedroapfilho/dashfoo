@@ -135,6 +135,7 @@ shows a legible drop zone.
    reserved for the dock indicator, the one element a stylesheet can't otherwise
    target.
 4. **Defer all styling to `@dashfoo/theme` and ship the engine fully bare.**
-   Not rejected, deferred. `@dashfoo/theme` is the Phase 7 placeholder that will
-   ship an opt-in skin built on this same `data-dashfoo` contract. The headless
-   posture is the precondition for it, not a competitor to it.
+   Not rejected — shipped alongside. `@dashfoo/theme` ships an opt-in skin built
+   on this same `data-dashfoo` contract (framework-agnostic plain CSS over
+   `--dashfoo-*` tokens). The headless posture is the precondition for it, not a
+   competitor to it.

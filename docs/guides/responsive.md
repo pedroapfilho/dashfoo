@@ -59,9 +59,9 @@ instead — the two kinds mix freely in one `breakpoints` array.
 Switching breakpoints swaps the whole model, so a rearrangement the user made on
 desktop is not carried into the mobile layout (and back). That is usually what you
 want — the two layouts are different on purpose. If you need per-breakpoint
-rearrangements to persist, pair each breakpoint with
-[`usePersistedModel`](./persistence.md) under a per-breakpoint storage key, and
-feed the persisted model into the breakpoint's `model`.
+rearrangements to persist, give each breakpoint its own
+[`persist` key](./persistence.md) (e.g. `persist={\`layout:${breakpoint}\`}`) so
+each one saves and restores independently.
 
 ## Custom transforms
 
