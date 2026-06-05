@@ -1,11 +1,38 @@
 /*
- * dashfoo design tokens — placeholder.
- * Phase 7 fills these in: surfaces, borders, tab states, splitter,
- * dock-indicator, radii, shadows, motion. Light/dark via color-scheme + token
- * swap. Consumers import this file or map their own design system onto the
- * same custom-property names.
+ * dashfoo design tokens — the override surface for the skin in ./dashfoo.css.
+ * Neutral grayscale dark defaults: no hue anywhere, so selection/focus/state
+ * read through lightness and weight. Remap any of these custom properties to
+ * skin dashfoo to your own design system without touching the chrome rules.
  */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
+
+  /* surfaces */
+  --dashfoo-bg: #0a0a0b;
+  --dashfoo-surface: #161617;
+  --dashfoo-strip: #101011;
+
+  /* borders */
+  --dashfoo-border: rgba(255, 255, 255, 0.08);
+  --dashfoo-border-strong: rgba(255, 255, 255, 0.16);
+
+  /* text */
+  --dashfoo-text: #ededee;
+  --dashfoo-text-muted: #8b8b8f;
+  --dashfoo-text-faint: #5f5f63;
+  --dashfoo-text-emphasis: #fafafa;
+
+  /* shape + type */
+  --dashfoo-radius: 10px;
+  --dashfoo-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --dashfoo-font-size: 13px;
+
+  /* splitters */
+  --dashfoo-splitter-size: 1rem;
+
+  /* dock indicators (also consumed by the drag overlay's inline fallbacks) */
+  --dashfoo-dock-fill: rgba(255, 255, 255, 0.1);
+  --dashfoo-dock-border: rgba(255, 255, 255, 0.4);
+  --dashfoo-dock-line: rgba(255, 255, 255, 0.85);
 }
