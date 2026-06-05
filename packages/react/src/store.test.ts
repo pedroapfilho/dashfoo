@@ -71,6 +71,24 @@ describe("useDashfooStore (uncontrolled)", () => {
     });
     expect(result.current.model.activeTabsetId).toBe("ts2");
   });
+
+  test("setModel replaces the document and clears history", () => {
+    const { result } = renderHook(() => useDashfooStore({ defaultModel: model() }));
+
+    act(() => {
+      result.current.dispatch({ tabsetId: "ts2", type: "setActiveTabset" });
+    });
+    expect(result.current.canUndo()).toBe(true);
+
+    const replacement = model();
+    replacement.activeTabsetId = "ts2";
+    act(() => {
+      result.current.setModel(replacement);
+    });
+
+    expect(result.current.model.activeTabsetId).toBe("ts2");
+    expect(result.current.canUndo()).toBe(false);
+  });
 });
 
 describe("useDashfooStore (controlled)", () => {

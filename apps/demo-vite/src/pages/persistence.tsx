@@ -1,7 +1,8 @@
-import { DashfooLayout, usePersistedModel } from "@dashfoo/react";
+import type { DashfooHandle } from "@dashfoo/react";
+import { DashfooLayout } from "@dashfoo/react";
 import { Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 
 import { renderPanel } from "../components/panels";
 import { Button, DemoStage } from "../components/ui";
@@ -9,9 +10,8 @@ import { playgroundModel } from "../models";
 
 const PersistencePage = (): ReactNode => {
   const defaultModel = useMemo(() => playgroundModel(), []);
-  const persisted = usePersistedModel({ defaultModel, key: "dashfoo:demo:persistence" });
-  const handleClear = persisted.clear;
-  const handleModelChange = persisted.onModelChange;
+  const layout = useRef<DashfooHandle>(null);
+  const handleClear = (): void => layout.current?.resetLayout();
 
   return (
     <DemoStage
@@ -24,10 +24,10 @@ const PersistencePage = (): ReactNode => {
       title="Persistence"
     >
       <DashfooLayout
-        defaultModel={persisted.defaultModel}
+        defaultModel={defaultModel}
         factory={renderPanel}
-        key={persisted.resetKey}
-        onModelChange={handleModelChange}
+        persist="dashfoo:demo:persistence"
+        ref={layout}
       />
     </DemoStage>
   );

@@ -11,6 +11,7 @@ type DashfooStore = {
   dispatch: (action: Action) => void;
   model: Dashfoo;
   redo: () => void;
+  setModel: (model: Dashfoo) => void;
   undo: () => void;
 };
 
@@ -98,6 +99,16 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
     onModelChange?.(actorRef.getSnapshot().context.history.present);
   }, [actorRef, onModelChange]);
 
+  // Replace the whole document, resetting undo history. Drives an uncontrolled
+  // reset (e.g. clearing a persisted layout back to its default) without a
+  // remount; normalized at the boundary like every other entry point.
+  const setModel = useCallback(
+    (next: Dashfoo) => {
+      actorRef.send({ model: normalize(next), type: "SET_MODEL" });
+    },
+    [actorRef],
+  );
+
   // Functions, not booleans: they read the live actor snapshot so a caller
   // reading them right after undo/redo (e.g. inside onModelChange) sees the fresh
   // value, not the one-render-stale useSelector result.
@@ -107,6 +118,7 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
     dispatch,
     model,
     redo,
+    setModel,
     undo,
   };
 };
