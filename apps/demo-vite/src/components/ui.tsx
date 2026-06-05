@@ -3,18 +3,21 @@ import type { ReactNode } from "react";
 const Button = ({
   children,
   disabled = false,
+  icon,
   onClick,
 }: {
   children: ReactNode;
   disabled?: boolean;
+  icon?: ReactNode;
   onClick: () => void;
 }): ReactNode => (
   <button
-    className="border-df-border bg-df-surface text-df-text hover:border-df-border-strong rounded-md border px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+    className="border-df-border bg-df-surface text-df-text hover:border-df-border-strong inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
     disabled={disabled}
     onClick={onClick}
     type="button"
   >
+    {icon}
     {children}
   </button>
 );

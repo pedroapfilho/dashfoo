@@ -1,17 +1,25 @@
 import { Link, Outlet } from "@tanstack/react-router";
+import {
+  AppWindow,
+  HardDriveDownload,
+  History,
+  LayoutDashboard,
+  Move,
+  Smartphone,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 const NAV = [
-  { exact: true, label: "Overview", to: "/" },
-  { exact: false, label: "Docking & drag", to: "/docking" },
-  { exact: false, label: "Tabset chrome", to: "/chrome" },
-  { exact: false, label: "Persistence", to: "/persistence" },
-  { exact: false, label: "Imperative control", to: "/controlled" },
-  { exact: false, label: "Responsive", to: "/responsive" },
+  { exact: true, icon: LayoutDashboard, label: "Overview", to: "/" },
+  { exact: false, icon: Move, label: "Docking & drag", to: "/docking" },
+  { exact: false, icon: AppWindow, label: "Tabset chrome", to: "/chrome" },
+  { exact: false, icon: HardDriveDownload, label: "Persistence", to: "/persistence" },
+  { exact: false, icon: History, label: "Imperative control", to: "/controlled" },
+  { exact: false, icon: Smartphone, label: "Responsive", to: "/responsive" },
 ] as const;
 
 const linkClass =
-  "rounded-md px-2.5 py-1.5 text-xs text-df-muted transition-colors hover:bg-white/5 hover:text-df-text [&.active]:bg-white/10 [&.active]:font-medium [&.active]:text-df-emphasis";
+  "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs text-df-muted transition-colors hover:bg-white/5 hover:text-df-text [&.active]:bg-white/10 [&.active]:font-medium [&.active]:text-df-emphasis";
 
 const RootLayout = (): ReactNode => (
   <div className="bg-df-bg text-df-text flex h-screen w-screen overflow-hidden">
@@ -27,6 +35,7 @@ const RootLayout = (): ReactNode => (
           key={item.to}
           to={item.to}
         >
+          <item.icon size={15} strokeWidth={1.75} />
           {item.label}
         </Link>
       ))}
