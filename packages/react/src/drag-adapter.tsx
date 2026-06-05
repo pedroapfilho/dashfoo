@@ -2,7 +2,7 @@
 
 import type { Action, DockLocation, DragSubject, DropIntent, Point } from "@dashfoo/core";
 import { dragDockMachine, resolveDockTarget, zoneRect } from "@dashfoo/core";
-import { Accessibility, DragDropManager, Draggable, Feedback } from "@dnd-kit/dom";
+import { Accessibility, DragDropManager, Draggable, Feedback, KeyboardSensor } from "@dnd-kit/dom";
 import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/dom";
 import { useActorRef, useSelector } from "@xstate/react";
 import type { CSSProperties, ReactNode } from "react";
@@ -196,8 +196,11 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const [preview, setPreview] = useState<DragPreviewState | null>(null);
 
-  // One manager for the whole layout, with the default preset minus the screen
-  // reader announcer and the visual Feedback plugin (we render our own preview).
+  // One manager for the whole layout. Plugins drop the screen-reader announcer
+  // and the visual Feedback plugin (we render our own preview). Sensors drop the
+  // KeyboardSensor: its nudge model double-binds the arrow keys the tab strip
+  // already uses for roving-tabindex navigation, so keyboard docking needs its
+  // own interaction design rather than this sensor. Pointer drag only.
   // useState lazily constructs it once; the destroy rides a useInsertionEffect
   // cleanup (not useEffect) so StrictMode's simulated unmount doesn't tear down
   // the live instance — the same pattern @dnd-kit/react uses internally.
@@ -206,6 +209,7 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
       new DragDropManager({
         plugins: (defaults) =>
           defaults.filter((plugin) => plugin !== Accessibility && plugin !== Feedback),
+        sensors: (defaults) => defaults.filter((sensor) => sensor !== KeyboardSensor),
       }),
   );
   useInsertionEffect(() => () => manager.destroy(), [manager]);
