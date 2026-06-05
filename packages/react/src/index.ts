@@ -6,6 +6,7 @@
 
 export * from "./context";
 export * from "./dashfoo-layout";
+export * from "./panel";
 export * from "./persistence";
 export * from "./responsive";
 export * from "./store";

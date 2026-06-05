@@ -1,9 +1,9 @@
+import { Panel } from "@dashfoo/react";
 import { Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { usePositions } from "../data/feed";
 
-import { PanelFrame } from "./panel-frame";
 import type { PanelProps } from "./panel-types";
 import { Row } from "./row";
 import { SignedValue } from "./signed-value";
@@ -11,7 +11,7 @@ import { SignedValue } from "./signed-value";
 const PositionsPanel = ({ node }: PanelProps): ReactNode => {
   const positions = usePositions();
   return (
-    <PanelFrame icon={<Wallet size={14} />} live title={node.name}>
+    <Panel icon={<Wallet size={14} />} live title={node.name}>
       <div className="flex flex-col gap-1.5">
         {positions.map((position) => (
           <Row
@@ -21,7 +21,7 @@ const PositionsPanel = ({ node }: PanelProps): ReactNode => {
           />
         ))}
       </div>
-    </PanelFrame>
+    </Panel>
   );
 };
 
