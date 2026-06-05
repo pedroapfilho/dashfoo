@@ -1,3 +1,15 @@
+import {
+  CircleCheck,
+  Coins,
+  Files,
+  FolderTree,
+  ListTree,
+  ReceiptText,
+  SquareTerminal,
+  StickyNote,
+  Terminal,
+  type LucideIcon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { PanelFrame } from "./panel-frame";
@@ -15,10 +27,23 @@ const TEXT_CONTENT: Record<string, Array<string>> = {
   terminal: ["$ pnpm dev", "VITE ready in 240 ms", "➜ local: http://localhost:5174/"],
 };
 
+const COMPONENT_ICON: Record<string, LucideIcon> = {
+  balances: Coins,
+  console: Terminal,
+  explorer: FolderTree,
+  files: Files,
+  notes: StickyNote,
+  orders: ReceiptText,
+  outline: ListTree,
+  problems: CircleCheck,
+  terminal: SquareTerminal,
+};
+
 const GenericPanel = ({ node }: PanelProps): ReactNode => {
   const lines = TEXT_CONTENT[node.component] ?? [`${node.name} panel`];
+  const Icon = COMPONENT_ICON[node.component];
   return (
-    <PanelFrame title={node.name}>
+    <PanelFrame icon={Icon ? <Icon size={14} /> : undefined} title={node.name}>
       <div className="text-df-muted flex flex-col gap-1 font-mono text-[11px] leading-relaxed">
         {lines.map((line) => (
           <div key={line}>{line}</div>

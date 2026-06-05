@@ -1,3 +1,4 @@
+import { Layers } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { useOrderBook } from "../data/feed";
@@ -8,7 +9,7 @@ import type { PanelProps } from "./panel-types";
 const DepthPanel = ({ node }: PanelProps): ReactNode => {
   const { asks, bids } = useOrderBook();
   return (
-    <PanelFrame live title={node.name}>
+    <PanelFrame icon={<Layers size={14} />} live title={node.name}>
       <div className="flex flex-col gap-1">
         {[...asks, ...bids].map((row, index) => (
           <div className="flex items-center gap-2" key={row.price}>
