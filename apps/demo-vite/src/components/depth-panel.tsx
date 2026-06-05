@@ -1,15 +1,15 @@
+import { Panel } from "@dashfoo/react";
 import { Layers } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { useOrderBook } from "../data/feed";
 
-import { PanelFrame } from "./panel-frame";
 import type { PanelProps } from "./panel-types";
 
 const DepthPanel = ({ node }: PanelProps): ReactNode => {
   const { asks, bids } = useOrderBook();
   return (
-    <PanelFrame icon={<Layers size={14} />} live title={node.name}>
+    <Panel icon={<Layers size={14} />} live title={node.name}>
       <div className="flex flex-col gap-1">
         {[...asks, ...bids].map((row, index) => (
           <div className="flex items-center gap-2" key={row.price}>
@@ -21,7 +21,7 @@ const DepthPanel = ({ node }: PanelProps): ReactNode => {
           </div>
         ))}
       </div>
-    </PanelFrame>
+    </Panel>
   );
 };
 

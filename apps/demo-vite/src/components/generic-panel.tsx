@@ -1,3 +1,4 @@
+import { Panel } from "@dashfoo/react";
 import {
   CircleCheck,
   Coins,
@@ -12,7 +13,6 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { PanelFrame } from "./panel-frame";
 import type { PanelProps } from "./panel-types";
 
 const TEXT_CONTENT: Record<string, Array<string>> = {
@@ -43,13 +43,13 @@ const GenericPanel = ({ node }: PanelProps): ReactNode => {
   const lines = TEXT_CONTENT[node.component] ?? [`${node.name} panel`];
   const Icon = COMPONENT_ICON[node.component];
   return (
-    <PanelFrame icon={Icon ? <Icon size={14} /> : undefined} title={node.name}>
+    <Panel icon={Icon ? <Icon size={14} /> : undefined} title={node.name}>
       <div className="text-df-muted flex flex-col gap-1 font-mono text-[11px] leading-relaxed">
         {lines.map((line) => (
           <div key={line}>{line}</div>
         ))}
       </div>
-    </PanelFrame>
+    </Panel>
   );
 };
 
