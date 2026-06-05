@@ -1,7 +1,7 @@
 {
   "name": "@dashfoo/theme",
   "version": "0.0.0",
-  "description": "Opt-in themeable skin for dashfoo, composed from the @dashfoo/react headless components. Base UI + Tailwind v4 + CSS design tokens.",
+  "description": "Opt-in default skin for the @dashfoo/react headless chrome. Framework-agnostic plain CSS over overridable --dashfoo-* design tokens.",
   "license": "MIT",
   "author": "Pedro Filho <pedro@filho.me>",
   "repository": {
@@ -11,6 +11,7 @@
   },
   "files": [
     "dist",
+    "dashfoo.css",
     "tokens.css"
   ],
   "type": "module",
@@ -23,6 +24,7 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./dashfoo.css": "./dashfoo.css",
     "./tokens.css": "./tokens.css"
   },
   "publishConfig": {
