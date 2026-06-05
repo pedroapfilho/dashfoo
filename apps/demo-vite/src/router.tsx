@@ -1,42 +1,43 @@
-import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  lazyRouteComponent,
+} from "@tanstack/react-router";
 
-import { ChromePage } from "./pages/chrome";
-import { ImperativeControlPage } from "./pages/controlled";
-import { DockingPage } from "./pages/docking";
-import { OverviewPage } from "./pages/overview";
-import { PersistencePage } from "./pages/persistence";
-import { ResponsivePage } from "./pages/responsive";
 import { RootLayout } from "./root";
 
+// Each page is lazily imported so it ships as its own chunk — the initial bundle
+// loads only the shell + the landing route, not every demo page at once.
 const rootRoute = createRootRoute({ component: RootLayout });
 
 const indexRoute = createRoute({
-  component: OverviewPage,
+  component: lazyRouteComponent(() => import("./pages/overview"), "OverviewPage"),
   getParentRoute: () => rootRoute,
   path: "/",
 });
 const dockingRoute = createRoute({
-  component: DockingPage,
+  component: lazyRouteComponent(() => import("./pages/docking"), "DockingPage"),
   getParentRoute: () => rootRoute,
   path: "/docking",
 });
 const chromeRoute = createRoute({
-  component: ChromePage,
+  component: lazyRouteComponent(() => import("./pages/chrome"), "ChromePage"),
   getParentRoute: () => rootRoute,
   path: "/chrome",
 });
 const persistenceRoute = createRoute({
-  component: PersistencePage,
+  component: lazyRouteComponent(() => import("./pages/persistence"), "PersistencePage"),
   getParentRoute: () => rootRoute,
   path: "/persistence",
 });
 const controlledRoute = createRoute({
-  component: ImperativeControlPage,
+  component: lazyRouteComponent(() => import("./pages/controlled"), "ImperativeControlPage"),
   getParentRoute: () => rootRoute,
   path: "/controlled",
 });
 const responsiveRoute = createRoute({
-  component: ResponsivePage,
+  component: lazyRouteComponent(() => import("./pages/responsive"), "ResponsivePage"),
   getParentRoute: () => rootRoute,
   path: "/responsive",
 });
