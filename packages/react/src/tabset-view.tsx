@@ -13,6 +13,7 @@ import {
 } from "./drag-adapter";
 import { TabOverflowMenu } from "./tab-overflow";
 import { fallbackSelectedIndex } from "./tab-selection";
+import { CloseIcon, GripIcon, MaximizeIcon } from "./tabset-icons";
 import { useTabOverflow } from "./use-tab-overflow";
 
 // height/width 100% (not flex:1) so the tabset fills its parent whether that
@@ -43,50 +44,9 @@ const toolbarStyle: CSSProperties = {
   marginInlineStart: "auto",
 };
 
-const iconStyle: CSSProperties = { pointerEvents: "none" };
-
 // Stable ids wiring each tab to its panel (aria-controls / aria-labelledby).
 const tabDomId = (tabsetId: string, tabId: string): string => `dashfoo-tab-${tabsetId}-${tabId}`;
 const panelDomId = (tabsetId: string): string => `dashfoo-panel-${tabsetId}`;
-
-const CloseIcon = (): ReactNode => (
-  <svg aria-hidden="true" height="10" viewBox="0 0 10 10" width="10">
-    <path d="M1.5 1.5l7 7m0-7l-7 7" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
-  </svg>
-);
-
-// pointer-events:none so a pointerdown lands on the button (the dnd-kit
-// draggable), not on the svg path — otherwise the drag sensor never activates.
-const GripIcon = (): ReactNode => (
-  <svg aria-hidden="true" height="10" style={iconStyle} viewBox="0 0 10 10" width="10">
-    <path d="M3 2v6M5 2v6M7 2v6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.2" />
-  </svg>
-);
-
-const MaximizeIcon = ({ maximized }: { maximized: boolean }): ReactNode =>
-  maximized ? (
-    <svg aria-hidden="true" height="10" viewBox="0 0 10 10" width="10">
-      <path
-        d="M4 1v3H1m5 5V6h3"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.2"
-      />
-    </svg>
-  ) : (
-    <svg aria-hidden="true" height="10" viewBox="0 0 10 10" width="10">
-      <rect
-        fill="none"
-        height="7"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        width="7"
-        x="1.5"
-        y="1.5"
-      />
-    </svg>
-  );
 
 // Inline rename editor. Enter/Escape set `done` so the unmount blur does not
 // re-commit after a deliberate commit or cancel.
