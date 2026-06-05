@@ -196,13 +196,17 @@ type PersistedModel = {
   resetKey: number;
 };
 
-// Persist a dashfoo layout for the uncontrolled remount pattern: loads the saved
-// model, debounce-saves changes, and remounts on `resetKey` so `clear()` visibly
-// resets. Prefer the `persist` prop on DashfooLayout, which wires this in for you:
-//
-//   const persisted = usePersistedModel({ defaultModel, key: "demo" });
-//   <DashfooLayout key={persisted.resetKey} defaultModel={persisted.defaultModel}
-//     onModelChange={persisted.onModelChange} ... />
+/**
+ * Persist a dashfoo layout for the uncontrolled remount pattern: loads the saved
+ * model, debounce-saves changes, and remounts on `resetKey` so `clear()` visibly
+ * resets.
+ *
+ * @deprecated Prefer the `persist` prop on {@link DashfooLayout}, which wires
+ * load/save/reset in for you and resets without a remount:
+ * `<DashfooLayout defaultModel={model} persist="key" ref={ref} />` then
+ * `ref.current.resetLayout()`. This hook remains for hosts that need to own the
+ * remount themselves.
+ */
 const usePersistedModel = (options: UsePersistedModelOptions): PersistedModel => {
   const { debounceMs = 300, defaultModel, key, storage = localStorageAdapter } = options;
   const {
