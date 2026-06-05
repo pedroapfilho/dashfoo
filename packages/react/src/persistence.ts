@@ -62,46 +62,45 @@ const localStorageAdapter: StorageAdapter = {
   },
 };
 
-type UsePersistedModelOptions = {
-  debounceMs?: number;
-  defaultModel: Dashfoo;
+// A resolved persistence target: where to save and how often. DashfooLayout's
+// `persist` prop and usePersistedModel both normalize their input to this.
+type PersistConfig = {
+  debounceMs: number;
   key: string;
-  storage?: StorageAdapter;
+  storage: StorageAdapter;
 };
 
-type PersistedModel = {
+type Persistence = {
   clear: () => void;
-  defaultModel: Dashfoo;
-  onModelChange: (model: Dashfoo) => void;
-  resetKey: number;
+  // undefined only in controlled mode, where no defaultModel seeds the load.
+  initialModel: Dashfoo | undefined;
+  save: (model: Dashfoo) => void;
 };
 
-// Persist a dashfoo layout. Loads the saved model once (validated + migrated via
-// serialize.ts, falling back to `defaultModel` on miss or corruption), and
-// debounce-saves every change. Use it uncontrolled, remounting on `resetKey` so
-// `clear()` visibly resets:
-//
-//   const persisted = usePersistedModel({ defaultModel, key: "demo" });
-//   <DashfooLayout key={persisted.resetKey} defaultModel={persisted.defaultModel}
-//     onModelChange={persisted.onModelChange} ... />
-const usePersistedModel = (options: UsePersistedModelOptions): PersistedModel => {
-  const { debounceMs = 300, defaultModel, key, storage = localStorageAdapter } = options;
-
-  // Refs keep the callbacks stable while always seeing the latest props; they are
-  // synced in an effect (never written during render).
-  const storageRef = useRef(storage);
-  const keyRef = useRef(key);
-  const defaultRef = useRef(defaultModel);
+// The load/save half of persistence, shared by usePersistedModel and the
+// DashfooLayout `persist` prop. Loads the saved model once (validated + migrated
+// via serialize.ts, falling back to `defaultModel` on miss or corruption) and
+// debounce-saves every change. Resetting the live model is the caller's job —
+// this primitive only owns the storage side. A null config makes it a no-op, so
+// callers can run the hook unconditionally.
+const usePersistence = (
+  config: PersistConfig | null,
+  defaultModel: Dashfoo | undefined,
+): Persistence => {
+  // Refs keep the callbacks stable while always seeing the latest config; synced
+  // in an effect (never written during render).
+  const configRef = useRef(config);
   useEffect(() => {
-    storageRef.current = storage;
-    keyRef.current = key;
-    defaultRef.current = defaultModel;
+    configRef.current = config;
   });
 
   // Load the saved model once. The initializer stays pure (no writes during
   // render); a corrupt stored value is pruned in the mount effect below.
-  const [model, setModel] = useState<Dashfoo>(() => {
-    const raw = storage.getItem(key);
+  const [initialModel] = useState<Dashfoo | undefined>(() => {
+    if (config === null || defaultModel === undefined) {
+      return defaultModel;
+    }
+    const raw = config.storage.getItem(config.key);
     if (raw === null) {
       return defaultModel;
     }
@@ -111,17 +110,20 @@ const usePersistedModel = (options: UsePersistedModelOptions): PersistedModel =>
       return defaultModel;
     }
   });
-  const [resetKey, setResetKey] = useState(0);
 
   useEffect(() => {
-    const raw = storageRef.current.getItem(keyRef.current);
+    const current = configRef.current;
+    if (current === null) {
+      return;
+    }
+    const raw = current.storage.getItem(current.key);
     if (raw === null) {
       return;
     }
     try {
       fromJSON(raw);
     } catch {
-      storageRef.current.removeItem(keyRef.current);
+      current.storage.removeItem(current.key);
     }
   }, []);
 
@@ -135,21 +137,26 @@ const usePersistedModel = (options: UsePersistedModelOptions): PersistedModel =>
       clearTimeout(timer.current);
       timer.current = null;
     }
-    if (pending.current !== null) {
-      storageRef.current.setItem(pending.current.key, pending.current.value);
+    const current = configRef.current;
+    if (pending.current !== null && current !== null) {
+      current.storage.setItem(pending.current.key, pending.current.value);
       pending.current = null;
     }
   }, []);
 
-  const onModelChange = useCallback(
+  const save = useCallback(
     (next: Dashfoo): void => {
-      pending.current = { key: keyRef.current, value: toJSON(next) };
+      const current = configRef.current;
+      if (current === null) {
+        return;
+      }
+      pending.current = { key: current.key, value: toJSON(next) };
       if (timer.current !== null) {
         clearTimeout(timer.current);
       }
-      timer.current = setTimeout(flush, debounceMs);
+      timer.current = setTimeout(flush, current.debounceMs);
     },
-    [debounceMs, flush],
+    [flush],
   );
 
   // Flush a pending save on unmount so the last change is never lost.
@@ -166,13 +173,66 @@ const usePersistedModel = (options: UsePersistedModelOptions): PersistedModel =>
       timer.current = null;
     }
     pending.current = null;
-    storageRef.current.removeItem(keyRef.current);
-    setModel(defaultRef.current);
-    setResetKey((value) => value + 1);
+    const current = configRef.current;
+    if (current !== null) {
+      current.storage.removeItem(current.key);
+    }
   }, []);
 
-  return { clear, defaultModel: model, onModelChange, resetKey };
+  return { clear, initialModel, save };
 };
 
-export { localStorageAdapter, memoryStorageAdapter, usePersistedModel };
-export type { PersistedModel, StorageAdapter, UsePersistedModelOptions };
+type UsePersistedModelOptions = {
+  debounceMs?: number;
+  defaultModel: Dashfoo;
+  key: string;
+  storage?: StorageAdapter;
+};
+
+type PersistedModel = {
+  clear: () => void;
+  defaultModel: Dashfoo;
+  onModelChange: (model: Dashfoo) => void;
+  resetKey: number;
+};
+
+// Persist a dashfoo layout for the uncontrolled remount pattern: loads the saved
+// model, debounce-saves changes, and remounts on `resetKey` so `clear()` visibly
+// resets. Prefer the `persist` prop on DashfooLayout, which wires this in for you:
+//
+//   const persisted = usePersistedModel({ defaultModel, key: "demo" });
+//   <DashfooLayout key={persisted.resetKey} defaultModel={persisted.defaultModel}
+//     onModelChange={persisted.onModelChange} ... />
+const usePersistedModel = (options: UsePersistedModelOptions): PersistedModel => {
+  const { debounceMs = 300, defaultModel, key, storage = localStorageAdapter } = options;
+  const {
+    clear: clearStorage,
+    initialModel,
+    save,
+  } = usePersistence({ debounceMs, key, storage }, defaultModel);
+
+  const defaultRef = useRef(defaultModel);
+  useEffect(() => {
+    defaultRef.current = defaultModel;
+  });
+
+  const [model, setModel] = useState<Dashfoo>(initialModel ?? defaultModel);
+  const [resetKey, setResetKey] = useState(0);
+
+  const clear = useCallback((): void => {
+    clearStorage();
+    setModel(defaultRef.current);
+    setResetKey((value) => value + 1);
+  }, [clearStorage]);
+
+  return { clear, defaultModel: model, onModelChange: save, resetKey };
+};
+
+export { localStorageAdapter, memoryStorageAdapter, usePersistedModel, usePersistence };
+export type {
+  Persistence,
+  PersistConfig,
+  PersistedModel,
+  StorageAdapter,
+  UsePersistedModelOptions,
+};

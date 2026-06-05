@@ -7,9 +7,35 @@ import { forwardRef, useCallback, useImperativeHandle, useMemo } from "react";
 
 import { DashfooContext } from "./context";
 import { DragProvider } from "./drag-adapter";
+import type { PersistConfig, StorageAdapter } from "./persistence";
+import { localStorageAdapter, usePersistence } from "./persistence";
 import { RowView } from "./row-view";
 import { useDashfooStore } from "./store";
 import { TabsetView } from "./tabset-view";
+
+const DEFAULT_PERSIST_DEBOUNCE_MS = 300;
+
+// `persist` accepts a bare localStorage key or a full target (custom storage,
+// debounce). Controlled mode (a `model` prop, no `defaultModel`) skips it —
+// persistence implies the library owns the state.
+type PersistInput = string | { debounceMs?: number; key: string; storage?: StorageAdapter };
+
+const resolvePersist = (
+  persist: PersistInput | undefined,
+  hasDefaultModel: boolean,
+): PersistConfig | null => {
+  if (persist === undefined || !hasDefaultModel) {
+    return null;
+  }
+  if (typeof persist === "string") {
+    return { debounceMs: DEFAULT_PERSIST_DEBOUNCE_MS, key: persist, storage: localStorageAdapter };
+  }
+  return {
+    debounceMs: persist.debounceMs ?? DEFAULT_PERSIST_DEBOUNCE_MS,
+    key: persist.key,
+    storage: persist.storage ?? localStorageAdapter,
+  };
+};
 
 type TabComponent = ComponentType<{ node: TabNode }>;
 
@@ -31,6 +57,9 @@ type DashfooHandle = {
   maximizeTabset: (tabsetId: string | null) => void;
   redo: () => void;
   renameTab: (tabId: string, name: string) => void;
+  // Reset to the original defaultModel, clearing undo history and any persisted
+  // copy. No-op in controlled mode (the host owns the model).
+  resetLayout: () => void;
   selectTab: (tabsetId: string, index: number) => void;
   undo: () => void;
 };
@@ -48,6 +77,7 @@ type DashfooLayoutProps = {
   onActiveTabsetChange?: (tabsetId: string | undefined) => void;
   onMaximizedTabsetChange?: (tabsetId: string | undefined) => void;
   onModelChange?: (model: Dashfoo, action?: Action) => void;
+  persist?: PersistInput;
   renamableTabs?: boolean;
   renderTabLabel?: (tab: TabNode) => ReactNode;
   renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
@@ -72,17 +102,35 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     onActiveTabsetChange,
     onMaximizedTabsetChange,
     onModelChange,
+    persist,
     renamableTabs = true,
     renderTabLabel,
     renderTabsetToolbar,
   } = props;
+
+  const persistConfig = useMemo(
+    () => resolvePersist(persist, defaultModel !== undefined),
+    [persist, defaultModel],
+  );
+  const persistence = usePersistence(persistConfig, defaultModel);
+
+  // The save side of persistence rides onModelChange; the consumer's own handler
+  // still fires after it.
+  const handleModelChange = useCallback(
+    (next: Dashfoo, action?: Action): void => {
+      persistence.save(next);
+      onModelChange?.(next, action);
+    },
+    [onModelChange, persistence],
+  );
+
   const store = useDashfooStore({
-    defaultModel,
+    defaultModel: persistence.initialModel ?? defaultModel,
     model,
     onAction,
     onActiveTabsetChange,
     onMaximizedTabsetChange,
-    onModelChange,
+    onModelChange: handleModelChange,
   });
 
   useImperativeHandle(
@@ -104,10 +152,16 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       maximizeTabset: (tabsetId) => store.dispatch({ tabsetId, type: "setMaximizedTabset" }),
       redo: store.redo,
       renameTab: (tabId, name) => store.dispatch({ name, tabId, type: "renameTab" }),
+      resetLayout: () => {
+        persistence.clear();
+        if (defaultModel !== undefined) {
+          store.setModel(defaultModel);
+        }
+      },
       selectTab: (tabsetId, index) => store.dispatch({ index, tabsetId, type: "selectTab" }),
       undo: store.undo,
     }),
-    [store],
+    [defaultModel, persistence, store],
   );
 
   const renderTab = useCallback(
