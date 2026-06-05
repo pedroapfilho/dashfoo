@@ -157,11 +157,10 @@ const TabButton = ({
   tabsetId: string;
 }): ReactNode => {
   const { dispatch, renderTabLabel } = useDashfooContext();
-  const { ref } = useTabDraggable(tab.id, tab.enableDrag === false);
-  // `data-dragging` is driven off the drag machine's subject, not dnd-kit's
-  // per-draggable isDragging: with feedback:'move' the tab's own re-render (e.g.
-  // when the selected tab is dragged and the strip reactivates a neighbour)
-  // desyncs that flag, but the subject is authoritative for the whole drag.
+  const { ref } = useTabDraggable(tab.id, tab.enableDrag === false, tab.name);
+  // `data-dragging` is driven off the drag machine's subject, which is
+  // authoritative for the whole drag — the source tab stays in the strip (dimmed)
+  // while our overlay chip follows the pointer.
   const dragSubject = useDragSubject();
   const isDragging = dragSubject?.kind === "tab" && dragSubject.id === tab.id;
   const [editing, setEditing] = useState(false);
@@ -264,18 +263,16 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
     tabLocation,
     tabStripEnabled,
   } = useDashfooContext();
-  const { isDropTarget, ref } = useTabsetDroppable(node.id);
+  const { ref } = useTabsetDroppable(node.id);
   const dragSubject = useDragSubject();
   const isMaximized = maximizedTabsetId === node.id;
-  const { ref: gripRef } = useTabsetDraggable(node.id, !draggableTabsets || isMaximized);
   const tablistRef = useRef<HTMLDivElement>(null);
   const tabsClosable = closableTabs && node.enableClose !== false;
   const showMaximize = maximizable && node.enableMaximize !== false;
 
   // While the selected tab is being dragged out of THIS tabset, show a neighbour
-  // as active so the strip + content read "as if that tab isn't here" (the tab
-  // collapses via dnd-kit feedback:'move'). Purely visual — the model selection is
-  // untouched and resumes on drop/cancel.
+  // as active so the strip + content preview "as if that tab were already gone".
+  // Purely visual — the model selection is untouched and resumes on drop/cancel.
   const draggingTabIndex =
     dragSubject?.kind === "tab" ? node.children.findIndex((tab) => tab.id === dragSubject.id) : -1;
   const visualSelected =
@@ -284,6 +281,13 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
       : node.selected;
   const active = node.children[visualSelected];
   const isDragSource = dragSubject?.kind === "tabset" && dragSubject.id === node.id;
+
+  // The grip carries the active tab's name so the drag overlay can label the chip.
+  const { ref: gripRef } = useTabsetDraggable(
+    node.id,
+    !draggableTabsets || isMaximized,
+    active?.name ?? "",
+  );
 
   const handleMaximize = (): void => {
     dispatch({ tabsetId: isMaximized ? null : node.id, type: "setMaximizedTabset" });
@@ -367,7 +371,6 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
           {draggableTabsets && !isMaximized ? (
             <button aria-label="Move tabset" data-dashfoo="tabset-grip" ref={gripRef} type="button">
               <GripIcon />
-              <span data-dashfoo="tabset-grip-label">{active?.name}</span>
             </button>
           ) : null}
           {renderTabsetToolbar?.(node)}
@@ -429,7 +432,6 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
     <div
       data-dashfoo="tabset"
       data-dragging-source={isDragSource || undefined}
-      data-drop-target={isDropTarget || undefined}
       data-tab-location={tabLocation}
       ref={ref}
       style={tabsetStyle}
