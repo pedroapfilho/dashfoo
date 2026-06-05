@@ -2,25 +2,37 @@
 
 import type { Action, DockLocation, DragSubject, DropIntent, Point } from "@dashfoo/core";
 import { dragDockMachine, resolveDockTarget, zoneRect } from "@dashfoo/core";
-import { Accessibility, Feedback } from "@dnd-kit/dom";
-import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/react";
-import { DragDropProvider, useDraggable, useDroppable } from "@dnd-kit/react";
+import { Accessibility, DragDropManager, Draggable, Feedback } from "@dnd-kit/dom";
+import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/dom";
 import { useActorRef, useSelector } from "@xstate/react";
 import type { CSSProperties, ReactNode } from "react";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useInsertionEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { ActorRefFrom } from "xstate";
 
 import type { Zone } from "./tab-insertion";
 import { insertionIndex, insertionLineRect, pointInRect, shouldAllowDrop } from "./tab-insertion";
 
-// This module is the drag adapter: the only place that imports @dnd-kit/react.
-// It feeds the (already unit-tested) dragDockMachine — dnd-kit supplies the
-// source/target ids and the pointer; the machine owns the lifecycle and emits a
-// moveNode COMMIT, which the provider forwards to the document via onCommit.
+// This module is the drag adapter: the only place that touches @dnd-kit. It wires
+// the framework-agnostic @dnd-kit/dom core (no React bindings) to the already
+// unit-tested dragDockMachine — the PointerSensor supplies activation + a live
+// pointer, the adapter hit-tests that pointer against the registered tabsets, and
+// the machine owns the lifecycle and emits a moveNode COMMIT forwarded via
+// onCommit. The drag preview is our own overlay, so there is no Feedback plugin,
+// no placeholder clone, and none of the CSS workarounds those required.
 
 type DragActor = ActorRefFrom<typeof dragDockMachine>;
 
 type DragContextValue = {
+  manager: DragDropManager;
   registerTabset: (id: string, element: HTMLElement | null) => void;
 };
 
@@ -31,9 +43,9 @@ const DragSubjectContext = createContext<DragSubject | null>(null);
 // The dragged tab is excluded so its own slot never counts toward the order —
 // the insertion index and line are measured against the tabs it will land among.
 const tabRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
-  [
-    ...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]:not([data-dnd-placeholder])'),
-  ].flatMap((tab) => (tab.dataset.tabId === excludeId ? [] : [tab.getBoundingClientRect()]));
+  [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].flatMap((tab) =>
+    tab.dataset.tabId === excludeId ? [] : [tab.getBoundingClientRect()],
+  );
 
 // Whole-tab-item rects (label + close button), excluding the dragged tab. The
 // insertion line lands on these boundaries so the "after the last tab" position
@@ -138,6 +150,39 @@ const DockIndicator = ({
   return <div data-dashfoo="dock-indicator" style={paneStyle(zone)} />;
 };
 
+// The pointer-anchored chip that follows the cursor while dragging.
+const PREVIEW_OFFSET: Point = { x: 12, y: 8 };
+
+const previewStyle: CSSProperties = { left: 0, position: "fixed", top: 0, zIndex: 9999 };
+
+type DragPreviewState = { label: string; x: number; y: number };
+
+const DragPreview = ({
+  overlayRef,
+  preview,
+}: {
+  overlayRef: (element: HTMLDivElement | null) => void;
+  preview: DragPreviewState | null;
+}): ReactNode => {
+  if (!preview) {
+    return null;
+  }
+  return (
+    <div
+      data-dashfoo="drag-preview"
+      ref={overlayRef}
+      style={{ ...previewStyle, transform: `translate(${preview.x}px, ${preview.y}px)` }}
+    >
+      {preview.label}
+    </div>
+  );
+};
+
+const labelOf = (source: { data?: Record<string, unknown> } | null): string => {
+  const raw = source?.data?.label;
+  return typeof raw === "string" ? raw : "";
+};
+
 type DragProviderProps = {
   children: ReactNode;
   onCommit: (action: Action) => void;
@@ -148,6 +193,22 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
   const actorRef = useActorRef(dragDockMachine);
   const dragSubject = useSelector(actorRef, (snapshot) => snapshot.context.subject);
   const tabsets = useRef(new Map<string, HTMLElement>());
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const [preview, setPreview] = useState<DragPreviewState | null>(null);
+
+  // One manager for the whole layout, with the default preset minus the screen
+  // reader announcer and the visual Feedback plugin (we render our own preview).
+  // useState lazily constructs it once; the destroy rides a useInsertionEffect
+  // cleanup (not useEffect) so StrictMode's simulated unmount doesn't tear down
+  // the live instance — the same pattern @dnd-kit/react uses internally.
+  const [manager] = useState(
+    () =>
+      new DragDropManager({
+        plugins: (defaults) =>
+          defaults.filter((plugin) => plugin !== Accessibility && plugin !== Feedback),
+      }),
+  );
+  useInsertionEffect(() => () => manager.destroy(), [manager]);
 
   useEffect(() => {
     const subscription = actorRef.on("COMMIT", (emitted) => {
@@ -168,6 +229,18 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
 
   const getTabsetElement = useCallback((id: string) => tabsets.current.get(id), []);
 
+  // Which registered tabset sits under the pointer. Tabsets tile (never overlap),
+  // so the first rect that contains the point is the unambiguous target — no
+  // dnd-kit collision detection needed.
+  const tabsetAt = useCallback((point: Point): { element: HTMLElement; id: string } | undefined => {
+    for (const [id, element] of tabsets.current) {
+      if (pointInRect(point, element.getBoundingClientRect())) {
+        return { element, id };
+      }
+    }
+    return undefined;
+  }, []);
+
   // The dock intent for a pointer over a tabset, or null when the drop would be a
   // no-op: a tabset dragged onto itself, or the sole tab of a tabset dropped back
   // onto that same tabset. Otherwise the tabset resolves to center/split.
@@ -178,13 +251,9 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
       point: Point,
       draggedId?: string,
     ): DropIntent | null => {
-      // Exclude dnd-kit's placeholder clone (it carries the dragged tab's id), so a
-      // sole-tab tabset still reads as one tab and the self-drop no-op is detected.
-      const tabIds = [
-        ...element.querySelectorAll<HTMLElement>(
-          '[data-dashfoo="tab"]:not([data-dnd-placeholder])',
-        ),
-      ].map((tab) => tab.dataset.tabId ?? "");
+      const tabIds = [...element.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].map(
+        (tab) => tab.dataset.tabId ?? "",
+      );
       if (!shouldAllowDrop(draggedId, targetId, tabIds)) {
         return null;
       }
@@ -198,14 +267,33 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
     [splitDock],
   );
 
-  const handleDragStart = useCallback(
-    (event: DragStartEvent): void => {
+  // Position the preview imperatively (transform only) so following the pointer
+  // never triggers a React re-render.
+  const positionOverlay = useCallback((point: Point): void => {
+    const element = overlayRef.current;
+    if (element) {
+      element.style.transform = `translate(${point.x + PREVIEW_OFFSET.x}px, ${point.y + PREVIEW_OFFSET.y}px)`;
+    }
+  }, []);
+
+  const attachOverlay = useCallback((element: HTMLDivElement | null): void => {
+    overlayRef.current = element;
+  }, []);
+
+  useEffect(() => {
+    const handleStart = (event: DragStartEvent): void => {
       const source = event.operation.source;
       if (!source) {
         return;
       }
       // A tabset grip carries { tabsetId, type: "tabset" }; a tab carries its id.
       const isTabset = source.data?.type === "tabset";
+      const point = event.operation.position.current;
+      setPreview({
+        label: labelOf(source),
+        x: point.x + PREVIEW_OFFSET.x,
+        y: point.y + PREVIEW_OFFSET.y,
+      });
       actorRef.send({
         subject: {
           id: isTabset ? String(source.data.tabsetId) : String(source.id),
@@ -213,118 +301,147 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
         },
         type: "START",
       });
-    },
-    [actorRef],
-  );
+    };
 
-  // Live dock zone: dnd-kit's onDragMove gives the current target + pointer on
-  // every move, which drives the indicator's intent.
-  const handleDragMove = useCallback(
-    (event: DragMoveEvent): void => {
+    // dnd-kit's dragmove gives the live pointer on every move, which drives the
+    // preview position and the indicator's intent.
+    const handleMove = (event: DragMoveEvent): void => {
       const op = event.operation;
-      const target = op.target;
+      const point = op.position.current;
+      positionOverlay(point);
       const draggedId = op.source ? String(op.source.id) : undefined;
-      const element = target ? tabsets.current.get(String(target.id)) : undefined;
-      if (target && element) {
-        const intent = resolveIntent(String(target.id), element, op.position.current, draggedId);
-        actorRef.send({ intent, type: "OVER" });
-      } else {
-        actorRef.send({ intent: null, type: "OVER" });
-      }
-    },
-    [actorRef, resolveIntent],
-  );
+      const hit = tabsetAt(point);
+      actorRef.send({
+        intent: hit ? resolveIntent(hit.id, hit.element, point, draggedId) : null,
+        type: "OVER",
+      });
+    };
 
-  // Recompute the dock zone from dnd-kit's authoritative final target + pointer,
-  // then set the intent and commit in one synchronous pair.
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent): void => {
+    // Recompute the dock zone from the final pointer, then set the intent and
+    // commit in one synchronous pair.
+    const handleEnd = (event: DragEndEvent): void => {
+      setPreview(null);
       if (event.canceled) {
         actorRef.send({ type: "CANCEL" });
         return;
       }
       const op = event.operation;
-      const target = op.target;
+      const point = op.position.current;
       const draggedId = op.source ? String(op.source.id) : undefined;
-      const element = target ? tabsets.current.get(String(target.id)) : undefined;
-      if (target && element) {
-        const intent = resolveIntent(String(target.id), element, op.position.current, draggedId);
-        actorRef.send({ intent, type: "OVER" });
+      const hit = tabsetAt(point);
+      if (hit) {
+        actorRef.send({
+          intent: resolveIntent(hit.id, hit.element, point, draggedId),
+          type: "OVER",
+        });
       }
       actorRef.send({ type: "DROP" });
-    },
-    [actorRef, resolveIntent],
-  );
+    };
+    const offStart = manager.monitor.addEventListener("dragstart", handleStart);
+    const offMove = manager.monitor.addEventListener("dragmove", handleMove);
+    const offEnd = manager.monitor.addEventListener("dragend", handleEnd);
+    return () => {
+      offStart();
+      offMove();
+      offEnd();
+    };
+  }, [actorRef, manager, positionOverlay, resolveIntent, tabsetAt]);
 
-  const contextValue = useMemo(() => ({ registerTabset }), [registerTabset]);
+  const contextValue = useMemo(() => ({ manager, registerTabset }), [manager, registerTabset]);
 
   return (
     <DragContext.Provider value={contextValue}>
       <DragSubjectContext.Provider value={dragSubject}>
-        <DragDropProvider
-          onDragEnd={handleDragEnd}
-          onDragMove={handleDragMove}
-          onDragStart={handleDragStart}
-          // dnd-kit's default Accessibility plugin stamps aria-pressed / aria-grabbed
-          // / aria-roledescription onto the draggable — invalid on our role="tab"
-          // buttons — and announces raw ids. Drop it; the tab keyboard model and
-          // labels are owned by TabsetView.
-          // Keep the default feedback type ('default'): it leaves a placeholder
-          // that is dnd-kit's restore anchor, so a drop always finalizes even when
-          // the strip re-renders mid-drag (the reactivation below). The placeholder's
-          // slot is collapsed in CSS so the strip still closes up. dropAnimation is
-          // off — the model relocates the tab on drop, so a fly-back would fight it.
-          plugins={(defaults) => [
-            ...defaults.filter((plugin) => plugin !== Accessibility && plugin !== Feedback),
-            Feedback.configure({ dropAnimation: null }),
-          ]}
-        >
-          {children}
-          <DockIndicator actorRef={actorRef} getTabsetElement={getTabsetElement} />
-        </DragDropProvider>
+        {children}
+        <DockIndicator actorRef={actorRef} getTabsetElement={getTabsetElement} />
+        <DragPreview overlayRef={attachOverlay} preview={preview} />
       </DragSubjectContext.Provider>
     </DragContext.Provider>
   );
 };
 
+// Tracks a Draggable's element across renders without rebuilding it. Returned by
+// the draggable hooks; their effects own the Draggable's lifecycle.
+type DraggableHandle = {
+  draggableRef: { current: Draggable | null };
+  elementRef: { current: Element | null };
+  ref: (element: Element | null) => void;
+};
+
+const useDraggableHandle = (): DraggableHandle => {
+  const elementRef = useRef<Element | null>(null);
+  const draggableRef = useRef<Draggable | null>(null);
+  const ref = useCallback((element: Element | null): void => {
+    elementRef.current = element;
+    if (draggableRef.current) {
+      draggableRef.current.element = element ?? undefined;
+    }
+  }, []);
+  return { draggableRef, elementRef, ref };
+};
+
 const useTabDraggable = (
   tabId: string,
   disabled = false,
-): { isDragging: boolean; ref: (element: Element | null) => void } => {
-  const { isDragging, ref } = useDraggable({ data: { type: "tab" }, disabled, id: tabId });
-  return { isDragging, ref };
+  label = "",
+): { ref: (element: Element | null) => void } => {
+  const context = useContext(DragContext);
+  const { draggableRef, elementRef, ref } = useDraggableHandle();
+  useEffect(() => {
+    const manager = context?.manager;
+    if (!manager || disabled) {
+      return undefined;
+    }
+    const draggable = new Draggable({ data: { label, type: "tab" }, id: tabId }, manager);
+    draggable.element = elementRef.current ?? undefined;
+    draggableRef.current = draggable;
+    return () => {
+      draggable.destroy();
+      draggableRef.current = null;
+    };
+  }, [context, disabled, draggableRef, elementRef, label, tabId]);
+  return { ref };
 };
 
 // The whole tabset is draggable from its grip. A distinct dnd-kit id (grip-*)
-// avoids colliding with the tabset's own droppable id; the real tabset id rides
-// in `data` and becomes the moveTabset subject.
+// avoids colliding with the tabset's own registered id; the real tabset id rides
+// in `data` and becomes the moveTabset subject. The label feeds the overlay chip.
 const useTabsetDraggable = (
   tabsetId: string,
   disabled = false,
-): { isDragging: boolean; ref: (element: Element | null) => void } => {
-  const { isDragging, ref } = useDraggable({
-    data: { tabsetId, type: "tabset" },
-    disabled,
-    id: `grip-${tabsetId}`,
-  });
-  return { isDragging, ref };
+  label = "",
+): { ref: (element: Element | null) => void } => {
+  const context = useContext(DragContext);
+  const { draggableRef, elementRef, ref } = useDraggableHandle();
+  useEffect(() => {
+    const manager = context?.manager;
+    if (!manager || disabled) {
+      return undefined;
+    }
+    const draggable = new Draggable(
+      { data: { label, tabsetId, type: "tabset" }, id: `grip-${tabsetId}` },
+      manager,
+    );
+    draggable.element = elementRef.current ?? undefined;
+    draggableRef.current = draggable;
+    return () => {
+      draggable.destroy();
+      draggableRef.current = null;
+    };
+  }, [context, disabled, draggableRef, elementRef, label, tabsetId]);
+  return { ref };
 };
 
-const useTabsetDroppable = (
-  tabsetId: string,
-): { isDropTarget: boolean; ref: (element: HTMLElement | null) => void } => {
+// Registers the tabset element so the adapter can hit-test the pointer against it.
+const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | null) => void } => {
   const context = useContext(DragContext);
-  const { isDropTarget, ref: dndRef } = useDroppable({ data: { type: "tabset" }, id: tabsetId });
-
   const ref = useCallback(
     (element: HTMLElement | null): void => {
-      dndRef(element);
       context?.registerTabset(tabsetId, element);
     },
-    [context, dndRef, tabsetId],
+    [context, tabsetId],
   );
-
-  return { isDropTarget, ref };
+  return { ref };
 };
 
 const useDragSubject = (): DragSubject | null => useContext(DragSubjectContext);
