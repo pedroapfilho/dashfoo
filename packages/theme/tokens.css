@@ -1,8 +1,9 @@
 /*
  * dashfoo design tokens — the override surface for the skin in ./dashfoo.css.
- * Neutral grayscale dark defaults: no hue anywhere, so selection/focus/state
- * read through lightness and weight. Remap any of these custom properties to
- * skin dashfoo to your own design system without touching the chrome rules.
+ * Neutral grayscale, no hue anywhere, so selection/focus/state read through
+ * lightness and weight. Dark is the default; opt into light by setting
+ * data-dashfoo-theme="light" on any ancestor (e.g. <html data-dashfoo-theme="light">).
+ * Remap any custom property to skin dashfoo to your own design system.
  */
 
 :root {
@@ -35,4 +36,26 @@
   --dashfoo-dock-fill: rgba(255, 255, 255, 0.1);
   --dashfoo-dock-border: rgba(255, 255, 255, 0.4);
   --dashfoo-dock-line: rgba(255, 255, 255, 0.85);
+}
+
+/* Opt-in light theme: same grayscale scale inverted. Only the lightness-bearing
+   tokens change; shape/type/splitter tokens are shared with the dark default. */
+[data-dashfoo-theme="light"] {
+  color-scheme: light;
+
+  --dashfoo-bg: #ffffff;
+  --dashfoo-surface: #ffffff;
+  --dashfoo-strip: #f4f4f5;
+
+  --dashfoo-border: rgba(0, 0, 0, 0.1);
+  --dashfoo-border-strong: rgba(0, 0, 0, 0.18);
+
+  --dashfoo-text: #1c1c1e;
+  --dashfoo-text-muted: #6b6b70;
+  --dashfoo-text-faint: #9a9aa0;
+  --dashfoo-text-emphasis: #09090b;
+
+  --dashfoo-dock-fill: rgba(0, 0, 0, 0.07);
+  --dashfoo-dock-border: rgba(0, 0, 0, 0.35);
+  --dashfoo-dock-line: rgba(0, 0, 0, 0.7);
 }

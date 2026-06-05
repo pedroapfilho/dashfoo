@@ -42,19 +42,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@dashfoo/react": "workspace:*",
     "@repo/config-vitest": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/react": "^19.2.15",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "tailwindcss": "^4.0.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
-  },
-  "peerDependencies": {
-    "@dashfoo/react": "workspace:^",
-    "react": "^18.3.1 || ^19.0.0",
-    "tailwindcss": "^4"
   }
 }
