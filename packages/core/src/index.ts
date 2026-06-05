@@ -3,6 +3,7 @@
 // geometry · history · serialize · ids · the XState actor system.
 
 export * from "./actions";
+export * from "./builders";
 export * from "./geometry";
 export * from "./history";
 export * from "./ids";
