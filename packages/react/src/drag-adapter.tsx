@@ -143,11 +143,11 @@ const DockIndicator = ({
         tabItemRects(strip, draggedId),
         intent.index ?? 0,
       );
-      return <div data-dashfoo="dock-indicator" style={lineStyle(line)} />;
+      return <div data-dashfoo="dock-indicator" key="line" style={lineStyle(line)} />;
     }
   }
   const zone = zoneRect(element.getBoundingClientRect(), intent.location);
-  return <div data-dashfoo="dock-indicator" style={paneStyle(zone)} />;
+  return <div data-dashfoo="dock-indicator" key="pane" style={paneStyle(zone)} />;
 };
 
 // The pointer-anchored chip that follows the cursor while dragging.
