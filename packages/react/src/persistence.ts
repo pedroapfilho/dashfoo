@@ -63,7 +63,7 @@ const localStorageAdapter: StorageAdapter = {
 };
 
 // A resolved persistence target: where to save and how often. DashfooLayout's
-// `persist` prop and usePersistedModel both normalize their input to this.
+// `persist` prop normalizes its input to this.
 type PersistConfig = {
   debounceMs: number;
   key: string;
@@ -77,8 +77,8 @@ type Persistence = {
   save: (model: Dashfoo) => void;
 };
 
-// The load/save half of persistence, shared by usePersistedModel and the
-// DashfooLayout `persist` prop. Loads the saved model once (validated + migrated
+// The load/save half of persistence, behind the DashfooLayout `persist` prop.
+// Loads the saved model once (validated + migrated
 // via serialize.ts, falling back to `defaultModel` on miss or corruption) and
 // debounce-saves every change. Resetting the live model is the caller's job —
 // this primitive only owns the storage side. A null config makes it a no-op, so
@@ -182,61 +182,5 @@ const usePersistence = (
   return { clear, initialModel, save };
 };
 
-type UsePersistedModelOptions = {
-  debounceMs?: number;
-  defaultModel: Dashfoo;
-  key: string;
-  storage?: StorageAdapter;
-};
-
-type PersistedModel = {
-  clear: () => void;
-  defaultModel: Dashfoo;
-  onModelChange: (model: Dashfoo) => void;
-  resetKey: number;
-};
-
-/**
- * Persist a dashfoo layout for the uncontrolled remount pattern: loads the saved
- * model, debounce-saves changes, and remounts on `resetKey` so `clear()` visibly
- * resets.
- *
- * @deprecated Prefer the `persist` prop on {@link DashfooLayout}, which wires
- * load/save/reset in for you and resets without a remount:
- * `<DashfooLayout defaultModel={model} persist="key" ref={ref} />` then
- * `ref.current.resetLayout()`. This hook remains for hosts that need to own the
- * remount themselves.
- */
-const usePersistedModel = (options: UsePersistedModelOptions): PersistedModel => {
-  const { debounceMs = 300, defaultModel, key, storage = localStorageAdapter } = options;
-  const {
-    clear: clearStorage,
-    initialModel,
-    save,
-  } = usePersistence({ debounceMs, key, storage }, defaultModel);
-
-  const defaultRef = useRef(defaultModel);
-  useEffect(() => {
-    defaultRef.current = defaultModel;
-  });
-
-  const [model, setModel] = useState<Dashfoo>(initialModel ?? defaultModel);
-  const [resetKey, setResetKey] = useState(0);
-
-  const clear = useCallback((): void => {
-    clearStorage();
-    setModel(defaultRef.current);
-    setResetKey((value) => value + 1);
-  }, [clearStorage]);
-
-  return { clear, defaultModel: model, onModelChange: save, resetKey };
-};
-
-export { localStorageAdapter, memoryStorageAdapter, usePersistedModel, usePersistence };
-export type {
-  Persistence,
-  PersistConfig,
-  PersistedModel,
-  StorageAdapter,
-  UsePersistedModelOptions,
-};
+export { localStorageAdapter, memoryStorageAdapter, usePersistence };
+export type { Persistence, PersistConfig, StorageAdapter };

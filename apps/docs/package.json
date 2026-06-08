@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start -p 4000",
     "postinstall": "fumadocs-mdx",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "fumadocs-mdx && tsc --noEmit",
     "lint": "oxlint app lib components proxy.ts next.config.ts source.config.ts mdx-components.tsx",
     "clean": "rm -rf .next .source node_modules"
   },

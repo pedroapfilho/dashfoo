@@ -44,37 +44,14 @@ and save the model yourself in `onModelChange`.
 
 Everything below maps to [`packages/react/src/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/persistence.ts)
 and the validation pipeline in [`packages/core/src/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/serialize.ts).
-The `persist` prop is built on the shared `usePersistence` primitive in that file;
-the storage seam, validation, and debounce below apply to it directly.
-
-## The lower-level hook (`usePersistedModel`)
-
-> **Deprecated.** Prefer the `persist` prop above. `usePersistedModel` remains for
-> hosts that need to own the remount themselves; it resets by remounting on a
-> `resetKey` counter rather than via `resetLayout()`.
-
-```ts
-const persisted = usePersistedModel({ defaultModel, key: "dashfoo:my-app" });
-
-<DashfooLayout
-  defaultModel={persisted.defaultModel} // the LOADED model, validated + migrated
-  key={persisted.resetKey} // remount so clear() visibly resets
-  onModelChange={persisted.onModelChange}
-  factory={renderPanel}
-/>;
-```
-
-| Option         | Type             | Default               | Purpose                                               |
-| -------------- | ---------------- | --------------------- | ----------------------------------------------------- |
-| `defaultModel` | `Dashfoo`        | required              | Model used on first visit, on a miss, or on `clear()` |
-| `key`          | `string`         | required              | Storage key the model is saved under                  |
-| `storage`      | `StorageAdapter` | `localStorageAdapter` | Where reads and writes go (see the seam below)        |
-| `debounceMs`   | `number`         | `300`                 | Delay before a change is written                      |
+The `persist` prop is built on the shared `usePersistence` primitive in that file
+(also exported, for hosts that drive the store directly); the storage seam,
+validation, and debounce below apply to it directly.
 
 ## The storage seam
 
-`storage` is the only injection point, and its shape is the three
-`localStorage` methods the hook actually calls:
+The `storage` option is the only injection point, and its shape is the three
+`localStorage` methods persistence actually calls:
 
 ```ts
 type StorageAdapter = {
@@ -104,26 +81,25 @@ The default, and SSR-safe by construction. Every method guards
 ### `memoryStorageAdapter` for SSR and tests
 
 `memoryStorageAdapter()` is a factory that returns a fresh `Map`-backed
-adapter. Use it when you want isolation rather than the real browser store:
+adapter. Pass it to the `persist` prop's full form when you want isolation
+rather than the real browser store:
 
 ```tsx
-import { memoryStorageAdapter, usePersistedModel } from "@dashfoo/react";
+import { memoryStorageAdapter } from "@dashfoo/react";
 
-// In a test, or per-request on the server, get a clean store every time.
-const persisted = usePersistedModel({
-  defaultModel,
-  key: "dashfoo:my-app",
-  storage: memoryStorageAdapter(),
-});
+// In a test, or per-request on the server, a clean store every time.
+const storage = useMemo(() => memoryStorageAdapter(), []);
+
+<DashfooLayout defaultModel={model} persist={{ key: "dashfoo:my-app", storage }} />;
 ```
 
-Call the factory once and keep the instance stable across renders (lift it
-to a module constant or a `useState`/`useMemo` initializer), or each render
-hands the hook a brand-new empty store and nothing persists.
+Keep the adapter instance stable across renders (a module constant or a
+`useMemo`/`useState` initializer), or each render hands persistence a brand-new
+empty store and nothing persists.
 
 ## Validation and migration on load
 
-The hook never trusts what comes out of storage. Loading runs the raw string
+Persistence never trusts what comes out of storage. Loading runs the raw string
 through `fromJSON` from `@dashfoo/core`, which is the full untrusted-input
 pipeline in `serialize.ts`:
 
@@ -145,31 +121,30 @@ Three things happen in order:
    engine applies internally), so a valid-but-noncanonical payload loads as
    the engine would store it.
 
-Inside the hook, a `fromJSON` that throws is caught and the model falls back
-to `defaultModel`. A corrupt entry is also pruned: a mount effect re-reads
-the stored value, and if it fails to parse, calls `storage.removeItem(key)`
-so the bad payload does not sit there failing on every load. A user with a
-broken saved layout gets the default and a clean slate, not a crash.
+A `fromJSON` that throws is caught and the model falls back to `defaultModel`. A
+corrupt entry is also pruned: a mount effect re-reads the stored value, and if it
+fails to parse, calls `storage.removeItem(key)` so the bad payload does not sit
+there failing on every load. A user with a broken saved layout gets the default
+and a clean slate, not a crash.
 
 ## Debounced save and unmount flush
 
-`onModelChange` does not write on every keystroke of interaction. It
-serializes the model with `toJSON`, stashes it as a pending write, and
-schedules a flush `debounceMs` (default 300 ms) later. A burst of changes —
-dragging a splitter produces many — collapses into one write.
+Persistence does not write on every change. Each change serializes the model with
+`toJSON`, stashes it as a pending write, and schedules a flush `debounceMs`
+(default 300 ms) later. A burst of changes — dragging a splitter produces many —
+collapses into one write.
 
-The pending write carries the `key` it was produced for. If `key` changes
-while a save is queued, the flush still writes under the original key, so a
-key switch can never write the old model under the new key.
+The pending write carries the `key` it was produced for. If `key` changes while a
+save is queued, the flush still writes under the original key, so a key switch can
+never write the old model under the new key.
 
-A change still in the debounce window when the component unmounts would
-normally be lost. The hook prevents that with a cleanup effect that flushes
-the pending write on unmount. Navigate away right after a drag and the last
-change is saved.
+A change still in the debounce window when the component unmounts would normally
+be lost. A cleanup effect flushes the pending write on unmount, so navigating away
+right after a drag still saves the last change.
 
-`clear()` is the inverse: it cancels any pending timer, drops the pending
-write, removes the stored key, resets the model to the captured
-`defaultModel`, and bumps `resetKey`.
+`resetLayout()` (on the [imperative handle](/controlled-and-history)) is the
+inverse: it cancels any pending timer, drops the pending write, removes the stored
+key, and resets the live model to the original `defaultModel`.
 
 ## Worked example: the demo persistence page
 

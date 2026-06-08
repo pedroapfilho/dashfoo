@@ -215,20 +215,20 @@ a custom store (sessionStorage, in-memory, your own). A pending save flushes on
 unmount, so the last change is never lost. It applies to uncontrolled mode only;
 in controlled mode, save the model yourself in `onModelChange`.
 
-The lower-level building blocks — `usePersistence` (the load/save primitive) and
-`usePersistedModel` (the older remount-based hook, now **deprecated** in favor of
-`persist`) — are also exported. See the
+The lower-level `usePersistence` load/save primitive (that `persist` is built on)
+is also exported, for hosts that drive the store directly. See the
 [persistence guide](../../docs/guides/persistence.md) for the storage seam,
 validation pipeline, and SSR notes.
 
 ### Options
 
-| Option         | Type             | Default               | Description                      |
-| -------------- | ---------------- | --------------------- | -------------------------------- |
-| `defaultModel` | `Dashfoo`        | — (required)          | Fallback when nothing is stored. |
-| `key`          | `string`         | — (required)          | Storage key.                     |
-| `storage`      | `StorageAdapter` | `localStorageAdapter` | Where to read and write.         |
-| `debounceMs`   | `number`         | `300`                 | Save debounce window.            |
+The full form of `persist` (`{ key, storage?, debounceMs? }`):
+
+| Option       | Type             | Default               | Description                                       |
+| ------------ | ---------------- | --------------------- | ------------------------------------------------- |
+| `key`        | `string`         | — (required)          | Storage key. A bare `persist="key"` is shorthand. |
+| `storage`    | `StorageAdapter` | `localStorageAdapter` | Where to read and write.                          |
+| `debounceMs` | `number`         | `300`                 | Save debounce window.                             |
 
 ### Storage adapters
 
@@ -249,13 +249,11 @@ Two adapters ship with the package:
 - `memoryStorageAdapter()` — a fresh in-memory `Map`, returned by a factory call. Good for tests and SSR previews.
 
 ```tsx
-import { memoryStorageAdapter, usePersistedModel } from "@dashfoo/react";
+import { memoryStorageAdapter } from "@dashfoo/react";
 
-const persisted = usePersistedModel({
-  defaultModel: model,
-  key: "preview",
-  storage: memoryStorageAdapter(),
-});
+const storage = useMemo(() => memoryStorageAdapter(), []);
+
+<DashfooLayout defaultModel={model} persist={{ key: "preview", storage }} />;
 ```
 
 ## `data-dashfoo` attribute reference
@@ -356,14 +354,11 @@ type DashfooContextValue;
 
 // Persistence
 usePersistence; // load/save primitive (the `persist` prop builds on this)
-usePersistedModel; // deprecated — prefer the `persist` prop
 localStorageAdapter;
 memoryStorageAdapter;
 type StorageAdapter;
 type Persistence;
 type PersistConfig;
-type PersistedModel;
-type UsePersistedModelOptions;
 
 // Responsive
 useResponsiveModel;

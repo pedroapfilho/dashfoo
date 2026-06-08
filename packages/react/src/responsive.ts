@@ -44,8 +44,8 @@ const activeBreakpoint = (breakpoints: Array<Breakpoint>, width: number): Breakp
 };
 
 // Picks a model for the active breakpoint, keyed off the container's own width
-// (ResizeObserver) and/or media queries. Use it like usePersistedModel: spread
-// the result onto DashfooLayout and remount on `key`.
+// (ResizeObserver) and/or media queries. Spread the result onto DashfooLayout
+// and remount on `key`.
 const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): ResponsiveModel => {
   const [width, setWidth] = useState<number>(() =>
     typeof window === "undefined" ? Number.POSITIVE_INFINITY : window.innerWidth,

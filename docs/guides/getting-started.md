@@ -328,6 +328,6 @@ styled — every one of those is a `data-dashfoo` selector you target the same w
   (`--dashfoo-dock-fill`, `--dashfoo-dock-border`, `--dashfoo-dock-line`), and
   the path to `@dashfoo/theme`.
 - **Persistence** (`docs/guides/persistence.md`) — saving and restoring a
-  layout with the `persist` prop (and the lower-level `usePersistence` /
-  `usePersistedModel` hooks, `localStorageAdapter`, `memoryStorageAdapter`), plus
-  the controlled-mode `model` / `onModelChange` pairing for your own store.
+  layout with the `persist` prop (and the lower-level `usePersistence` hook,
+  `localStorageAdapter`, `memoryStorageAdapter`), plus the controlled-mode
+  `model` / `onModelChange` pairing for your own store.

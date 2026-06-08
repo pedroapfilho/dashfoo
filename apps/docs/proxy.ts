@@ -23,7 +23,9 @@ const proxy = (request: NextRequest) => {
 // skip the Markdown/llms endpoints (else they'd be rewritten onto themselves),
 // the search API, and any file-extension asset.
 export const config = {
-  matcher: [String.raw`/((?!api|llms\.mdx|llms\.txt|llms-full\.txt|_next|.*\.).*)`],
+  // A plain string literal so Next can statically extract the matcher.
+  // oxlint-disable-next-line unicorn/prefer-string-raw
+  matcher: ["/((?!api|llms\\.mdx|llms\\.txt|llms-full\\.txt|_next|.*\\.).*)"],
 };
 
 export default proxy;

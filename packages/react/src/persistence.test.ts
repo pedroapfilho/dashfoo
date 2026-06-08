@@ -3,7 +3,7 @@ import { toJSON } from "@dashfoo/core";
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { memoryStorageAdapter, usePersistedModel } from "./persistence";
+import { memoryStorageAdapter, usePersistence } from "./persistence";
 
 const modelWith = (tabName: string): Dashfoo => ({
   activeTabsetId: "ts1",
@@ -24,10 +24,16 @@ const modelWith = (tabName: string): Dashfoo => ({
   version: 1,
 });
 
-const firstTabName = (model: Dashfoo): string | undefined => {
-  const tabset = model.layout.children[0];
+const firstTabName = (model: Dashfoo | undefined): string | undefined => {
+  const tabset = model?.layout.children[0];
   return tabset?.type === "tabset" ? tabset.children[0]?.name : undefined;
 };
+
+const config = (storage: ReturnType<typeof memoryStorageAdapter>, debounceMs = 300) => ({
+  debounceMs,
+  key: "layout",
+  storage,
+});
 
 describe("memoryStorageAdapter", () => {
   test("round-trips get/set/remove", () => {
@@ -40,7 +46,7 @@ describe("memoryStorageAdapter", () => {
   });
 });
 
-describe("usePersistedModel", () => {
+describe("usePersistence", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -52,49 +58,36 @@ describe("usePersistedModel", () => {
     const storage = memoryStorageAdapter();
     storage.setItem("layout", toJSON(modelWith("Saved")));
 
-    const { result } = renderHook(() =>
-      usePersistedModel({ defaultModel: modelWith("Default"), key: "layout", storage }),
-    );
+    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
 
-    expect(firstTabName(result.current.defaultModel)).toBe("Saved");
+    expect(firstTabName(result.current.initialModel)).toBe("Saved");
   });
 
   test("falls back to the default model when storage is empty", () => {
     const storage = memoryStorageAdapter();
 
-    const { result } = renderHook(() =>
-      usePersistedModel({ defaultModel: modelWith("Default"), key: "layout", storage }),
-    );
+    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
 
-    expect(firstTabName(result.current.defaultModel)).toBe("Default");
+    expect(firstTabName(result.current.initialModel)).toBe("Default");
   });
 
   test("falls back and clears a corrupt stored value", () => {
     const storage = memoryStorageAdapter();
     storage.setItem("layout", "{ not valid json");
 
-    const { result } = renderHook(() =>
-      usePersistedModel({ defaultModel: modelWith("Default"), key: "layout", storage }),
-    );
+    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
 
-    expect(firstTabName(result.current.defaultModel)).toBe("Default");
+    expect(firstTabName(result.current.initialModel)).toBe("Default");
     expect(storage.getItem("layout")).toBeNull();
   });
 
   test("debounce-saves the latest model and collapses rapid changes", () => {
     const storage = memoryStorageAdapter();
-    const { result } = renderHook(() =>
-      usePersistedModel({
-        debounceMs: 300,
-        defaultModel: modelWith("Default"),
-        key: "layout",
-        storage,
-      }),
-    );
+    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
 
     act(() => {
-      result.current.onModelChange(modelWith("One"));
-      result.current.onModelChange(modelWith("Two"));
+      result.current.save(modelWith("One"));
+      result.current.save(modelWith("Two"));
     });
     expect(storage.getItem("layout")).toBeNull(); // not yet (debounced)
 
@@ -102,38 +95,47 @@ describe("usePersistedModel", () => {
       vi.advanceTimersByTime(300);
     });
 
-    const saved = storage.getItem("layout");
-    expect(saved).toBe(toJSON(modelWith("Two")));
+    expect(storage.getItem("layout")).toBe(toJSON(modelWith("Two")));
   });
 
-  test("clear() removes the saved layout and reverts to the default", () => {
+  test("clear() removes the saved layout", () => {
     const storage = memoryStorageAdapter();
     storage.setItem("layout", toJSON(modelWith("Saved")));
-    const { result } = renderHook(() =>
-      usePersistedModel({ defaultModel: modelWith("Default"), key: "layout", storage }),
-    );
-    const keyBefore = result.current.resetKey;
+    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
 
     act(() => {
       result.current.clear();
     });
 
     expect(storage.getItem("layout")).toBeNull();
-    expect(firstTabName(result.current.defaultModel)).toBe("Default");
-    expect(result.current.resetKey).not.toBe(keyBefore);
   });
 
   test("flushes a pending save on unmount", () => {
     const storage = memoryStorageAdapter();
     const { result, unmount } = renderHook(() =>
-      usePersistedModel({ defaultModel: modelWith("Default"), key: "layout", storage }),
+      usePersistence(config(storage), modelWith("Default")),
     );
 
     act(() => {
-      result.current.onModelChange(modelWith("Edited"));
+      result.current.save(modelWith("Edited"));
     });
     unmount();
 
     expect(storage.getItem("layout")).toBe(toJSON(modelWith("Edited")));
+  });
+
+  test("a null config makes save and clear no-ops", () => {
+    const storage = memoryStorageAdapter();
+    storage.setItem("layout", toJSON(modelWith("Saved")));
+    const { result } = renderHook(() => usePersistence(null, modelWith("Default")));
+
+    // null config => the default seeds initialModel; storage is never read or written.
+    expect(firstTabName(result.current.initialModel)).toBe("Default");
+    act(() => {
+      result.current.save(modelWith("Edited"));
+      vi.advanceTimersByTime(300);
+      result.current.clear();
+    });
+    expect(storage.getItem("layout")).toBe(toJSON(modelWith("Saved")));
   });
 });

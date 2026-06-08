@@ -145,11 +145,12 @@ serialization contract in `packages/core/src/serialize.ts`:
 | Load       | `fromJSON` | parse → `migrate` → `dashfooSchema.parse` → `normalize`  |
 | Versioning | `migrate`  | stamps `CURRENT_VERSION` (1) and upgrades older payloads |
 
-`usePersistedModel` loads the saved model once (validated and migrated via
-`fromJSON`, falling back to `defaultModel` on a miss or on corruption), debounce-saves
-every change with `toJSON`, and prunes a corrupt stored value on mount. The
-`StorageAdapter` shape (`getItem`/`setItem`/`removeItem`) means it persists to
-`localStorage`, `sessionStorage`, an in-memory map, or a custom backend.
+Persistence (the `persist` prop, built on `usePersistence`) loads the saved model
+once (validated and migrated via `fromJSON`, falling back to `defaultModel` on a
+miss or on corruption), debounce-saves every change with `toJSON`, and prunes a
+corrupt stored value on mount. The `StorageAdapter` shape
+(`getItem`/`setItem`/`removeItem`) means it persists to `localStorage`,
+`sessionStorage`, an in-memory map, or a custom backend.
 
 So persistence operates on the canonical `Dashfoo` model, not on actor internals.
 That keeps the on-disk format a documented, validated, migratable schema — independent
