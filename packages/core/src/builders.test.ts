@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 import { model, row, tab, tabset } from "./builders";
 import { dashfooSchema } from "./schema";
@@ -50,6 +50,11 @@ describe("tabset", () => {
     expect(node.selected).toBe(1);
     expect(node.weight).toBe(2);
   });
+
+  test("flows an optional name through to label the tablist", () => {
+    const node = tabset([tab("chart", "Chart")], { name: "Charts" });
+    expect(node.name).toBe("Charts");
+  });
 });
 
 describe("row", () => {
@@ -86,6 +91,20 @@ describe("model", () => {
     });
     expect(m.activeTabsetId).toBe("ts");
     expect(m.global).toEqual({ splitterSize: 8 });
+  });
+
+  test("warns on duplicate node ids from two same-component tabs lacking explicit ids", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      // both tabs default their id to "chart", colliding inside the tabset.
+      model(
+        row([tabset([tab("chart", "Left"), tab("chart", "Right")], { id: "ts" })], { id: "root" }),
+      );
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]?.[0]).toContain("chart");
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   test("produces a schema-valid model the parser accepts", () => {

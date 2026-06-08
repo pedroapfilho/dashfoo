@@ -47,4 +47,8 @@ describe("serialize", () => {
 
     expect(parseModel(withoutVersion).version).toBe(CURRENT_VERSION);
   });
+
+  test("fromJSON throws on a payload saved by a newer version", () => {
+    expect(() => fromJSON(toJSON({ ...model(), version: 2 }))).toThrow(/newer version/v);
+  });
 });

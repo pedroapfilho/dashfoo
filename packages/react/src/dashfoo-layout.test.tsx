@@ -1,8 +1,32 @@
 import type { Dashfoo } from "@dashfoo/core";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 import { DashfooLayout } from "./dashfoo-layout";
+
+// unique to this test so the module-level warnedComponents Set can't be tripped
+// by another test registering or warning about the same key first.
+const MISSING_COMPONENT = "ghost-unregistered-xyz";
+
+const missingComponentModel = (): Dashfoo => ({
+  activeTabsetId: "ts1",
+  global: {},
+  layout: {
+    children: [
+      {
+        children: [{ component: MISSING_COMPONENT, id: "t1", name: "Ghost", type: "tab" }],
+        id: "ts1",
+        selected: 0,
+        type: "tabset",
+        weight: 100,
+      },
+    ],
+    id: "root",
+    orientation: "row",
+    type: "row",
+  },
+  version: 1,
+});
 
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",
@@ -73,5 +97,27 @@ describe("DashfooLayout", () => {
 
     expect(container.querySelectorAll("[data-panel]").length).toBeGreaterThanOrEqual(2);
     expect(container.querySelector('[data-dashfoo="splitter"]')).toBeInTheDocument();
+  });
+
+  test("warns once for an unregistered component and renders an empty panel body", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const { rerender } = render(
+        <DashfooLayout components={components} defaultModel={missingComponentModel()} />,
+      );
+
+      const panel = screen.getByRole("tabpanel");
+      expect(panel).toBeEmptyDOMElement();
+
+      // a re-render walks renderTab again; the warning must stay deduped.
+      rerender(<DashfooLayout components={components} defaultModel={missingComponentModel()} />);
+
+      const warnCalls = warn.mock.calls.filter((args) =>
+        String(args[0]).includes(MISSING_COMPONENT),
+      );
+      expect(warnCalls).toHaveLength(1);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

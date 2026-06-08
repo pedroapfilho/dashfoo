@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { dashfooSchema, tabNodeSchema } from "./schema";
+import { dashfooSchema, tabNodeSchema, tabsetNodeSchema } from "./schema";
 
 const validModel = {
   activeTabsetId: "ts1",
@@ -104,5 +104,24 @@ describe("tabNodeSchema", () => {
         type: "tab",
       }),
     ).toThrow();
+  });
+});
+
+describe("tabsetNodeSchema", () => {
+  const baseTabset = {
+    children: [{ component: "chart", id: "t1", name: "Chart", type: "tab" }],
+    id: "ts1",
+    selected: 0,
+    type: "tabset",
+  };
+
+  test("accepts an optional name labelling the tablist", () => {
+    const parsed = tabsetNodeSchema.parse({ ...baseTabset, name: "Charts" });
+    expect(parsed.name).toBe("Charts");
+  });
+
+  test("accepts a tabset without a name", () => {
+    const parsed = tabsetNodeSchema.parse(baseTabset);
+    expect(parsed.name).toBeUndefined();
   });
 });

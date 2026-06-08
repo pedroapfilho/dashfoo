@@ -35,6 +35,11 @@ const closestEdge = (d: { bottom: number; left: number; right: number; top: numb
 // band (default 22%) of one of the four edges — the closer edge wins in corners.
 const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): DockTarget => {
   const band = opts?.bandFraction ?? 0.22;
+  // a zero-size tabset has no meaningful edges; dividing by its width/height
+  // yields NaN distances that would silently resolve to a bogus split.
+  if (rect.width <= 0 || rect.height <= 0) {
+    return { kind: "tab" };
+  }
   const distances = edgeDistances(pointer, rect);
   const min = Math.min(distances.left, distances.right, distances.top, distances.bottom);
 

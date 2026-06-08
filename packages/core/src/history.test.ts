@@ -65,26 +65,19 @@ describe("history", () => {
     expect(canUndo(history)).toBe(false);
   });
 
-  test("consecutive resizes on the same row coalesce into one undo step", () => {
+  test("two successive resizes on the same row are two separate undo steps", () => {
     let history = createHistory(model());
     history = dispatch(history, { rowId: "root", type: "adjustSplit", weights: [70, 30] });
     history = dispatch(history, { rowId: "root", type: "adjustSplit", weights: [80, 20] });
     expect(weights(history.present)).toEqual([80, 20]);
 
     history = undo(history);
-
-    expect(weights(history.present)).toEqual([60, 40]);
-    expect(canUndo(history)).toBe(false);
-  });
-
-  test("a non-resize action between resizes breaks coalescing", () => {
-    let history = createHistory(model());
-    history = dispatch(history, { rowId: "root", type: "adjustSplit", weights: [70, 30] });
-    history = dispatch(history, { index: 1, tabsetId: "ts1", type: "selectTab" });
-    history = dispatch(history, { rowId: "root", type: "adjustSplit", weights: [80, 20] });
+    expect(weights(history.present)).toEqual([70, 30]);
+    expect(canUndo(history)).toBe(true);
 
     history = undo(history);
-    expect(weights(history.present)).toEqual([70, 30]);
+    expect(weights(history.present)).toEqual([60, 40]);
+    expect(canUndo(history)).toBe(false);
   });
 
   test("dispatching after an undo clears the redo future", () => {

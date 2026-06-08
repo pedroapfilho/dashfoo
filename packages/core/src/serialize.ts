@@ -12,8 +12,17 @@ const migrate = (value: unknown): unknown => {
   if (typeof value !== "object" || value === null) {
     return value;
   }
-  if ("version" in value && typeof value.version === "number" && value.version >= CURRENT_VERSION) {
-    return value;
+  if ("version" in value && typeof value.version === "number") {
+    // a newer version may carry fields this build's schema would silently strip,
+    // so refuse the payload rather than load it lossily as the current version.
+    if (value.version > CURRENT_VERSION) {
+      throw new Error(
+        `layout was saved by a newer version of dashfoo (v${value.version}); upgrade to load it`,
+      );
+    }
+    if (value.version === CURRENT_VERSION) {
+      return value;
+    }
   }
   return { ...value, version: CURRENT_VERSION };
 };

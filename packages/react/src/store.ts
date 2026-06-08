@@ -26,8 +26,9 @@ type UseDashfooStoreOptions = {
 
 // Binds a dashfooMachine actor to React. Uncontrolled (defaultModel) lets the
 // actor own the document with full undo/redo; controlled (model) makes the prop
-// the source of truth and routes every change through onModelChange, keeping the
-// actor synced so the inspector still sees it.
+// the source of truth and routes every change through onModelChange. The
+// actor/inspector stays in sync once the host round-trips `after` back into the
+// `model` prop (it is not synced synchronously within dispatch).
 const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
   const {
     defaultModel,
@@ -56,22 +57,16 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
 
   const model = controlledModel ?? history.present;
 
-  const dispatch = useCallback(
-    (action: Action) => {
-      // onAction may veto (null) or replace the action before it mutates anything.
-      const resolved = onAction ? onAction(action) : action;
-      if (!resolved) {
+  // Single notification path so dispatch and undo/redo stay in lockstep. The
+  // Object.is guard makes a no-op transition (e.g. undo at the bottom of the
+  // stack, where the history helper returns the same object) emit nothing, so we
+  // never write spurious persistence on a change that did not happen.
+  const notify = useCallback(
+    (before: Dashfoo, after: Dashfoo, action?: Action) => {
+      if (Object.is(before, after)) {
         return;
       }
-      const before = controlledModel ?? actorRef.getSnapshot().context.history.present;
-      let after: Dashfoo;
-      if (controlledModel === undefined) {
-        actorRef.send({ action: resolved, type: "DISPATCH" });
-        after = actorRef.getSnapshot().context.history.present;
-      } else {
-        after = reducer(controlledModel, resolved);
-      }
-      onModelChange?.(after, resolved);
+      onModelChange?.(after, action);
       if (after.activeTabsetId !== before.activeTabsetId) {
         onActiveTabsetChange?.(after.activeTabsetId);
       }
@@ -79,25 +74,53 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
         onMaximizedTabsetChange?.(after.maximizedTabsetId);
       }
     },
-    [
-      actorRef,
-      controlledModel,
-      onAction,
-      onActiveTabsetChange,
-      onMaximizedTabsetChange,
-      onModelChange,
-    ],
+    [onModelChange, onActiveTabsetChange, onMaximizedTabsetChange],
+  );
+
+  const dispatch = useCallback(
+    (action: Action) => {
+      // onAction may veto (null) or replace the action before it mutates anything.
+      const resolved = onAction ? onAction(action) : action;
+      if (!resolved) {
+        return;
+      }
+      // Uncontrolled: the actor owns history. Controlled: derive the next model by
+      // hand (the host round-trips it through the model prop). normalize the
+      // controlled `before` too, else a normalization-only id change fires spuriously.
+      const transition = ((): { after: Dashfoo; before: Dashfoo } => {
+        if (controlledModel === undefined) {
+          const before = actorRef.getSnapshot().context.history.present;
+          actorRef.send({ action: resolved, type: "DISPATCH" });
+          return { after: actorRef.getSnapshot().context.history.present, before };
+        }
+        return { after: reducer(controlledModel, resolved), before: normalize(controlledModel) };
+      })();
+      notify(transition.before, transition.after, resolved);
+    },
+    [actorRef, controlledModel, notify, onAction],
   );
 
   const undo = useCallback(() => {
+    // actor history is always empty in controlled mode, so undo would be a dead
+    // send that still emitted a spurious onModelChange.
+    if (controlledModel !== undefined) {
+      return;
+    }
+    const before = actorRef.getSnapshot().context.history.present;
     actorRef.send({ type: "UNDO" });
-    onModelChange?.(actorRef.getSnapshot().context.history.present);
-  }, [actorRef, onModelChange]);
+    const after = actorRef.getSnapshot().context.history.present;
+    notify(before, after);
+  }, [actorRef, controlledModel, notify]);
 
   const redo = useCallback(() => {
+    if (controlledModel !== undefined) {
+      return;
+    }
+    const before = actorRef.getSnapshot().context.history.present;
     actorRef.send({ type: "REDO" });
-    onModelChange?.(actorRef.getSnapshot().context.history.present);
-  }, [actorRef, onModelChange]);
+    const after = actorRef.getSnapshot().context.history.present;
+    notify(before, after);
+  }, [actorRef, controlledModel, notify]);
 
   // Replace the whole document, resetting undo history. Drives an uncontrolled
   // reset (e.g. clearing a persisted layout back to its default) without a

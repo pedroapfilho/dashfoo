@@ -42,13 +42,12 @@ const tabsetNodeSchema = z.object({
   id: z.string(),
   max: dimensionSchema.optional(),
   min: dimensionSchema.optional(),
+  name: z.string().optional(),
   selected: z.number().int(),
   type: z.literal("tabset"),
   weight: z.number().optional(),
 });
 
-// RowNode is recursive (a row may contain rows), so its type is declared
-// explicitly and the schema is built with z.lazy.
 // RowNode is recursive (a row may contain rows), so its type is declared
 // explicitly and the schema is built with z.lazy.
 type RowNode = {

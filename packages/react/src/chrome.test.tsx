@@ -122,6 +122,67 @@ describe("tab keyboard navigation (WAI-ARIA Tabs)", () => {
     expect(screen.getByRole("tab", { name: "Chart" })).toHaveAttribute("tabindex", "-1");
   });
 
+  test("ArrowLeft moves and selects the previous tab", () => {
+    renderLayout();
+
+    // Move to Book first so ArrowLeft has somewhere to go back to.
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Chart" }), { key: "ArrowRight" });
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Book" }), { key: "ArrowLeft" });
+
+    expect(screen.getByText("CHART")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Chart" })).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("tab", { name: "Book" })).toHaveAttribute("tabindex", "-1");
+  });
+
+  test("Home jumps to the first tab and End jumps to the last", () => {
+    renderLayout();
+
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Chart" }), { key: "End" });
+
+    expect(screen.getByText("BOOK")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Book" })).toHaveAttribute("tabindex", "0");
+
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Book" }), { key: "Home" });
+
+    expect(screen.getByText("CHART")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Chart" })).toHaveAttribute("tabindex", "0");
+  });
+
+  test("ArrowRight on the last tab wraps to the first", () => {
+    renderLayout();
+
+    // Chart -> Book (last), then wrap back to Chart.
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Chart" }), { key: "ArrowRight" });
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Book" }), { key: "ArrowRight" });
+
+    expect(screen.getByText("CHART")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Chart" })).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("tab", { name: "Book" })).toHaveAttribute("tabindex", "-1");
+  });
+
+  test("ArrowLeft on the first tab wraps to the last", () => {
+    renderLayout();
+
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Chart" }), { key: "ArrowLeft" });
+
+    expect(screen.getByText("BOOK")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Book" })).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("tab", { name: "Chart" })).toHaveAttribute("tabindex", "-1");
+  });
+
+  test("closing a tab returns focus to the newly-selected tab, not body", () => {
+    renderLayout();
+
+    // Select Book, then close it; focus must land on the next active tab (Chart),
+    // never fall to <body>.
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Chart" }), { key: "ArrowRight" });
+    fireEvent.click(screen.getByRole("button", { name: "Close Book" }));
+
+    const chart = screen.getByRole("tab", { name: "Chart" });
+    expect(chart).toHaveFocus();
+    expect(document.body).not.toHaveFocus();
+  });
+
   test("each tab is wired to its panel via aria-controls / aria-labelledby", () => {
     renderLayout();
 

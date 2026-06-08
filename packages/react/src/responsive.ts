@@ -47,9 +47,11 @@ const activeBreakpoint = (breakpoints: Array<Breakpoint>, width: number): Breakp
 // (ResizeObserver) and/or media queries. Spread the result onto DashfooLayout
 // and remount on `key`.
 const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): ResponsiveModel => {
-  const [width, setWidth] = useState<number>(() =>
-    typeof window === "undefined" ? Number.POSITIVE_INFINITY : window.innerWidth,
-  );
+  // seed the catch-all width so server and client agree on the first render
+  // (no hydration mismatch); the ResizeObserver supplies the real container
+  // width on mount. innerWidth is the viewport, not our container, so it would
+  // pick the wrong breakpoint and thrash the DashfooLayout key={active.id} remount.
+  const [width, setWidth] = useState<number>(Number.POSITIVE_INFINITY);
   const [, setMediaTick] = useState(0);
   const observerRef = useRef<ResizeObserver | null>(null);
 

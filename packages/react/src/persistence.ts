@@ -122,10 +122,27 @@ const usePersistence = (
     }
     try {
       fromJSON(raw);
-    } catch {
+    } catch (error) {
+      // Mirror the setItem warn: a discarded corrupt layout must not be silent.
+      // oxlint-disable-next-line no-console
+      console.warn("[dashfoo] discarding unreadable persisted layout", error);
       current.storage.removeItem(current.key);
     }
   }, []);
+
+  // We load + prune once, but save/flush/clear target the *current* key. Changing
+  // config.key for a mounted layout would save the stale model under the new key
+  // and clobber it; warn instead of doing that silently. Remounting is the fix.
+  const loadedKey = useRef(config?.key);
+  useEffect(() => {
+    if (config !== null && config.key !== loadedKey.current) {
+      // oxlint-disable-next-line no-console
+      console.warn(
+        "[dashfoo] persist key changed for a mounted layout; the displayed layout still reflects the previous key — remount (key={persistKey}) to load the new key",
+      );
+      loadedKey.current = config.key;
+    }
+  }, [config]);
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The pending write carries the key it was produced for, so a key change while
