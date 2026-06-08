@@ -1,0 +1,336 @@
+---
+title: Getting started
+description: Install dashfoo, build a model with the builders, render DashfooLayout, and make it visible.
+---
+
+dashfoo renders a tiled, resizable, tabbed layout — the kind of docking UI you
+see in VS Code or a trading terminal. It ships headless: the React layer emits
+markup tagged with `data-dashfoo="…"` attributes and imposes zero styling. You
+own every pixel. This guide takes you from an empty page to a working layout
+with three tabs in a row, then to the CSS that makes it visible.
+
+Two packages do the work:
+
+- `@dashfoo/core` — the pure-TS engine. Zod schema, the model type `Dashfoo`,
+  the reducer, geometry, and the XState machines. No React.
+- `@dashfoo/react` — `DashfooLayout`, the hooks, and the
+  react-resizable-panels + dnd-kit adapters. This is what you render.
+
+## Step 1 — Install
+
+```bash
+pnpm add @dashfoo/core @dashfoo/react react react-dom
+```
+
+`react` and `react-dom` are peer dependencies. The drag and resize machinery
+(`@dnd-kit/dom`, `react-resizable-panels`, `xstate`, `zod`) comes in as
+dependencies of the two dashfoo packages, so you don't install them yourself.
+
+## Step 2 — Define a model
+
+The model is a plain serializable object typed as `Dashfoo` from
+`@dashfoo/core`. It describes the tree: a root `row`, the `tabset`s inside it,
+and the `tab`s inside those. Nothing here is React — it's data you could load
+from a file or a database.
+
+Start with one row holding a single tabset of three tabs. The **builders** —
+`model` / `row` / `tabset` / `tab` from `@dashfoo/core` — fill the mechanical
+fields (`type`, `version`, `selected`) so you write only what matters:
+
+```ts
+// src/model.ts
+import type { Dashfoo } from "@dashfoo/core";
+import { model, row, tabset, tab } from "@dashfoo/core";
+
+const startingModel = (): Dashfoo =>
+  model(
+    row([
+      tabset([tab("chart", "Chart"), tab("depth", "Depth"), tab("notes", "Notes")], { id: "main" }),
+    ]),
+    { activeTabsetId: "main" },
+  );
+
+export { startingModel };
+```
+
+A `tab`'s id defaults to its component name; `tabset` and `row` auto-generate an
+id when you omit one (pass an explicit `id` for nodes you reference, like
+`activeTabsetId`). The builders return the same plain object you could also write
+by hand — see [the model guide](/the-model) for the raw shape.
+
+A few fields to know:
+
+| Field                | Meaning                                                      |
+| -------------------- | ------------------------------------------------------------ |
+| `tab.component`      | The registry key dashfoo uses to resolve this tab's content. |
+| `tab.name`           | The label shown in the tab strip.                            |
+| `tabset.selected`    | Index of the visible tab in that tabset (`0` = first).       |
+| `tabset.weight`      | Relative share of space when siblings split a row.           |
+| `layout.orientation` | `"row"` lays children left-to-right; `"column"` stacks them. |
+
+To put two tabsets side by side, give the root `row` a second tabset child. Each
+`weight` is relative, so `weight: 2` and `weight: 1` split the space two-to-one:
+
+```ts
+row([
+  tabset([tab("chart", "Chart"), tab("depth", "Depth")], { id: "left", weight: 2 }),
+  tabset([tab("book", "Order Book"), tab("trades", "Trades")], { id: "right", weight: 1 }),
+]);
+```
+
+Nest a `row(..., { orientation: "column" })` inside the root to stack tabsets
+vertically in one column.
+
+## Step 3 — Map components to tabs
+
+A tab's `component` string is a key. dashfoo resolves it to React content one of
+two ways. Pick whichever fits.
+
+### Registry — a name-to-component map
+
+Pass a `components` record. Each value is a component that receives the resolved
+`{ node }` so it can read `node.name`, `node.id`, and so on. An unregistered
+`component` name renders nothing and logs one dev warning, so a typo never fails
+silently.
+
+```tsx
+// src/panels.tsx
+import type { TabNode } from "@dashfoo/core";
+import type { ComponentType, ReactNode } from "react";
+
+type PanelProps = { node: TabNode };
+
+const ChartPanel = ({ node }: PanelProps): ReactNode => <div>{node.name} — chart goes here</div>;
+
+const TextPanel = ({ node }: PanelProps): ReactNode => <div>{node.name}</div>;
+
+const components: Record<string, ComponentType<PanelProps>> = {
+  chart: ChartPanel,
+  depth: TextPanel,
+  notes: TextPanel,
+};
+
+export { components };
+export type { PanelProps };
+```
+
+### Factory — one function, full control
+
+If you'd rather branch yourself (fall back to a generic panel, code-split by
+name, whatever), pass a `factory: (tab: TabNode) => ReactNode` instead. The
+factory takes precedence over `components` when both are set. This is what the
+demo uses:
+
+```tsx
+// src/panels.tsx
+import type { TabNode } from "@dashfoo/core";
+import type { ComponentType, ReactNode } from "react";
+
+const panelComponents: Record<string, ComponentType<{ node: TabNode }>> = {
+  chart: ChartPanel,
+  // … bespoke panels for known names
+};
+
+const resolvePanel = (component: string) => panelComponents[component] ?? GenericPanel;
+
+const renderPanel = (tab: TabNode): ReactNode => {
+  const Panel = resolvePanel(tab.component);
+  return <Panel node={tab} />;
+};
+
+export { renderPanel };
+```
+
+## Step 4 — Render `<DashfooLayout>`
+
+`DashfooLayout` owns the store. Hand it a model and a way to resolve content.
+For a model that lives entirely inside the component, use `defaultModel`
+(uncontrolled) — dashfoo holds the state and mutates it as the user drags,
+splits, resizes, renames, and maximizes.
+
+```tsx
+// src/App.tsx
+import { DashfooLayout } from "@dashfoo/react";
+import type { ReactNode } from "react";
+
+import { components } from "./panels";
+import { startingModel } from "./model";
+
+const App = (): ReactNode => (
+  <DashfooLayout components={components} defaultModel={startingModel()} />
+);
+
+export { App };
+```
+
+Using a factory instead of the registry, the demo's Overview page is one line:
+
+```tsx
+<DashfooLayout defaultModel={tradingModel()} factory={renderPanel} />
+```
+
+The props you'll reach for first:
+
+| Prop            | Type                                       | Default | Purpose                                                              |
+| --------------- | ------------------------------------------ | ------- | -------------------------------------------------------------------- |
+| `defaultModel`  | `Dashfoo`                                  | —       | Initial model in uncontrolled mode.                                  |
+| `model`         | `Dashfoo`                                  | —       | Current model in controlled mode.                                    |
+| `onModelChange` | `(model, action?) => void`                 | —       | Fires on every change. Required for controlled mode and persistence. |
+| `components`    | `Record<string, ComponentType<{ node }>>`  | —       | The registry.                                                        |
+| `factory`       | `(tab: TabNode) => ReactNode`              | —       | Resolver function; wins over `components`.                           |
+| `persist`       | `string \| { key; storage?; debounceMs? }` | —       | Auto-save to storage (uncontrolled only). See the persistence guide. |
+| `closableTabs`  | `boolean`                                  | `true`  | Show the per-tab close control.                                      |
+| `renamableTabs` | `boolean`                                  | `true`  | Double-click a tab to rename it.                                     |
+| `maximizable`   | `boolean`                                  | `true`  | Show the tabset maximize control.                                    |
+
+A `ref` exposes an imperative handle (`addTab`, `closeTab`, `selectTab`, `undo`,
+`redo`, `maximizeTabset`, `resetLayout`, …) — see the
+[controlled & history guide](/controlled-and-history). For common panel chrome
+(titled header + scrollable body), wrap your content in the `Panel` helper from
+`@dashfoo/react`.
+
+The root renders a single flex container, `<div data-dashfoo="layout">`, sized
+to `100%` of its parent in both axes. Give that parent a real height — a layout
+in a zero-height box paints nothing.
+
+## Step 5 — Make it visible
+
+This is the headless part. dashfoo gives you structure and `data-dashfoo`
+attributes; it gives you no colors, borders, or spacing. Until you add CSS, the
+markup is there but invisible.
+
+**The fast path:** install the default skin and import it once.
+
+```bash
+pnpm add @dashfoo/theme
+```
+
+```ts
+import "@dashfoo/theme/dashfoo.css"; // dark grayscale; opt into light with <html data-dashfoo-theme="light">
+```
+
+That styles the whole chrome. Remap `--dashfoo-*` tokens to make it yours (see
+the [theming guide](/theming)). The rest of this step shows how to write your
+own skin instead — skip it if the theme is enough.
+
+The attributes you'll style most:
+
+| Selector                           | Element                                         |
+| ---------------------------------- | ----------------------------------------------- |
+| `[data-dashfoo="layout"]`          | The root container.                             |
+| `[data-dashfoo="tabset"]`          | One tabbed region (a card).                     |
+| `[data-dashfoo="tabstrip"]`        | The strip holding the tab list and toolbar.     |
+| `[data-dashfoo="tablist"]`         | The list of tabs.                               |
+| `[data-dashfoo="tab"]`             | A single tab button.                            |
+| `[data-dashfoo="tabcontent"]`      | The resolved panel content.                     |
+| `[data-dashfoo="tab-close"]`       | Per-tab close control.                          |
+| `[data-dashfoo="tabset-maximize"]` | Maximize control in the tabset toolbar.         |
+| `[data-separator]`                 | A resize splitter (orientation on the element). |
+
+The selected tab carries `aria-selected="true"`; a splitter exposes its axis as
+`[data-separator][aria-orientation="vertical"]` or `"horizontal"`. Style states
+off those, never off a class dashfoo adds — there isn't one.
+
+A minimal stylesheet that produces a usable layout:
+
+```css
+/* src/layout.css */
+[data-dashfoo="layout"] {
+  background: #0a0a0b;
+  color: #ededee;
+  padding: 16px;
+  font:
+    13px/1.4 system-ui,
+    sans-serif;
+}
+
+[data-dashfoo="tabset"] {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: #161617;
+}
+[data-dashfoo="tabset"]:focus-within {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+[data-dashfoo="tabstrip"] {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #101011;
+}
+
+[data-dashfoo="tab"] {
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  color: #8b8b8f;
+}
+[data-dashfoo="tab"]:hover {
+  color: #ededee;
+}
+[data-dashfoo="tab"][aria-selected="true"] {
+  color: #fafafa;
+  font-weight: 500;
+}
+/* Always provide a visible focus ring. */
+[data-dashfoo="tab"]:focus-visible {
+  outline: 2px solid #fafafa;
+  outline-offset: -2px;
+}
+
+[data-dashfoo="tabcontent"] {
+  background: #161617;
+  padding: 12px;
+}
+
+/* The splitter handle. Width/cursor depend on the axis. */
+[data-separator] {
+  background: transparent;
+}
+[data-separator][aria-orientation="vertical"] {
+  width: 16px;
+  cursor: col-resize;
+}
+[data-separator][aria-orientation="horizontal"] {
+  height: 16px;
+  cursor: row-resize;
+}
+```
+
+Give the mount point a height and you're done:
+
+```css
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+```
+
+That's a working dashfoo layout: three tabs in a tabset you can rename, close,
+maximize, and resize, with content resolved through your registry.
+
+The shipped theme (`packages/theme/dashfoo.css`) is the same idea written out in
+full plain CSS over `--dashfoo-*` tokens. It's worth reading once you want close
+controls, the grip, the maximize button, the overflow menu, and dock indicators
+styled — every one of those is a `data-dashfoo` selector you target the same way.
+
+## What to read next
+
+- **The model** (`docs/guides/the-model.md`) — the full node schema, how
+  `row` / `tabset` / `tab` nest, what every field controls, and how
+  the reducer transforms the tree on each action.
+- **Theming** (`docs/guides/theming.md`) — the complete `data-dashfoo`
+  attribute surface, the dock-indicator custom properties
+  (`--dashfoo-dock-fill`, `--dashfoo-dock-border`, `--dashfoo-dock-line`), and
+  the path to `@dashfoo/theme`.
+- **Persistence** (`docs/guides/persistence.md`) — saving and restoring a
+  layout with the `persist` prop (and the lower-level `usePersistence` /
+  `usePersistedModel` hooks, `localStorageAdapter`, `memoryStorageAdapter`), plus
+  the controlled-mode `model` / `onModelChange` pairing for your own store.

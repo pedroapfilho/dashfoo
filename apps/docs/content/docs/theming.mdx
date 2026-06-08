@@ -1,0 +1,415 @@
+---
+title: Theming the headless chrome
+description: The full data-dashfoo attribute + --dashfoo-* token contract, the light theme, and how to write your own skin.
+---
+
+`@dashfoo/react` renders the dock as plain DOM with zero imposed styling. No
+class names, no inline colors, no default border on a tabset. Every structural
+element instead carries a `data-dashfoo="..."` attribute (and the resize
+splitters carry `data-separator` from react-resizable-panels). You style a skin
+by selecting on those attributes.
+
+You have two paths:
+
+1. **Import the default skin.** `@dashfoo/theme` ships a complete, framework-agnostic
+   plain-CSS skin over overridable `--dashfoo-*` tokens, dark by default with an
+   opt-in light variant. Most apps want this — see the
+   [@dashfoo/theme README](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/README.md) for tokens and usage.
+
+   ```ts
+   import "@dashfoo/theme/dashfoo.css";
+   ```
+
+2. **Write your own.** Select on the `data-dashfoo` attributes from a regular CSS
+   file. No theme provider, no style props, no runtime config. This guide is the
+   full attribute + state + token contract you'd target.
+
+The examples below are plain CSS. If your app uses Tailwind you can `@apply`
+equivalents — the selectors are the same either way. The canonical worked skin is
+[`packages/theme/dashfoo.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/dashfoo.css).
+
+## Why attributes instead of class names
+
+Two reasons drive the choice.
+
+1. **Nothing to override.** A library that ships default styles forces you into
+   specificity wars or `!important` to undo them. dashfoo ships none, so your
+   first rule is also the only rule that matches.
+
+2. **Stable selectors.** Class names churn across versions and get mangled by
+   CSS-in-JS. The `data-dashfoo` values are part of the public contract: they
+   change with a major version, not a refactor. Select on them the same way you
+   would select on `role` or `aria-*`.
+
+The shipped theme leans into this. It is one flat block of attribute selectors in
+plain CSS, every value resolving through a `--dashfoo-*` token:
+
+```css
+[data-dashfoo="layout"] {
+  background: var(--dashfoo-bg);
+  color: var(--dashfoo-text);
+  font-family: var(--dashfoo-font);
+}
+[data-dashfoo="tabset"] {
+  flex: 1 1 0%;
+  overflow: hidden;
+  border: 1px solid var(--dashfoo-border);
+  border-radius: var(--dashfoo-radius);
+  background: var(--dashfoo-surface);
+}
+/* ...one rule per attribute... */
+```
+
+Nothing here is dashfoo-specific machinery — the same selectors work in any CSS
+dialect.
+
+## Attribute reference
+
+Every value of `data-dashfoo` the renderer emits, what element carries it, and
+where it comes from. Read the right-hand column against the source files if you
+want to confirm a selector before you write the rule.
+
+| `data-dashfoo` value | Element                 | Role                                                                                           |
+| -------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `layout`             | root `<div>`            | The whole frame. Also the geometry anchor for docking (`.closest('[data-dashfoo="layout"]')`). |
+| `row`                | rrp `<Group>`           | A horizontal or vertical split container.                                                      |
+| `tabset`             | `<div>`                 | One tiled region: a strip of tabs over a content panel.                                        |
+| `tabstrip`           | `<div>`                 | The strip row: tablist plus trailing toolbar.                                                  |
+| `tablist`            | `<div role="tablist">`  | The scrollable run of tabs.                                                                    |
+| `tab-item`           | `<span>`                | One tab's group: the tab button and its close button.                                          |
+| `tab`                | `<button role="tab">`   | The selectable tab itself.                                                                     |
+| `tab-close`          | `<button>`              | Per-tab close control.                                                                         |
+| `tab-rename`         | `<input>`               | Inline rename editor, mounted on double-click.                                                 |
+| `tabset-toolbar`     | `<div>`                 | Trailing controls area in the strip.                                                           |
+| `tabset-grip`        | `<button>`              | Drag grip that moves the whole tabset.                                                         |
+| `tabset-maximize`    | `<button>`              | Maximize / restore toggle.                                                                     |
+| `tabcontent`         | `<div role="tabpanel">` | The active tab's content panel.                                                                |
+| `tab-overflow`       | `<button>`              | "More tabs" button when the strip overflows.                                                   |
+| `tab-overflow-root`  | `<div>`                 | Popper root for the overflow menu.                                                             |
+| `tab-overflow-menu`  | `<div>`                 | The overflow dropdown.                                                                         |
+| `tab-overflow-item`  | `<button>`              | One tab inside the overflow dropdown.                                                          |
+| `panel`              | `<div>`                 | `Panel` helper root (header + body).                                                           |
+| `panel-header`       | `<div>`                 | `Panel` header row.                                                                            |
+| `panel-title`        | `<span>`                | `Panel` title text.                                                                            |
+| `panel-icon`         | `<span>`                | `Panel` leading-icon slot.                                                                     |
+| `panel-badge`        | `<span>`                | `Panel` live badge.                                                                            |
+| `panel-body`         | `<div>`                 | `Panel` scrollable content body.                                                               |
+| `dock-indicator`     | `<div>`                 | The drag overlay: insertion line or drop-zone pane.                                            |
+| `drag-preview`       | `<div>`                 | The chip that follows the pointer while dragging a tab/tabset.                                 |
+| `splitter`           | rrp `<Separator>`       | The resize handle between panels. Also matchable as `[data-separator]`.                        |
+
+A few of these warrant detail.
+
+### Tabset structure
+
+A tabset nests four levels deep. The skin styles each separately so the strip,
+the tabs, and the content panel can have different surfaces.
+
+```html
+<div data-dashfoo="tabset">
+  <div data-dashfoo="tabstrip">
+    <div data-dashfoo="tablist" role="tablist">
+      <span data-dashfoo="tab-item">
+        <button data-dashfoo="tab" role="tab" aria-selected="true">Editor</button>
+        <button data-dashfoo="tab-close" aria-label="Close Editor">…</button>
+      </span>
+    </div>
+    <div data-dashfoo="tabset-toolbar">
+      <button data-dashfoo="tabset-maximize" aria-pressed="false">…</button>
+    </div>
+  </div>
+  <div data-dashfoo="tabcontent" role="tabpanel">…</div>
+</div>
+```
+
+The demo treats the tabset as a card and the strip as its header:
+
+```css
+[data-dashfoo="tabset"] {
+  @apply min-h-0 min-w-0 flex-1 overflow-hidden rounded-df border border-df-border bg-df-surface;
+}
+[data-dashfoo="tabstrip"] {
+  @apply items-stretch border-b border-df-border bg-df-strip pr-1.5;
+}
+[data-dashfoo="tabcontent"] {
+  @apply bg-df-surface;
+}
+```
+
+### The `tab-rename` input
+
+There is no rename mode you opt a class into. When a renamable tab is
+double-clicked, the `tab` button is swapped for an `<input data-dashfoo="tab-rename">`
+in place. Style it as a normal text field; it focuses and selects itself on
+mount, commits on Enter or blur, and cancels on Escape.
+
+```css
+[data-dashfoo="tab-rename"] {
+  @apply m-[3px] w-24 rounded-sm border border-df-border-strong bg-df-bg px-2 py-1 text-[12.5px] text-df-text outline-none;
+}
+```
+
+## State hooks
+
+State does not arrive as extra `data-dashfoo` values. It rides on the native
+ARIA and `data-*` attributes the elements already set, so your selectors compose
+the structural attribute with the state attribute.
+
+| State                  | Lives on                           | Set when                                                        |
+| ---------------------- | ---------------------------------- | --------------------------------------------------------------- |
+| `aria-selected="true"` | `[data-dashfoo="tab"]`             | The tab is the active one in its tabset                         |
+| `aria-pressed="true"`  | `[data-dashfoo="tabset-maximize"]` | The tabset is maximized                                         |
+| `data-dragging`        | `[data-dashfoo="tab-item"]`        | This tab is being lifted into the drag preview (dim the source) |
+| `data-dragging-source` | `[data-dashfoo="tabset"]`          | This whole tabset is being dragged by its grip                  |
+| `data-tab-location`    | `[data-dashfoo="tabset"]`          | `"top"` (default) or `"bottom"` strip placement                 |
+| `tabIndex={0 / -1}`    | `[data-dashfoo="tab"]`             | Roving tabindex: the selected tab is the one tab stop           |
+
+The boolean `data-*` attributes (`data-dragging`, `data-dragging-source`) are
+only present when true — set to `undefined` otherwise, so the attribute is absent
+rather than `="false"`. Select on presence:
+
+```css
+[data-dashfoo="tab-item"][data-dragging] {
+  opacity: 0.35;
+}
+[data-dashfoo="tabset"][data-dragging-source] {
+  /* the tabset being dragged away by its grip — dim/dash it */
+  border-style: dashed;
+}
+```
+
+> There is no "drop target" attribute. Where a drop will land is shown by the
+> single `[data-dashfoo="dock-indicator"]` overlay, not by a class on the target.
+
+### Selected tab
+
+The demo reads selection through `aria-selected` and adds a weight change plus an
+underline pseudo-element. No color is used to carry the state on its own, which
+keeps it legible without hue:
+
+```css
+[data-dashfoo="tab"] {
+  @apply cursor-pointer rounded-t-md border-0 bg-transparent py-[7px] pr-1.5 pl-3 text-[12.5px] text-df-muted;
+}
+[data-dashfoo="tab"][aria-selected="true"] {
+  @apply font-medium text-df-emphasis;
+}
+[data-dashfoo="tab-item"]:has([aria-selected="true"]) {
+  @apply bg-df-surface;
+}
+[data-dashfoo="tab-item"]:has([aria-selected="true"])::after {
+  @apply absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-df-emphasis;
+  content: "";
+}
+```
+
+The `:has()` rule is worth calling out. The active surface and the underline want
+to sit on the `tab-item` wrapper, but the state lives on the inner `tab` button.
+`:has()` lifts the state up one level without any extra attribute on the wrapper.
+
+### Pressed maximize toggle
+
+The maximize button reports its on/off state through `aria-pressed`. The demo
+gives the pressed toggle a visible surface:
+
+```css
+[data-dashfoo="tabset-maximize"][aria-pressed="true"] {
+  @apply border-df-border-strong bg-df-surface text-df-emphasis;
+}
+```
+
+## The splitter
+
+The resize handle is a react-resizable-panels `<Separator>`. It carries both
+`data-dashfoo="splitter"` (dashfoo's hook) and `data-separator` with
+`aria-orientation` set by rrp. Orientation lives on the separator itself, so you
+read direction from the attribute rather than from the parent row.
+
+| Selector                                          | Matches                                                 |
+| ------------------------------------------------- | ------------------------------------------------------- |
+| `[data-separator]`                                | Every splitter.                                         |
+| `[data-separator][aria-orientation="vertical"]`   | Splitter between side-by-side panels (drag left/right). |
+| `[data-separator][aria-orientation="horizontal"]` | Splitter between stacked panels (drag up/down).         |
+
+The handle is invisible by default. The demo gives it a wide hit area with the
+right cursor per orientation, then paints a thin pill with a `::before` so the
+visual grip is narrower than the grab target:
+
+```css
+[data-separator] {
+  @apply relative flex items-center justify-center bg-transparent;
+}
+[data-separator][aria-orientation="vertical"] {
+  @apply w-4 cursor-col-resize;
+}
+[data-separator][aria-orientation="horizontal"] {
+  @apply h-4 cursor-row-resize;
+}
+[data-separator]::before {
+  @apply rounded-full bg-df-border-strong;
+  content: "";
+}
+[data-separator][aria-orientation="vertical"]::before {
+  @apply h-[30px] w-0.5;
+}
+[data-separator][aria-orientation="horizontal"]::before {
+  @apply h-0.5 w-[30px];
+}
+[data-separator]:hover::before {
+  @apply bg-df-emphasis;
+}
+```
+
+A 16px grab target around a 2px grip keeps resize easy to hit while the visible
+line stays quiet. The hover rule raises contrast on the grip, not the whole
+handle.
+
+## Dock indicators and the `--dashfoo-dock-*` vars
+
+The drag overlay is the one place dashfoo writes color inline, and only as a
+fallback. While a tab is dragged, a single `data-dashfoo="dock-indicator"`
+element is positioned over the frame. Its position and size are fixed inline (the
+library computes them from geometry), but every visual property reads a CSS
+custom property with a neutral fallback. Set the variables to own the look
+without touching the element's selector.
+
+| Variable                      | Default fallback            | Controls                        |
+| ----------------------------- | --------------------------- | ------------------------------- |
+| `--dashfoo-dock-fill`         | `rgba(125, 125, 135, 0.18)` | Drop-zone pane background.      |
+| `--dashfoo-dock-border`       | `rgba(160, 160, 170, 0.75)` | Drop-zone pane border color.    |
+| `--dashfoo-dock-border-width` | `1px`                       | Drop-zone pane border width.    |
+| `--dashfoo-dock-radius`       | `6px`                       | Drop-zone pane corner radius.   |
+| `--dashfoo-dock-line`         | `rgb(140, 140, 150)`        | Tab-strip insertion line color. |
+| `--dashfoo-dock-line-radius`  | `2px`                       | Insertion line corner radius.   |
+
+The indicator takes two visual forms from the same element. Dropping onto a tab
+strip paints a thin insertion line (`--dashfoo-dock-line`); dropping onto the tabset
+body to split paints a filled pane (`--dashfoo-dock-fill` plus the border vars).
+You do not select between them; setting the variables covers both.
+
+The demo sets three of them on `:root` to keep the indicators grayscale:
+
+```css
+:root {
+  color-scheme: dark;
+  --dashfoo-dock-fill: rgba(255, 255, 255, 0.1);
+  --dashfoo-dock-border: rgba(255, 255, 255, 0.4);
+  --dashfoo-dock-line: rgba(255, 255, 255, 0.85);
+}
+```
+
+If you want the indicator to follow your accent color, point these at your own
+tokens:
+
+```css
+:root {
+  --dashfoo-dock-fill: color-mix(in oklab, var(--accent) 18%, transparent);
+  --dashfoo-dock-border: var(--accent);
+  --dashfoo-dock-line: var(--accent);
+}
+```
+
+You can still select `[data-dashfoo="dock-indicator"]` directly for properties
+the vars do not cover, such as `box-shadow`. The inline `left/top/width/height`
+and `transition` are owned by the library; leave those alone or the indicator
+will not track the pointer.
+
+## Focus and hit targets
+
+The renderer wires the keyboard model (roving tabindex on the tablist, arrow keys
+to move selection, Home/End to jump). The skin owns the visible focus ring. The
+demo uses `:focus-visible` with an inset outline so the ring reads on the small
+controls without clipping:
+
+```css
+[data-dashfoo="tab"]:focus-visible {
+  @apply rounded-sm outline-2 outline-offset-[-2px] outline-df-emphasis;
+}
+[data-dashfoo="tab-close"]:focus-visible {
+  @apply outline-2 outline-df-emphasis;
+}
+[data-dashfoo="tabset-maximize"]:focus-visible {
+  @apply outline-2 outline-df-emphasis;
+}
+```
+
+Mind hit-target sizes on the icon controls. The demo gives `tab-close` a 16px box
+and `tabset-maximize` a 24px box. The close control sits inside a larger
+`tab-item` hover zone, but on touch you may want to grow both to meet the 44px
+target guidance.
+
+## Design tokens and the light theme
+
+If you import `@dashfoo/theme`, you reskin by remapping `--dashfoo-*` tokens
+rather than rewriting rules. The surface, border, text, radius, font, and
+splitter values are all tokens; the full table lives in the
+[@dashfoo/theme README](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/README.md). The short version:
+
+```css
+:root {
+  --dashfoo-bg: #0b0f17;
+  --dashfoo-surface: #131a26;
+  --dashfoo-text-emphasis: #e8f0ff;
+  --dashfoo-radius: 6px;
+}
+```
+
+Light is opt-in. The theme ships dark by default; set `data-dashfoo-theme="light"`
+on any ancestor to invert the grayscale for that subtree:
+
+```html
+<html data-dashfoo-theme="light"></html>
+```
+
+You can also define your own light/dark token blocks (e.g. under
+`@media (prefers-color-scheme: light)`) if you're writing the skin from scratch.
+
+## Starting your own skin
+
+A minimal skin needs four blocks: the layout surface, the tabset card, the tabs
+with their selected state, and the splitter. Everything else is refinement.
+
+```css
+[data-dashfoo="layout"] {
+  background: #0a0a0b;
+  color: #ededee;
+  padding: 1rem;
+}
+[data-dashfoo="tabset"] {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: #161617;
+  overflow: hidden;
+}
+[data-dashfoo="tab"] {
+  border: 0;
+  background: transparent;
+  color: #8b8b8f;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+[data-dashfoo="tab"][aria-selected="true"] {
+  color: #fafafa;
+  font-weight: 500;
+}
+[data-separator][aria-orientation="vertical"] {
+  width: 8px;
+  cursor: col-resize;
+}
+[data-separator][aria-orientation="horizontal"] {
+  height: 8px;
+  cursor: row-resize;
+}
+```
+
+Add the dock variables on `:root`, then fill in `tab-close`, `tabset-maximize`,
+focus rings, and hover states as you go. The full reference for what
+you can target is the two tables above.
+
+## See also
+
+- [`packages/theme/dashfoo.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/dashfoo.css) for the complete worked skin, and [`packages/theme/tokens.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/tokens.css) for the token defaults + light overrides.
+- `apps/demo-vite/src/index.css` for how the demo imports the theme and adds its own content palette.
+- `packages/react/src/tabset-view.tsx` for the tabset markup and ARIA wiring.
+- `packages/react/src/row-view.tsx` for the splitter (`<Separator data-dashfoo="splitter">`).
+- `packages/react/src/drag-adapter.tsx` for the dock indicator and the `--dashfoo-dock-*` fallbacks.

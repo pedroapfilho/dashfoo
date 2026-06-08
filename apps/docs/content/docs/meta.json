@@ -1,0 +1,16 @@
+{
+  "title": "Docs",
+  "root": true,
+  "pages": [
+    "---Start here---",
+    "index",
+    "getting-started",
+    "---Guides---",
+    "the-model",
+    "drag-and-dock",
+    "controlled-and-history",
+    "persistence",
+    "responsive",
+    "theming"
+  ]
+}

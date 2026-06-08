@@ -1,0 +1,49 @@
+---
+title: Introduction
+description: dashfoo is a headless React docking-layout library — tiled, resizable, tabbed regions with a serializable model and zero imposed styling.
+---
+
+dashfoo builds VS-Code-style dashboards in React: nested rows and columns of
+resizable panes, each pane a tabset you can restack, split, reorder, rename,
+close, and maximize by dragging. The layout is a single serializable model — a
+plain object validated by zod — that is the one source of truth. The engine
+ships structure, not appearance: `@dashfoo/react` renders markup tagged with
+`data-dashfoo="..."` attributes and applies no CSS, so the chrome is yours to
+style (or import the optional `@dashfoo/theme` skin).
+
+## At a glance
+
+- **Headless.** `@dashfoo/react` renders `data-dashfoo` markup with zero styling.
+  Target it with your own CSS, or drop in `@dashfoo/theme` — framework-agnostic
+  plain CSS over overridable `--dashfoo-*` tokens, with an opt-in light variant.
+- **Model is the source of truth.** A plain, JSON-serializable object validated
+  by `dashfooSchema`. `toJSON` / `fromJSON` round-trip it losslessly because
+  content never lives in the model, only a `component` registry key.
+- **Controlled or uncontrolled.** Pass `defaultModel` and let the engine own
+  state with built-in undo/redo, or pass `model` + `onModelChange` and own
+  persistence yourself. Same model shape either way.
+- **Pointer drag-docking.** Drag a tab to stack, split, or dock to an edge, with
+  a live insertion-line / split-zone indicator. Built on the framework-agnostic
+  `@dnd-kit/dom` core.
+
+## The packages
+
+| Package          | Purpose                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| `@dashfoo/core`  | Pure-TS engine: zod schema + derived types, the reducer, tree invariants, geometry, undo/redo, serialize, model builders. No React. |
+| `@dashfoo/react` | `DashfooLayout`, the `Panel` helper, the `persist` prop, hooks, and the resize / drag adapters. Headless `data-dashfoo` markup. |
+| `@dashfoo/theme` | The opt-in default skin: plain CSS over `--dashfoo-*` tokens, dark + opt-in light.    |
+
+## Where to go next
+
+- [Getting started](/getting-started) — install, build a model with the builders, render `<DashfooLayout>`, and make it visible.
+- [The layout model](/the-model) — the node schema, the builders, and how `normalize()` keeps the tree canonical.
+- [Drag and dock](/drag-and-dock) — how stack/split resolution works (pointer-only).
+- [Controlled mode & undo/redo](/controlled-and-history) — the two modes, history, and the interception hooks.
+- [Persisting layouts](/persistence) — the `persist` prop, storage adapters, and SSR.
+- [Theming](/theming) — the full `data-dashfoo` + `--dashfoo-*` contract and the light theme.
+
+<Callout type="info">
+  Code in these docs comes from the dashfoo repository — the package sources, the
+  demo app, and the test suite — not invented.
+</Callout>
