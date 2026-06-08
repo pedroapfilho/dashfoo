@@ -66,6 +66,35 @@ describe("normalize", () => {
     expect((result.layout.children[0] as TabsetNode).selected).toBe(1);
   });
 
+  test("truncates a fractional selected index to an integer", () => {
+    const ts = tabset("ts1", [tab("t1"), tab("t2")], { selected: 1.5 });
+    const result = normalize(model(row("root", [ts])));
+
+    expect((result.layout.children[0] as TabsetNode).selected).toBe(1);
+  });
+
+  test("coerces a NaN selected index to 0", () => {
+    const ts = tabset("ts1", [tab("t1"), tab("t2")], { selected: Number.NaN });
+    const result = normalize(model(row("root", [ts])));
+
+    expect((result.layout.children[0] as TabsetNode).selected).toBe(0);
+  });
+
+  test("absorbs a lone nested row into the root, adopting its children and orientation", () => {
+    const result = normalize(
+      model(
+        row("root", [
+          row("inner", [tabset("ts1", [tab("t1")]), tabset("ts2", [tab("t2")])], {
+            orientation: "column",
+          }),
+        ]),
+      ),
+    );
+
+    expect(result.layout.orientation).toBe("column");
+    expect(result.layout.children.map((c) => c.id)).toEqual(["ts1", "ts2"]);
+  });
+
   test("reconciles a stale activeTabsetId to the first tabset", () => {
     const result = normalize(
       model(row("root", [tabset("ts1", [tab("t1")])]), { activeTabsetId: "ghost" }),

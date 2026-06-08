@@ -1,44 +1,36 @@
 "use client";
 
-import type { Action, DockLocation, DragSubject, DropIntent, Point } from "@dashfoo/core";
+import type { Action, DockLocation, DropIntent, Point } from "@dashfoo/core";
 import { dragDockMachine, resolveDockTarget, zoneRect } from "@dashfoo/core";
-import { Accessibility, DragDropManager, Draggable, Feedback, KeyboardSensor } from "@dnd-kit/dom";
+import { Accessibility, DragDropManager, Feedback, KeyboardSensor } from "@dnd-kit/dom";
 import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/dom";
 import { useActorRef, useSelector } from "@xstate/react";
 import type { CSSProperties, ReactNode } from "react";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useInsertionEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useInsertionEffect, useMemo, useRef, useState } from "react";
 import type { ActorRefFrom } from "xstate";
 
+import type { DragContextValue } from "./drag-hooks";
+import {
+  DragContext,
+  DragSubjectContext,
+  useDragSubject,
+  useTabDraggable,
+  useTabsetDraggable,
+  useTabsetDroppable,
+} from "./drag-hooks";
 import type { Zone } from "./tab-insertion";
 import { insertionIndex, insertionLineRect, pointInRect, shouldAllowDrop } from "./tab-insertion";
 
-// This module is the drag adapter: the only place that touches @dnd-kit. It wires
-// the framework-agnostic @dnd-kit/dom core (no React bindings) to the already
-// unit-tested dragDockMachine — the PointerSensor supplies activation + a live
-// pointer, the adapter hit-tests that pointer against the registered tabsets, and
-// the machine owns the lifecycle and emits a moveNode COMMIT forwarded via
-// onCommit. The drag preview is our own overlay, so there is no Feedback plugin,
-// no placeholder clone, and none of the CSS workarounds those required.
+// This module is the drag adapter: it (with ./drag-hooks) is where @dnd-kit is
+// touched. It wires the framework-agnostic @dnd-kit/dom core (no React bindings)
+// to the already unit-tested dragDockMachine — the PointerSensor supplies
+// activation + a live pointer, the adapter hit-tests that pointer against the
+// registered tabsets, and the machine owns the lifecycle and emits a moveNode
+// COMMIT forwarded via onCommit. The drag preview is our own overlay, so there is
+// no Feedback plugin, no placeholder clone, and none of the CSS workarounds those
+// required.
 
 type DragActor = ActorRefFrom<typeof dragDockMachine>;
-
-type DragContextValue = {
-  manager: DragDropManager;
-  registerTabset: (id: string, element: HTMLElement | null) => void;
-};
-
-const DragContext = createContext<DragContextValue | null>(null);
-
-const DragSubjectContext = createContext<DragSubject | null>(null);
 
 // The dragged tab is excluded so its own slot never counts toward the order —
 // the insertion index and line are measured against the tabs it will land among.
@@ -351,7 +343,10 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
     };
   }, [actorRef, manager, positionOverlay, resolveIntent, tabsetAt]);
 
-  const contextValue = useMemo(() => ({ manager, registerTabset }), [manager, registerTabset]);
+  const contextValue = useMemo<DragContextValue>(
+    () => ({ manager, registerTabset }),
+    [manager, registerTabset],
+  );
 
   return (
     <DragContext.Provider value={contextValue}>
@@ -364,90 +359,7 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
   );
 };
 
-// Tracks a Draggable's element across renders without rebuilding it. Returned by
-// the draggable hooks; their effects own the Draggable's lifecycle.
-type DraggableHandle = {
-  draggableRef: { current: Draggable | null };
-  elementRef: { current: Element | null };
-  ref: (element: Element | null) => void;
-};
-
-const useDraggableHandle = (): DraggableHandle => {
-  const elementRef = useRef<Element | null>(null);
-  const draggableRef = useRef<Draggable | null>(null);
-  const ref = useCallback((element: Element | null): void => {
-    elementRef.current = element;
-    if (draggableRef.current) {
-      draggableRef.current.element = element ?? undefined;
-    }
-  }, []);
-  return { draggableRef, elementRef, ref };
-};
-
-const useTabDraggable = (
-  tabId: string,
-  disabled = false,
-  label = "",
-): { ref: (element: Element | null) => void } => {
-  const context = useContext(DragContext);
-  const { draggableRef, elementRef, ref } = useDraggableHandle();
-  useEffect(() => {
-    const manager = context?.manager;
-    if (!manager || disabled) {
-      return undefined;
-    }
-    const draggable = new Draggable({ data: { label, type: "tab" }, id: tabId }, manager);
-    draggable.element = elementRef.current ?? undefined;
-    draggableRef.current = draggable;
-    return () => {
-      draggable.destroy();
-      draggableRef.current = null;
-    };
-  }, [context, disabled, draggableRef, elementRef, label, tabId]);
-  return { ref };
-};
-
-// The whole tabset is draggable from its grip. A distinct dnd-kit id (grip-*)
-// avoids colliding with the tabset's own registered id; the real tabset id rides
-// in `data` and becomes the moveTabset subject. The label feeds the overlay chip.
-const useTabsetDraggable = (
-  tabsetId: string,
-  disabled = false,
-  label = "",
-): { ref: (element: Element | null) => void } => {
-  const context = useContext(DragContext);
-  const { draggableRef, elementRef, ref } = useDraggableHandle();
-  useEffect(() => {
-    const manager = context?.manager;
-    if (!manager || disabled) {
-      return undefined;
-    }
-    const draggable = new Draggable(
-      { data: { label, tabsetId, type: "tabset" }, id: `grip-${tabsetId}` },
-      manager,
-    );
-    draggable.element = elementRef.current ?? undefined;
-    draggableRef.current = draggable;
-    return () => {
-      draggable.destroy();
-      draggableRef.current = null;
-    };
-  }, [context, disabled, draggableRef, elementRef, label, tabsetId]);
-  return { ref };
-};
-
-// Registers the tabset element so the adapter can hit-test the pointer against it.
-const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | null) => void } => {
-  const context = useContext(DragContext);
-  const ref = useCallback(
-    (element: HTMLElement | null): void => {
-      context?.registerTabset(tabsetId, element);
-    },
-    [context, tabsetId],
-  );
-  return { ref };
-};
-
-const useDragSubject = (): DragSubject | null => useContext(DragSubjectContext);
-
+// The draggable/droppable hooks and the drag contexts live in ./drag-hooks to
+// keep this module under the size cap and avoid a circular import; re-exported
+// here so consumers still import the whole drag surface from "./drag-adapter".
 export { DragProvider, useDragSubject, useTabDraggable, useTabsetDraggable, useTabsetDroppable };

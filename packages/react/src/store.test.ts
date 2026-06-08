@@ -72,6 +72,70 @@ describe("useDashfooStore (uncontrolled)", () => {
     expect(result.current.model.activeTabsetId).toBe("ts2");
   });
 
+  test("undo and redo fire onActiveTabsetChange with the restored id", () => {
+    const onActiveTabsetChange = vi.fn();
+    const onModelChange = vi.fn();
+    const { result } = renderHook(() =>
+      useDashfooStore({ defaultModel: model(), onActiveTabsetChange, onModelChange }),
+    );
+
+    act(() => {
+      result.current.dispatch({ tabsetId: "ts2", type: "setActiveTabset" });
+    });
+    expect(onActiveTabsetChange).toHaveBeenLastCalledWith("ts2");
+
+    act(() => {
+      result.current.undo();
+    });
+    expect(result.current.model.activeTabsetId).toBe("ts1");
+    expect(onModelChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ activeTabsetId: "ts1" }),
+      undefined,
+    );
+    expect(onActiveTabsetChange).toHaveBeenLastCalledWith("ts1");
+
+    act(() => {
+      result.current.redo();
+    });
+    expect(result.current.model.activeTabsetId).toBe("ts2");
+    expect(onActiveTabsetChange).toHaveBeenLastCalledWith("ts2");
+  });
+
+  test("undo and redo fire onMaximizedTabsetChange with the restored id", () => {
+    const onMaximizedTabsetChange = vi.fn();
+    const { result } = renderHook(() =>
+      useDashfooStore({ defaultModel: model(), onMaximizedTabsetChange }),
+    );
+
+    act(() => {
+      result.current.dispatch({ tabsetId: "ts2", type: "setMaximizedTabset" });
+    });
+    expect(onMaximizedTabsetChange).toHaveBeenLastCalledWith("ts2");
+
+    act(() => {
+      result.current.undo();
+    });
+    expect(result.current.model.maximizedTabsetId).toBeUndefined();
+    expect(onMaximizedTabsetChange).toHaveBeenLastCalledWith(undefined);
+
+    act(() => {
+      result.current.redo();
+    });
+    expect(onMaximizedTabsetChange).toHaveBeenLastCalledWith("ts2");
+  });
+
+  test("undo at the bottom of an empty stack does not fire onModelChange", () => {
+    const onModelChange = vi.fn();
+    const { result } = renderHook(() => useDashfooStore({ defaultModel: model(), onModelChange }));
+
+    expect(result.current.canUndo()).toBe(false);
+    act(() => {
+      result.current.undo();
+    });
+
+    expect(onModelChange).not.toHaveBeenCalled();
+  });
+
   test("setModel replaces the document and clears history", () => {
     const { result } = renderHook(() => useDashfooStore({ defaultModel: model() }));
 
@@ -118,5 +182,24 @@ describe("useDashfooStore (controlled)", () => {
     rerender({ current: next });
 
     expect(result.current.model.activeTabsetId).toBe("ts2");
+  });
+
+  test("undo and redo are no-ops that never fire onModelChange", () => {
+    const onModelChange = vi.fn();
+    const initialModel = model();
+    const { result } = renderHook(
+      ({ current }) => useDashfooStore({ model: current, onModelChange }),
+      { initialProps: { current: initialModel } },
+    );
+
+    act(() => {
+      result.current.undo();
+    });
+    act(() => {
+      result.current.redo();
+    });
+
+    expect(onModelChange).not.toHaveBeenCalled();
+    expect(result.current.model.activeTabsetId).toBe("ts1");
   });
 });

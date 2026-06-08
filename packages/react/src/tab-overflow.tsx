@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, FocusEvent, KeyboardEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 
 const OverflowIcon = (): ReactNode => (
@@ -20,26 +20,10 @@ const menuStyle: CSSProperties = {
 
 type OverflowItem = { id: string; name: string };
 
-const TabOverflowItem = ({
-  item,
-  onSelect,
-}: {
-  item: OverflowItem;
-  onSelect: (id: string) => void;
-}): ReactNode => {
-  const handleSelect = (): void => {
-    onSelect(item.id);
-  };
-
-  return (
-    <button data-dashfoo="tab-overflow-item" onClick={handleSelect} role="menuitem" type="button">
-      {item.name}
-    </button>
-  );
-};
-
 // A dependency-free overflow control: a button that toggles a menu of the hidden
-// tabs. Closes on outside pointerdown and Escape.
+// tabs. Implements the WAI-ARIA APG menu-button keyboard model — roving tabindex,
+// arrow/Home/End navigation, Escape-to-close with focus return. Closes on outside
+// pointerdown and focusout.
 const TabOverflowMenu = ({
   items,
   onSelect,
@@ -48,7 +32,10 @@ const TabOverflowMenu = ({
   onSelect: (id: string) => void;
 }): ReactNode => {
   const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => {
     if (!open) {
@@ -59,25 +46,81 @@ const TabOverflowMenu = ({
         setOpen(false);
       }
     };
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    };
     document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
 
+  // moving DOM focus onto the first menuitem is a side effect of the menu becoming
+  // visible, so it belongs in an effect rather than the click handler (the items don't
+  // exist yet there). activeIndex is reset to 0 on open, so we always land on the first.
+  useEffect(() => {
+    if (open) {
+      itemRefs.current[0]?.focus();
+    }
+  }, [open]);
+
+  const closeAndReturnFocus = (): void => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const focusItem = (index: number): void => {
+    setActiveIndex(index);
+    itemRefs.current[index]?.focus();
+  };
+
   const handleToggle = (): void => {
+    setActiveIndex(0);
     setOpen((value) => !value);
   };
 
   const handleSelect = (id: string): void => {
     onSelect(id);
+    closeAndReturnFocus();
+  };
+
+  const handleMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    const last = items.length - 1;
+    switch (event.key) {
+      case "ArrowDown": {
+        event.preventDefault();
+        focusItem(activeIndex >= last ? 0 : activeIndex + 1);
+        break;
+      }
+      case "ArrowUp": {
+        event.preventDefault();
+        focusItem(activeIndex <= 0 ? last : activeIndex - 1);
+        break;
+      }
+      case "Home": {
+        event.preventDefault();
+        focusItem(0);
+        break;
+      }
+      case "End": {
+        event.preventDefault();
+        focusItem(last);
+        break;
+      }
+      case "Escape": {
+        event.preventDefault();
+        closeAndReturnFocus();
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  };
+
+  // Tab out of the menu (or any other focus leaving the root) closes it without
+  // stealing focus, complementing the outside-pointerdown handler for keyboard users.
+  const handleFocusOut = (event: FocusEvent<HTMLDivElement>): void => {
+    if (event.relatedTarget instanceof Node && rootRef.current?.contains(event.relatedTarget)) {
+      return;
+    }
     setOpen(false);
   };
 
@@ -89,14 +132,34 @@ const TabOverflowMenu = ({
         aria-label="More tabs"
         data-dashfoo="tab-overflow"
         onClick={handleToggle}
+        ref={triggerRef}
         type="button"
       >
         <OverflowIcon />
       </button>
       {open ? (
-        <div data-dashfoo="tab-overflow-menu" role="menu" style={menuStyle}>
-          {items.map((item) => (
-            <TabOverflowItem item={item} key={item.id} onSelect={handleSelect} />
+        <div
+          data-dashfoo="tab-overflow-menu"
+          onBlur={handleFocusOut}
+          onKeyDown={handleMenuKeyDown}
+          role="menu"
+          style={menuStyle}
+          tabIndex={-1}
+        >
+          {items.map((item, index) => (
+            <button
+              data-dashfoo="tab-overflow-item"
+              key={item.id}
+              onClick={() => handleSelect(item.id)}
+              ref={(node) => {
+                itemRefs.current[index] = node;
+              }}
+              role="menuitem"
+              tabIndex={index === activeIndex ? 0 : -1}
+              type="button"
+            >
+              {item.name}
+            </button>
           ))}
         </div>
       ) : null}

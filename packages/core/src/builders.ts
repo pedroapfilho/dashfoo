@@ -2,10 +2,13 @@
 // without hand-writing `type`/`version`/`selected` boilerplate or nested
 // literals. Every builder fills the required-but-mechanical fields and leaves
 // the meaningful ones (ids that get referenced, weights) to the caller. Output
-// is schema-valid by construction.
+// is schema-valid by construction; id uniqueness across reused components is
+// the caller's responsibility (tabs default their id to the component name), so
+// `model` warns once if it detects duplicate node ids.
 
 import { createNodeId } from "./ids";
 import type { Dashfoo, GlobalAttributes, Json, RowNode, TabNode, TabsetNode } from "./schema";
+import { findDuplicateIds } from "./tree";
 
 type TabOptions = {
   config?: Json;
@@ -31,6 +34,7 @@ type TabsetOptions = {
   id?: string;
   max?: TabsetNode["max"];
   min?: TabsetNode["min"];
+  name?: string;
   selected?: number;
   weight?: number;
 };
@@ -63,12 +67,22 @@ type ModelOptions = {
   maximizedTabsetId?: string;
 };
 
-const model = (layout: RowNode, options: ModelOptions = {}): Dashfoo => ({
-  layout,
-  version: 1,
-  ...options,
-  global: options.global ?? {},
-});
+const model = (layout: RowNode, options: ModelOptions = {}): Dashfoo => {
+  const built: Dashfoo = {
+    layout,
+    version: 1,
+    ...options,
+    global: options.global ?? {},
+  };
+  const duplicates = findDuplicateIds(built);
+  if (duplicates.length > 0) {
+    // oxlint-disable-next-line no-console
+    console.warn(
+      `[dashfoo] builder produced duplicate node ids: ${duplicates.join(", ")} — pass explicit ids when reusing a component`,
+    );
+  }
+  return built;
+};
 
 export { model, row, tab, tabset };
 export type { ModelOptions, RowOptions, TabOptions, TabsetOptions };

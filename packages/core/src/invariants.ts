@@ -5,13 +5,16 @@ const clampSelected = (length: number, selected: number): number => {
   if (length === 0) {
     return 0;
   }
-  if (selected < 0) {
+  // coerce to a non-negative integer first to match the schema's z.number().int():
+  // a persisted 1.5 or NaN must not survive as a fractional/NaN index.
+  const base = Number.isFinite(selected) ? Math.trunc(selected) : 0;
+  if (base < 0) {
     return 0;
   }
-  if (selected > length - 1) {
+  if (base > length - 1) {
     return length - 1;
   }
-  return selected;
+  return base;
 };
 
 const normalizeTabset = (tabset: TabsetNode): TabsetNode => ({

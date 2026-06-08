@@ -2,28 +2,17 @@ import type { Action } from "./actions";
 import { reducer } from "./reducer";
 import type { Dashfoo } from "./schema";
 
-// past/present/future snapshots plus the coalesce key of the last committed
-// action, so a continuous resize drag collapses into a single undo step.
+// past/present/future snapshots. Each committed action is its own undo step:
+// rrp v4's onLayoutChanged fires one adjustSplit per release, so there is no
+// per-frame burst to coalesce.
 type History = {
   future: Array<Dashfoo>;
-  lastKey: string | undefined;
   past: Array<Dashfoo>;
   present: Dashfoo;
 };
 
-// Resize actions are the only coalescable ones: a splitter drag emits many per
-// frame, but should undo as one. Keyed by the node being resized so resizing a
-// different splitter starts a new undo step.
-const coalesceKey = (action: Action): string | undefined => {
-  if (action.type === "adjustSplit") {
-    return `adjustSplit:${action.rowId}`;
-  }
-  return undefined;
-};
-
 const createHistory = (present: Dashfoo): History => ({
   future: [],
-  lastKey: undefined,
   past: [],
   present,
 });
@@ -33,13 +22,7 @@ const canRedo = (history: History): boolean => history.future.length > 0;
 
 const dispatch = (history: History, action: Action): History => {
   const present = reducer(history.present, action);
-  const key = coalesceKey(action);
-
-  if (key !== undefined && key === history.lastKey && history.past.length > 0) {
-    return { future: [], lastKey: key, past: history.past, present };
-  }
-
-  return { future: [], lastKey: key, past: [...history.past, history.present], present };
+  return { future: [], past: [...history.past, history.present], present };
 };
 
 const undo = (history: History): History => {
@@ -49,7 +32,6 @@ const undo = (history: History): History => {
   }
   return {
     future: [history.present, ...history.future],
-    lastKey: undefined,
     past: history.past.slice(0, -1),
     present: previous,
   };
@@ -62,7 +44,6 @@ const redo = (history: History): History => {
   }
   return {
     future: rest,
-    lastKey: undefined,
     past: [...history.past, history.present],
     present: next,
   };

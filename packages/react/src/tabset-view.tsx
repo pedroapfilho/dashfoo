@@ -1,19 +1,16 @@
 "use client";
 
 import type { TabNode, TabsetNode } from "@dashfoo/core";
-import type { CSSProperties, FocusEvent, KeyboardEvent, MouseEvent, ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { useDashfooContext } from "./context";
-import {
-  useDragSubject,
-  useTabDraggable,
-  useTabsetDraggable,
-  useTabsetDroppable,
-} from "./drag-adapter";
+import { useDragSubject, useTabsetDraggable, useTabsetDroppable } from "./drag-adapter";
+import { TabButton } from "./tab-button";
+import { panelDomId, tabDomId } from "./tab-ids";
 import { TabOverflowMenu } from "./tab-overflow";
 import { fallbackSelectedIndex } from "./tab-selection";
-import { CloseIcon, GripIcon, MaximizeIcon } from "./tabset-icons";
+import { GripIcon, MaximizeIcon } from "./tabset-icons";
 import { useTabOverflow } from "./use-tab-overflow";
 
 // height/width 100% (not flex:1) so the tabset fills its parent whether that
@@ -44,164 +41,6 @@ const toolbarStyle: CSSProperties = {
   marginInlineStart: "auto",
 };
 
-// Stable ids wiring each tab to its panel (aria-controls / aria-labelledby).
-const tabDomId = (tabsetId: string, tabId: string): string => `dashfoo-tab-${tabsetId}-${tabId}`;
-const panelDomId = (tabsetId: string): string => `dashfoo-panel-${tabsetId}`;
-
-// Inline rename editor. Enter/Escape set `done` so the unmount blur does not
-// re-commit after a deliberate commit or cancel.
-const TabRenameInput = ({
-  name,
-  onCancel,
-  onCommit,
-}: {
-  name: string;
-  onCancel: () => void;
-  onCommit: (value: string) => void;
-}): ReactNode => {
-  const ref = useRef<HTMLInputElement>(null);
-  const done = useRef(false);
-
-  useEffect(() => {
-    ref.current?.focus();
-    ref.current?.select();
-  }, []);
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
-    if (event.key === "Enter") {
-      done.current = true;
-      onCommit(event.currentTarget.value);
-    } else if (event.key === "Escape") {
-      done.current = true;
-      onCancel();
-    }
-  };
-
-  const handleCommitOnBlur = (event: FocusEvent<HTMLInputElement>): void => {
-    if (done.current) {
-      return;
-    }
-    done.current = true;
-    onCommit(event.currentTarget.value);
-  };
-
-  return (
-    <input
-      aria-label={`Rename ${name}`}
-      data-dashfoo="tab-rename"
-      defaultValue={name}
-      onBlur={handleCommitOnBlur}
-      onKeyDown={handleKeyDown}
-      ref={ref}
-      type="text"
-    />
-  );
-};
-
-// A single tab — its own component so the draggable hook isn't called in a loop.
-// The close control is a sibling button (not nested in the tab button, which
-// would be invalid and would pollute the tab's accessible name).
-const TabButton = ({
-  closable,
-  index,
-  renamable,
-  selected,
-  tab,
-  tabsetId,
-}: {
-  closable: boolean;
-  index: number;
-  renamable: boolean;
-  selected: number;
-  tab: TabNode;
-  tabsetId: string;
-}): ReactNode => {
-  const { dispatch, renderTabLabel } = useDashfooContext();
-  const { ref } = useTabDraggable(tab.id, tab.enableDrag === false, tab.name);
-  // `data-dragging` is driven off the drag machine's subject, which is
-  // authoritative for the whole drag — the source tab stays in the strip (dimmed)
-  // while our overlay chip follows the pointer.
-  const dragSubject = useDragSubject();
-  const isDragging = dragSubject?.kind === "tab" && dragSubject.id === tab.id;
-  const [editing, setEditing] = useState(false);
-  const itemRef = useRef<HTMLSpanElement>(null);
-  const wasEditing = useRef(false);
-
-  // Return focus to the tab button once the inline editor closes.
-  useEffect(() => {
-    if (wasEditing.current && !editing) {
-      itemRef.current?.querySelector<HTMLElement>('[data-dashfoo="tab"]')?.focus();
-    }
-    wasEditing.current = editing;
-  }, [editing]);
-
-  const handleSelect = (): void => {
-    dispatch({ index, tabsetId, type: "selectTab" });
-  };
-
-  const handleDoubleClick = (): void => {
-    if (renamable) {
-      setEditing(true);
-    }
-  };
-
-  const handleRenameCommit = (value: string): void => {
-    setEditing(false);
-    const trimmed = value.trim();
-    if (trimmed && trimmed !== tab.name) {
-      dispatch({ name: trimmed, tabId: tab.id, type: "renameTab" });
-    }
-  };
-
-  const handleRenameCancel = (): void => {
-    setEditing(false);
-  };
-
-  const handleClose = (event: MouseEvent<HTMLButtonElement>): void => {
-    event.stopPropagation();
-    dispatch({ tabId: tab.id, type: "deleteTab" });
-  };
-
-  return (
-    <span data-dashfoo="tab-item" data-dragging={isDragging || undefined} ref={itemRef}>
-      {editing ? (
-        <TabRenameInput
-          name={tab.name}
-          onCancel={handleRenameCancel}
-          onCommit={handleRenameCommit}
-        />
-      ) : (
-        <button
-          aria-controls={panelDomId(tabsetId)}
-          aria-label={renderTabLabel ? tab.name : undefined}
-          aria-selected={index === selected}
-          data-dashfoo="tab"
-          data-tab-id={tab.id}
-          id={tabDomId(tabsetId, tab.id)}
-          onClick={handleSelect}
-          onDoubleClick={handleDoubleClick}
-          ref={ref}
-          role="tab"
-          tabIndex={index === selected ? 0 : -1}
-          type="button"
-        >
-          {renderTabLabel ? renderTabLabel(tab) : tab.name}
-        </button>
-      )}
-      {closable && !editing ? (
-        <button
-          aria-label={`Close ${tab.name}`}
-          data-dashfoo="tab-close"
-          onClick={handleClose}
-          type="button"
-        >
-          <CloseIcon />
-        </button>
-      ) : null}
-    </span>
-  );
-};
-
 // renderTab is the consumer's content factory; calling it through a component (not
 // inline) gives the panel a stable identity so React keeps its state across
 // TabsetView re-renders instead of remounting the inline result.
@@ -227,6 +66,10 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
   const dragSubject = useDragSubject();
   const isMaximized = maximizedTabsetId === node.id;
   const tablistRef = useRef<HTMLDivElement>(null);
+  const tabsetRef = useRef<HTMLDivElement>(null);
+  // Set when a close was triggered by keyboard/pointer so the post-delete effect
+  // knows to move focus to the newly-selected tab (instead of leaving it on body).
+  const restoreFocus = useRef(false);
   const tabsClosable = closableTabs && node.enableClose !== false;
   const showMaximize = maximizable && node.enableMaximize !== false;
 
@@ -253,11 +96,15 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
     dispatch({ tabsetId: isMaximized ? null : node.id, type: "setMaximizedTabset" });
   };
 
-  const overflow = useTabOverflow(tablistRef, node.children.length);
-  const overflowItems = overflow.map((id) => ({
-    id,
-    name: node.children.find((tab) => tab.id === id)?.name ?? id,
-  }));
+  // A rename or scroll changes clipping without changing the count, so the
+  // signature folds each tab's id+name into the deps the hook watches.
+  const overflowSignature = node.children.map((tab) => `${tab.id}:${tab.name}`).join("|");
+  const overflow = useTabOverflow(tablistRef, overflowSignature);
+  // Resolve overflowing ids to names once per change instead of a find() per item.
+  const overflowItems = useMemo(() => {
+    const names = new Map(node.children.map((tab) => [tab.id, tab.name]));
+    return overflow.map((id) => ({ id, name: names.get(id) ?? id }));
+  }, [overflow, node.children]);
 
   const handleOverflowSelect = (id: string): void => {
     const index = node.children.findIndex((tab) => tab.id === id);
@@ -270,9 +117,38 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
       ?.scrollIntoView({ block: "nearest", inline: "nearest" });
   };
 
+  // Closing is lifted here (not in TabButton) so we can return focus to the new
+  // active tab after the delete re-renders — otherwise focus falls to <body>.
+  const handleTabClose = (tabId: string): void => {
+    restoreFocus.current = true;
+    dispatch({ tabId, type: "deleteTab" });
+  };
+
+  // Runs after the delete commits. Focus the now-active tab's button, or fall back
+  // to the tabset container if the tabset emptied so focus never lands on <body>.
+  useEffect(() => {
+    if (!restoreFocus.current) {
+      return;
+    }
+    restoreFocus.current = false;
+    const activeTabId = node.children[node.selected]?.id;
+    if (activeTabId) {
+      tablistRef.current
+        ?.querySelector<HTMLElement>(`#${CSS.escape(tabDomId(node.id, activeTabId))}`)
+        ?.focus();
+    } else {
+      tabsetRef.current?.focus();
+    }
+  }, [node.children, node.selected, node.id]);
+
   // Roving-tabindex keyboard model (WAI-ARIA APG Tabs): arrows move and select,
   // Home/End jump to the ends, and focus follows the new selection.
   const handleTablistKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    // Only act when the key comes from a tab — otherwise a focused close button
+    // (a tablist child) would have its arrows/Home/End hijacked.
+    if (!(event.target instanceof HTMLElement) || !event.target.closest('[role="tab"]')) {
+      return;
+    }
     const count = node.children.length;
     if (count === 0) {
       return;
@@ -300,6 +176,7 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
   const strip = tabStripEnabled ? (
     <div data-dashfoo="tabstrip" style={stripStyle}>
       <div
+        aria-label={node.name ?? "Tabs"}
         aria-orientation="horizontal"
         data-dashfoo="tablist"
         onKeyDown={handleTablistKeyDown}
@@ -313,6 +190,7 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
             closable={tabsClosable && tab.enableClose !== false}
             index={index}
             key={tab.id}
+            onClose={handleTabClose}
             renamable={renamableTabs && tab.enableRename !== false}
             selected={visualSelected}
             tab={tab}
@@ -393,8 +271,14 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
       data-dashfoo="tabset"
       data-dragging-source={isDragSource || undefined}
       data-tab-location={tabLocation}
-      ref={ref}
+      ref={(element) => {
+        ref(element);
+        tabsetRef.current = element;
+      }}
       style={tabsetStyle}
+      // -1 so an emptied tabset can receive focus on close without entering the
+      // Tab order.
+      tabIndex={-1}
     >
       {tabLocation === "bottom" ? (
         <>

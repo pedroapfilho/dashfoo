@@ -1,6 +1,6 @@
 import type { Dashfoo } from "@dashfoo/core";
 import { renderHook } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { activeBreakpoint, matchBreakpoint, useResponsiveModel } from "./responsive";
 
@@ -36,6 +36,34 @@ describe("matchBreakpoint", () => {
     expect(matchBreakpoint(bp, 500)).toBe(true);
     expect(matchBreakpoint(bp, 800)).toBe(false);
   });
+
+  describe("a media query consults matchMedia", () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    const bp = {
+      id: "dark",
+      model: MOBILE,
+      query: { media: "(prefers-color-scheme: dark)" },
+    } as const;
+
+    test("returns true when the media query matches", () => {
+      vi.stubGlobal(
+        "matchMedia",
+        vi.fn(() => ({ matches: true })),
+      );
+      expect(matchBreakpoint(bp, 0)).toBe(true);
+    });
+
+    test("returns false when the media query does not match", () => {
+      vi.stubGlobal(
+        "matchMedia",
+        vi.fn(() => ({ matches: false })),
+      );
+      expect(matchBreakpoint(bp, 0)).toBe(false);
+    });
+  });
 });
 
 describe("activeBreakpoint", () => {
@@ -50,6 +78,12 @@ describe("activeBreakpoint", () => {
 
   test("falls through to the catch-all when nothing matches", () => {
     expect(activeBreakpoint(breakpoints, 1000).id).toBe("desktop");
+  });
+
+  test("throws when given no breakpoints", () => {
+    expect(() => activeBreakpoint([], 500)).toThrow(
+      "useResponsiveModel requires at least one breakpoint.",
+    );
   });
 });
 

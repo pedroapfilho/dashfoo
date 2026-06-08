@@ -31,6 +31,12 @@ describe("resolveDockTarget", () => {
       kind: "tab",
     });
   });
+
+  test("falls back to a tab drop for a zero-size rect", () => {
+    expect(resolveDockTarget({ x: 0, y: 0 }, { height: 0, width: 0, x: 0, y: 0 })).toEqual({
+      kind: "tab",
+    });
+  });
 });
 
 describe("zoneRect", () => {
@@ -50,5 +56,9 @@ describe("zoneRect", () => {
 
   test("split-bottom highlights the bottom half", () => {
     expect(zoneRect(r, "split-bottom")).toEqual({ height: 50, width: 200, x: 10, y: 70 });
+  });
+
+  test("split-top highlights the top half", () => {
+    expect(zoneRect(r, "split-top")).toEqual({ height: 50, width: 200, x: 10, y: 20 });
   });
 });

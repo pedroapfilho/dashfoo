@@ -81,6 +81,47 @@ describe("usePersistence", () => {
     expect(storage.getItem("layout")).toBeNull();
   });
 
+  test("a corrupt stored value warns and is removed on mount", () => {
+    const storage = memoryStorageAdapter();
+    storage.setItem("layout", "{ not valid json");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const removeItem = vi.spyOn(storage, "removeItem");
+
+    renderHook(() => usePersistence(config(storage), modelWith("Default")));
+
+    expect(warn).toHaveBeenCalledWith(
+      "[dashfoo] discarding unreadable persisted layout",
+      expect.anything(),
+    );
+    expect(removeItem).toHaveBeenCalledWith("layout");
+    expect(storage.getItem("layout")).toBeNull();
+
+    warn.mockRestore();
+    removeItem.mockRestore();
+  });
+
+  test("a queued save lands under the key it was produced for after a key change", () => {
+    const storage = memoryStorageAdapter();
+    const { rerender, result } = renderHook(
+      ({ key }: { key: string }) =>
+        usePersistence({ debounceMs: 300, key, storage }, modelWith("Default")),
+      { initialProps: { key: "old" } },
+    );
+
+    act(() => {
+      result.current.save(modelWith("Edited"));
+    });
+    // Change the persist key while the debounced write is still queued.
+    rerender({ key: "new" });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    // The pending write is key-tagged, so it lands under "old", never the new key.
+    expect(storage.getItem("old")).toBe(toJSON(modelWith("Edited")));
+    expect(storage.getItem("new")).toBeNull();
+  });
+
   test("debounce-saves the latest model and collapses rapid changes", () => {
     const storage = memoryStorageAdapter();
     const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
