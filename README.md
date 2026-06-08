@@ -1,6 +1,9 @@
 <div align="center">
 
-# dashfoo
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/dashfoo-logo-dark.svg">
+  <img alt="dashfoo" src="./assets/dashfoo-logo-light.svg" width="320">
+</picture>
 
 **A headless React docking-layout library — tiled, resizable, tabbed regions with a serializable model and zero imposed styling.**
 
