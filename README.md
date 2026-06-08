@@ -1,12 +1,13 @@
 <div align="center">
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./assets/dashfoo-logo-dark.svg">
-  <img alt="dashfoo" src="./assets/dashfoo-logo-light.svg" width="320">
-</picture>
-
-**A headless React docking-layout library — tiled, resizable, tabbed regions with a serializable model and zero imposed styling.**
-
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/dashfoo-logo-dark.svg">
+    <img alt="dashfoo" src="./assets/dashfoo-logo-light.svg" width="320">
+  </picture>
+  <br />
+  <br />
+  <strong>A headless React docking-layout library — tiled, resizable, tabbed regions with a serializable model and zero imposed styling.</strong>
+  <br />
+  <br />
 </div>
 
 dashfoo builds VS-Code-style dashboards in React: nested rows and columns of resizable panes, each pane a tabset you can restack, split, reorder, rename, close, and maximize by dragging. The layout is a single serializable model — a plain object validated by zod — that is the one source of truth. The engine ships structure, not appearance: `@dashfoo/react` renders markup tagged with `data-dashfoo="..."` attributes and applies no CSS, so the chrome is yours to style.
