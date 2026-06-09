@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack -p 4000",
+    "dev": "portless run --name dashfoo.docs next dev --turbopack",
     "build": "next build",
     "start": "next start -p 4000",
     "postinstall": "fumadocs-mdx",
