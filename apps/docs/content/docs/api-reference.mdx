@@ -1,0 +1,386 @@
+---
+title: API reference
+description: Every public export of @dashfoo/react, @dashfoo/core, and @dashfoo/theme, with types and defaults.
+---
+
+This page lists the full public surface of the three packages. The guides cover
+the concepts; this is the lookup table. All three packages are ESM-only
+(`"type": "module"` with an exports map), so your tsconfig needs
+`moduleResolution: "bundler"`, `"node16"`, or `"nodenext"` — classic `"node"`
+resolution cannot find them. `@dashfoo/react` ships a `"use client"` banner, so
+it works as a client component in the Next.js App Router without a wrapper.
+
+## @dashfoo/react
+
+The React binding: `DashfooLayout`, the `Panel` compound parts, the hooks, and
+the storage adapters.
+Source: [`packages/react/src`](https://github.com/pedroapfilho/dashfoo/tree/main/packages/react/src).
+
+### `DashfooLayout` props
+
+All 16 props. Pass either `model` or `defaultModel`; passing neither throws.
+
+| Prop                      | Type                                                                       | Default | Description                                                                                                                                                                |
+| ------------------------- | -------------------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model`                   | `Dashfoo`                                                                  | —       | Controlled document. When set, the prop is the source of truth.                                                                                                            |
+| `defaultModel`            | `Dashfoo`                                                                  | —       | Uncontrolled initial document. The component owns it from there.                                                                                                           |
+| `onModelChange`           | `(model: Dashfoo, action?: Action) => void`                                | —       | Fires after every change with the next model and the action that caused it (`action` is omitted for undo/redo). Not required for persistence — `persist` saves on its own. |
+| `components`              | `Record<string, TabComponent>`                                             | —       | Registry mapping `tab.component` keys to components. Each receives `{ node: TabNode }`. An unregistered key renders nothing and logs one dev warning.                      |
+| `factory`                 | `(tab: TabNode) => ReactNode`                                              | —       | Render override. When set it resolves every tab and `components` is ignored.                                                                                               |
+| `persist`                 | `string \| { key: string; storage?: StorageAdapter; debounceMs?: number }` | —       | Auto-save and restore the model (uncontrolled only). A bare string is a localStorage key; the debounce defaults to 300 ms. See [persistence](/persistence).                |
+| `onAction`                | `(action: Action) => Action \| null`                                       | —       | Intercept each action before it commits — return it, a replacement, or `null` to veto.                                                                                     |
+| `onActiveTabsetChange`    | `(tabsetId: string \| undefined) => void`                                  | —       | Fires when the active tabset changes.                                                                                                                                      |
+| `onMaximizedTabsetChange` | `(tabsetId: string \| undefined) => void`                                  | —       | Fires when a tabset is maximized or restored.                                                                                                                              |
+| `renderTabLabel`          | `(tab: TabNode) => ReactNode`                                              | —       | Override the tab label. The accessible name stays `tab.name`.                                                                                                              |
+| `renderTabsetToolbar`     | `(tabset: TabsetNode) => ReactNode`                                        | —       | Inject custom controls into a tabset's toolbar.                                                                                                                            |
+| `closableTabs`            | `boolean`                                                                  | `true`  | Show the per-tab close control.                                                                                                                                            |
+| `renamableTabs`           | `boolean`                                                                  | `true`  | Allow double-click inline rename.                                                                                                                                          |
+| `maximizable`             | `boolean`                                                                  | `true`  | Show the tabset maximize/restore control.                                                                                                                                  |
+| `draggableTabsets`        | `boolean`                                                                  | `true`  | Show the grip that drags a whole tabset.                                                                                                                                   |
+| `keepMounted`             | `boolean`                                                                  | `false` | Keep inactive tab panels mounted (hidden) so their state survives a tab switch. By default inactive panels unmount.                                                        |
+
+The model's `global` block layers under the boolean props: a feature is on only
+if neither the prop nor the global (`tabEnableClose`, `tabEnableRename`,
+`tabSetEnableMaximize`) turns it off. The root element is
+`<div data-dashfoo="layout">` at 100% of its parent in both axes — a parent
+without a real height paints nothing (see [getting started](/getting-started)).
+
+### `DashfooHandle`
+
+A `ref` on `DashfooLayout` exposes 12 imperative methods.
+
+| Method           | Signature                                                                                       | Effect                                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `addTab`         | `(tab: TabNode, target: { targetId: string; location?: DockLocation; index?: number }) => void` | Dispatches `addNode`. `location` defaults to `"center"`; `index` picks the slot when stacking into the target. |
+| `closeTab`       | `(tabId: string) => void`                                                                       | Dispatches `deleteTab`.                                                                                        |
+| `selectTab`      | `(tabsetId: string, index: number) => void`                                                     | Dispatches `selectTab`.                                                                                        |
+| `renameTab`      | `(tabId: string, name: string) => void`                                                         | Dispatches `renameTab`.                                                                                        |
+| `maximizeTabset` | `(tabsetId: string \| null) => void`                                                            | Dispatches `setMaximizedTabset`; `null` restores.                                                              |
+| `dispatch`       | `(action: Action) => void`                                                                      | Raw escape hatch for any of the 12 actions.                                                                    |
+| `getModel`       | `() => Dashfoo`                                                                                 | The current model.                                                                                             |
+| `undo`           | `() => void`                                                                                    | Step back one action. No-op in controlled mode.                                                                |
+| `redo`           | `() => void`                                                                                    | Step forward. No-op in controlled mode.                                                                        |
+| `canUndo`        | `() => boolean`                                                                                 | Reads the live history snapshot.                                                                               |
+| `canRedo`        | `() => boolean`                                                                                 | Reads the live history snapshot.                                                                               |
+| `resetLayout`    | `() => void`                                                                                    | Restore the original `defaultModel`, clearing undo history and any persisted copy. No-op in controlled mode.   |
+
+```tsx
+import type { TabNode } from "@dashfoo/core";
+import { model, row, tab, tabset } from "@dashfoo/core";
+import type { DashfooHandle } from "@dashfoo/react";
+import { DashfooLayout } from "@dashfoo/react";
+import type { ReactNode } from "react";
+import { useRef } from "react";
+
+const Notes = ({ node }: { node: TabNode }): ReactNode => <div>{node.name}</div>;
+
+const initial = model(row([tabset([tab("notes", "Notes")], { id: "main" })]));
+
+const App = (): ReactNode => {
+  const ref = useRef<DashfooHandle>(null);
+  const handleAdd = (): void => {
+    // ids default to the component name — pass an explicit id for a duplicate.
+    ref.current?.addTab(tab("notes", "Scratch", { id: "notes-2" }), {
+      location: "split-right",
+      targetId: "main",
+    });
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <button onClick={handleAdd} type="button">
+        Add tab
+      </button>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <DashfooLayout components={{ notes: Notes }} defaultModel={initial} ref={ref} />
+      </div>
+    </div>
+  );
+};
+
+export { App };
+```
+
+See [controlled & history](/controlled-and-history) for the controlled-mode
+pairing and undo/redo wiring.
+
+### `Panel` compound parts
+
+Unstyled building blocks for panel content. Each forwards its native props and
+adds a `data-dashfoo` attribute for styling.
+
+| Part           | Element  | Attribute                     |
+| -------------- | -------- | ----------------------------- |
+| `Panel.Root`   | `<div>`  | `data-dashfoo="panel"`        |
+| `Panel.Header` | `<div>`  | `data-dashfoo="panel-header"` |
+| `Panel.Body`   | `<div>`  | `data-dashfoo="panel-body"`   |
+| `Panel.Title`  | `<span>` | `data-dashfoo="panel-title"`  |
+| `Panel.Icon`   | `<span>` | `data-dashfoo="panel-icon"`   |
+| `Panel.Badge`  | `<span>` | `data-dashfoo="panel-badge"`  |
+
+Prop types are exported as `PanelRootProps`, `PanelHeaderProps`,
+`PanelBodyProps`, `PanelTitleProps`, `PanelIconProps`, and `PanelBadgeProps`.
+
+### `useDashfooStore`
+
+The store `DashfooLayout` uses internally, exposed for hosts that render their
+own chrome. Throws when given neither `model` nor `defaultModel`; every entry
+point is normalized.
+
+`UseDashfooStoreOptions`:
+
+| Option                    | Type                                        | Description                                                       |
+| ------------------------- | ------------------------------------------- | ----------------------------------------------------------------- |
+| `defaultModel`            | `Dashfoo`                                   | Uncontrolled seed; the actor owns it with full undo/redo.         |
+| `model`                   | `Dashfoo`                                   | Controlled document; every change routes through `onModelChange`. |
+| `onAction`                | `(action: Action) => Action \| null`        | Veto or replace an action before it commits.                      |
+| `onActiveTabsetChange`    | `(tabsetId: string \| undefined) => void`   | Active-tabset notifications.                                      |
+| `onMaximizedTabsetChange` | `(tabsetId: string \| undefined) => void`   | Maximize/restore notifications.                                   |
+| `onModelChange`           | `(model: Dashfoo, action?: Action) => void` | Fires once per real change (no-op transitions emit nothing).      |
+
+Returns a `DashfooStore`:
+
+| Field      | Type                       | Description                                              |
+| ---------- | -------------------------- | -------------------------------------------------------- |
+| `model`    | `Dashfoo`                  | The current document.                                    |
+| `dispatch` | `(action: Action) => void` | Commit one action.                                       |
+| `undo`     | `() => void`               | Uncontrolled only.                                       |
+| `redo`     | `() => void`               | Uncontrolled only.                                       |
+| `canUndo`  | `() => boolean`            | Reads the live actor snapshot, not a stale render value. |
+| `canRedo`  | `() => boolean`            | Reads the live actor snapshot.                           |
+| `setModel` | `(model: Dashfoo) => void` | Replace the whole document and reset undo history.       |
+
+### `useDashfooContext`
+
+Reaches the layout's resolved configuration and `dispatch` from inside custom
+chrome — a `renderTabsetToolbar` button, a custom tab label. Throws when called
+outside `<DashfooLayout>`. Returns a `DashfooContextValue`:
+
+| Field                                                              | Type                          | Description                                              |
+| ------------------------------------------------------------------ | ----------------------------- | -------------------------------------------------------- |
+| `dispatch`                                                         | `(action: Action) => void`    | The store's dispatch.                                    |
+| `closableTabs`, `renamableTabs`, `maximizable`, `draggableTabsets` | `boolean`                     | Effective values after the model globals are layered in. |
+| `keepMounted`                                                      | `boolean`                     | The resolved prop.                                       |
+| `maximizedTabsetId`                                                | `string \| undefined`         | The currently maximized tabset, if any.                  |
+| `renderTab`                                                        | `(tab: TabNode) => ReactNode` | The resolved content renderer (factory or registry).     |
+| `renderTabLabel`, `renderTabsetToolbar`                            | optional render props         | As passed to `DashfooLayout`.                            |
+| `tabLocation`                                                      | `"top" \| "bottom"`           | From `global.tabLocation`, default `"top"`.              |
+| `tabsetMinSize`                                                    | `number`                      | From `global.tabSetMinSize`, default `320` here.         |
+| `tabStripEnabled`                                                  | `boolean`                     | From `global.tabSetEnableTabStrip`.                      |
+
+The raw context object is also exported as `DashfooContext`.
+
+### `usePersistence`
+
+The load/save half behind the `persist` prop, usable standalone.
+`usePersistence(config: PersistConfig | null, defaultModel: Dashfoo | undefined)`
+loads the saved model once (validated; falls back to `defaultModel` on miss or
+corruption, pruning corrupt values with a warning), debounce-saves every change,
+and flushes a pending save on unmount. A `null` config makes it a no-op.
+
+| Type            | Shape                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| `PersistConfig` | `{ key: string; storage: StorageAdapter; debounceMs: number }`                              |
+| `Persistence`   | `{ initialModel: Dashfoo \| undefined; save: (model: Dashfoo) => void; clear: () => void }` |
+
+### Storage adapters
+
+| Export                   | Type                                                                                                                             | Description                                                                                                    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `StorageAdapter`         | `{ getItem: (key: string) => string \| null; setItem: (key: string, value: string) => void; removeItem: (key: string) => void }` | The minimal localStorage-shaped contract.                                                                      |
+| `localStorageAdapter`    | `StorageAdapter`                                                                                                                 | SSR-safe browser adapter: reads return `null` and writes warn instead of throwing when storage is unavailable. |
+| `memoryStorageAdapter()` | `() => StorageAdapter`                                                                                                           | Factory returning a fresh Map-backed adapter — tests, SSR, ephemeral layouts.                                  |
+
+### `useResponsiveModel`
+
+Picks a model per breakpoint, keyed off the container's own width
+(ResizeObserver) and/or media queries. SSR-safe: the first render assumes
+infinite width, so server and client agree. See [responsive](/responsive).
+
+| Export               | Signature                                                          | Description                                                                                       |
+| -------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `useResponsiveModel` | `(options: { breakpoints: Array<Breakpoint> }) => ResponsiveModel` | Put `containerRef` on the wrapping element, spread `defaultModel` and `key` onto `DashfooLayout`. |
+| `matchBreakpoint`    | `(breakpoint: Breakpoint, width: number) => boolean`               | No query matches always; `maxWidth` matches at or below; `media` consults `matchMedia`.           |
+| `activeBreakpoint`   | `(breakpoints: Array<Breakpoint>, width: number) => Breakpoint`    | First match wins; the last entry is the fallback. Throws on an empty array.                       |
+
+| Type              | Shape                                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------------------- |
+| `Breakpoint`      | `{ id: string; model: Dashfoo; query?: { maxWidth: number } \| { media: string } }`                           |
+| `ResponsiveModel` | `{ breakpoint: string; containerRef: (el: HTMLElement \| null) => void; defaultModel: Dashfoo; key: string }` |
+
+## @dashfoo/core
+
+The framework-free engine: schema, builders, actions, reducer, tree queries,
+geometry, history, serialization, and the XState machines.
+Source: [`packages/core/src`](https://github.com/pedroapfilho/dashfoo/tree/main/packages/core/src).
+
+### Actions
+
+Every document mutation is one of 12 immutable, discriminated actions. The
+reducer is exhaustive over the union; validate untrusted payloads with
+`actionSchema` before dispatch.
+
+| `action.type`            | Payload                                    | Effect                                                   |
+| ------------------------ | ------------------------------------------ | -------------------------------------------------------- |
+| `addNode`                | `{ tab, targetId, location, index? }`      | Insert a new tab at a dock location.                     |
+| `moveNode`               | `{ sourceId, targetId, location, index? }` | Move an existing tab to a dock target.                   |
+| `moveTabset`             | `{ sourceId, targetId, location, index? }` | Move a whole tabset to a dock target (the grip drag).    |
+| `selectTab`              | `{ tabsetId, index }`                      | Set a tabset's `selected` index.                         |
+| `setActiveTabset`        | `{ tabsetId }`                             | Mark the focused tabset.                                 |
+| `setMaximizedTabset`     | `{ tabsetId: string \| null }`             | Maximize one tabset, or restore with `null`.             |
+| `renameTab`              | `{ tabId, name }`                          | Change a tab's `name`.                                   |
+| `deleteTab`              | `{ tabId }`                                | Remove a tab.                                            |
+| `deleteTabset`           | `{ tabsetId }`                             | Remove a whole tabset.                                   |
+| `adjustSplit`            | `{ rowId, weights }`                       | Set the weights of a row's children (the splitter drag). |
+| `updateNodeAttributes`   | `{ nodeId, attrs }`                        | Patch mutable attributes on a tab, tabset, or row.       |
+| `updateGlobalAttributes` | `{ attrs }`                                | Patch the model's `global` block.                        |
+
+Related exports: `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`,
+and the types `Action`, `MutableNodeAttrs`,
+`DockLocation` (`"center" | "split-top" | "split-bottom" | "split-left" | "split-right"`),
+and `DropIntent` (`{ targetId: string; location: DockLocation; index?: number }`).
+See [drag & dock](/drag-and-dock) for how drops become actions.
+
+### Builders
+
+Constructors that fill the mechanical fields (`type`, `version`, `selected`) so
+seed models stay short.
+
+| Builder  | Signature                                                            | Notes                                                                          |
+| -------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `tab`    | `(component: string, name: string, options?: TabOptions) => TabNode` | `id` defaults to `component` — pass an explicit `id` when reusing a component. |
+| `tabset` | `(children: Array<TabNode>, options?: TabsetOptions) => TabsetNode`  | `selected` defaults to `0`; `id` is auto-generated when omitted.               |
+| `row`    | `(children: RowNode["children"], options?: RowOptions) => RowNode`   | `orientation` defaults to `"row"`; `id` is auto-generated when omitted.        |
+| `model`  | `(layout: RowNode, options?: ModelOptions) => Dashfoo`               | Fills `version: 1` and `global: {}`; warns once on duplicate node ids.         |
+
+Option types: `TabOptions` (`config`, `enableClose`, `enableDrag`,
+`enableRename`, `id`), `TabsetOptions` (`enableClose`, `enableMaximize`, `id`,
+`max`, `min`, `name`, `selected`, `weight`), `RowOptions` (`id`, `max`, `min`,
+`orientation`, `weight`), `ModelOptions` (`activeTabsetId`, `global`,
+`maximizedTabsetId`). `min`/`max` accept a bare number (treated as px) or a
+`Dimension`.
+
+### Schema
+
+Zod schemas and their inferred types. Field-by-field tables live in
+[the model guide](/the-model).
+
+| Schema                   | Inferred type      |
+| ------------------------ | ------------------ |
+| `dashfooSchema`          | `Dashfoo`          |
+| `rowNodeSchema`          | `RowNode`          |
+| `tabsetNodeSchema`       | `TabsetNode`       |
+| `tabNodeSchema`          | `TabNode`          |
+| `globalAttributesSchema` | `GlobalAttributes` |
+| `dimensionSchema`        | `Dimension`        |
+| `edgeSchema`             | `Edge`             |
+| `orientationSchema`      | `Orientation`      |
+| `unitSchema`             | `Unit`             |
+| `jsonValueSchema`        | `Json`             |
+
+`Node` (`RowNode | TabsetNode | TabNode`) is exported as a type only. The
+model's `version` is the pinned literal `1`; payloads with any other version
+fail validation.
+
+### Reducer and normalize
+
+| Export      | Signature                                     | Description                                                                                                                     |
+| ----------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `reducer`   | `(model: Dashfoo, action: Action) => Dashfoo` | The pure engine: deep-copies via `structuredClone` (input never mutated), applies one action, runs `normalize`.                 |
+| `normalize` | `(model: Dashfoo) => Dashfoo`                 | The self-healing canonical pass: clamps `selected`, removes empty tabsets, keeps `maximizedTabsetId` pointing at a live tabset. |
+
+### Tree helpers
+
+Read-only queries over a model. `findRow` and `findTabsetParent` take a
+`RowNode` — start them at `model.layout`.
+
+| Function             | Signature                                                                             | Description                                                   |
+| -------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `collectTabsets`     | `(model: Dashfoo) => Array<TabsetNode>`                                               | Every tabset, depth-first.                                    |
+| `getFirstTabset`     | `(model: Dashfoo) => TabsetNode \| undefined`                                         | The first tabset in document order.                           |
+| `findTabset`         | `(model: Dashfoo, tabsetId: string) => TabsetNode \| undefined`                       | A tabset by id.                                               |
+| `findTab`            | `(model: Dashfoo, tabId: string) => TabLocation \| undefined`                         | A tab anywhere in the model: `{ tab, container, index }`.     |
+| `findRow`            | `(row: RowNode, id: string) => RowNode \| undefined`                                  | A row by id.                                                  |
+| `findAttributedNode` | `(model: Dashfoo, id: string) => AttributedNode \| undefined`                         | Any row, tabset, or tab by id — backs `updateNodeAttributes`. |
+| `findTabsetParent`   | `(row: RowNode, tabsetId: string) => { index: number; parent: RowNode } \| undefined` | The row holding a tabset and its index within it.             |
+| `findDuplicateIds`   | `(model: Dashfoo) => Array<string>`                                                   | Ids appearing more than once across the whole model.          |
+
+Types: `AttributedNode`, `TabContainer`, `TabLocation`.
+
+### Ids
+
+| Function       | Signature                     | Description                                             |
+| -------------- | ----------------------------- | ------------------------------------------------------- |
+| `createNodeId` | `(prefix?: string) => string` | `` `${prefix}-${uuid}` ``, prefix defaults to `"node"`. |
+| `createTabId`  | `() => string`                | `createNodeId("tab")`.                                  |
+
+### `stackModel`
+
+`stackModel(model: Dashfoo, orientation: Orientation = "column"): Dashfoo`
+flattens any layout into a single row of all its tabsets in document order, each
+with equal weight, and clears maximize — the building block for a mobile
+breakpoint. See [responsive](/responsive).
+
+### Geometry
+
+| Export              | Signature                                                        | Description                                                                                                                     |
+| ------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `resolveDockTarget` | `(pointer: Point, rect: Rect, opts?: BandOptions) => DockTarget` | Center of a tabset resolves to `{ kind: "tab" }` (stack); within an outer edge band (default 22%) to `{ kind: "split", edge }`. |
+| `zoneRect`          | `(rect: Rect, location: DockLocation) => Rect`                   | The region the dock indicator highlights: the whole rect for `center`, the matching half for a `split-*`.                       |
+
+Types: `Point` (`{ x: number; y: number }`), `Rect`
+(`{ x: number; y: number; width: number; height: number }`), `DockTarget`,
+`BandOptions` (`{ bandFraction?: number }`).
+
+### History
+
+Past/present/future snapshots over the reducer. Every dispatched action is one
+undo step — there is no coalescing. A splitter drag is still a single step
+because react-resizable-panels v4 commits one `adjustSplit` per release.
+
+| Export          | Signature                                       | Description                                                   |
+| --------------- | ----------------------------------------------- | ------------------------------------------------------------- |
+| `createHistory` | `(present: Dashfoo) => History`                 | A fresh history with empty past and future.                   |
+| `dispatch`      | `(history: History, action: Action) => History` | Reduce `present`, push the old one to `past`, clear `future`. |
+| `undo`          | `(history: History) => History`                 | Step back; returns the same history at the bottom.            |
+| `redo`          | `(history: History) => History`                 | Step forward; returns the same history at the top.            |
+| `canUndo`       | `(history: History) => boolean`                 | `past` is non-empty.                                          |
+| `canRedo`       | `(history: History) => boolean`                 | `future` is non-empty.                                        |
+
+`History` is `{ past: Array<Dashfoo>; present: Dashfoo; future: Array<Dashfoo> }`.
+
+### Serialization
+
+| Export       | Signature                     | Description                                                                                                      |
+| ------------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `toJSON`     | `(model: Dashfoo) => string`  | `JSON.stringify` — the model is plain data.                                                                      |
+| `fromJSON`   | `(json: string) => Dashfoo`   | Parse + `parseModel`. Throws on invalid input.                                                                   |
+| `parseModel` | `(value: unknown) => Dashfoo` | Validate against `dashfooSchema` (including the pinned `version: 1`), normalize, and warn on duplicate node ids. |
+
+### Machines
+
+Two XState machines, for hosts that bypass the React binding.
+
+- `dashfooMachine` — the document actor. Input `{ model: Dashfoo }`, context
+  `{ history: History }`. Events: `DISPATCH` (`{ action }`), `UNDO`, `REDO`,
+  and `SET_MODEL` (`{ model }`, which resets history). Types: `DashfooContext`,
+  `DashfooEvent`, `DashfooInput`.
+- `dragDockMachine` — the drag/dock interaction lifecycle. Events: `START`
+  (`{ subject: DragSubject }`), `OVER` (`{ intent: DropIntent | null }`),
+  `DROP`, `CANCEL`. A valid drop emits `{ type: "COMMIT", action }` — `moveNode`
+  for a tab drag, `moveTabset` for a tabset-grip drag; drag never emits
+  `addNode` (that comes only from the imperative `addTab`). Types:
+  `DragContext`, `DragEmitted`, `DragEvent`, `DragSubject`.
+
+## @dashfoo/theme
+
+The opt-in default skin: plain CSS over `--dashfoo-*` tokens, light by default,
+dark via `data-dashfoo-theme="dark"` on any ancestor. The full token table is in
+[theming](/theming).
+
+| Entry point                  | Contents                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------- |
+| `@dashfoo/theme/dashfoo.css` | The complete skin. It `@import`s `tokens.css`, so one import styles everything. |
+| `@dashfoo/theme/tokens.css`  | The tokens alone, for building your own skin on the same override surface.      |
+
+The only JS export is `DASHFOO_THEME_VERSION`, a version constant for runtime
+checks.

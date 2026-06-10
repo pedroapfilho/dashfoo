@@ -7,7 +7,7 @@ const verticalSplitters = (page: Page) =>
 test("the layout stacks below the container breakpoint and restores above it", async ({ page }) => {
   await page.setViewportSize({ height: 800, width: 1280 });
   await page.goto("/responsive");
-  await expect(page.getByRole("tab", { name: "Chart" }).first()).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Canvas" }).first()).toBeVisible();
 
   // wide: the trading terminal is side by side (at least one vertical splitter)
   await expect.poll(() => verticalSplitters(page)).toBeGreaterThan(0);

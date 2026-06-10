@@ -26,6 +26,11 @@ const chromeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/chrome",
 });
+const sizingRoute = createRoute({
+  component: lazyRouteComponent(() => import("./pages/sizing"), "SizingPage"),
+  getParentRoute: () => rootRoute,
+  path: "/sizing",
+});
 const persistenceRoute = createRoute({
   component: lazyRouteComponent(() => import("./pages/persistence"), "PersistencePage"),
   getParentRoute: () => rootRoute,
@@ -46,6 +51,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   dockingRoute,
   chromeRoute,
+  sizingRoute,
   persistenceRoute,
   controlledRoute,
   responsiveRoute,

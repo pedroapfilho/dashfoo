@@ -1,18 +1,19 @@
 # dashfoo documentation
 
-A headless React docking-layout library — tiled, resizable, tabbed regions with a serializable model and zero imposed styling. Start with the guides, then reach for the package READMEs and architecture decisions when you need the detail.
+A headless React docking-layout library — tiled, resizable, tabbed regions with a serializable model and zero imposed styling. The guides live on the docs site; the package READMEs carry the per-package API reference; the ADRs record the architecture decisions.
 
-## Guides
+## Guides — [docs.dashfoo.dev](https://docs.dashfoo.dev)
 
-- [Getting started](./guides/getting-started.md)
-- [The layout model](./guides/the-model.md)
-- [Drag and dock](./guides/drag-and-dock.md)
-- [Controlled mode and undo/redo](./guides/controlled-and-history.md)
-- [Persisting layouts](./guides/persistence.md)
-- [Adaptive (responsive) layouts](./guides/responsive.md)
-- [Theming the headless chrome](./guides/theming.md)
+- [Getting started](https://docs.dashfoo.dev/getting-started)
+- [The layout model](https://docs.dashfoo.dev/the-model)
+- [Drag and dock](https://docs.dashfoo.dev/drag-and-dock)
+- [Controlled mode and undo/redo](https://docs.dashfoo.dev/controlled-and-history)
+- [Persisting layouts](https://docs.dashfoo.dev/persistence)
+- [Adaptive (responsive) layouts](https://docs.dashfoo.dev/responsive)
+- [Theming the headless chrome](https://docs.dashfoo.dev/theming)
+- [API reference](https://docs.dashfoo.dev/api-reference)
 
-Folder: [`docs/guides`](./guides)
+The guide sources are the single source of truth in [`apps/docs/content/docs`](../apps/docs/content/docs) — edit them there. There is no second copy to keep in sync.
 
 ## Architecture decisions
 
@@ -29,7 +30,7 @@ Folder: [`docs/adr`](./adr)
 - [dashfoo (repository overview)](../README.md)
 - [@dashfoo/core](../packages/core/README.md) — pure TypeScript engine: zod schema, pure reducer, geometry, undo/redo history, serialize
 - [@dashfoo/react](../packages/react/README.md) — `DashfooLayout`, the `Panel` helper, the `persist` prop, hooks, and the rrp / `@dnd-kit/dom` adapters; headless `data-dashfoo` markup
-- [@dashfoo/theme](../packages/theme/README.md) — the opt-in default skin: framework-agnostic plain CSS over overridable `--dashfoo-*` tokens, with a light variant
+- [@dashfoo/theme](../packages/theme/README.md) — the opt-in default skin: framework-agnostic plain CSS over overridable `--dashfoo-*` tokens, light by default with an opt-in dark variant
 
 ## Specs
 

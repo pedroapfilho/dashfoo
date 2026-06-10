@@ -1,9 +1,9 @@
 import { assign, setup } from "xstate";
 
-import type { Action } from "../actions";
-import type { History } from "../history";
-import { createHistory, dispatch, redo, undo } from "../history";
-import type { Dashfoo } from "../schema";
+import type { Dashfoo } from "../model/schema";
+import type { Action } from "../state/actions";
+import type { History } from "../state/history";
+import { createHistory, dispatch, redo, undo } from "../state/history";
 
 type DashfooContext = { history: History };
 

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/docking");
-  await expect(page.getByRole("tab", { name: "Chart" }).first()).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Canvas" }).first()).toBeVisible();
 });
 
 // Regression: dropping at the end of a strip must place the insertion line past
@@ -11,14 +11,14 @@ test("the end-of-strip insertion line sits past the last tab's close button", as
   const firstTabset = page.locator('[data-dashfoo="tabset"]').first();
   const notesItem = firstTabset.locator('[data-dashfoo="tab-item"]', { hasText: "Notes" });
   const closeBox = await notesItem.locator('[data-dashfoo="tab-close"]').boundingBox();
-  const trades = await page.getByRole("tab", { name: "Trades" }).boundingBox();
-  if (!closeBox || !trades) {
+  const tasks = await page.getByRole("tab", { name: "Tasks" }).boundingBox();
+  if (!closeBox || !tasks) {
     throw new Error("missing boxes");
   }
 
-  await page.mouse.move(trades.x + trades.width / 2, trades.y + trades.height / 2);
+  await page.mouse.move(tasks.x + tasks.width / 2, tasks.y + tasks.height / 2);
   await page.mouse.down();
-  await page.mouse.move(trades.x + trades.width / 2 - 8, trades.y + trades.height / 2 + 6, {
+  await page.mouse.move(tasks.x + tasks.width / 2 - 8, tasks.y + tasks.height / 2 + 6, {
     steps: 5,
   }); // arm
   // hover just past the close button, in the empty end of the strip

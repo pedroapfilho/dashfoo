@@ -1,61 +1,68 @@
 /*
  * dashfoo design tokens — the override surface for the skin in ./dashfoo.css.
- * Neutral grayscale, no hue anywhere, so selection/focus/state read through
- * lightness and weight. Dark is the default; opt into light by setting
- * data-dashfoo-theme="light" on any ancestor (e.g. <html data-dashfoo-theme="light">).
+ * shadcn-style semantic tokens (prefixed --dashfoo-) with Tailwind v4 neutral
+ * oklch values, so selection/focus/state read through lightness and weight.
+ * Light is the default; opt into dark by setting data-dashfoo-theme="dark" on
+ * any ancestor (e.g. <html data-dashfoo-theme="dark">).
  * Remap any custom property to skin dashfoo to your own design system.
  */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
   /* surfaces */
-  --dashfoo-bg: #0a0a0b;
-  --dashfoo-surface: #161617;
-  --dashfoo-strip: #101011;
+  --dashfoo-background: oklch(1 0 0); /* white */
+  --dashfoo-card: oklch(1 0 0);
+  --dashfoo-popover: oklch(1 0 0);
+  --dashfoo-muted: oklch(0.97 0 0); /* neutral-100 */
+  --dashfoo-accent: oklch(0.97 0 0);
 
-  /* borders */
-  --dashfoo-border: rgba(255, 255, 255, 0.08);
-  --dashfoo-border-strong: rgba(255, 255, 255, 0.16);
+  /* content */
+  --dashfoo-foreground: oklch(0.145 0 0); /* neutral-950 */
+  --dashfoo-muted-foreground: oklch(0.556 0 0); /* neutral-500 */
+  --dashfoo-accent-foreground: oklch(0.205 0 0); /* neutral-900 */
+  --dashfoo-primary: oklch(0.205 0 0);
 
-  /* text */
-  --dashfoo-text: #ededee;
-  --dashfoo-text-muted: #8b8b8f;
-  --dashfoo-text-faint: #5f5f63;
-  --dashfoo-text-emphasis: #fafafa;
+  /* lines + focus */
+  --dashfoo-border: oklch(0.922 0 0); /* neutral-200 */
+  --dashfoo-ring: oklch(0.708 0 0); /* neutral-400 */
 
   /* shape + type */
-  --dashfoo-radius: 10px;
+  --dashfoo-radius: 0.625rem;
   --dashfoo-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --dashfoo-font-size: 13px;
 
   /* splitters */
   --dashfoo-splitter-size: 1rem;
 
-  /* dock indicators (also consumed by the drag overlay's inline fallbacks) */
-  --dashfoo-dock-fill: rgba(255, 255, 255, 0.1);
-  --dashfoo-dock-border: rgba(255, 255, 255, 0.4);
-  --dashfoo-dock-line: rgba(255, 255, 255, 0.85);
+  /* dock indicators — component-scoped, derived from the semantic tokens
+     (also consumed by the drag overlay's inline fallbacks) */
+  --dashfoo-dock-fill: color-mix(in oklab, var(--dashfoo-primary) 10%, transparent);
+  --dashfoo-dock-border: var(--dashfoo-ring);
+  --dashfoo-dock-line: var(--dashfoo-primary);
 }
 
-/* Opt-in light theme: same grayscale scale inverted. Only the lightness-bearing
-   tokens change; shape/type/splitter tokens are shared with the dark default. */
-[data-dashfoo-theme="light"] {
-  color-scheme: light;
+/* Opt-in dark theme: same neutral scale inverted. Only the lightness-bearing
+   tokens change; shape/type/splitter tokens are shared with the light default. */
+[data-dashfoo-theme="dark"] {
+  color-scheme: dark;
 
-  --dashfoo-bg: #ffffff;
-  --dashfoo-surface: #ffffff;
-  --dashfoo-strip: #f4f4f5;
+  --dashfoo-background: oklch(0.145 0 0); /* neutral-950 */
+  --dashfoo-card: oklch(0.205 0 0); /* neutral-900 */
+  --dashfoo-popover: oklch(0.269 0 0); /* neutral-800 */
+  --dashfoo-muted: oklch(0.269 0 0);
+  --dashfoo-accent: oklch(0.269 0 0);
 
-  --dashfoo-border: rgba(0, 0, 0, 0.1);
-  --dashfoo-border-strong: rgba(0, 0, 0, 0.18);
+  --dashfoo-foreground: oklch(0.985 0 0); /* neutral-50 */
+  --dashfoo-muted-foreground: oklch(0.708 0 0); /* neutral-400 */
+  --dashfoo-accent-foreground: oklch(0.985 0 0);
+  --dashfoo-primary: oklch(0.922 0 0); /* neutral-200 */
 
-  --dashfoo-text: #1c1c1e;
-  --dashfoo-text-muted: #6b6b70;
-  --dashfoo-text-faint: #9a9aa0;
-  --dashfoo-text-emphasis: #09090b;
+  --dashfoo-border: oklch(1 0 0 / 10%);
+  --dashfoo-ring: oklch(0.556 0 0); /* neutral-500 */
 
-  --dashfoo-dock-fill: rgba(0, 0, 0, 0.07);
-  --dashfoo-dock-border: rgba(0, 0, 0, 0.35);
-  --dashfoo-dock-line: rgba(0, 0, 0, 0.7);
+  /* re-declared so subtree-scoped dark re-resolves the var() references */
+  --dashfoo-dock-fill: color-mix(in oklab, var(--dashfoo-primary) 10%, transparent);
+  --dashfoo-dock-border: var(--dashfoo-ring);
+  --dashfoo-dock-line: var(--dashfoo-primary);
 }

@@ -1,33 +1,28 @@
 import type { TabNode } from "@dashfoo/core";
-import type { ComponentType, ReactNode } from "react";
+import { Panel } from "@dashfoo/react";
+import type { ReactNode } from "react";
 
-import { BookPanel } from "./book-panel";
-import { ChartPanel } from "./chart-panel";
-import { DepthPanel } from "./depth-panel";
-import { GenericPanel } from "./generic-panel";
-import type { PanelProps } from "./panel-types";
-import { PositionsPanel } from "./positions-panel";
-import { TradesPanel } from "./trades-panel";
+// Every tab renders the same content-light placeholder: a titled panel with
+// skeleton bars, keeping the demos about the layout, not the content.
+const PlaceholderPanel = ({ node }: { node: TabNode }): ReactNode => (
+  <Panel.Root>
+    <Panel.Header>
+      <Panel.Title>{node.name}</Panel.Title>
+    </Panel.Header>
+    <Panel.Body>
+      <div className="flex flex-col gap-2">
+        <div className="h-2 w-4/5 rounded-full bg-neutral-100" />
+        <div className="h-2 w-3/5 rounded-full bg-neutral-100" />
+        <div className="h-2 w-2/5 rounded-full bg-neutral-100" />
+        <p className="mt-2 text-[11px] text-neutral-500">
+          Placeholder panel — drag this tab to rearrange the layout.
+        </p>
+      </div>
+    </Panel.Body>
+  </Panel.Root>
+);
 
-// Registry passed to every DashfooLayout. Market components get bespoke panels;
-// everything else falls back to a neutral text panel keyed by component name.
-const panelComponents: Record<string, ComponentType<PanelProps>> = {
-  book: BookPanel,
-  chart: ChartPanel,
-  depth: DepthPanel,
-  positions: PositionsPanel,
-  trades: TradesPanel,
-};
+// The factory every page hands to DashfooLayout.
+const renderPanel = (tab: TabNode): ReactNode => <PlaceholderPanel node={tab} />;
 
-const resolvePanel = (component: string): ComponentType<PanelProps> =>
-  panelComponents[component] ?? GenericPanel;
-
-// The factory every page hands to DashfooLayout: resolve a panel by component
-// name, falling back to the neutral text panel.
-const renderPanel = (tab: TabNode): ReactNode => {
-  const Panel = resolvePanel(tab.component);
-  return <Panel node={tab} />;
-};
-
-export { renderPanel, resolvePanel };
-export type { PanelProps };
+export { renderPanel };

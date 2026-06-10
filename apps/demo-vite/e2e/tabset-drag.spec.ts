@@ -18,7 +18,7 @@ const dragGripTo = async (page: Page, grip: Locator, x: number, y: number): Prom
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/docking");
-  await expect(page.getByRole("tab", { name: "Chart" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Canvas" })).toBeVisible();
 });
 
 test("dragging a tabset grip onto another tabset merges their tabs", async ({ page }) => {
@@ -32,8 +32,8 @@ test("dragging a tabset grip onto another tabset merges their tabs", async ({ pa
   await dragGripTo(page, grip, target.x + target.width / 2, target.y + target.height / 2);
 
   await expect.poll(() => tabsets(page).count()).toBe(1);
-  await expect(page.getByRole("tab", { name: "Chart" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Trades" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Canvas" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Tasks" })).toBeVisible();
 });
 
 test("dragging a tabset grip to an edge splits it beside the target", async ({ page }) => {
@@ -55,6 +55,6 @@ test("dragging a tabset grip to an edge splits it beside the target", async ({ p
   await expect
     .poll(() => page.locator('[data-separator][aria-orientation="horizontal"]').count())
     .toBeGreaterThan(0);
-  await expect(page.getByRole("tab", { name: "Chart" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Order Book" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Canvas" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Activity" })).toBeVisible();
 });

@@ -22,9 +22,9 @@ const ChromePage = (): ReactNode => (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <dl className="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-3">
         {OPERATIONS.map(([term, detail]) => (
-          <div className="rounded-df border-df-border bg-df-surface border p-3" key={term}>
-            <dt className="text-df-text text-xs font-semibold">{term}</dt>
-            <dd className="text-df-muted mt-1 text-[11px] leading-relaxed">{detail}</dd>
+          <div className="rounded-lg border border-neutral-200 bg-white p-3" key={term}>
+            <dt className="text-xs font-semibold text-neutral-900">{term}</dt>
+            <dd className="mt-1 text-[11px] leading-relaxed text-neutral-500">{detail}</dd>
           </div>
         ))}
       </dl>

@@ -19,7 +19,7 @@ const dragTabTo = async (page: Page, label: string, x: number, y: number): Promi
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("tab", { name: "Chart" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Canvas" })).toBeVisible();
 });
 
 // The sole tab of a tabset dropped back onto that same tabset is a no-op: the
@@ -28,18 +28,18 @@ test.beforeEach(async ({ page }) => {
 test("dragging the sole tab of a tabset back over itself shows no dock preview", async ({
   page,
 }) => {
-  // First split "Trades" into its own (sole-tab) tabset on the left of the chart.
-  const chart = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
-  if (!chart) {
-    throw new Error("no chart tabset box");
+  // First split "Tasks" into its own (sole-tab) tabset on the left of the canvas.
+  const canvas = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
+  if (!canvas) {
+    throw new Error("no canvas tabset box");
   }
-  await dragTabTo(page, "Trades", chart.x + 8, chart.y + chart.height / 2);
+  await dragTabTo(page, "Tasks", canvas.x + 8, canvas.y + canvas.height / 2);
   await expect.poll(() => tabsetCount(page)).toBe(4);
 
-  // Now drag that sole "Trades" tab over its own tabset body.
-  const tradesTabset = page.locator('[data-dashfoo="tabset"]', { hasText: "Trades" });
-  const box = await tradesTabset.boundingBox();
-  const tab = await page.getByRole("tab", { name: "Trades" }).boundingBox();
+  // Now drag that sole "Tasks" tab over its own tabset body.
+  const tasksTabset = page.locator('[data-dashfoo="tabset"]', { hasText: "Tasks" });
+  const box = await tasksTabset.boundingBox();
+  const tab = await page.getByRole("tab", { name: "Tasks" }).boundingBox();
   if (!box || !tab) {
     throw new Error("no boxes for the sole-tab self-drag");
   }

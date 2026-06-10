@@ -4,18 +4,21 @@ description: dashfoo is a headless React docking-layout library — tiled, resiz
 ---
 
 dashfoo builds VS-Code-style dashboards in React: nested rows and columns of
-resizable panes, each pane a tabset you can restack, split, reorder, rename,
-close, and maximize by dragging. The layout is a single serializable model — a
+resizable panes, each pane a tabset you can restack, split, and reorder by
+dragging, plus rename, close, and maximize. The layout is a single serializable model — a
 plain object validated by zod — that is the one source of truth. The engine
 ships structure, not appearance: `@dashfoo/react` renders markup tagged with
 `data-dashfoo="..."` attributes and applies no CSS, so the chrome is yours to
 style (or import the optional `@dashfoo/theme` skin).
 
+Try the hosted demo at [demo.dashfoo.com](https://demo.dashfoo.com).
+
 ## At a glance
 
 - **Headless.** `@dashfoo/react` renders `data-dashfoo` markup with zero styling.
   Target it with your own CSS, or drop in `@dashfoo/theme` — framework-agnostic
-  plain CSS over overridable `--dashfoo-*` tokens, with an opt-in light variant.
+  plain CSS over overridable `--dashfoo-*` tokens, light by default with opt-in
+  dark via `data-dashfoo-theme="dark"`.
 - **Model is the source of truth.** A plain, JSON-serializable object validated
   by `dashfooSchema`. `toJSON` / `fromJSON` round-trip it losslessly because
   content never lives in the model, only a `component` registry key.
@@ -28,22 +31,25 @@ style (or import the optional `@dashfoo/theme` skin).
 
 ## The packages
 
-| Package          | Purpose                                                                              |
-| ---------------- | ------------------------------------------------------------------------------------ |
+| Package          | Purpose                                                                                                                             |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `@dashfoo/core`  | Pure-TS engine: zod schema + derived types, the reducer, tree invariants, geometry, undo/redo, serialize, model builders. No React. |
-| `@dashfoo/react` | `DashfooLayout`, the `Panel` helper, the `persist` prop, hooks, and the resize / drag adapters. Headless `data-dashfoo` markup. |
-| `@dashfoo/theme` | The opt-in default skin: plain CSS over `--dashfoo-*` tokens, dark + opt-in light.    |
+| `@dashfoo/react` | `DashfooLayout`, the `Panel` helper, the `persist` prop, hooks, and the resize / drag adapters. Headless `data-dashfoo` markup.     |
+| `@dashfoo/theme` | The opt-in default skin: plain CSS over `--dashfoo-*` tokens, light by default + opt-in dark.                                       |
 
 ## Where to go next
 
 - [Getting started](/getting-started) — install, build a model with the builders, render `<DashfooLayout>`, and make it visible.
+- [Hosted demo](https://demo.dashfoo.com) — try the demo app before wiring dashfoo into your own UI.
 - [The layout model](/the-model) — the node schema, the builders, and how `normalize()` keeps the tree canonical.
 - [Drag and dock](/drag-and-dock) — how stack/split resolution works (pointer-only).
 - [Controlled mode & undo/redo](/controlled-and-history) — the two modes, history, and the interception hooks.
 - [Persisting layouts](/persistence) — the `persist` prop, storage adapters, and SSR.
-- [Theming](/theming) — the full `data-dashfoo` + `--dashfoo-*` contract and the light theme.
+- [Adaptive layouts](/responsive) — swap the whole model at container breakpoints with `useResponsiveModel` and `stackModel`.
+- [Theming](/theming) — the full `data-dashfoo` + `--dashfoo-*` contract and the dark theme.
+- [API reference](/api-reference) — every exported component, hook, prop, and type in one place.
 
 <Callout type="info">
-  Code in these docs comes from the dashfoo repository — the package sources, the
-  demo app, and the test suite — not invented.
+  Code in these docs comes from the dashfoo repository — the package sources, the demo app, and the
+  test suite — not invented.
 </Callout>

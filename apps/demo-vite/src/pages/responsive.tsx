@@ -5,10 +5,10 @@ import { useMemo } from "react";
 
 import { renderPanel } from "../components/panels";
 import { DemoStage } from "../components/ui";
-import { tradingModel } from "../models";
+import { overviewModel } from "../models";
 
 const ResponsivePage = (): ReactNode => {
-  const base = useMemo(() => tradingModel(), []);
+  const base = useMemo(() => overviewModel(), []);
   const breakpoints = useMemo(
     () => [
       { id: "mobile", model: stackModel(base), query: { maxWidth: 720 } },
@@ -20,7 +20,7 @@ const ResponsivePage = (): ReactNode => {
 
   return (
     <DemoStage
-      description="The layout adapts to its container's width (ResizeObserver). Below 720px it switches to a single stacked column via stackModel; widen it and the desktop terminal returns. Resize the window to see the switch."
+      description="The layout adapts to its container's width (ResizeObserver). Below 720px it switches to a single stacked column via stackModel; widen it and the desktop layout returns. Resize the window to see the switch."
       title="Responsive"
     >
       <div className="h-full min-h-0" ref={containerRef}>

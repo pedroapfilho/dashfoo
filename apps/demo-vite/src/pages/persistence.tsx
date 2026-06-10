@@ -20,7 +20,7 @@ const PersistencePage = (): ReactNode => {
           Clear saved layout
         </Button>
       }
-      description="This layout is saved to localStorage on every change (validated and version-migrated). Rearrange it, then reload the page — your arrangement survives. Clear it to return to the default."
+      description="This layout is saved to localStorage on every change (validated on load). Rearrange it, then reload the page — your arrangement survives. Clear it to return to the default."
       title="Persistence"
     >
       <DashfooLayout
