@@ -7,8 +7,19 @@
 // `model` warns once if it detects duplicate node ids.
 
 import { createNodeId } from "./ids";
-import type { Dashfoo, GlobalAttributes, Json, RowNode, TabNode, TabsetNode } from "./schema";
+import type {
+  Dashfoo,
+  Dimension,
+  GlobalAttributes,
+  Json,
+  RowNode,
+  TabNode,
+  TabsetNode,
+} from "./schema";
 import { findDuplicateIds } from "./tree";
+
+const toDimension = (value: number | Dimension): Dimension =>
+  typeof value === "number" ? { unit: "px", value } : value;
 
 type TabOptions = {
   config?: Json;
@@ -29,37 +40,53 @@ const tab = (component: string, name: string, options: TabOptions = {}): TabNode
 });
 
 type TabsetOptions = {
+  collapsed?: boolean;
+  collapsedSize?: number | Dimension;
+  collapsible?: boolean;
   enableClose?: boolean;
   enableMaximize?: boolean;
   id?: string;
-  max?: TabsetNode["max"];
-  min?: TabsetNode["min"];
+  max?: number | Dimension;
+  min?: number | Dimension;
   name?: string;
   selected?: number;
   weight?: number;
 };
 
-const tabset = (children: Array<TabNode>, options: TabsetOptions = {}): TabsetNode => ({
-  children,
-  type: "tabset",
-  ...options,
-  id: options.id ?? createNodeId("tabset"),
-  selected: options.selected ?? 0,
-});
+const tabset = (children: Array<TabNode>, options: TabsetOptions = {}): TabsetNode => {
+  const { collapsedSize, max, min, ...rest } = options;
+  return {
+    children,
+    type: "tabset",
+    ...rest,
+    ...(collapsedSize === undefined ? {} : { collapsedSize: toDimension(collapsedSize) }),
+    ...(max === undefined ? {} : { max: toDimension(max) }),
+    ...(min === undefined ? {} : { min: toDimension(min) }),
+    id: options.id ?? createNodeId("tabset"),
+    selected: options.selected ?? 0,
+  };
+};
 
 type RowOptions = {
   id?: string;
+  max?: number | Dimension;
+  min?: number | Dimension;
   orientation?: RowNode["orientation"];
   weight?: number;
 };
 
-const row = (children: RowNode["children"], options: RowOptions = {}): RowNode => ({
-  children,
-  type: "row",
-  ...options,
-  id: options.id ?? createNodeId("row"),
-  orientation: options.orientation ?? "row",
-});
+const row = (children: RowNode["children"], options: RowOptions = {}): RowNode => {
+  const { max, min, ...rest } = options;
+  return {
+    children,
+    type: "row",
+    ...rest,
+    ...(max === undefined ? {} : { max: toDimension(max) }),
+    ...(min === undefined ? {} : { min: toDimension(min) }),
+    id: options.id ?? createNodeId("row"),
+    orientation: options.orientation ?? "row",
+  };
+};
 
 type ModelOptions = {
   activeTabsetId?: string;

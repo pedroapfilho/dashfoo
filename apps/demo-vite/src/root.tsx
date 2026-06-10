@@ -5,6 +5,7 @@ import {
   History,
   LayoutDashboard,
   Move,
+  PanelLeftClose,
   Smartphone,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -13,6 +14,7 @@ const NAV = [
   { exact: true, icon: LayoutDashboard, label: "Overview", to: "/" },
   { exact: false, icon: Move, label: "Docking & drag", to: "/docking" },
   { exact: false, icon: AppWindow, label: "Tabset chrome", to: "/chrome" },
+  { exact: false, icon: PanelLeftClose, label: "Collapsible", to: "/collapsible" },
   { exact: false, icon: HardDriveDownload, label: "Persistence", to: "/persistence" },
   { exact: false, icon: History, label: "Imperative control", to: "/controlled" },
   { exact: false, icon: Smartphone, label: "Responsive", to: "/responsive" },

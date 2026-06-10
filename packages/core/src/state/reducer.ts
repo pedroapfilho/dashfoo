@@ -62,6 +62,7 @@ const placeBesideTarget = (
   if (!targetTabset || !found) {
     return;
   }
+  targetTabset.collapsed = undefined;
 
   const orientation = splitOrientation(location);
   const before = splitsBefore(location);
@@ -133,12 +134,23 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       if (!row) {
         return;
       }
+      const collapsedIds =
+        action.collapsedIds === undefined ? undefined : new Set(action.collapsedIds);
       for (let index = 0; index < action.weights.length; index++) {
         const child = row.children[index];
         const weight = action.weights[index];
-        if (child && weight !== undefined) {
-          child.weight = weight;
+        if (!child || weight === undefined) {
+          continue;
         }
+        const collapsed =
+          collapsedIds !== undefined && child.type === "tabset" && collapsedIds.has(child.id);
+        if (collapsedIds !== undefined && child.type === "tabset") {
+          child.collapsed = collapsed || undefined;
+        }
+        if (collapsed) {
+          continue;
+        }
+        child.weight = weight;
       }
       return;
     }

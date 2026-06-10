@@ -11,7 +11,7 @@ const stackModel = (model: Dashfoo, orientation: Orientation = "column"): Dashfo
   // create fresh nodes without mutating the shared input tabsets.
   const children: Array<TabsetNode> = [];
   for (const tabset of collectTabsets(model)) {
-    children.push({ ...tabset, weight: 1 });
+    children.push({ ...tabset, collapsed: undefined, weight: 1 });
   }
 
   return normalize({

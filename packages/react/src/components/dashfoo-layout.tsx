@@ -193,6 +193,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
   const effectiveRenamable = renamableTabs && global.tabEnableRename !== false;
   const effectiveMaximizable = maximizable && global.tabSetEnableMaximize !== false;
   const tabLocation = global.tabLocation ?? "top";
+  const tabsetMinSize = global.tabSetMinSize;
   const tabStripEnabled = global.tabSetEnableTabStrip !== false;
 
   const contextValue = useMemo(
@@ -208,6 +209,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       renderTabLabel,
       renderTabsetToolbar,
       tabLocation,
+      tabsetMinSize,
       tabStripEnabled,
     }),
     [
@@ -222,6 +224,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       store.dispatch,
       store.model.maximizedTabsetId,
       tabLocation,
+      tabsetMinSize,
       tabStripEnabled,
     ],
   );

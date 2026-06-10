@@ -22,6 +22,25 @@ describe("serialize", () => {
     expect(fromJSON(toJSON(model()))).toEqual(model());
   });
 
+  test("round-trips collapsible fields", () => {
+    const input = model();
+    const first = input.layout.children[0];
+    if (first?.type === "tabset") {
+      first.collapsed = true;
+      first.collapsedSize = { unit: "px", value: 35 };
+      first.collapsible = true;
+    }
+    input.layout.children.push({
+      children: [tab("t3")],
+      id: "ts2",
+      selected: 0,
+      type: "tabset",
+    });
+    input.global.tabSetMinSize = 120;
+
+    expect(fromJSON(toJSON(input))).toEqual(input);
+  });
+
   test("toJSON produces a parseable JSON string", () => {
     expect(JSON.parse(toJSON(model())).layout.id).toBe("root");
   });

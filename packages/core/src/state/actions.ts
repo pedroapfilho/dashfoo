@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  dimensionSchema,
   globalAttributesSchema,
   orientationSchema,
   tabNodeSchema,
@@ -19,6 +20,9 @@ const mutableTabAttrsSchema = tabNodeSchema
 
 const mutableTabsetAttrsSchema = tabsetNodeSchema
   .pick({
+    collapsed: true,
+    collapsedSize: true,
+    collapsible: true,
     enableClose: true,
     enableMaximize: true,
     max: true,
@@ -29,7 +33,12 @@ const mutableTabsetAttrsSchema = tabsetNodeSchema
   .partial();
 
 const mutableRowAttrsSchema = z
-  .object({ orientation: orientationSchema, weight: z.number() })
+  .object({
+    max: dimensionSchema.optional(),
+    min: dimensionSchema.optional(),
+    orientation: orientationSchema,
+    weight: z.number(),
+  })
   .partial();
 
 const mutableNodeAttrsSchema = z.union([
@@ -77,7 +86,12 @@ const actionSchema = z.discriminatedUnion("type", [
   z.object({ name: z.string(), tabId: z.string(), type: z.literal("renameTab") }),
   z.object({ tabId: z.string(), type: z.literal("deleteTab") }),
   z.object({ tabsetId: z.string(), type: z.literal("deleteTabset") }),
-  z.object({ rowId: z.string(), type: z.literal("adjustSplit"), weights: z.array(z.number()) }),
+  z.object({
+    collapsedIds: z.array(z.string()).optional(),
+    rowId: z.string(),
+    type: z.literal("adjustSplit"),
+    weights: z.array(z.number()),
+  }),
   z.object({
     attrs: mutableNodeAttrsSchema,
     nodeId: z.string(),

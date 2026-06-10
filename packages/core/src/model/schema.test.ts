@@ -62,6 +62,37 @@ describe("dashfooSchema", () => {
     expect(parsed.global.splitterSize).toBe(6);
   });
 
+  test("accepts collapsible tabsets, row dimensions, and tabSetMinSize", () => {
+    const parsed = dashfooSchema.parse({
+      ...validModel,
+      global: { tabSetMinSize: 120 },
+      layout: {
+        ...validModel.layout,
+        children: [
+          {
+            children: [{ component: "chart", id: "t1", name: "Chart", type: "tab" }],
+            collapsed: true,
+            collapsedSize: { unit: "px", value: 35 },
+            collapsible: true,
+            id: "ts1",
+            selected: 0,
+            type: "tabset",
+          },
+        ],
+        max: { unit: "px", value: 900 },
+        min: { unit: "px", value: 300 },
+      },
+    });
+
+    expect(parsed.global.tabSetMinSize).toBe(120);
+    expect(parsed.layout.min).toEqual({ unit: "px", value: 300 });
+    expect(parsed.layout.children[0]).toMatchObject({
+      collapsed: true,
+      collapsedSize: { unit: "px", value: 35 },
+      collapsible: true,
+    });
+  });
+
   test("rejects an unknown dimension unit", () => {
     const badUnit = structuredClone(validModel);
     // ts2 carries a `min` dimension; corrupt its unit.
@@ -123,5 +154,18 @@ describe("tabsetNodeSchema", () => {
   test("accepts a tabset without a name", () => {
     const parsed = tabsetNodeSchema.parse(baseTabset);
     expect(parsed.name).toBeUndefined();
+  });
+
+  test("accepts collapsible sizing fields", () => {
+    const parsed = tabsetNodeSchema.parse({
+      ...baseTabset,
+      collapsed: true,
+      collapsedSize: { unit: "px", value: 35 },
+      collapsible: true,
+    });
+
+    expect(parsed.collapsed).toBe(true);
+    expect(parsed.collapsedSize).toEqual({ unit: "px", value: 35 });
+    expect(parsed.collapsible).toBe(true);
   });
 });

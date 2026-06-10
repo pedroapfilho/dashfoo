@@ -119,6 +119,20 @@ describe("normalize", () => {
     expect(result.maximizedTabsetId).toBe("ts1");
   });
 
+  test("drops collapsed from a non-collapsible tabset", () => {
+    const result = normalize(model(row("root", [tabset("ts1", [tab("t1")], { collapsed: true })])));
+
+    expect((result.layout.children[0] as TabsetNode).collapsed).toBeUndefined();
+  });
+
+  test("drops collapsed from the root row's only child", () => {
+    const result = normalize(
+      model(row("root", [tabset("ts1", [tab("t1")], { collapsed: true, collapsible: true })])),
+    );
+
+    expect((result.layout.children[0] as TabsetNode).collapsed).toBeUndefined();
+  });
+
   test("does not mutate the input model", () => {
     const input = model(row("root", [tabset("empty", []), tabset("ts1", [tab("t1")])]));
     normalize(input);

@@ -37,6 +37,9 @@ const tabNodeSchema = z.object({
 
 const tabsetNodeSchema = z.object({
   children: z.array(tabNodeSchema),
+  collapsed: z.boolean().optional(),
+  collapsedSize: dimensionSchema.optional(),
+  collapsible: z.boolean().optional(),
   enableClose: z.boolean().optional(),
   enableMaximize: z.boolean().optional(),
   id: z.string(),
@@ -53,6 +56,8 @@ const tabsetNodeSchema = z.object({
 type RowNode = {
   children: Array<RowNode | z.infer<typeof tabsetNodeSchema>>;
   id: string;
+  max?: z.infer<typeof dimensionSchema>;
+  min?: z.infer<typeof dimensionSchema>;
   orientation: z.infer<typeof orientationSchema>;
   type: "row";
   weight?: number;
@@ -62,6 +67,8 @@ const rowNodeSchema: z.ZodType<RowNode> = z.lazy(() =>
   z.object({
     children: z.array(z.union([rowNodeSchema, tabsetNodeSchema])),
     id: z.string(),
+    max: dimensionSchema.optional(),
+    min: dimensionSchema.optional(),
     orientation: orientationSchema,
     type: z.literal("row"),
     weight: z.number().optional(),
@@ -76,6 +83,7 @@ const globalAttributesSchema = z.object({
   tabLocation: z.enum(["top", "bottom"]).optional(),
   tabSetEnableMaximize: z.boolean().optional(),
   tabSetEnableTabStrip: z.boolean().optional(),
+  tabSetMinSize: z.number().optional(),
 });
 
 const dashfooSchema = z.object({

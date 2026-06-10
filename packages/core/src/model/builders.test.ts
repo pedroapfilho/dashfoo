@@ -55,6 +55,22 @@ describe("tabset", () => {
     const node = tabset([tab("chart", "Chart")], { name: "Charts" });
     expect(node.name).toBe("Charts");
   });
+
+  test("converts numeric tabset dimensions to px and preserves dimension objects", () => {
+    const node = tabset([tab("chart", "Chart")], {
+      collapsed: true,
+      collapsedSize: 35,
+      collapsible: true,
+      max: { unit: "%", value: 80 },
+      min: 100,
+    });
+
+    expect(node.collapsed).toBe(true);
+    expect(node.collapsedSize).toEqual({ unit: "px", value: 35 });
+    expect(node.collapsible).toBe(true);
+    expect(node.max).toEqual({ unit: "%", value: 80 });
+    expect(node.min).toEqual({ unit: "px", value: 100 });
+  });
 });
 
 describe("row", () => {
@@ -74,6 +90,16 @@ describe("row", () => {
     expect(node.id).toBe("root");
     expect(node.orientation).toBe("column");
     expect(node.weight).toBe(3);
+  });
+
+  test("converts numeric row dimensions to px and preserves dimension objects", () => {
+    const node = row([tabset([tab("a", "A")])], {
+      max: { unit: "%", value: 90 },
+      min: 240,
+    });
+
+    expect(node.max).toEqual({ unit: "%", value: 90 });
+    expect(node.min).toEqual({ unit: "px", value: 240 });
   });
 });
 

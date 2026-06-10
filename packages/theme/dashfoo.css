@@ -39,6 +39,13 @@
 [data-dashfoo="tabset"][data-dragging-source] [data-dashfoo="tabcontent"] {
   opacity: 0.4;
 }
+[data-dashfoo="tabset"][data-collapsed] {
+  background: var(--dashfoo-muted);
+}
+[data-dashfoo="tabset"][data-collapsed] [data-dashfoo="tabstrip"],
+[data-dashfoo="tabset"][data-collapsed] [data-dashfoo="tabcontent"] {
+  display: none;
+}
 
 /* strip row = tablist + trailing toolbar */
 [data-dashfoo="tabstrip"] {

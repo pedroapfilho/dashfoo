@@ -19,6 +19,7 @@ const clampSelected = (length: number, selected: number): number => {
 
 const normalizeTabset = (tabset: TabsetNode): TabsetNode => ({
   ...tabset,
+  collapsed: tabset.collapsible === true ? tabset.collapsed : undefined,
   selected: clampSelected(tabset.children.length, tabset.selected),
 });
 
@@ -65,6 +66,10 @@ const normalizeLayout = (root: RowNode): RowNode => {
     children = inner.children;
     orientation = inner.orientation;
     inner = children[0];
+  }
+
+  if (children.length === 1 && children[0]?.type === "tabset") {
+    children = [{ ...children[0], collapsed: undefined }];
   }
 
   return { ...root, children, orientation };

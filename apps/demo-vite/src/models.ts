@@ -86,4 +86,25 @@ const playgroundModel = (): Dashfoo =>
     { activeTabsetId: "left" },
   );
 
-export { chromeModel, dockingModel, overviewModel, playgroundModel };
+const collapsibleModel = (): Dashfoo =>
+  model(
+    row(
+      [
+        tabset([tab("navigator", "Navigator"), tab("alerts", "Alerts")], {
+          collapsedSize: 35,
+          collapsible: true,
+          id: "side",
+          min: 100,
+          weight: 1,
+        }),
+        tabset([tab("canvas", "Canvas"), tab("detail", "Detail"), tab("metrics", "Metrics")], {
+          id: "main",
+          weight: 3,
+        }),
+      ],
+      { id: "root" },
+    ),
+    { activeTabsetId: "side", global: { tabSetMinSize: 120 } },
+  );
+
+export { chromeModel, collapsibleModel, dockingModel, overviewModel, playgroundModel };
