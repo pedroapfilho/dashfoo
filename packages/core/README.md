@@ -3,7 +3,7 @@
 The framework-free engine behind dashfoo's docking layout (FlexLayout / VS-Code-style
 tiled, resizable, tabbed regions). Pure TypeScript: a zod schema for the model, a
 pure reducer, self-healing invariants, drop geometry, an undo/redo history, JSON
-serialization with migration, and two XState v5 machines.
+serialization with validation, and two XState v5 machines.
 
 This package has **no React**. It depends only on `zod` and `xstate`. The React
 bindings, the react-resizable-panels and @dnd-kit adapters, and all rendering live
@@ -207,20 +207,18 @@ drag emits many actions per frame but collapses into a single undo step, keyed b
 the node being resized (so dragging a different splitter starts a new step). Any
 new dispatch clears the redo `future`.
 
-## Serialize + migrate
+## Serialize
 
 ```ts
 toJSON(model): string;          // JSON.stringify
-fromJSON(json): Dashfoo;        // parse → migrate → validate → normalize
+fromJSON(json): Dashfoo;        // parse → validate → normalize
 parseModel(value): Dashfoo;     // same, from an already-parsed value
-migrate(value): unknown;        // upgrade an older payload to CURRENT_VERSION
-CURRENT_VERSION: number;        // 1
 ```
 
-`fromJSON` and `parseModel` run an untrusted value through `migrate`, validate it
-against `dashfooSchema`, and return a normalized model. They throw on an invalid
-value. `migrate` is the forward-compat seam. Today it only backfills a missing
-`version`; future schema bumps add one step per version here.
+`fromJSON` and `parseModel` validate an untrusted value against `dashfooSchema`
+and return a normalized model. They throw on an invalid value. The payload's
+`version` field is pinned to `1` by the schema itself, so a payload written in
+any other format fails validation; a future format change bumps the literal.
 
 ## XState machines
 
@@ -292,7 +290,7 @@ types `TabContainer`, `TabLocation`.
 `history` — `createHistory`, `dispatch`, `undo`, `redo`, `canUndo`, `canRedo`;
 type `History`.
 
-`serialize` — `toJSON`, `fromJSON`, `parseModel`, `migrate`, `CURRENT_VERSION`.
+`serialize` — `toJSON`, `fromJSON`, `parseModel`.
 
 `machines` — `dashfooMachine`, `dragDockMachine`; types `DashfooContext`,
 `DashfooEvent`, `DashfooInput`, `DragContext`, `DragEvent`, `DragSubject`,

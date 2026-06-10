@@ -88,7 +88,7 @@ That is the whole surface for a working dashboard: a model and a way to resolve 
 ## Highlights
 
 - **Model is the source of truth.** The layout is a plain, JSON-serializable object validated by `dashfooSchema`. `toJSON` / `fromJSON` round-trip it losslessly because content never lives in the model, only a `component` registry key.
-- **Headless by design.** `@dashfoo/react` renders markup with `data-dashfoo="..."` attributes and applies zero styling. Target those attributes with your own CSS, or drop in `@dashfoo/theme` — a framework-agnostic plain-CSS skin over overridable `--dashfoo-*` tokens, with an opt-in light variant.
+- **Headless by design.** `@dashfoo/react` renders markup with `data-dashfoo="..."` attributes and applies zero styling. Target those attributes with your own CSS, or drop in `@dashfoo/theme` — a framework-agnostic plain-CSS skin over overridable `--dashfoo-*` tokens, with an opt-in dark variant.
 - **Batteries, still optional.** A `Panel` helper for common panel chrome, model builders, and a one-prop `persist="key"` for localStorage are there when you want them, and absent from the markup when you don't.
 - **Controlled or uncontrolled.** Pass `defaultModel` and let the engine own state with built-in undo/redo, or pass `model` + `onModelChange` and own persistence yourself (backend, URL). Same model shape either way.
 - **Pure reducer, self-healing tree.** Every change is one immutable `Action` run through `reducer(model, action)`. Invariants normalize after each action: empty tabsets are removed, single-child rows collapse, `selected` indices clamp, `maximizedTabsetId` clears when its tabset disappears.
@@ -112,9 +112,9 @@ Three published packages, plus the demo apps that exercise them.
 
 | Package          | Purpose                                                                                                                                                                                                                                                                      | Install                   |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `@dashfoo/core`  | Pure TS engine. zod schema + derived types, the pure `reducer`, tree invariants, `resolveDockTarget` geometry, undo/redo history, `toJSON`/`fromJSON` + migrations, and the XState machines. No React.                                                                       | `pnpm add @dashfoo/core`  |
+| `@dashfoo/core`  | Pure TS engine. zod schema + derived types, the pure `reducer`, tree invariants, `resolveDockTarget` geometry, undo/redo history, `toJSON`/`fromJSON` validation, and the XState machines. No React.                                                                         | `pnpm add @dashfoo/core`  |
 | `@dashfoo/react` | The React layer. `DashfooLayout`, the `Panel` helper, the store binding (controlled/uncontrolled + undo/redo), the `persist` prop + persistence hooks, and the `react-resizable-panels` + `@dnd-kit/dom` adapters. Renders headless `data-dashfoo` markup with zero styling. | `pnpm add @dashfoo/react` |
-| `@dashfoo/theme` | Opt-in default skin for the headless chrome: framework-agnostic **plain CSS** (`@dashfoo/theme/dashfoo.css`) over overridable `--dashfoo-*` design tokens (`@dashfoo/theme/tokens.css`), with an opt-in light theme. No Tailwind, no build step.                             | `pnpm add @dashfoo/theme` |
+| `@dashfoo/theme` | Opt-in default skin for the headless chrome: framework-agnostic **plain CSS** (`@dashfoo/theme/dashfoo.css`) over overridable `--dashfoo-*` design tokens (`@dashfoo/theme/tokens.css`), with an opt-in dark theme. No Tailwind, no build step.                              | `pnpm add @dashfoo/theme` |
 
 `@dashfoo/react` declares `react` and `react-dom` (`^18.3.1 || ^19.0.0`) as its only peers. Everything else — `@dashfoo/core`, `xstate`, `@xstate/react`, `react-resizable-panels`, `@dnd-kit/*` — is a bundled dependency, so install is one line and the primitives never leak into your dependency tree.
 
@@ -152,7 +152,7 @@ import { reducer, normalize, toJSON, fromJSON } from "@dashfoo/core";
 const next = reducer(model, { type: "renameTab", tabId: "chart", name: "Price" });
 ```
 
-The reducer is pure and immutable, runs the self-healing invariants (`normalize`) after every action, and validates action payloads against `actionSchema` at the boundary. `resolveDockTarget` is a pure geometry function: outer bands of a tabset resolve to a split, the center to a tab stack. Undo/redo is a pure helper over `past · present · future`, with resize drags coalesced into a single step. Serialization is `toJSON` / `fromJSON`, the latter validating and migrating an untrusted payload to the current schema version.
+The reducer is pure and immutable, runs the self-healing invariants (`normalize`) after every action, and validates action payloads against `actionSchema` at the boundary. `resolveDockTarget` is a pure geometry function: outer bands of a tabset resolve to a split, the center to a tab stack. Undo/redo is a pure helper over `past · present · future`, with resize drags coalesced into a single step. Serialization is `toJSON` / `fromJSON`, the latter validating an untrusted payload against the schema (whose `version` field is pinned to the current format).
 
 ### The react adapters
 
@@ -161,7 +161,7 @@ The reducer is pure and immutable, runs the self-healing invariants (`normalize`
 - The **resize adapter** wraps `react-resizable-panels`, mapping `weight` to percentage layout and `Dimension` to fixed/min/max panel sizes, and commits `adjustSplit`.
 - The **drag adapter** drives the framework-agnostic `@dnd-kit/dom` `0.4.0` core imperatively (no React bindings). It renders its own drag-preview chip, hit-tests the pointer against the registered tabsets, forwards the lifecycle into the dock machine via `resolveDockTarget`, and commits `moveNode` / `addNode`. Drag is **pointer-only** — see [the drag guide](docs/guides/drag-and-dock.md) for the a11y note.
 
-XState is internal — it never appears in the public API. `useDashfooStore` exposes `{ model, dispatch, undo, redo, canUndo, canRedo, setModel }`; in controlled mode every change routes through `onModelChange`, in uncontrolled mode the actor owns the document with full undo/redo. Persistence is a single `persist="key"` prop (or the lower-level `usePersistence` hook): it debounce-saves the model to a swappable `StorageAdapter` (localStorage, sessionStorage, in-memory, or your own), validating and migrating on load.
+XState is internal — it never appears in the public API. `useDashfooStore` exposes `{ model, dispatch, undo, redo, canUndo, canRedo, setModel }`; in controlled mode every change routes through `onModelChange`, in uncontrolled mode the actor owns the document with full undo/redo. Persistence is a single `persist="key"` prop (or the lower-level `usePersistence` hook): it debounce-saves the model to a swappable `StorageAdapter` (localStorage, sessionStorage, in-memory, or your own), validating on load.
 
 ### The headless data-dashfoo contract
 
@@ -208,8 +208,8 @@ State hooks: `[data-dashfoo="tab-item"][data-dragging]` (a tab being dragged), `
 Or skip writing chrome CSS entirely and import the default skin:
 
 ```ts
-import "@dashfoo/theme/dashfoo.css"; // dark by default
-// opt into light with <html data-dashfoo-theme="light">
+import "@dashfoo/theme/dashfoo.css"; // neutral oklch tokens, light by default
+// opt into dark with <html data-dashfoo-theme="dark">
 ```
 
 ## Demo

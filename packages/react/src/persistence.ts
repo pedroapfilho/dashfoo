@@ -78,8 +78,8 @@ type Persistence = {
 };
 
 // The load/save half of persistence, behind the DashfooLayout `persist` prop.
-// Loads the saved model once (validated + migrated
-// via serialize.ts, falling back to `defaultModel` on miss or corruption) and
+// Loads the saved model once (validated via serialize.ts, falling back to
+// `defaultModel` on miss or corruption) and
 // debounce-saves every change. Resetting the live model is the caller's job —
 // this primitive only owns the storage side. A null config makes it a no-op, so
 // callers can run the hook unconditionally.

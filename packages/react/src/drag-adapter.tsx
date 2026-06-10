@@ -89,9 +89,9 @@ const overlayBase: CSSProperties = {
 // theme fully owns the look.
 const paneStyle = (zone: Zone): CSSProperties => ({
   ...overlayBase,
-  background: "var(--dashfoo-dock-fill, rgba(125, 125, 135, 0.18))",
+  background: "var(--dashfoo-dock-fill, oklch(0.556 0 0 / 0.18))",
   border:
-    "var(--dashfoo-dock-border-width, 1px) solid var(--dashfoo-dock-border, rgba(160, 160, 170, 0.75))",
+    "var(--dashfoo-dock-border-width, 1px) solid var(--dashfoo-dock-border, oklch(0.708 0 0 / 0.75))",
   borderRadius: "var(--dashfoo-dock-radius, 6px)",
   height: zone.height,
   left: zone.x,
@@ -101,7 +101,7 @@ const paneStyle = (zone: Zone): CSSProperties => ({
 
 const lineStyle = (zone: Zone): CSSProperties => ({
   ...overlayBase,
-  background: "var(--dashfoo-dock-line, rgb(140, 140, 150))",
+  background: "var(--dashfoo-dock-line, oklch(0.556 0 0))",
   borderRadius: "var(--dashfoo-dock-line-radius, 2px)",
   height: zone.height,
   left: zone.x,

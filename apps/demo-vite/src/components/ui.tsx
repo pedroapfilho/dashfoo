@@ -12,7 +12,7 @@ const Button = ({
   onClick: () => void;
 }): ReactNode => (
   <button
-    className="border-df-border bg-df-surface text-df-text hover:border-df-border-strong inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+    className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-700 transition-colors hover:border-neutral-300 disabled:cursor-not-allowed disabled:opacity-40"
     disabled={disabled}
     onClick={onClick}
     type="button"
@@ -37,8 +37,8 @@ const DemoStage = ({
   <div className="flex h-full min-h-0 flex-col">
     <header className="flex items-start justify-between gap-4 px-6 py-4">
       <div>
-        <h1 className="text-df-text text-sm font-semibold">{title}</h1>
-        <p className="text-df-muted mt-1 max-w-2xl text-xs leading-relaxed">{description}</p>
+        <h1 className="text-sm font-semibold text-neutral-900">{title}</h1>
+        <p className="mt-1 max-w-2xl text-xs leading-relaxed text-neutral-500">{description}</p>
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </header>

@@ -82,7 +82,7 @@ const ImperativeControlPage = (): ReactNode => {
             ref={layout}
           />
         </div>
-        <pre className="rounded-df border-df-border bg-df-surface text-df-muted hidden w-80 shrink-0 overflow-auto border p-3 text-[10px] leading-relaxed lg:block">
+        <pre className="hidden w-80 shrink-0 overflow-auto rounded-lg border border-neutral-200 bg-white p-3 text-[10px] leading-relaxed text-neutral-500 lg:block">
           {JSON.stringify(view.model, null, 2)}
         </pre>
       </div>

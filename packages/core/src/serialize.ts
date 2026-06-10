@@ -3,35 +3,12 @@ import type { Dashfoo } from "./schema";
 import { dashfooSchema } from "./schema";
 import { findDuplicateIds } from "./tree";
 
-const CURRENT_VERSION = 1;
-
-// Upgrade an older persisted payload to the current schema version. With only v1
-// today this just backfills a missing version; future versions add a step per
-// bump here, keeping fromJSON/parseModel forward-compatible.
-const migrate = (value: unknown): unknown => {
-  if (typeof value !== "object" || value === null) {
-    return value;
-  }
-  if ("version" in value && typeof value.version === "number") {
-    // a newer version may carry fields this build's schema would silently strip,
-    // so refuse the payload rather than load it lossily as the current version.
-    if (value.version > CURRENT_VERSION) {
-      throw new Error(
-        `layout was saved by a newer version of dashfoo (v${value.version}); upgrade to load it`,
-      );
-    }
-    if (value.version === CURRENT_VERSION) {
-      return value;
-    }
-  }
-  return { ...value, version: CURRENT_VERSION };
-};
-
-// Validate an untrusted value against the schema (after migration) and return a
-// normalized, canonical model. Throws if the value is not a valid model; warns
-// (does not throw) on duplicate ids, which corrupt React keys and the plumbing.
+// Validate an untrusted value against the schema and return a normalized,
+// canonical model. Throws if the value is not a valid model — including a
+// payload whose `version` is not the pinned `1`; warns (does not throw) on
+// duplicate ids, which corrupt React keys and the plumbing.
 const parseModel = (value: unknown): Dashfoo => {
-  const model = normalize(dashfooSchema.parse(migrate(value)));
+  const model = normalize(dashfooSchema.parse(value));
   const duplicates = findDuplicateIds(model);
   if (duplicates.length > 0) {
     // oxlint-disable-next-line no-console
@@ -44,4 +21,4 @@ const toJSON = (model: Dashfoo): string => JSON.stringify(model);
 
 const fromJSON = (json: string): Dashfoo => parseModel(JSON.parse(json));
 
-export { CURRENT_VERSION, fromJSON, migrate, parseModel, toJSON };
+export { fromJSON, parseModel, toJSON };

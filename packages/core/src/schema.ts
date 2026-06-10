@@ -83,7 +83,9 @@ const dashfooSchema = z.object({
   global: globalAttributesSchema,
   layout: rowNodeSchema,
   maximizedTabsetId: z.string().optional(),
-  version: z.number().int(),
+  // The persisted-payload format version, pinned by the schema itself: any
+  // future format change bumps the literal, so foreign payloads fail validation.
+  version: z.literal(1),
 });
 
 type Json = JsonValue;

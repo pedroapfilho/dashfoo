@@ -3,14 +3,14 @@ import type { ReactNode } from "react";
 
 import { renderPanel } from "../components/panels";
 import { DemoStage } from "../components/ui";
-import { tradingModel } from "../models";
+import { overviewModel } from "../models";
 
 const OverviewPage = (): ReactNode => (
   <DemoStage
-    description="A dense, real-world layout. Drag tabs to restack or split, drag a splitter to resize, double-click a tab to rename, and use the maximize button to focus a panel. Data streams via TanStack Query."
-    title="Trading terminal"
+    description="A composite layout. Drag tabs to restack or split, drag splitters to resize, double-click to rename, maximize to focus."
+    title="Overview"
   >
-    <DashfooLayout defaultModel={tradingModel()} factory={renderPanel} />
+    <DashfooLayout defaultModel={overviewModel()} factory={renderPanel} />
   </DemoStage>
 );
 

@@ -187,7 +187,7 @@ node's flag allow it.
 ## Persistence
 
 The `persist` prop saves an uncontrolled layout and restores it on load. It loads
-once (validated and migrated through `@dashfoo/core`'s serialize, falling back to
+once (validated through `@dashfoo/core`'s serialize, falling back to
 `defaultModel` on a miss or corrupt value) and debounce-saves every change. A
 `ref` exposes `resetLayout()` to clear the saved copy and return to the default.
 

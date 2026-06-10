@@ -1,15 +1,15 @@
 /*
  * dashfoo default skin — plain CSS over the @dashfoo/react headless chrome.
  * Framework-agnostic (no Tailwind, no build step): import this file and the
- * layout is styled. Every value resolves through a --dashfoo-* token from
- * ./tokens.css, so reskinning is a token remap, not a rule rewrite.
+ * layout is styled. Every value resolves through a shadcn-style --dashfoo-*
+ * token from ./tokens.css, so reskinning is a token remap, not a rule rewrite.
  */
 
 @import "./tokens.css";
 
 [data-dashfoo="layout"] {
-  background: var(--dashfoo-bg);
-  color: var(--dashfoo-text);
+  background: var(--dashfoo-background);
+  color: var(--dashfoo-foreground);
   font-family: var(--dashfoo-font);
   font-size: var(--dashfoo-font-size);
   -webkit-font-smoothing: antialiased;
@@ -24,12 +24,12 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: var(--dashfoo-surface);
+  background: var(--dashfoo-card);
   border: 1px solid var(--dashfoo-border);
   border-radius: var(--dashfoo-radius);
 }
 [data-dashfoo="tabset"]:focus-within {
-  border-color: var(--dashfoo-border-strong);
+  border-color: var(--dashfoo-ring);
 }
 /* the tabset being dragged by its grip: ghost its body, dash its border */
 [data-dashfoo="tabset"][data-dragging-source] {
@@ -45,7 +45,7 @@
   display: flex;
   align-items: stretch;
   padding-right: 0.375rem;
-  background: var(--dashfoo-strip);
+  background: var(--dashfoo-muted);
   border-bottom: 1px solid var(--dashfoo-border);
 }
 [data-dashfoo="tablist"] {
@@ -72,12 +72,12 @@
   background: transparent;
   border: 0;
   border-radius: 0.375rem 0.375rem 0 0;
-  color: var(--dashfoo-text-muted);
+  color: var(--dashfoo-muted-foreground);
   font: inherit;
   font-size: 12.5px;
 }
 [data-dashfoo="tab-item"]:hover [data-dashfoo="tab"] {
-  color: var(--dashfoo-text);
+  color: var(--dashfoo-foreground);
 }
 /* Focus ring wraps the whole tab (label + close) as an inset ring, so it never
    clips against the tabset's overflow:hidden edge the way an outset outline did. */
@@ -86,14 +86,14 @@
 }
 [data-dashfoo="tab-item"]:has([data-dashfoo="tab"]:focus-visible) {
   border-radius: 0.375rem;
-  box-shadow: inset 0 0 0 2px var(--dashfoo-text-emphasis);
+  box-shadow: inset 0 0 0 2px var(--dashfoo-ring);
 }
 [data-dashfoo="tab"][aria-selected="true"] {
-  color: var(--dashfoo-text-emphasis);
+  color: var(--dashfoo-foreground);
   font-weight: 500;
 }
 [data-dashfoo="tab-item"]:has([aria-selected="true"]) {
-  background: var(--dashfoo-surface);
+  background: var(--dashfoo-card);
 }
 [data-dashfoo="tab-item"]:has([aria-selected="true"])::after {
   content: "";
@@ -102,7 +102,7 @@
   bottom: -1px;
   height: 2px;
   border-radius: 9999px;
-  background: var(--dashfoo-text-emphasis);
+  background: var(--dashfoo-primary);
 }
 /* the tab being lifted into the drag overlay: dim the source it leaves behind */
 [data-dashfoo="tab-item"][data-dragging] {
@@ -123,23 +123,23 @@
   background: transparent;
   border: 0;
   border-radius: 4px;
-  color: var(--dashfoo-text-faint);
+  color: var(--dashfoo-muted-foreground);
   cursor: pointer;
 }
 [data-dashfoo="tab-close"]:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--dashfoo-text);
+  background: var(--dashfoo-accent);
+  color: var(--dashfoo-accent-foreground);
 }
 [data-dashfoo="tab-close"]:focus-visible {
-  outline: 2px solid var(--dashfoo-text-emphasis);
+  outline: 2px solid var(--dashfoo-ring);
 }
 [data-dashfoo="tab-rename"] {
   width: 6rem;
   padding: 0.25rem 0.5rem;
-  background: var(--dashfoo-bg);
-  border: 1px solid var(--dashfoo-border-strong);
+  background: var(--dashfoo-background);
+  border: 1px solid var(--dashfoo-ring);
   border-radius: 2px;
-  color: var(--dashfoo-text);
+  color: var(--dashfoo-foreground);
   font: inherit;
   font-size: 0.875rem;
   outline: none;
@@ -160,7 +160,7 @@
   background: transparent;
   border: 0;
   border-radius: 4px;
-  color: var(--dashfoo-text-faint);
+  color: var(--dashfoo-muted-foreground);
 }
 [data-dashfoo="tabset-maximize"],
 [data-dashfoo="tab-overflow"] {
@@ -176,13 +176,13 @@
 [data-dashfoo="tabset-maximize"]:hover,
 [data-dashfoo="tabset-grip"]:hover,
 [data-dashfoo="tab-overflow"]:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--dashfoo-text);
+  background: var(--dashfoo-accent);
+  color: var(--dashfoo-accent-foreground);
 }
 [data-dashfoo="tabset-maximize"]:focus-visible,
 [data-dashfoo="tabset-grip"]:focus-visible,
 [data-dashfoo="tab-overflow"]:focus-visible {
-  outline: 2px solid var(--dashfoo-text-emphasis);
+  outline: 2px solid var(--dashfoo-ring);
 }
 
 /* tab overflow menu */
@@ -193,32 +193,32 @@
   min-width: 8rem;
   margin-top: 0.25rem;
   padding: 0.25rem;
-  background: var(--dashfoo-surface);
-  border: 1px solid var(--dashfoo-border-strong);
+  background: var(--dashfoo-popover);
+  border: 1px solid var(--dashfoo-border);
   border-radius: var(--dashfoo-radius);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 15px -3px oklch(0 0 0 / 0.2);
 }
 [data-dashfoo="tab-overflow-item"] {
   padding: 0.375rem 0.5rem;
   background: transparent;
   border: 0;
   border-radius: 4px;
-  color: var(--dashfoo-text-muted);
+  color: var(--dashfoo-muted-foreground);
   font: inherit;
   font-size: 12px;
   text-align: left;
   cursor: pointer;
 }
 [data-dashfoo="tab-overflow-item"]:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--dashfoo-text);
+  background: var(--dashfoo-accent);
+  color: var(--dashfoo-accent-foreground);
 }
 
 /* tab content */
 [data-dashfoo="tabcontent"] {
   flex: 1 1 0%;
   min-height: 0;
-  background: var(--dashfoo-surface);
+  background: var(--dashfoo-card);
 }
 
 /* panel chrome (the @dashfoo/react Panel helper) */
@@ -239,7 +239,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--dashfoo-text);
+  color: var(--dashfoo-foreground);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.025em;
@@ -247,16 +247,16 @@
 [data-dashfoo="panel-icon"] {
   display: flex;
   align-items: center;
-  color: var(--dashfoo-text-faint);
+  color: var(--dashfoo-muted-foreground);
 }
 [data-dashfoo="panel-badge"] {
   display: flex;
   align-items: center;
   gap: 0.375rem;
   padding: 0.125rem 0.375rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--dashfoo-muted);
   border-radius: 9999px;
-  color: var(--dashfoo-text-muted);
+  color: var(--dashfoo-muted-foreground);
   font-size: 10px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -281,14 +281,14 @@
   align-items: center;
   gap: 0.375rem;
   padding: 0.25rem 0.625rem;
-  background: var(--dashfoo-surface);
-  border: 1px solid var(--dashfoo-border-strong);
+  background: var(--dashfoo-popover);
+  border: 1px solid var(--dashfoo-border);
   border-radius: 0.375rem;
-  color: var(--dashfoo-text-emphasis);
+  color: var(--dashfoo-foreground);
   font-family: var(--dashfoo-font);
   font-size: 12.5px;
   white-space: nowrap;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 15px -3px oklch(0 0 0 / 0.2);
   pointer-events: none;
 }
 
@@ -310,7 +310,7 @@
 }
 [data-separator]::before {
   content: "";
-  background: var(--dashfoo-border-strong);
+  background: var(--dashfoo-ring);
   border-radius: 9999px;
 }
 [data-separator][aria-orientation="vertical"]::before {
@@ -323,10 +323,10 @@
 }
 [data-separator]:hover::before,
 [data-separator]:focus-visible::before {
-  background: var(--dashfoo-text-emphasis);
+  background: var(--dashfoo-foreground);
 }
 [data-separator]:focus-visible {
-  outline: 2px solid var(--dashfoo-text-emphasis);
+  outline: 2px solid var(--dashfoo-ring);
   outline-offset: 2px;
 }
 

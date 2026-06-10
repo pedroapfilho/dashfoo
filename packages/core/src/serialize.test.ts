@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import type { Dashfoo, TabNode } from "./schema";
-import { CURRENT_VERSION, fromJSON, parseModel, toJSON } from "./serialize";
+import { fromJSON, parseModel, toJSON } from "./serialize";
 
 const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab" });
 
@@ -14,7 +14,7 @@ const model = (): Dashfoo => ({
     orientation: "row",
     type: "row",
   },
-  version: CURRENT_VERSION,
+  version: 1,
 });
 
 describe("serialize", () => {
@@ -42,13 +42,13 @@ describe("serialize", () => {
     expect(parsed.layout.children).toHaveLength(1);
   });
 
-  test("parseModel migrates a versionless payload to the current version", () => {
+  test("parseModel rejects a payload without a version", () => {
     const { version: _version, ...withoutVersion } = model();
 
-    expect(parseModel(withoutVersion).version).toBe(CURRENT_VERSION);
+    expect(() => parseModel(withoutVersion)).toThrow();
   });
 
-  test("fromJSON throws on a payload saved by a newer version", () => {
-    expect(() => fromJSON(toJSON({ ...model(), version: 2 }))).toThrow(/newer version/v);
+  test("fromJSON rejects a payload with an unknown version", () => {
+    expect(() => fromJSON(JSON.stringify({ ...model(), version: 2 }))).toThrow();
   });
 });

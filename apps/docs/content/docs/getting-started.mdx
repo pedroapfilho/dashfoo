@@ -166,7 +166,7 @@ export { App };
 Using a factory instead of the registry, the demo's Overview page is one line:
 
 ```tsx
-<DashfooLayout defaultModel={tradingModel()} factory={renderPanel} />
+<DashfooLayout defaultModel={overviewModel()} factory={renderPanel} />
 ```
 
 The props you'll reach for first:
@@ -206,7 +206,7 @@ pnpm add @dashfoo/theme
 ```
 
 ```ts
-import "@dashfoo/theme/dashfoo.css"; // dark grayscale; opt into light with <html data-dashfoo-theme="light">
+import "@dashfoo/theme/dashfoo.css"; // neutral grayscale, light by default; opt into dark with <html data-dashfoo-theme="dark">
 ```
 
 That styles the whole chrome. Remap `--dashfoo-*` tokens to make it yours (see

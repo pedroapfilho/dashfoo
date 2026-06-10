@@ -9,7 +9,7 @@ React state without losing anything.
 
 This guide walks the shape of that tree, the three node types and their per-node
 `enable*` flags, how `normalize()` keeps the tree canonical after every action,
-and the serialization helpers (`toJSON` / `fromJSON` / `migrate`) that move a
+and the serialization helpers (`toJSON` / `fromJSON`) that move a
 model in and out of storage.
 
 Every type and schema referenced here is exported from `@dashfoo/core` and
@@ -59,7 +59,7 @@ type Dashfoo = {
   global: GlobalAttributes;
   layout: RowNode;
   maximizedTabsetId?: string;
-  version: number;
+  version: 1;
 };
 ```
 
@@ -67,7 +67,7 @@ type Dashfoo = {
 | ------------------- | ------------------ | ----------------------------------------------------------- |
 | `layout`            | `RowNode`          | The tiled center area. Always a row at the root.            |
 | `global`            | `GlobalAttributes` | Defaults that apply tree-wide unless a node overrides them. |
-| `version`           | `number`           | Schema version of this payload. The current version is `1`. |
+| `version`           | `1`                | The payload format version, pinned by the schema itself.    |
 | `activeTabsetId`    | `string?`          | Id of the tabset that currently has focus.                  |
 | `maximizedTabsetId` | `string?`          | Id of the tabset rendered full-area, hiding its siblings.   |
 
@@ -200,25 +200,25 @@ grid). `enableSplitDock` toggles whether drops can split a tabset at all.
 
 ## A real model
 
-Here is the demo's trading layout (`apps/demo-vite/src/models.ts`), trimmed to
-show structure. A wide chart tabset on the left, weighted `2`, sits beside a
-right-hand column (a nested row with `orientation: "column"`) holding the order
-book above positions, each weighted `1`.
+Here is the demo's overview layout (`apps/demo-vite/src/models.ts`), trimmed to
+show structure. A wide main tabset on the left, weighted `2`, sits beside a
+right-hand column (a nested row with `orientation: "column"`) holding two
+stacked tabsets, each weighted `1`.
 
 ```ts
 import type { Dashfoo } from "@dashfoo/core";
 
-const tradingModel: Dashfoo = {
-  activeTabsetId: "ts-chart",
+const overviewModel: Dashfoo = {
+  activeTabsetId: "ts-main",
   global: {},
   layout: {
     children: [
       {
         children: [
-          { component: "chart", id: "chart", name: "Chart", type: "tab" },
-          { component: "depth", id: "depth", name: "Depth", type: "tab" },
+          { component: "canvas", id: "canvas", name: "Canvas", type: "tab" },
+          { component: "detail", id: "detail", name: "Detail", type: "tab" },
         ],
-        id: "ts-chart",
+        id: "ts-main",
         selected: 0,
         type: "tabset",
         weight: 2,
@@ -227,21 +227,21 @@ const tradingModel: Dashfoo = {
         children: [
           {
             children: [
-              { component: "book", id: "book", name: "Order Book", type: "tab" },
-              { component: "trades", id: "trades", name: "Trades", type: "tab" },
+              { component: "activity", id: "activity", name: "Activity", type: "tab" },
+              { component: "tasks", id: "tasks", name: "Tasks", type: "tab" },
             ],
-            id: "ts-book",
+            id: "ts-side-top",
             selected: 0,
             type: "tabset",
             weight: 1,
           },
           {
             children: [
-              { component: "positions", id: "positions", name: "Positions", type: "tab" },
-              { component: "orders", id: "orders", name: "Orders", type: "tab" },
-              { component: "balances", id: "balances", name: "Balances", type: "tab" },
+              { component: "metrics", id: "metrics", name: "Metrics", type: "tab" },
+              { component: "history", id: "history", name: "History", type: "tab" },
+              { component: "reports", id: "reports", name: "Reports", type: "tab" },
             ],
-            id: "ts-positions",
+            id: "ts-side-bottom",
             selected: 0,
             type: "tabset",
             weight: 1,
@@ -305,7 +305,7 @@ different pane than the one the user chose.
 Because normalize is idempotent, applying it twice gives the same result as
 applying it once. That property is what lets the reducer call it unconditionally.
 
-## Serialization: `toJSON`, `fromJSON`, `migrate`
+## Serialization: `toJSON`, `fromJSON`
 
 The helpers in `packages/core/src/serialize.ts` move a model across a storage
 boundary safely.
@@ -318,53 +318,33 @@ const restored = fromJSON(json); // string -> validated, normalized Dashfoo
 ```
 
 `toJSON` is a thin `JSON.stringify`. The work is on the way back in. `fromJSON`
-parses the string, runs `migrate`, validates against `dashfooSchema`, and
-returns a normalized model — so anything you load from `localStorage`, a URL, or
-a server is guaranteed to be a canonical `Dashfoo` or to throw. There is no path
-where a half-valid tree reaches your renderer.
+parses the string, validates against `dashfooSchema`, and returns a normalized
+model — so anything you load from `localStorage`, a URL, or a server is
+guaranteed to be a canonical `Dashfoo` or to throw. There is no path where a
+half-valid tree reaches your renderer.
 
 Under the hood `fromJSON` is `parseModel(JSON.parse(json))`, and `parseModel`
-composes the three steps:
+composes the two steps:
 
 ```ts
-const parseModel = (value: unknown): Dashfoo => normalize(dashfooSchema.parse(migrate(value)));
+const parseModel = (value: unknown): Dashfoo => normalize(dashfooSchema.parse(value));
 ```
 
-`migrate` upgrades an older persisted payload to the current schema version
-before validation. Today only version `1` exists, so it does one thing: backfill
-a missing or older `version` field up to `CURRENT_VERSION`. The structure matters
-more than the current behavior — each future schema bump adds one migration step
-here, so `fromJSON` stays forward-compatible with payloads written by older
-builds of your app. A value already at or above the current version passes
-through untouched.
+The payload's `version` field is pinned to `1` by the schema (`z.literal(1)`),
+so the format itself is versioned without any migration machinery: a payload
+written in a different format fails validation instead of loading lossily. A
+future format change bumps the literal.
 
-```ts
-const CURRENT_VERSION = 1;
-
-const migrate = (value: unknown): unknown => {
-  if (typeof value !== "object" || value === null) {
-    return value;
-  }
-  if ("version" in value && typeof value.version === "number" && value.version >= CURRENT_VERSION) {
-    return value;
-  }
-  return { ...value, version: CURRENT_VERSION };
-};
-```
-
-Order is deliberate: migrate first (so the payload matches the current schema),
-validate second (so a malformed payload is rejected with a zod error), normalize
-last (so the result is canonical). Skip migrate and an old payload fails
-validation on a field that changed. Skip normalize and you might hand your
-renderer a tree with a stale `selected` index.
+Order is deliberate: validate first (so a malformed payload is rejected with a
+zod error), normalize second (so the result is canonical). Skip normalize and
+you might hand your renderer a tree with a stale `selected` index.
 
 ## See also
 
 - `packages/core/src/schema.ts` — the zod schemas and exported types for every
   node and for `Dashfoo` itself.
 - `packages/core/src/invariants.ts` — the full `normalize()` implementation.
-- `packages/core/src/serialize.ts` — `toJSON`, `fromJSON`, `migrate`, `parseModel`,
-  `CURRENT_VERSION`.
-- `apps/demo-vite/src/models.ts` — the four demo models (`tradingModel`,
+- `packages/core/src/serialize.ts` — `toJSON`, `fromJSON`, `parseModel`.
+- `apps/demo-vite/src/models.ts` — the four demo models (`overviewModel`,
   `dockingModel`, `chromeModel`, `playgroundModel`) as real
   literals you can copy from.

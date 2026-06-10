@@ -119,8 +119,8 @@ requirements.
   worse.
 - **persist would mean a second store.** zustand's `persist` middleware serializes
   one store's state to storage. Our document already has a serialization contract
-  (`serialize.ts`, below) that does schema validation and versioned migration —
-  things `persist` doesn't do. Wiring `persist` in would create a second persistence
+  (`serialize.ts`, below) that does schema validation against a version-pinned
+  payload — things `persist` doesn't do. Wiring `persist` in would create a second persistence
   path with different guarantees, and the history wrapper around the model doesn't
   serialize cleanly anyway (you persist the `present`, not the past/future stacks).
 - **Two libraries for one concern.** Using zustand for the document and XState for
@@ -134,26 +134,26 @@ requirements.
 XState v5 offers `actor.getPersistedSnapshot()` for snapshotting an actor. We don't
 use it for layout persistence, and the reason is the same as the zustand `persist`
 rejection: a persisted actor snapshot includes the full undo/redo history and machine
-bookkeeping, and it carries no schema validation or migration.
+bookkeeping, and it carries no schema validation.
 
 Instead, `packages/react/src/persistence.ts` persists the **model**, through the
 serialization contract in `packages/core/src/serialize.ts`:
 
-| Concern    | Function   | What it does                                             |
-| ---------- | ---------- | -------------------------------------------------------- |
-| Save       | `toJSON`   | `JSON.stringify` of the live `Dashfoo` model             |
-| Load       | `fromJSON` | parse → `migrate` → `dashfooSchema.parse` → `normalize`  |
-| Versioning | `migrate`  | stamps `CURRENT_VERSION` (1) and upgrades older payloads |
+| Concern    | Function        | What it does                                           |
+| ---------- | --------------- | ------------------------------------------------------ |
+| Save       | `toJSON`        | `JSON.stringify` of the live `Dashfoo` model           |
+| Load       | `fromJSON`      | parse → `dashfooSchema.parse` → `normalize`            |
+| Versioning | `dashfooSchema` | pins the payload `version` to the format literal (`1`) |
 
 Persistence (the `persist` prop, built on `usePersistence`) loads the saved model
-once (validated and migrated via `fromJSON`, falling back to `defaultModel` on a
+once (validated via `fromJSON`, falling back to `defaultModel` on a
 miss or on corruption), debounce-saves every change with `toJSON`, and prunes a
 corrupt stored value on mount. The `StorageAdapter` shape
 (`getItem`/`setItem`/`removeItem`) means it persists to `localStorage`,
 `sessionStorage`, an in-memory map, or a custom backend.
 
 So persistence operates on the canonical `Dashfoo` model, not on actor internals.
-That keeps the on-disk format a documented, validated, migratable schema — independent
+That keeps the on-disk format a documented, validated, versioned schema — independent
 of whatever XState's snapshot format happens to be in v5 — and the same `fromJSON`
 boundary that loads from storage also guards a host-supplied model.
 
@@ -178,5 +178,5 @@ boundary that loads from storage also guards a host-supplied model.
    in history. The `COMMIT` emit between two machines is the clean seam.
 3. **XState `getPersistedSnapshot` / `createActor(machine, { snapshot })` for
    persistence.** Rejected. Persists history and machine bookkeeping, skips schema
-   validation and migration, and couples the storage format to XState's snapshot
+   validation, and couples the storage format to XState's snapshot
    shape.

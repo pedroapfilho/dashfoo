@@ -6,8 +6,8 @@ produces a new `Dashfoo` value. Persisting the layout means saving that
 value somewhere on every change and loading it back on the next visit.
 
 The easiest way is the **`persist` prop**: pass a localStorage key and
-`DashfooLayout` wires up the whole loop — load once, validate and migrate the
-stored payload, debounce-save every change, and flush on unmount. A `ref` exposes
+`DashfooLayout` wires up the whole loop — load once, validate the stored
+payload, debounce-save every change, and flush on unmount. A `ref` exposes
 `resetLayout()` to clear the saved copy and return to the default.
 
 ```tsx
@@ -94,7 +94,7 @@ Keep the adapter instance stable across renders (a module constant or a
 `useMemo`/`useState` initializer), or each render hands persistence a brand-new
 empty store and nothing persists.
 
-## Validation and migration on load
+## Validation on load
 
 Persistence never trusts what comes out of storage. Loading runs the raw string
 through `fromJSON` from `@dashfoo/core`, which is the full untrusted-input
@@ -103,18 +103,16 @@ pipeline in `serialize.ts`:
 ```ts
 const fromJSON = (json: string): Dashfoo => parseModel(JSON.parse(json));
 
-const parseModel = (value: unknown): Dashfoo => normalize(dashfooSchema.parse(migrate(value)));
+const parseModel = (value: unknown): Dashfoo => normalize(dashfooSchema.parse(value));
 ```
 
-Three things happen in order:
+Two things happen in order:
 
-1. **`migrate`** upgrades an older payload to the current schema version.
-   `CURRENT_VERSION` is `1` today, so migration just backfills a missing
-   `version` field. Each future schema bump adds one step here, which keeps
-   old saved layouts loadable instead of throwing on a version mismatch.
-2. **`dashfooSchema.parse`** validates against the zod schema. A hand-edited,
-   truncated, or corrupt payload fails here and throws.
-3. **`normalize`** returns a canonical model (the same normalization the
+1. **`dashfooSchema.parse`** validates against the zod schema. A hand-edited,
+   truncated, or corrupt payload fails here and throws. The schema pins the
+   payload's `version` to `1`, so a payload in any other format is rejected
+   rather than loaded lossily.
+2. **`normalize`** returns a canonical model (the same normalization the
    engine applies internally), so a valid-but-noncanonical payload loads as
    the engine would store it.
 
@@ -165,7 +163,7 @@ const PersistencePage = () => {
   return (
     <DemoStage
       actions={<Button onClick={() => layout.current?.resetLayout()}>Clear saved layout</Button>}
-      description="Saved to localStorage on every change (validated and version-migrated). Rearrange it, then reload — your arrangement survives."
+      description="Saved to localStorage on every change (validated on load). Rearrange it, then reload — your arrangement survives."
       title="Persistence"
     >
       <DashfooLayout
@@ -206,6 +204,6 @@ wiring.
 - [`packages/react/src/persistence.ts`](../../packages/react/src/persistence.ts)
   — the hook, both adapters, and the `StorageAdapter` type.
 - [`packages/core/src/serialize.ts`](../../packages/core/src/serialize.ts)
-  — `fromJSON` / `toJSON`, `migrate`, `parseModel`, and `CURRENT_VERSION`.
+  — `fromJSON` / `toJSON` and `parseModel`.
 - [`apps/demo-vite/src/pages/persistence.tsx`](../../apps/demo-vite/src/pages/persistence.tsx)
   — the end-to-end worked example.
