@@ -1,6 +1,6 @@
 {
   "name": "@dashfoo/theme",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Opt-in default skin for the @dashfoo/react headless chrome. Framework-agnostic plain CSS over overridable --dashfoo-* design tokens.",
   "license": "MIT",
   "author": "Pedro Filho <pedro@filho.me>",
