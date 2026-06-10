@@ -6,7 +6,8 @@ import { Fragment, useRef } from "react";
 import type { Layout, Orientation } from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
-import { useDashfooContext } from "./context";
+import { useDashfooContext } from "../hooks/context";
+
 import { TabsetView } from "./tabset-view";
 
 // This module is the resize adapter: the only place that imports

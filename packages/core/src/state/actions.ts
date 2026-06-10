@@ -5,7 +5,7 @@ import {
   orientationSchema,
   tabNodeSchema,
   tabsetNodeSchema,
-} from "./schema";
+} from "../model/schema";
 
 const mutableTabAttrsSchema = tabNodeSchema
   .pick({

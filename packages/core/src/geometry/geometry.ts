@@ -1,5 +1,5 @@
-import type { DockLocation } from "./actions";
-import type { Edge } from "./schema";
+import type { Edge } from "../model/schema";
+import type { DockLocation } from "../state/actions";
 
 type Point = { x: number; y: number };
 type Rect = { height: number; width: number; x: number; y: number };

@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
+import { overflowingIds } from "../hooks/use-tab-overflow";
+
 import { TabOverflowMenu } from "./tab-overflow";
-import { overflowingIds } from "./use-tab-overflow";
 
 const makeTablist = (tabs: Array<[string, number]>, rightEdge: number): HTMLElement => {
   const tablist = document.createElement("div");

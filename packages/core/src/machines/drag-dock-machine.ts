@@ -1,6 +1,6 @@
 import { assign, emit, setup } from "xstate";
 
-import type { Action, DropIntent } from "../actions";
+import type { Action, DropIntent } from "../state/actions";
 
 type DragSubject = { id: string; kind: "tab" | "tabset" };
 

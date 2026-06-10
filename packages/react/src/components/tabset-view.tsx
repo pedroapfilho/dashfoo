@@ -4,14 +4,15 @@ import type { TabNode, TabsetNode } from "@dashfoo/core";
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef } from "react";
 
-import { useDashfooContext } from "./context";
+import { useDashfooContext } from "../hooks/context";
+import { useTabOverflow } from "../hooks/use-tab-overflow";
+import { panelDomId, tabDomId } from "../lib/tab-ids";
+import { fallbackSelectedIndex } from "../lib/tab-selection";
+
 import { useDragSubject, useTabsetDraggable, useTabsetDroppable } from "./drag-adapter";
 import { TabButton } from "./tab-button";
-import { panelDomId, tabDomId } from "./tab-ids";
 import { TabOverflowMenu } from "./tab-overflow";
-import { fallbackSelectedIndex } from "./tab-selection";
 import { GripIcon, MaximizeIcon } from "./tabset-icons";
-import { useTabOverflow } from "./use-tab-overflow";
 
 // height/width 100% (not flex:1) so the tabset fills its parent whether that
 // parent is a flex item or a plain block — rrp wraps panel content in a block

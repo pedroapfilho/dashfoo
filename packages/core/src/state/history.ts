@@ -1,6 +1,7 @@
+import type { Dashfoo } from "../model/schema";
+
 import type { Action } from "./actions";
 import { reducer } from "./reducer";
-import type { Dashfoo } from "./schema";
 
 // past/present/future snapshots. Each committed action is its own undo step:
 // rrp v4's onLayoutChanged fires one adjustSplit per release, so there is no

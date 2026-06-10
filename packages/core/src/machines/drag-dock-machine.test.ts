@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { createActor } from "xstate";
 
-import type { Action } from "../actions";
+import type { Action } from "../state/actions";
 
 import { dragDockMachine } from "./drag-dock-machine";
 

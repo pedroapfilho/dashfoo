@@ -4,9 +4,10 @@ import type { TabNode } from "@dashfoo/core";
 import type { FocusEvent, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 
-import { useDashfooContext } from "./context";
+import { useDashfooContext } from "../hooks/context";
+import { panelDomId, tabDomId } from "../lib/tab-ids";
+
 import { useDragSubject, useTabDraggable } from "./drag-adapter";
-import { panelDomId, tabDomId } from "./tab-ids";
 import { CloseIcon } from "./tabset-icons";
 
 // Inline rename editor. Enter/Escape set `done` so the unmount blur does not

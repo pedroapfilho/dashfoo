@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { fallbackSelectedIndex } from "./tab-selection";
+import { fallbackSelectedIndex } from "../lib/tab-selection";
 
 describe("fallbackSelectedIndex", () => {
   test("removing the first tab falls forward to the next", () => {

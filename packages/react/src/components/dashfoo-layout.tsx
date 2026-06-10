@@ -5,12 +5,13 @@ import { findTabset } from "@dashfoo/core";
 import type { ComponentType, CSSProperties, ReactNode } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useMemo } from "react";
 
-import { DashfooContext } from "./context";
+import { DashfooContext } from "../hooks/context";
+import type { PersistConfig, StorageAdapter } from "../hooks/persistence";
+import { localStorageAdapter, usePersistence } from "../hooks/persistence";
+import { useDashfooStore } from "../hooks/store";
+
 import { DragProvider } from "./drag-adapter";
-import type { PersistConfig, StorageAdapter } from "./persistence";
-import { localStorageAdapter, usePersistence } from "./persistence";
 import { RowView } from "./row-view";
-import { useDashfooStore } from "./store";
 import { TabsetView } from "./tabset-view";
 
 const DEFAULT_PERSIST_DEBOUNCE_MS = 300;

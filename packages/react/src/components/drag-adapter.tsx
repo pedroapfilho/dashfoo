@@ -9,7 +9,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useInsertionEffect, useMemo, useRef, useState } from "react";
 import type { ActorRefFrom } from "xstate";
 
-import type { DragContextValue } from "./drag-hooks";
+import type { DragContextValue } from "../hooks/drag-hooks";
 import {
   DragContext,
   DragSubjectContext,
@@ -17,9 +17,14 @@ import {
   useTabDraggable,
   useTabsetDraggable,
   useTabsetDroppable,
-} from "./drag-hooks";
-import type { Zone } from "./tab-insertion";
-import { insertionIndex, insertionLineRect, pointInRect, shouldAllowDrop } from "./tab-insertion";
+} from "../hooks/drag-hooks";
+import type { Zone } from "../lib/tab-insertion";
+import {
+  insertionIndex,
+  insertionLineRect,
+  pointInRect,
+  shouldAllowDrop,
+} from "../lib/tab-insertion";
 
 // This module is the drag adapter: it (with ./drag-hooks) is where @dnd-kit is
 // touched. It wires the framework-agnostic @dnd-kit/dom core (no React bindings)

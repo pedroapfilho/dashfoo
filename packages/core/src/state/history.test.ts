@@ -1,7 +1,8 @@
 import { describe, expect, test } from "vitest";
 
+import type { Dashfoo, TabNode } from "../model/schema";
+
 import { canRedo, canUndo, createHistory, dispatch, redo, undo } from "./history";
-import type { Dashfoo, TabNode } from "./schema";
 
 const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab" });
 

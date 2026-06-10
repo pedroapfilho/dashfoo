@@ -1,8 +1,9 @@
+import { createNodeId } from "../model/ids";
+import { normalize } from "../model/invariants";
+import type { Dashfoo, RowNode, TabNode, TabsetNode } from "../model/schema";
+import { findAttributedNode, findRow, findTab, findTabset, findTabsetParent } from "../model/tree";
+
 import type { Action, DockLocation } from "./actions";
-import { createNodeId } from "./ids";
-import { normalize } from "./invariants";
-import type { Dashfoo, RowNode, TabNode, TabsetNode } from "./schema";
-import { findAttributedNode, findRow, findTab, findTabset, findTabsetParent } from "./tree";
 
 const assertNever = (value: never): never => {
   throw new Error(`Unhandled action: ${JSON.stringify(value)}`);

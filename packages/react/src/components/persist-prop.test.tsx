@@ -3,9 +3,10 @@ import { act, render, screen } from "@testing-library/react";
 import { createRef } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { memoryStorageAdapter } from "../hooks/persistence";
+
 import type { DashfooHandle } from "./dashfoo-layout";
 import { DashfooLayout } from "./dashfoo-layout";
-import { memoryStorageAdapter } from "./persistence";
 
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",

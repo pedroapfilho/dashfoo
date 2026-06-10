@@ -1,7 +1,8 @@
 import { describe, expect, test } from "vitest";
 
+import type { Dashfoo, TabNode, TabsetNode } from "../model/schema";
+
 import { reducer } from "./reducer";
-import type { Dashfoo, TabNode, TabsetNode } from "./schema";
 
 const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab" });
 
