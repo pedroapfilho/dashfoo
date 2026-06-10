@@ -76,4 +76,3 @@ const usePositions = () => usePolledData("positions", buildPositions, 2000);
 const useChartSeries = () => usePolledData("chart", buildChart, 1800);
 
 export { useChartSeries, useOrderBook, usePositions, useTrades };
-export type { Position, PriceRow, Trade };

@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "turbo run start",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "oxfmt",
@@ -15,10 +16,16 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo run build && changeset publish",
+    "fallow": "fallow",
+    "fallow:dead": "fallow dead-code",
+    "fallow:dupes": "fallow dupes",
+    "fallow:health": "fallow health --score",
+    "fallow:audit": "fallow audit --base main",
     "prepare": "husky"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
+    "fallow": "^2.85.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.7",
     "oxfmt": "^0.52.0",

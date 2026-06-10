@@ -29,5 +29,4 @@ const renderPanel = (tab: TabNode): ReactNode => {
   return <Panel node={tab} />;
 };
 
-export { renderPanel, resolvePanel };
-export type { PanelProps };
+export { renderPanel };

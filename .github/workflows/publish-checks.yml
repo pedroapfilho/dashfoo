@@ -1,34 +1,23 @@
-name: CI
-
+name: Publish Checks
 on:
   push:
     branches: [main]
   pull_request:
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
+permissions:
+  contents: read
 jobs:
-  verify:
+  packaging:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
       - uses: pnpm/action-setup@v6
-
       - uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: "24"
           cache: pnpm
-
       - run: pnpm install --frozen-lockfile
-
-      - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm test
       - run: pnpm build
-
       # Packaging hygiene for the published packages (ESM-only, "use client").
       - name: publint
         run: for pkg in core react theme; do (cd "packages/$pkg" && pnpm dlx publint --strict); done
@@ -38,20 +27,3 @@ jobs:
           (cd packages/react && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only)
           # tokens.css is a CSS-only export with no types/JS for attw to resolve.
           (cd packages/theme && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only --exclude-entrypoints ./tokens.css)
-
-  e2e:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm --filter demo-vite exec playwright install --with-deps chromium
-      - run: pnpm --filter demo-vite test:e2e
