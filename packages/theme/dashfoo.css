@@ -311,9 +311,15 @@
   width: var(--dashfoo-splitter-size);
   cursor: col-resize;
 }
+[data-separator][data-collapsed-adjacent][aria-orientation="vertical"] {
+  width: 0.25rem;
+}
 [data-separator][aria-orientation="horizontal"] {
   height: var(--dashfoo-splitter-size);
   cursor: row-resize;
+}
+[data-separator][data-collapsed-adjacent][aria-orientation="horizontal"] {
+  height: 0.25rem;
 }
 [data-separator]::before {
   content: "";

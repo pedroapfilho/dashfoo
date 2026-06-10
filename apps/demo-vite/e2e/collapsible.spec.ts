@@ -17,6 +17,14 @@ const panelWidth = async (panel: Locator): Promise<number> => {
   return box.width;
 };
 
+const locatorWidth = async (locator: Locator): Promise<number> => {
+  const box = await locator.boundingBox();
+  if (!box) {
+    throw new Error("locator has no bounding box");
+  }
+  return box.width;
+};
+
 const dragSplitterTo = async (page: Page, x: number): Promise<void> => {
   const box = await splitter(page).boundingBox();
   if (!box) {
@@ -53,6 +61,9 @@ test("dragging below the midpoint collapses the sidebar to its rail", async ({ p
   await collapseSidebar(page);
 
   await expect.poll(() => panelWidth(sidePanel(page))).toBeLessThanOrEqual(39);
+  await expect
+    .poll(async () => (await panelWidth(sidePanel(page))) + (await locatorWidth(splitter(page))))
+    .toBeLessThanOrEqual(43);
   await expect(splitter(page)).toBeVisible();
 });
 

@@ -170,6 +170,10 @@ const RowView = ({ node }: { node: RowNode }): ReactNode => {
       style={groupStyle}
     >
       {node.children.map((child, index) => {
+        const previousChild = node.children[index - 1];
+        const collapsedAdjacent =
+          (previousChild?.type === "tabset" && previousChild.collapsed === true) ||
+          (child.type === "tabset" && child.collapsed === true);
         const percent = ((child.weight ?? 1) / total) * 100;
         let min = child.min ? dimensionToSize(child.min) : undefined;
         if (min === undefined && child.type === "tabset" && tabsetMinSize !== undefined) {
@@ -181,6 +185,7 @@ const RowView = ({ node }: { node: RowNode }): ReactNode => {
           <Fragment key={child.id}>
             {index > 0 ? (
               <Separator
+                data-collapsed-adjacent={collapsedAdjacent || undefined}
                 data-dashfoo="splitter"
                 disableDoubleClick
                 elementRef={(element) => {
