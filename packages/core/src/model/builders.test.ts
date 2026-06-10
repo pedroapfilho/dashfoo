@@ -58,16 +58,10 @@ describe("tabset", () => {
 
   test("converts numeric tabset dimensions to px and preserves dimension objects", () => {
     const node = tabset([tab("chart", "Chart")], {
-      collapsed: true,
-      collapsedSize: 35,
-      collapsible: true,
       max: { unit: "%", value: 80 },
       min: 100,
     });
 
-    expect(node.collapsed).toBe(true);
-    expect(node.collapsedSize).toEqual({ unit: "px", value: 35 });
-    expect(node.collapsible).toBe(true);
     expect(node.max).toEqual({ unit: "%", value: 80 });
     expect(node.min).toEqual({ unit: "px", value: 100 });
   });

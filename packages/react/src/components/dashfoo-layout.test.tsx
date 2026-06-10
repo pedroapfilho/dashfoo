@@ -58,17 +58,6 @@ const model = (): Dashfoo => ({
   version: 1,
 });
 
-const collapsedModel = (): Dashfoo => {
-  const next = model();
-  const first = next.layout.children[0];
-  if (first?.type === "tabset") {
-    first.collapsed = true;
-    first.collapsedSize = { unit: "px", value: 35 };
-    first.collapsible = true;
-  }
-  return next;
-};
-
 const components = {
   book: () => <div>BOOK</div>,
   chart: () => <div>CHART</div>,
@@ -107,22 +96,6 @@ describe("DashfooLayout", () => {
     const { container } = render(<DashfooLayout components={components} defaultModel={model()} />);
 
     expect(container.querySelectorAll("[data-panel]").length).toBeGreaterThanOrEqual(2);
-    expect(container.querySelector('[data-dashfoo="splitter"]')).toBeInTheDocument();
-  });
-
-  test("marks collapsed tabsets", () => {
-    const { container } = render(
-      <DashfooLayout components={components} defaultModel={collapsedModel()} />,
-    );
-
-    expect(container.querySelector('[data-dashfoo="tabset"][data-collapsed]')).toBeInTheDocument();
-  });
-
-  test("keeps a separator rendered beside a collapsed child", () => {
-    const { container } = render(
-      <DashfooLayout components={components} defaultModel={collapsedModel()} />,
-    );
-
     expect(container.querySelector('[data-dashfoo="splitter"]')).toBeInTheDocument();
   });
 

@@ -10,6 +10,14 @@ const GITHUB_URL = "https://github.com/pedroapfilho/dashfoo";
  */
 export const baseOptions = (): BaseLayoutProps => ({
   githubUrl: GITHUB_URL,
+  links: [
+    {
+      external: true,
+      text: "Demo",
+      type: "button",
+      url: "https://demo.dashfoo.com",
+    },
+  ],
   nav: {
     title: (
       <picture>

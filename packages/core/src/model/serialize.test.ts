@@ -22,13 +22,11 @@ describe("serialize", () => {
     expect(fromJSON(toJSON(model()))).toEqual(model());
   });
 
-  test("round-trips collapsible fields", () => {
+  test("round-trips sizing fields", () => {
     const input = model();
     const first = input.layout.children[0];
     if (first?.type === "tabset") {
-      first.collapsed = true;
-      first.collapsedSize = { unit: "px", value: 35 };
-      first.collapsible = true;
+      first.min = { unit: "px", value: 160 };
     }
     input.layout.children.push({
       children: [tab("t3")],

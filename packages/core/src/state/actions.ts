@@ -20,9 +20,6 @@ const mutableTabAttrsSchema = tabNodeSchema
 
 const mutableTabsetAttrsSchema = tabsetNodeSchema
   .pick({
-    collapsed: true,
-    collapsedSize: true,
-    collapsible: true,
     enableClose: true,
     enableMaximize: true,
     max: true,
@@ -87,7 +84,6 @@ const actionSchema = z.discriminatedUnion("type", [
   z.object({ tabId: z.string(), type: z.literal("deleteTab") }),
   z.object({ tabsetId: z.string(), type: z.literal("deleteTabset") }),
   z.object({
-    collapsedIds: z.array(z.string()).optional(),
     rowId: z.string(),
     type: z.literal("adjustSplit"),
     weights: z.array(z.number()),

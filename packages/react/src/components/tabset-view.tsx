@@ -269,7 +269,6 @@ const TabsetView = ({ node }: { node: TabsetNode }): ReactNode => {
 
   return (
     <div
-      data-collapsed={node.collapsed || undefined}
       data-dashfoo="tabset"
       data-dragging-source={isDragSource || undefined}
       data-tab-location={tabLocation}

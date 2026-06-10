@@ -19,13 +19,12 @@ const clampSelected = (length: number, selected: number): number => {
 
 const normalizeTabset = (tabset: TabsetNode): TabsetNode => ({
   ...tabset,
-  collapsed: tabset.collapsible === true ? tabset.collapsed : undefined,
   selected: clampSelected(tabset.children.length, tabset.selected),
 });
 
-// Drop empty tabsets and empty rows, recurse into child rows, and collapse a
-// single-child row by lifting its lone child (which inherits the collapsed
-// row's weight so sizing is preserved).
+// Drop empty tabsets and empty rows, recurse into child rows, and simplify a
+// single-child row by lifting its lone child (which inherits the lifted row's
+// weight so sizing is preserved).
 const normalizeRowChildren = (children: RowNode["children"]): RowNode["children"] => {
   const out: RowNode["children"] = [];
 
@@ -66,10 +65,6 @@ const normalizeLayout = (root: RowNode): RowNode => {
     children = inner.children;
     orientation = inner.orientation;
     inner = children[0];
-  }
-
-  if (children.length === 1 && children[0]?.type === "tabset") {
-    children = [{ ...children[0], collapsed: undefined }];
   }
 
   return { ...root, children, orientation };

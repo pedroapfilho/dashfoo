@@ -15,6 +15,7 @@ import { RowView } from "./row-view";
 import { TabsetView } from "./tabset-view";
 
 const DEFAULT_PERSIST_DEBOUNCE_MS = 300;
+const DEFAULT_TABSET_MIN_SIZE = 120;
 
 // `persist` accepts a bare localStorage key or a full target (custom storage,
 // debounce). Controlled mode (a `model` prop, no `defaultModel`) skips it —
@@ -193,7 +194,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
   const effectiveRenamable = renamableTabs && global.tabEnableRename !== false;
   const effectiveMaximizable = maximizable && global.tabSetEnableMaximize !== false;
   const tabLocation = global.tabLocation ?? "top";
-  const tabsetMinSize = global.tabSetMinSize;
+  const tabsetMinSize = global.tabSetMinSize ?? DEFAULT_TABSET_MIN_SIZE;
   const tabStripEnabled = global.tabSetEnableTabStrip !== false;
 
   const contextValue = useMemo(

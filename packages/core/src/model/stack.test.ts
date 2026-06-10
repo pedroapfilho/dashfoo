@@ -54,18 +54,4 @@ describe("stackModel", () => {
   test("orientation row stacks horizontally", () => {
     expect(stackModel(nested(), "row").layout.orientation).toBe("row");
   });
-
-  test("clears collapsed state while stacking", () => {
-    const input = nested();
-    const first = input.layout.children[0];
-    if (first?.type === "tabset") {
-      first.collapsed = true;
-      first.collapsible = true;
-    }
-
-    const out = stackModel(input);
-
-    expect(out.layout.children[0]?.type).toBe("tabset");
-    expect(out.layout.children[0]?.collapsed).toBeUndefined();
-  });
 });

@@ -37,9 +37,6 @@ const tabNodeSchema = z.object({
 
 const tabsetNodeSchema = z.object({
   children: z.array(tabNodeSchema),
-  collapsed: z.boolean().optional(),
-  collapsedSize: dimensionSchema.optional(),
-  collapsible: z.boolean().optional(),
   enableClose: z.boolean().optional(),
   enableMaximize: z.boolean().optional(),
   id: z.string(),

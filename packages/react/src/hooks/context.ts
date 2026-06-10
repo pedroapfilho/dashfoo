@@ -16,7 +16,7 @@ type DashfooContextValue = {
   renderTabLabel?: (tab: TabNode) => ReactNode;
   renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
   tabLocation: "bottom" | "top";
-  tabsetMinSize?: number;
+  tabsetMinSize: number;
   tabStripEnabled: boolean;
 };
 

@@ -260,7 +260,7 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
       }
       const intent = intentForTabset(targetId, element, point, draggedId);
       // When splitting is disabled, a drop over the body stacks instead of splits.
-      if ((!splitDock || element.dataset.collapsed) && intent.location.startsWith("split-")) {
+      if (!splitDock && intent.location.startsWith("split-")) {
         return { location: "center", targetId };
       }
       return intent;

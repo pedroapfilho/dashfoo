@@ -86,15 +86,13 @@ const playgroundModel = (): Dashfoo =>
     { activeTabsetId: "left" },
   );
 
-const collapsibleModel = (): Dashfoo =>
+const sizingModel = (): Dashfoo =>
   model(
     row(
       [
         tabset([tab("navigator", "Navigator"), tab("alerts", "Alerts")], {
-          collapsedSize: 35,
-          collapsible: true,
           id: "side",
-          min: 100,
+          min: 180,
           weight: 1,
         }),
         tabset([tab("canvas", "Canvas"), tab("detail", "Detail"), tab("metrics", "Metrics")], {
@@ -104,7 +102,7 @@ const collapsibleModel = (): Dashfoo =>
       ],
       { id: "root" },
     ),
-    { activeTabsetId: "side", global: { tabSetMinSize: 120 } },
+    { activeTabsetId: "side" },
   );
 
-export { chromeModel, collapsibleModel, dockingModel, overviewModel, playgroundModel };
+export { chromeModel, dockingModel, overviewModel, playgroundModel, sizingModel };

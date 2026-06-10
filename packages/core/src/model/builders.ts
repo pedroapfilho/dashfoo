@@ -40,9 +40,6 @@ const tab = (component: string, name: string, options: TabOptions = {}): TabNode
 });
 
 type TabsetOptions = {
-  collapsed?: boolean;
-  collapsedSize?: number | Dimension;
-  collapsible?: boolean;
   enableClose?: boolean;
   enableMaximize?: boolean;
   id?: string;
@@ -54,12 +51,11 @@ type TabsetOptions = {
 };
 
 const tabset = (children: Array<TabNode>, options: TabsetOptions = {}): TabsetNode => {
-  const { collapsedSize, max, min, ...rest } = options;
+  const { max, min, ...rest } = options;
   return {
     children,
     type: "tabset",
     ...rest,
-    ...(collapsedSize === undefined ? {} : { collapsedSize: toDimension(collapsedSize) }),
     ...(max === undefined ? {} : { max: toDimension(max) }),
     ...(min === undefined ? {} : { min: toDimension(min) }),
     id: options.id ?? createNodeId("tabset"),

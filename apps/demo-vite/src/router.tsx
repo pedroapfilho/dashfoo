@@ -26,10 +26,10 @@ const chromeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/chrome",
 });
-const collapsibleRoute = createRoute({
-  component: lazyRouteComponent(() => import("./pages/collapsible"), "CollapsiblePage"),
+const sizingRoute = createRoute({
+  component: lazyRouteComponent(() => import("./pages/sizing"), "SizingPage"),
   getParentRoute: () => rootRoute,
-  path: "/collapsible",
+  path: "/sizing",
 });
 const persistenceRoute = createRoute({
   component: lazyRouteComponent(() => import("./pages/persistence"), "PersistencePage"),
@@ -51,7 +51,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   dockingRoute,
   chromeRoute,
-  collapsibleRoute,
+  sizingRoute,
   persistenceRoute,
   controlledRoute,
   responsiveRoute,

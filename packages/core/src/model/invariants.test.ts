@@ -43,7 +43,7 @@ describe("normalize", () => {
     expect(result.layout.children.map((c) => c.id)).toEqual(["ts1"]);
   });
 
-  test("collapses a single-child row, lifting the child and inheriting the row's weight", () => {
+  test("simplifies a single-child row, lifting the child and inheriting the row's weight", () => {
     const result = normalize(
       model(
         row("root", [
@@ -117,20 +117,6 @@ describe("normalize", () => {
     );
 
     expect(result.maximizedTabsetId).toBe("ts1");
-  });
-
-  test("drops collapsed from a non-collapsible tabset", () => {
-    const result = normalize(model(row("root", [tabset("ts1", [tab("t1")], { collapsed: true })])));
-
-    expect((result.layout.children[0] as TabsetNode).collapsed).toBeUndefined();
-  });
-
-  test("drops collapsed from the root row's only child", () => {
-    const result = normalize(
-      model(row("root", [tabset("ts1", [tab("t1")], { collapsed: true, collapsible: true })])),
-    );
-
-    expect((result.layout.children[0] as TabsetNode).collapsed).toBeUndefined();
   });
 
   test("does not mutate the input model", () => {

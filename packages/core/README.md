@@ -42,7 +42,9 @@ The tree has three node kinds, each discriminated by `type`:
 
 Rows nest (a row's child can be another row), which is how arbitrary tiled splits
 are represented. `min`/`max` are `Dimension` values (`{ unit, value }`) where
-`unit` is one of `px`, `%`, `em`, `rem`, `vh`, `vw`.
+`unit` is one of `px`, `%`, `em`, `rem`, `vh`, `vw`. `global.tabSetMinSize` is
+the default tabset minimum size in pixels for renderers that honor it; the React
+adapter falls back to `120px` when it is omitted.
 
 Every schema is exported as a zod object plus an inferred type, so untrusted input
 can be validated before it reaches the reducer:
@@ -147,8 +149,8 @@ const next = reducer(model, stack);
 tree canonical so downstream code never has to defend against degenerate shapes:
 
 - drops empty tabsets and empty rows
-- collapses a single-child row by lifting its lone child (which inherits the
-  collapsed row's weight, so sizing is preserved)
+- simplifies a single-child row by lifting its lone child (which inherits the
+  lifted row's weight, so sizing is preserved)
 - absorbs a root that reduces to a single nested row
 - clamps every `selected` index into range
 - forces `activeTabsetId` / `maximizedTabsetId` to point at a tabset that exists

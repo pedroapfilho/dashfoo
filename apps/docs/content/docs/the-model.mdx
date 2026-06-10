@@ -187,11 +187,13 @@ built-in defaults."
 ```ts
 type GlobalAttributes = {
   enableSplitDock?: boolean;
+  splitterSize?: number;
   tabEnableClose?: boolean;
   tabEnableRename?: boolean;
   tabLocation?: "top" | "bottom";
   tabSetEnableMaximize?: boolean;
   tabSetEnableTabStrip?: boolean;
+  tabSetMinSize?: number;
 };
 ```
 
@@ -200,6 +202,9 @@ per-node `enable*` flags above (set one to `false` to turn the feature off
 everywhere). `tabLocation: "bottom"` moves the tab strip below the content;
 `tabSetEnableTabStrip: false` hides the strip entirely (a pure resizable-pane
 grid). `enableSplitDock` toggles whether drops can split a tabset at all.
+`splitterSize` sets the resize-handle gutter in pixels, and `tabSetMinSize`
+sets the default tabset minimum size in pixels. The React adapter uses `120`
+when `tabSetMinSize` is omitted.
 
 ## A real model
 
@@ -293,8 +298,8 @@ removed too. Emptiness propagates upward.
 
 **4. Collapse single-child rows.** A row left with exactly one child is redundant
 — it adds a nesting level without splitting anything — so the lone child is
-lifted into the grandparent's place. The child inherits the collapsed row's
-`weight`, so the visible sizing is preserved across the collapse. At the root,
+lifted into the grandparent's place. The child inherits the lifted row's
+`weight`, so the visible sizing is preserved across the simplification. At the root,
 if the tree reduces to a single child that is itself a row, that row is absorbed:
 its children and orientation replace the root's, avoiding redundant nesting.
 
@@ -348,6 +353,6 @@ you might hand your renderer a tree with a stale `selected` index.
   node and for `Dashfoo` itself.
 - `packages/core/src/invariants.ts` — the full `normalize()` implementation.
 - `packages/core/src/serialize.ts` — `toJSON`, `fromJSON`, `parseModel`.
-- `apps/demo-vite/src/models.ts` — the four demo models (`overviewModel`,
-  `dockingModel`, `chromeModel`, `playgroundModel`) as real
+- `apps/demo-vite/src/models.ts` — the five demo models (`overviewModel`,
+  `dockingModel`, `chromeModel`, `playgroundModel`, `sizingModel`) as real
   literals you can copy from.

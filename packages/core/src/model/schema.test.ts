@@ -62,7 +62,7 @@ describe("dashfooSchema", () => {
     expect(parsed.global.splitterSize).toBe(6);
   });
 
-  test("accepts collapsible tabsets, row dimensions, and tabSetMinSize", () => {
+  test("accepts row dimensions and tabSetMinSize", () => {
     const parsed = dashfooSchema.parse({
       ...validModel,
       global: { tabSetMinSize: 120 },
@@ -71,10 +71,8 @@ describe("dashfooSchema", () => {
         children: [
           {
             children: [{ component: "chart", id: "t1", name: "Chart", type: "tab" }],
-            collapsed: true,
-            collapsedSize: { unit: "px", value: 35 },
-            collapsible: true,
             id: "ts1",
+            min: { unit: "px", value: 160 },
             selected: 0,
             type: "tabset",
           },
@@ -87,9 +85,7 @@ describe("dashfooSchema", () => {
     expect(parsed.global.tabSetMinSize).toBe(120);
     expect(parsed.layout.min).toEqual({ unit: "px", value: 300 });
     expect(parsed.layout.children[0]).toMatchObject({
-      collapsed: true,
-      collapsedSize: { unit: "px", value: 35 },
-      collapsible: true,
+      min: { unit: "px", value: 160 },
     });
   });
 
@@ -156,16 +152,14 @@ describe("tabsetNodeSchema", () => {
     expect(parsed.name).toBeUndefined();
   });
 
-  test("accepts collapsible sizing fields", () => {
+  test("accepts min and max sizing fields", () => {
     const parsed = tabsetNodeSchema.parse({
       ...baseTabset,
-      collapsed: true,
-      collapsedSize: { unit: "px", value: 35 },
-      collapsible: true,
+      max: { unit: "%", value: 90 },
+      min: { unit: "px", value: 120 },
     });
 
-    expect(parsed.collapsed).toBe(true);
-    expect(parsed.collapsedSize).toEqual({ unit: "px", value: 35 });
-    expect(parsed.collapsible).toBe(true);
+    expect(parsed.max).toEqual({ unit: "%", value: 90 });
+    expect(parsed.min).toEqual({ unit: "px", value: 120 });
   });
 });
