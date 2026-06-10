@@ -52,6 +52,10 @@ test("the imperative handle drives undo/redo with correct history flags", async 
 });
 
 test("undo and redo restore resized panel dimensions", async ({ page }) => {
+  await page.setViewportSize({ height: 900, width: 1600 });
+  await page.reload();
+  await expect(page.getByRole("tab", { name: "Canvas" })).toBeVisible();
+
   const undo = page.getByRole("button", { name: "Undo" });
   const redo = page.getByRole("button", { name: "Redo" });
   const left = page.locator("#left");

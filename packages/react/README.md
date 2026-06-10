@@ -198,7 +198,7 @@ node's flag allow it.
 Rows and tabsets can carry `min` and `max` dimensions from `@dashfoo/core`.
 `DashfooLayout` passes those constraints to `react-resizable-panels`. When a
 tabset has no node-level `min`, it uses `global.tabSetMinSize`; when that global
-is omitted, the React adapter falls back to `120px`.
+is omitted, the React adapter falls back to `320px`.
 
 ## Persistence
 

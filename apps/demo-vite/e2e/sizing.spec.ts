@@ -55,7 +55,7 @@ test("tabsets use the default min width when no node min is set", async ({ page 
 
   await dragSplitterTo(page, main.x + main.width - 10);
 
-  await expect.poll(() => panelWidth(mainPanel(page))).toBeGreaterThanOrEqual(119);
+  await expect.poll(() => panelWidth(mainPanel(page))).toBeGreaterThanOrEqual(319);
 });
 
 test("the overview side column keeps descendant tabset minimum width", async ({ page }) => {
@@ -76,5 +76,5 @@ test("the overview side column keeps descendant tabset minimum width", async ({ 
   await page.mouse.move(2000, y, { steps: 16 });
   await page.mouse.up();
 
-  await expect.poll(() => panelWidth(page.locator("#ts-side-top"))).toBeGreaterThanOrEqual(119);
+  await expect.poll(() => panelWidth(page.locator("#ts-side-top"))).toBeGreaterThanOrEqual(319);
 });

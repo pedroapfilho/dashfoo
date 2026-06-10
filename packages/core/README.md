@@ -44,7 +44,7 @@ Rows nest (a row's child can be another row), which is how arbitrary tiled split
 are represented. `min`/`max` are `Dimension` values (`{ unit, value }`) where
 `unit` is one of `px`, `%`, `em`, `rem`, `vh`, `vw`. `global.tabSetMinSize` is
 the default tabset minimum size in pixels for renderers that honor it; the React
-adapter falls back to `120px` when it is omitted.
+adapter falls back to `320px` when it is omitted.
 
 Every schema is exported as a zod object plus an inferred type, so untrusted input
 can be validated before it reaches the reducer:
