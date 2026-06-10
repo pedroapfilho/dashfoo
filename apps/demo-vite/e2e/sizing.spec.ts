@@ -57,3 +57,24 @@ test("tabsets use the default min width when no node min is set", async ({ page 
 
   await expect.poll(() => panelWidth(mainPanel(page))).toBeGreaterThanOrEqual(119);
 });
+
+test("the overview side column keeps descendant tabset minimum width", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("tab", { name: "Activity" })).toBeVisible();
+
+  const rootSplitter = page
+    .locator('[data-dashfoo="splitter"][aria-orientation="vertical"]')
+    .first();
+  const box = await rootSplitter.boundingBox();
+  if (!box) {
+    throw new Error("root splitter has no bounding box");
+  }
+
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + box.width / 2, y);
+  await page.mouse.down();
+  await page.mouse.move(2000, y, { steps: 16 });
+  await page.mouse.up();
+
+  await expect.poll(() => panelWidth(page.locator("#ts-side-top"))).toBeGreaterThanOrEqual(119);
+});

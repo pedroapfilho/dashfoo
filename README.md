@@ -216,6 +216,8 @@ import "@dashfoo/theme/dashfoo.css"; // neutral oklch tokens, light by default
 
 `apps/demo-vite` is a neutral TanStack Router + Query showcase that drives dashfoo across a trading-terminal overview, a docking sandbox, the tabset chrome, and persistence/controlled mode.
 
+Hosted demo: [demo.dashfoo.com](https://demo.dashfoo.com).
+
 ```bash
 pnpm install
 pnpm dev
