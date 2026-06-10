@@ -1,32 +1,46 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-type PanelProps = {
-  children: ReactNode;
-  // A leading icon slot — left to the consumer so the library pulls in no icon
-  // dependency. Inherits currentColor through the theme.
-  icon?: ReactNode;
-  live?: boolean;
-  title: ReactNode;
-};
+type PanelRootProps = ComponentProps<"div">;
+type PanelHeaderProps = ComponentProps<"div">;
+type PanelBodyProps = ComponentProps<"div">;
+type PanelTitleProps = ComponentProps<"span">;
+type PanelIconProps = ComponentProps<"span">;
+type PanelBadgeProps = ComponentProps<"span">;
 
-// Headless chrome for a tab's content: a titled header (optional leading icon +
-// live badge) over a scrolling body. Emits only data-dashfoo attributes; the
-// look is the theme's job, so consumers get the common panel shell for free
-// without rebuilding it per app.
-const Panel = ({ children, icon, live = false, title }: PanelProps): ReactNode => (
-  <div data-dashfoo="panel">
-    <div data-dashfoo="panel-header">
-      <span data-dashfoo="panel-title">
-        {icon ? <span data-dashfoo="panel-icon">{icon}</span> : null}
-        {title}
-      </span>
-      {live ? <span data-dashfoo="panel-badge">Live</span> : null}
-    </div>
-    <div data-dashfoo="panel-body">{children}</div>
-  </div>
+const PanelRoot = (props: PanelRootProps): ReactNode => <div {...props} data-dashfoo="panel" />;
+const PanelHeader = (props: PanelHeaderProps): ReactNode => (
+  <div {...props} data-dashfoo="panel-header" />
+);
+const PanelBody = (props: PanelBodyProps): ReactNode => (
+  <div {...props} data-dashfoo="panel-body" />
+);
+const PanelTitle = (props: PanelTitleProps): ReactNode => (
+  <span {...props} data-dashfoo="panel-title" />
+);
+const PanelIcon = (props: PanelIconProps): ReactNode => (
+  <span {...props} data-dashfoo="panel-icon" />
+);
+const PanelBadge = (props: PanelBadgeProps): ReactNode => (
+  <span {...props} data-dashfoo="panel-badge" />
 );
 
+const Panel = {
+  Badge: PanelBadge,
+  Body: PanelBody,
+  Header: PanelHeader,
+  Icon: PanelIcon,
+  Root: PanelRoot,
+  Title: PanelTitle,
+} as const;
+
 export { Panel };
-export type { PanelProps };
+export type {
+  PanelBadgeProps,
+  PanelBodyProps,
+  PanelHeaderProps,
+  PanelIconProps,
+  PanelRootProps,
+  PanelTitleProps,
+};

@@ -132,26 +132,35 @@ is not registered renders nothing and logs a one-time dev warning:
 
 ### `Panel` — common panel chrome
 
-`Panel` is an optional helper for the most common panel shape: a titled header
-(with an optional leading icon and a live badge) over a scrollable body. It's
-headless — it emits `data-dashfoo="panel*"` attributes and the theme styles them.
+`Panel` is an optional compound helper for common panel chrome: compose a root,
+header, title/icon/badge slots, and body around your content. It's headless — it
+emits `data-dashfoo="panel*"` attributes and the theme styles them.
 
 ```tsx
 import { Panel } from "@dashfoo/react";
 
 const ChartPanel = ({ node }: { node: TabNode }) => (
-  <Panel title={node.name} icon={<MyIcon />} live>
-    {/* your content */}
-  </Panel>
+  <Panel.Root>
+    <Panel.Header>
+      <Panel.Icon>
+        <MyIcon />
+      </Panel.Icon>
+      <Panel.Title>{node.name}</Panel.Title>
+      <Panel.Badge>Live</Panel.Badge>
+    </Panel.Header>
+    <Panel.Body>{/* your content */}</Panel.Body>
+  </Panel.Root>
 );
 ```
 
-| Prop       | Type        | Description                                                                     |
-| ---------- | ----------- | ------------------------------------------------------------------------------- |
-| `title`    | `ReactNode` | Header title.                                                                   |
-| `icon`     | `ReactNode` | Optional leading icon (kept a slot so the library pulls in no icon dependency). |
-| `live`     | `boolean`   | Show a "Live" badge in the header.                                              |
-| `children` | `ReactNode` | The scrollable body content.                                                    |
+| Part           | Element  | Description                                                    |
+| -------------- | -------- | -------------------------------------------------------------- |
+| `Panel.Root`   | `<div>`  | Panel shell.                                                   |
+| `Panel.Header` | `<div>`  | Header row.                                                    |
+| `Panel.Title`  | `<span>` | Header title.                                                  |
+| `Panel.Icon`   | `<span>` | Optional leading icon slot; consumers choose the icon library. |
+| `Panel.Badge`  | `<span>` | Optional trailing badge; accepts arbitrary children.           |
+| `Panel.Body`   | `<div>`  | Scrollable body content.                                       |
 
 ## The chrome
 
@@ -340,7 +349,12 @@ type TabComponent;
 
 // Panel helper
 Panel;
-type PanelProps;
+type PanelBadgeProps;
+type PanelBodyProps;
+type PanelHeaderProps;
+type PanelIconProps;
+type PanelRootProps;
+type PanelTitleProps;
 
 // Store
 useDashfooStore;

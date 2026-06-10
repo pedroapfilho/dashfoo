@@ -186,8 +186,8 @@ The props you'll reach for first:
 A `ref` exposes an imperative handle (`addTab`, `closeTab`, `selectTab`, `undo`,
 `redo`, `maximizeTabset`, `resetLayout`, …) — see the
 [controlled & history guide](/controlled-and-history). For common panel chrome
-(titled header + scrollable body), wrap your content in the `Panel` helper from
-`@dashfoo/react`.
+(titled header + scrollable body), compose `Panel.Root`, `Panel.Header`,
+`Panel.Title`, and `Panel.Body` from `@dashfoo/react`.
 
 The root renders a single flex container, `<div data-dashfoo="layout">`, sized
 to `100%` of its parent in both axes. Give that parent a real height — a layout
