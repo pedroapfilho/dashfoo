@@ -89,19 +89,20 @@ Every mutation is one immutable, discriminated `Action`. The reducer is exhausti
 over the union; an unhandled case throws at runtime via `assertNever`. Validate
 untrusted payloads against `actionSchema` before dispatch.
 
-| `action.type`            | Effect                                                    |
-| ------------------------ | --------------------------------------------------------- |
-| `addNode`                | Insert a tab at a `DockLocation` (center / split-\*)      |
-| `moveNode`               | Remove a tab by `sourceId`, re-insert it at a dock target |
-| `selectTab`              | Set a tabset's `selected` index                           |
-| `setActiveTabset`        | Mark the focused tabset                                   |
-| `setMaximizedTabset`     | Maximize one tabset (or clear with `null`)                |
-| `renameTab`              | Change a tab's `name`                                     |
-| `deleteTab`              | Remove a tab                                              |
-| `deleteTabset`           | Remove a whole tabset                                     |
-| `adjustSplit`            | Set the `weights` of a row's children (splitter drag)     |
-| `updateNodeAttributes`   | Patch mutable attrs on a tab / tabset / row               |
-| `updateGlobalAttributes` | Patch the `global` block                                  |
+| `action.type`            | Effect                                                           |
+| ------------------------ | ---------------------------------------------------------------- |
+| `addNode`                | Insert a tab at a `DockLocation` (center / split-\*)             |
+| `moveNode`               | Remove a tab by `sourceId`, re-insert it at a dock target        |
+| `moveTabset`             | Remove a tabset by `sourceId`, re-dock it whole at a dock target |
+| `selectTab`              | Set a tabset's `selected` index                                  |
+| `setActiveTabset`        | Mark the focused tabset                                          |
+| `setMaximizedTabset`     | Maximize one tabset (or clear with `null`)                       |
+| `renameTab`              | Change a tab's `name`                                            |
+| `deleteTab`              | Remove a tab                                                     |
+| `deleteTabset`           | Remove a whole tabset                                            |
+| `adjustSplit`            | Set the `weights` of a row's children (splitter drag)            |
+| `updateNodeAttributes`   | Patch mutable attrs on a tab / tabset / row                      |
+| `updateGlobalAttributes` | Patch the `global` block                                         |
 
 The `DockLocation` union is `center` and
 `split-top`/`split-bottom`/`split-left`/`split-right`. A `center` drop
@@ -168,6 +169,10 @@ collectTabsets(model): Array<TabsetNode>;       // depth-first, layout only
 getFirstTabset(model): TabsetNode | undefined;
 findTabset(model, tabsetId): TabsetNode | undefined;
 findTab(model, tabId): TabLocation | undefined; // searches tabsets
+findRow(row, rowId): RowNode | undefined;       // pass model.layout as the root
+findAttributedNode(model, id): AttributedNode | undefined; // row, tabset, or tab
+findTabsetParent(row, tabsetId): { index: number; parent: RowNode } | undefined;
+findDuplicateIds(model): Array<string>;         // ids used more than once
 ```
 
 `findTab` returns `{ container, index, tab }` so a caller knows where the tab
@@ -175,19 +180,21 @@ lives (a tabset in the layout).
 
 ## Geometry
 
-A pure function translates a pointer position into a drop intent. The
-@dnd-kit adapter in `@dashfoo/react` feeds it rects; you can call it directly
-for custom drag logic.
+Pure functions translate a pointer position into a drop intent and back into an
+indicator rect. The @dnd-kit adapter in `@dashfoo/react` feeds them rects; you can
+call them directly for custom drag logic.
 
 ```ts
 resolveDockTarget(pointer, rect, opts?): DockTarget;
+zoneRect(rect, location): Rect;
 ```
 
 `resolveDockTarget` decides where a drag over a tabset should land: `{ kind: "tab" }`
 when the pointer is in the interior, or `{ kind: "split", edge }` when it is within
 an outer band of one of the four edges (default 22%; the closer edge wins in
-corners). It accepts `{ bandFraction }` to tune the band. `Point` and
-`Rect` are exported.
+corners). It accepts `{ bandFraction }` to tune the band. `zoneRect` returns the
+region the dock indicator highlights for a `DockLocation`: the whole tabset for a
+`center` stack, the matching half for a split. `Point` and `Rect` are exported.
 
 ## History (undo / redo)
 
@@ -204,10 +211,10 @@ if (canUndo(history)) history = undo(history);
 if (canRedo(history)) history = redo(history);
 ```
 
-`dispatch` coalesces resize actions. A continuous `adjustSplit`
-drag emits many actions per frame but collapses into a single undo step, keyed by
-the node being resized (so dragging a different splitter starts a new step). Any
-new dispatch clears the redo `future`.
+Every dispatched action is its own undo step; there is no coalescing. A splitter
+drag still lands as one step because react-resizable-panels v4 commits a single
+`adjustSplit` when the drag is released, not a per-frame stream. Any new dispatch
+clears the redo `future`.
 
 ## Serialize
 
@@ -254,8 +261,9 @@ const current = actor.getSnapshot().context.history.present;
 The drag/dock interaction lifecycle (`idle` → `dragging` → `idle`), driven by
 abstract events the dnd-kit adapter maps from pointer and keyboard input. It owns
 transient drag state only and never touches the document. On a valid `DROP` it
-**emits** a `COMMIT` carrying a `moveNode` action, which the React layer forwards
-to `dashfooMachine`.
+**emits** a `COMMIT` carrying a `moveNode` action (the drag subject is a tab) or a
+`moveTabset` action (the subject is a whole tabset, dragged by its grip), which
+the React layer forwards to `dashfooMachine`.
 
 | Event    | Payload              |
 | -------- | -------------------- |
@@ -279,14 +287,15 @@ to `dashfooMachine`.
 `ids` — `createNodeId`, `createTabId`.
 
 `actions` — `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`; types
-`Action`, `DockLocation`, `MutableNodeAttrs`.
+`Action`, `DockLocation`, `DropIntent`, `MutableNodeAttrs`.
 
 `reducer` — `reducer`. `invariants` — `normalize`.
 
-`tree` — `collectTabsets`, `getFirstTabset`, `findTabset`, `findTab`;
-types `TabContainer`, `TabLocation`.
+`tree` — `collectTabsets`, `getFirstTabset`, `findTabset`, `findTab`, `findRow`,
+`findAttributedNode`, `findTabsetParent`, `findDuplicateIds`;
+types `AttributedNode`, `TabContainer`, `TabLocation`.
 
-`geometry` — `resolveDockTarget`; types `DockTarget`,
+`geometry` — `resolveDockTarget`, `zoneRect`; types `DockTarget`,
 `BandOptions`, `Point`, `Rect`.
 
 `history` — `createHistory`, `dispatch`, `undo`, `redo`, `canUndo`, `canRedo`;
@@ -294,9 +303,12 @@ type `History`.
 
 `serialize` — `toJSON`, `fromJSON`, `parseModel`.
 
+`stack` — `stackModel` (flatten any layout into one row or column of all its
+tabsets, the building block for a narrow-screen breakpoint).
+
 `machines` — `dashfooMachine`, `dragDockMachine`; types `DashfooContext`,
 `DashfooEvent`, `DashfooInput`, `DragContext`, `DragEvent`, `DragSubject`,
-`DropIntent`, `DragEmitted`.
+`DragEmitted`.
 
 ## License
 

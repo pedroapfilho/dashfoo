@@ -42,8 +42,8 @@ It works in **uncontrolled** mode (you pass `defaultModel`). In controlled mode 
 where you pass `model` + `onModelChange` and already own the state — skip `persist`
 and save the model yourself in `onModelChange`.
 
-Everything below maps to [`packages/react/src/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/persistence.ts)
-and the validation pipeline in [`packages/core/src/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/serialize.ts).
+Everything below maps to [`packages/react/src/hooks/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/hooks/persistence.ts)
+and the validation pipeline in [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts).
 The `persist` prop is built on the shared `usePersistence` primitive in that file
 (also exported, for hosts that drive the store directly); the storage seam,
 validation, and debounce below apply to it directly.
@@ -100,8 +100,8 @@ empty store and nothing persists.
 ## Validation on load
 
 Persistence never trusts what comes out of storage. Loading runs the raw string
-through `fromJSON` from `@dashfoo/core`, which is the full untrusted-input
-pipeline in `serialize.ts`:
+through `fromJSON` from `@dashfoo/core`, the untrusted-input pipeline in
+`serialize.ts`. Condensed:
 
 ```ts
 const fromJSON = (json: string): Dashfoo => parseModel(JSON.parse(json));
@@ -119,11 +119,56 @@ Two things happen in order:
    engine applies internally), so a valid-but-noncanonical payload loads as
    the engine would store it.
 
+`parseModel` also checks the loaded model for duplicate node ids and warns —
+without throwing — when it finds any, since duplicates corrupt React keys.
+
 A `fromJSON` that throws is caught and the model falls back to `defaultModel`. A
 corrupt entry is also pruned: a mount effect re-reads the stored value, and if it
 fails to parse, calls `storage.removeItem(key)` so the bad payload does not sit
 there failing on every load. A user with a broken saved layout gets the default
 and a clean slate, not a crash.
+
+## Evolving persisted layouts
+
+The pinned `version` has a consequence worth planning for: there is no
+migration machinery. When a future release bumps the format, every stored
+payload in the old format fails validation, and `fromJSON` / `parseModel`
+throw on the mismatch — invalidating old payloads is the design.
+
+The recommended pattern is the one persistence already implements: wrap the
+load in `try/catch` and fall back to `defaultModel`. The `persist` prop does
+this automatically — a payload that fails to parse loads the default and the
+stored entry is removed — so a format bump costs existing users their saved
+arrangement, never a crash.
+
+App-level migration means owning that load yourself: read the raw JSON,
+transform it as plain data — rename a `component` key that changed between
+releases, drop a tab you removed — then validate the result with
+`parseModel`, which takes `unknown`:
+
+```ts
+import type { Dashfoo } from "@dashfoo/core";
+import { parseModel } from "@dashfoo/core";
+
+// Plain JSON surgery on the stored payload, before validation.
+const migrate = (value: unknown): unknown => value;
+
+const loadLayout = (key: string, fallback: Dashfoo): Dashfoo => {
+  const raw = localStorage.getItem(key);
+  if (raw === null) {
+    return fallback;
+  }
+  try {
+    return parseModel(migrate(JSON.parse(raw)));
+  } catch {
+    return fallback;
+  }
+};
+```
+
+Pass the result as `defaultModel`. The `persist` prop then saves changes under
+the same key as usual. The same shape without the `migrate` call is the plain
+validated load, for hosts that read storage outside the `persist` prop.
 
 ## Debounced save and unmount flush
 
@@ -147,7 +192,7 @@ key, and resets the live model to the original `defaultModel`.
 ## Worked example: the demo persistence page
 
 The demo's persistence route
-([`apps/demo-vite/src/pages/persistence.tsx`](../../apps/demo-vite/src/pages/persistence.tsx))
+([`apps/demo-vite/src/pages/persistence.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/persistence.tsx))
 is the whole pattern in one component:
 
 ```tsx
@@ -204,9 +249,9 @@ wiring.
 
 ## See also
 
-- [`packages/react/src/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/persistence.ts)
+- [`packages/react/src/hooks/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/hooks/persistence.ts)
   — the hook, both adapters, and the `StorageAdapter` type.
-- [`packages/core/src/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/serialize.ts)
+- [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts)
   — `fromJSON` / `toJSON` and `parseModel`.
-- [`apps/demo-vite/src/pages/persistence.tsx`](../../apps/demo-vite/src/pages/persistence.tsx)
+- [`apps/demo-vite/src/pages/persistence.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/persistence.tsx)
   — the end-to-end worked example.

@@ -11,6 +11,13 @@ dashfoo needs three things from its state layer that a plain store doesn't give 
 1. **Undo/redo over the document.** Every mutation must be reversible, and adjacent
    tweaks of the same kind (a resize drag) must coalesce into one history entry
    rather than flooding the past stack.
+
+   > **Amendment (2026-06).** The coalescing described here (and the "possibly
+   > coalesced" entry below) was later removed. rrp v4 commits one `adjustSplit`
+   > per splitter release, so a resize drag is naturally one undo step, and
+   > `History` carries no coalescing key. Every dispatched action is its own
+   > history entry.
+
 2. **Validated transitions.** A drag interaction has a real lifecycle. Nothing is
    dragging, then a tab is dragging, then it either drops somewhere valid or it
    cancels. A drop only makes sense once a subject and a drop target both exist.
@@ -88,6 +95,9 @@ a `COMMIT` event carrying a `moveNode` action:
 type DragEmitted = { action: Action; type: "COMMIT" };
 ```
 
+> **Amendment (2026-06).** The committed action is now `moveTabset` when the
+> subject is a tabset; `moveNode` covers tab drags.
+
 The React layer listens for that emitted `COMMIT` and forwards its `action` to
 `dashfooMachine` as a `DISPATCH`. The guard plus the `requireDrop` invariant
 (which throws if `subject` or `intent` is null at commit time) make the impossible
@@ -100,7 +110,7 @@ the two machines, not a convention someone has to remember.
 
 ### Binding to React
 
-`packages/react/src/store.ts` binds a `dashfooMachine` actor with `useActorRef`
+`packages/react/src/hooks/store.ts` binds a `dashfooMachine` actor with `useActorRef`
 and reads its history with `useSelector` from `@xstate/react`. The same hook covers
 both control modes: uncontrolled (`defaultModel`) lets the actor own the document
 with full undo/redo; controlled (`model`) makes the prop the source of truth, routes
@@ -136,8 +146,8 @@ use it for layout persistence, and the reason is the same as the zustand `persis
 rejection: a persisted actor snapshot includes the full undo/redo history and machine
 bookkeeping, and it carries no schema validation.
 
-Instead, `packages/react/src/persistence.ts` persists the **model**, through the
-serialization contract in `packages/core/src/serialize.ts`:
+Instead, `packages/react/src/hooks/persistence.ts` persists the **model**, through the
+serialization contract in `packages/core/src/model/serialize.ts`:
 
 | Concern    | Function        | What it does                                           |
 | ---------- | --------------- | ------------------------------------------------------ |

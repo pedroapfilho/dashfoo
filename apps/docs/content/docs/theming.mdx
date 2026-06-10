@@ -13,8 +13,8 @@ You have two paths:
 
 1. **Import the default skin.** `@dashfoo/theme` ships a complete, framework-agnostic
    plain-CSS skin over overridable `--dashfoo-*` tokens, light by default with an
-   opt-in dark variant. Most apps want this — see the
-   [@dashfoo/theme README](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/README.md) for tokens and usage.
+   opt-in dark variant. Most apps want this — the full token table is in
+   [Design tokens and the dark theme](#design-tokens-and-the-dark-theme) below.
 
    ```ts
    import "@dashfoo/theme/dashfoo.css";
@@ -69,34 +69,34 @@ Every value of `data-dashfoo` the renderer emits, what element carries it, and
 where it comes from. Read the right-hand column against the source files if you
 want to confirm a selector before you write the rule.
 
-| `data-dashfoo` value | Element                 | Role                                                                                           |
-| -------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
-| `layout`             | root `<div>`            | The whole frame. Also the geometry anchor for docking (`.closest('[data-dashfoo="layout"]')`). |
-| `row`                | rrp `<Group>`           | A horizontal or vertical split container.                                                      |
-| `tabset`             | `<div>`                 | One tiled region: a strip of tabs over a content panel.                                        |
-| `tabstrip`           | `<div>`                 | The strip row: tablist plus trailing toolbar.                                                  |
-| `tablist`            | `<div role="tablist">`  | The scrollable run of tabs.                                                                    |
-| `tab-item`           | `<span>`                | One tab's group: the tab button and its close button.                                          |
-| `tab`                | `<button role="tab">`   | The selectable tab itself.                                                                     |
-| `tab-close`          | `<button>`              | Per-tab close control.                                                                         |
-| `tab-rename`         | `<input>`               | Inline rename editor, mounted on double-click.                                                 |
-| `tabset-toolbar`     | `<div>`                 | Trailing controls area in the strip.                                                           |
-| `tabset-grip`        | `<button>`              | Drag grip that moves the whole tabset.                                                         |
-| `tabset-maximize`    | `<button>`              | Maximize / restore toggle.                                                                     |
-| `tabcontent`         | `<div role="tabpanel">` | The active tab's content panel.                                                                |
-| `tab-overflow`       | `<button>`              | "More tabs" button when the strip overflows.                                                   |
-| `tab-overflow-root`  | `<div>`                 | Popper root for the overflow menu.                                                             |
-| `tab-overflow-menu`  | `<div>`                 | The overflow dropdown.                                                                         |
-| `tab-overflow-item`  | `<button>`              | One tab inside the overflow dropdown.                                                          |
-| `panel`              | `<div>`                 | `Panel.Root` shell.                                                                            |
-| `panel-header`       | `<div>`                 | `Panel.Header` row.                                                                            |
-| `panel-title`        | `<span>`                | `Panel.Title` text.                                                                            |
-| `panel-icon`         | `<span>`                | `Panel.Icon` leading slot.                                                                     |
-| `panel-badge`        | `<span>`                | `Panel.Badge` trailing slot.                                                                   |
-| `panel-body`         | `<div>`                 | `Panel.Body` scrollable content.                                                               |
-| `dock-indicator`     | `<div>`                 | The drag overlay: insertion line or drop-zone pane.                                            |
-| `drag-preview`       | `<div>`                 | The chip that follows the pointer while dragging a tab/tabset.                                 |
-| `splitter`           | rrp `<Separator>`       | The resize handle between panels. Also matchable as `[data-separator]`.                        |
+| `data-dashfoo` value | Element                 | Role                                                                      |
+| -------------------- | ----------------------- | ------------------------------------------------------------------------- |
+| `layout`             | root `<div>`            | The whole frame; the root the skin paints background, color, and font on. |
+| `row`                | rrp `<Group>`           | A horizontal or vertical split container.                                 |
+| `tabset`             | `<div>`                 | One tiled region: a strip of tabs over a content panel.                   |
+| `tabstrip`           | `<div>`                 | The strip row: tablist plus trailing toolbar.                             |
+| `tablist`            | `<div role="tablist">`  | The scrollable run of tabs.                                               |
+| `tab-item`           | `<span>`                | One tab's group: the tab button and its close button.                     |
+| `tab`                | `<button role="tab">`   | The selectable tab itself.                                                |
+| `tab-close`          | `<button>`              | Per-tab close control.                                                    |
+| `tab-rename`         | `<input>`               | Inline rename editor, mounted on double-click.                            |
+| `tabset-toolbar`     | `<div>`                 | Trailing controls area in the strip.                                      |
+| `tabset-grip`        | `<button>`              | Drag grip that moves the whole tabset.                                    |
+| `tabset-maximize`    | `<button>`              | Maximize / restore toggle.                                                |
+| `tabcontent`         | `<div role="tabpanel">` | The active tab's content panel.                                           |
+| `tab-overflow`       | `<button>`              | "More tabs" button when the strip overflows.                              |
+| `tab-overflow-root`  | `<div>`                 | Popper root for the overflow menu.                                        |
+| `tab-overflow-menu`  | `<div>`                 | The overflow dropdown.                                                    |
+| `tab-overflow-item`  | `<button>`              | One tab inside the overflow dropdown.                                     |
+| `panel`              | `<div>`                 | `Panel.Root` shell.                                                       |
+| `panel-header`       | `<div>`                 | `Panel.Header` row.                                                       |
+| `panel-title`        | `<span>`                | `Panel.Title` text.                                                       |
+| `panel-icon`         | `<span>`                | `Panel.Icon` leading slot.                                                |
+| `panel-badge`        | `<span>`                | `Panel.Badge` trailing slot.                                              |
+| `panel-body`         | `<div>`                 | `Panel.Body` scrollable content.                                          |
+| `dock-indicator`     | `<div>`                 | The drag overlay: insertion line or drop-zone pane.                       |
+| `drag-preview`       | `<div>`                 | The chip that follows the pointer while dragging a tab/tabset.            |
+| `splitter`           | rrp `<Separator>`       | The resize handle between panels. Also matchable as `[data-separator]`.   |
 
 A few of these warrant detail.
 
@@ -376,18 +376,50 @@ target guidance.
 ## Design tokens and the dark theme
 
 If you import `@dashfoo/theme`, you reskin by remapping the shadcn-style
-`--dashfoo-*` tokens rather than rewriting rules. The surface, foreground,
-border, radius, font, and splitter values are all tokens; the full table lives in the
-[@dashfoo/theme README](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/README.md). The short version of the light defaults:
+`--dashfoo-*` tokens rather than rewriting rules. The tokens are defined in
+[`packages/theme/tokens.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/tokens.css)
+and are the intended override surface. The dark variant under
+`[data-dashfoo-theme="dark"]` remaps the same names with the inverted neutral
+scale.
+
+| Token                         | Default (light)                                                | Controls                                    |
+| ----------------------------- | -------------------------------------------------------------- | ------------------------------------------- |
+| `--dashfoo-background`        | `oklch(1 0 0)`                                                 | Layout background                           |
+| `--dashfoo-card`              | `oklch(1 0 0)`                                                 | Tabset + tab-content surface, selected tab  |
+| `--dashfoo-popover`           | `oklch(1 0 0)`                                                 | Overflow menu + drag-preview surface        |
+| `--dashfoo-muted`             | `oklch(0.97 0 0)`                                              | Tab strip + panel-badge background          |
+| `--dashfoo-accent`            | `oklch(0.97 0 0)`                                              | Hover surface on controls + menu items      |
+| `--dashfoo-foreground`        | `oklch(0.145 0 0)`                                             | Primary text, active tab                    |
+| `--dashfoo-muted-foreground`  | `oklch(0.556 0 0)`                                             | Idle tabs, icons, secondary text            |
+| `--dashfoo-accent-foreground` | `oklch(0.205 0 0)`                                             | Text on hovered controls + menu items       |
+| `--dashfoo-primary`           | `oklch(0.205 0 0)`                                             | Active-tab underline, dock-indicator accent |
+| `--dashfoo-border`            | `oklch(0.922 0 0)`                                             | Default borders                             |
+| `--dashfoo-ring`              | `oklch(0.708 0 0)`                                             | Focus rings, rename input, splitter grip    |
+| `--dashfoo-radius`            | `0.625rem`                                                     | Tabset / menu corner radius                 |
+| `--dashfoo-font`              | `ui-sans-serif, system-ui, …`                                  | Chrome font family                          |
+| `--dashfoo-font-size`         | `13px`                                                         | Base chrome font size                       |
+| `--dashfoo-splitter-size`     | `1rem`                                                         | Resize-handle hit area (see note)           |
+| `--dashfoo-dock-fill`         | `color-mix(in oklab, var(--dashfoo-primary) 10%, transparent)` | Split-zone fill while dragging              |
+| `--dashfoo-dock-border`       | `var(--dashfoo-ring)`                                          | Split-zone border                           |
+| `--dashfoo-dock-line`         | `var(--dashfoo-primary)`                                       | Tab insertion line                          |
+
+The four optional dock tokens from the indicator table above
+(`--dashfoo-dock-border-width`, `--dashfoo-dock-radius`,
+`--dashfoo-dock-line-radius`, `--dashfoo-dock-transition`) are unset by default
+and complete the set: 22 overridable tokens in total.
+
+> **Splitter size.** `--dashfoo-splitter-size` is the default; the model's
+> `global.splitterSize` (a number, in px) overrides it per-layout via an inline
+> CSS var on the layout root.
+
+A reskin is a token remap on `:root` (or any scope):
 
 ```css
 :root {
-  --dashfoo-background: oklch(1 0 0);
-  --dashfoo-card: oklch(1 0 0);
-  --dashfoo-foreground: oklch(0.145 0 0);
-  --dashfoo-muted-foreground: oklch(0.556 0 0);
-  --dashfoo-primary: oklch(0.205 0 0);
-  --dashfoo-radius: 0.625rem;
+  --dashfoo-background: #0b0f17;
+  --dashfoo-card: #131a26;
+  --dashfoo-foreground: #e8f0ff;
+  --dashfoo-radius: 6px;
 }
 ```
 
@@ -441,12 +473,12 @@ with their selected state, and the splitter. Everything else is refinement.
 
 Add the dock variables on `:root`, then fill in `tab-close`, `tabset-maximize`,
 focus rings, and hover states as you go. The full reference for what
-you can target is the two tables above.
+you can target is the attribute and state tables above.
 
 ## See also
 
 - [`packages/theme/dashfoo.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/dashfoo.css) for the complete worked skin, and [`packages/theme/tokens.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/tokens.css) for the token defaults + dark overrides.
-- `apps/demo-vite/src/index.css` for how the demo imports the theme.
-- `packages/react/src/tabset-view.tsx` for the tabset markup and ARIA wiring.
-- `packages/react/src/row-view.tsx` for the splitter (`<Separator data-dashfoo="splitter">`).
-- `packages/react/src/drag-adapter.tsx` for the dock indicator and the `--dashfoo-dock-*` fallbacks.
+- [`apps/demo-vite/src/index.css`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/index.css) for how the demo imports the theme.
+- [`packages/react/src/components/tabset-view.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/tabset-view.tsx) for the tabset markup and ARIA wiring.
+- [`packages/react/src/components/row-view.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/row-view.tsx) for the splitter (`<Separator data-dashfoo="splitter">`).
+- [`packages/react/src/components/drag-adapter.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/drag-adapter.tsx) for the dock indicator and the `--dashfoo-dock-*` fallbacks.

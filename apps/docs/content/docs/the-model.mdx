@@ -16,7 +16,8 @@ and the serialization helpers (`toJSON` / `fromJSON`) that move a
 model in and out of storage.
 
 Every type and schema referenced here is exported from `@dashfoo/core` and
-defined in `packages/core/src/schema.ts`.
+defined in
+[`packages/core/src/model/schema.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/schema.ts).
 
 ## Building a model: the builders
 
@@ -49,8 +50,11 @@ const m = model(
 
 `opts` carries the meaningful fields — `id` (pass one for any node you reference,
 e.g. via `activeTabsetId`), `weight`, `selected`, `orientation`, per-node
-`enable*` flags, `min`/`max`, `config`, and on `model`: `activeTabsetId`,
-`maximizedTabsetId`, `global`. The output is exactly the plain object documented
+`enable*` flags, `min`/`max`, `name` (on `tabset`, its accessible label),
+`config`, and on `model`: `activeTabsetId`, `maximizedTabsetId`, `global`.
+Because a tab's `id` defaults to its `component`, two `tab("chart", …)` calls
+collide — pass explicit ids when reusing a component; `model()` warns once if it
+detects duplicates. The output is exactly the plain object documented
 below — validate it with `dashfooSchema.parse` if you like. The raw form remains
 fully supported (e.g. for models loaded from JSON).
 
@@ -91,6 +95,8 @@ tabsets and other rows.
 type RowNode = {
   children: Array<RowNode | TabsetNode>;
   id: string;
+  max?: Dimension;
+  min?: Dimension;
   orientation: "row" | "column";
   type: "row";
   weight?: number;
@@ -102,7 +108,9 @@ left-to-right; `orientation: "column"` arranges them top-to-bottom. Children are
 either tabsets (leaves of the grid) or nested rows (which is how you get a column
 inside a row, and the resizable splitters between them). `weight` is the child's
 share of its parent's space relative to its siblings; the root row's own
-`weight` is ignored.
+`weight` is ignored. `min` and `max` are optional `Dimension` constraints on the
+row as a whole — useful for clamping a nested column without constraining each
+tabset inside it. See [Dimensions](#dimensions) below.
 
 ### `TabsetNode` — a tabbed pane
 
@@ -114,6 +122,7 @@ type TabsetNode = {
   id: string;
   max?: Dimension;
   min?: Dimension;
+  name?: string;
   selected: number;
   type: "tabset";
   weight?: number;
@@ -123,15 +132,19 @@ type TabsetNode = {
 A tabset is one pane with a tab strip. `children` is its tabs; `selected` is the
 index of the visible one (zero-based). `weight` works as it does on rows. `min`
 and `max` are optional `Dimension` constraints — see [Dimensions](#dimensions)
-below. The two flags gate this tabset's chrome:
+below. `name` labels the tabset for assistive technology: the React renderer
+uses it as the tab strip's `aria-label`, falling back to `"Tabs"` when omitted.
+The two flags gate this tabset's chrome:
 
-| Flag             | Effect when `false`                    |
-| ---------------- | -------------------------------------- |
-| `enableClose`    | The tabset cannot be closed as a unit. |
-| `enableMaximize` | The tabset has no maximize affordance. |
+| Flag             | Effect when `false`                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------- |
+| `enableClose`    | Tabs in this tabset show no close buttons (turns off per-tab closing for the pane). |
+| `enableMaximize` | The tabset has no maximize affordance.                                              |
 
-Omitting a flag falls back to the matching `global` default rather than to a
-hardcoded value.
+Omitting `enableMaximize` falls back to `global.tabSetEnableMaximize`. There is
+no tabset-level close global: an omitted `enableClose` defers to
+`global.tabEnableClose` and each tab's own `enableClose` (a tab is closable only
+when every level allows it).
 
 ### `TabNode` — a leaf
 
@@ -164,8 +177,8 @@ The three per-tab flags:
 
 ### Dimensions
 
-A tabset's `min` / `max` are `Dimension` values, not raw
-numbers:
+The `min` / `max` constraints on tabsets and rows are `Dimension` values, not
+raw numbers:
 
 ```ts
 type Dimension = {
@@ -176,7 +189,13 @@ type Dimension = {
 
 Carrying the unit alongside the value lets a constraint read `{ unit: "px", value: 320 }`
 or `{ unit: "%", value: 30 }` without an out-of-band convention about what the
-number means. (rrp's panel `min` / `max` honor `px` and `%`.)
+number means. All six units pass straight to react-resizable-panels, which
+resolves them: `em`/`rem` against the computed font size, `vh`/`vw` against the
+viewport. One nuance is px-only: the minimum dashfoo derives for a row from its
+descendant tabsets folds in only `px` mins, so a non-`px` `min` anywhere in that
+subtree opts it out of the derivation. As a shorthand, the `tabset()` and
+`row()` builders also accept a bare number for `min` / `max` and wrap it as
+`px`.
 
 ## Global attributes
 
@@ -197,9 +216,12 @@ type GlobalAttributes = {
 };
 ```
 
-The `tabEnable*` and `tabSetEnable*` keys are the tree-wide fallbacks for the
-per-node `enable*` flags above (set one to `false` to turn the feature off
-everywhere). `tabLocation: "bottom"` moves the tab strip below the content;
+Three keys are tree-wide defaults for the per-node `enable*` flags above:
+`tabEnableClose` sits behind both the tabset and the tab `enableClose`,
+`tabEnableRename` backs `tab.enableRename`, and `tabSetEnableMaximize` backs
+`tabset.enableMaximize`. Set one to `false` to turn the feature off everywhere.
+`enableDrag` has no global counterpart; it is per-tab only.
+`tabLocation: "bottom"` moves the tab strip below the content;
 `tabSetEnableTabStrip: false` hides the strip entirely (a pure resizable-pane
 grid). `enableSplitDock` toggles whether drops can split a tabset at all.
 `splitterSize` sets the resize-handle gutter in pixels, and `tabSetMinSize`
@@ -208,8 +230,9 @@ when `tabSetMinSize` is omitted.
 
 ## A real model
 
-Here is the demo's overview layout (`apps/demo-vite/src/models.ts`), trimmed to
-show structure. A wide main tabset on the left, weighted `2`, sits beside a
+Here is the demo's overview layout
+([`apps/demo-vite/src/models.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/models.ts)),
+expanded from its builder calls into the plain object they produce. A wide main tabset on the left, weighted `2`, sits beside a
 right-hand column (a nested row with `orientation: "column"`) holding two
 stacked tabsets, each weighted `1`.
 
@@ -270,7 +293,7 @@ const overviewModel: Dashfoo = {
 ```
 
 Notice what is absent. No `enable*` flags, because the defaults are fine. No
-`size`/`min`/`max`, because `weight` handles the proportions. No `maximizedTabsetId`,
+`min`/`max`, because `weight` handles the proportions. No `maximizedTabsetId`,
 because nothing starts maximized. The model carries only what differs from the
 defaults, and `normalize()` fills in the rest of the invariants.
 
@@ -280,7 +303,8 @@ Run after every action (and on every parse), `normalize()` rewrites a model into
 its canonical form. The reducer can therefore produce a slightly-off intermediate
 tree — a tabset whose last tab just closed, a row left with one child — and trust
 the normalize pass to clean it up. There is one definition of "valid layout," and
-it lives in `packages/core/src/invariants.ts`.
+it lives in
+[`packages/core/src/model/invariants.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/invariants.ts).
 
 The pass enforces five invariants.
 
@@ -315,13 +339,16 @@ applying it once. That property is what lets the reducer call it unconditionally
 
 ## Serialization: `toJSON`, `fromJSON`
 
-The helpers in `packages/core/src/serialize.ts` move a model across a storage
-boundary safely.
+The helpers in
+[`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts)
+move a model across a storage boundary safely.
 
 ```ts
-import { fromJSON, toJSON } from "@dashfoo/core";
+import { fromJSON, model, row, tab, tabset, toJSON } from "@dashfoo/core";
 
-const json = toJSON(model); // Dashfoo -> string
+const m = model(row([tabset([tab("chart", "Chart")])]));
+
+const json = toJSON(m); // Dashfoo -> string
 const restored = fromJSON(json); // string -> validated, normalized Dashfoo
 ```
 
@@ -332,11 +359,15 @@ guaranteed to be a canonical `Dashfoo` or to throw. There is no path where a
 half-valid tree reaches your renderer.
 
 Under the hood `fromJSON` is `parseModel(JSON.parse(json))`, and `parseModel`
-composes the two steps:
+is, at its core, two steps:
 
 ```ts
 const parseModel = (value: unknown): Dashfoo => normalize(dashfooSchema.parse(value));
 ```
+
+The real implementation adds one more check: it warns (without throwing) when
+the loaded layout contains duplicate node ids, mirroring the `model()` builder's
+warning.
 
 The payload's `version` field is pinned to `1` by the schema (`z.literal(1)`),
 so the format itself is versioned without any migration machinery: a payload
@@ -349,10 +380,13 @@ you might hand your renderer a tree with a stale `selected` index.
 
 ## See also
 
-- `packages/core/src/schema.ts` — the zod schemas and exported types for every
-  node and for `Dashfoo` itself.
-- `packages/core/src/invariants.ts` — the full `normalize()` implementation.
-- `packages/core/src/serialize.ts` — `toJSON`, `fromJSON`, `parseModel`.
-- `apps/demo-vite/src/models.ts` — the five demo models (`overviewModel`,
-  `dockingModel`, `chromeModel`, `playgroundModel`, `sizingModel`) as real
-  literals you can copy from.
+- [`packages/core/src/model/schema.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/schema.ts)
+  — the zod schemas and exported types for every node and for `Dashfoo` itself.
+- [`packages/core/src/model/invariants.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/invariants.ts)
+  — the full `normalize()` implementation.
+- [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts)
+  — `toJSON`, `fromJSON`, `parseModel`.
+- [`apps/demo-vite/src/models.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/models.ts)
+  — the five demo models (`overviewModel`, `dockingModel`, `chromeModel`,
+  `playgroundModel`, `sizingModel`), all written with the builders, that you can
+  copy from.

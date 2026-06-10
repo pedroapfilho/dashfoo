@@ -233,7 +233,7 @@ in controlled mode, save the model yourself in `onModelChange`.
 
 The lower-level `usePersistence` load/save primitive (that `persist` is built on)
 is also exported, for hosts that drive the store directly. See the
-[persistence guide](../../docs/guides/persistence.md) for the storage seam,
+[persistence guide](https://docs.dashfoo.dev/persistence) for the storage seam,
 validation pipeline, and SSR notes.
 
 ### Options
@@ -279,24 +279,29 @@ target them in your stylesheet. The package sets only the positioning styles it
 needs inline (sizes, flex, the dock indicator's position) and leaves the rest to
 you.
 
-| `data-dashfoo` value | Element         | Notes                                                                        |
-| -------------------- | --------------- | ---------------------------------------------------------------------------- |
-| `layout`             | root `div`      | The outer container. `display: flex` over the full parent.                   |
-| `frame`              | `div`           | Wraps the resizable tree.                                                    |
-| `row`                | rrp `Group`     | A resizable row/column. `orientation` comes from the node.                   |
-| `splitter`           | rrp `Separator` | Resize handle between siblings (also matches `[data-separator]`, see below). |
-| `tabset`             | `div`           | A tabbed region. Carries `data-drop-target` while a drag hovers it.          |
-| `tabstrip`           | `div`           | The strip row: tablist plus a trailing toolbar slot.                         |
-| `tablist`            | `div`           | `role="tablist"`, the tabs themselves.                                       |
-| `tab-item`           | `span`          | Wraps one tab's button and its close button. `data-dragging` while dragged.  |
-| `tab`                | `button`        | `role="tab"`. Carries `aria-selected` and `data-tab-id`.                     |
-| `tab-close`          | `button`        | Per-tab close. `aria-label="Close <name>"`.                                  |
-| `tab-rename`         | `input`         | Inline rename editor, shown during a rename.                                 |
-| `tabset-toolbar`     | `div`           | Trailing controls in the strip (currently maximize).                         |
-| `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                      |
-| `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).            |
-| `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone). `pointer-events: none`.   |
-| `separator`          | rrp `Separator` | rrp emits `data-separator` with `aria-orientation`; style splitters here.    |
+| `data-dashfoo` value | Element         | Notes                                                                                                                              |
+| -------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `layout`             | root `div`      | The outer container. `display: flex` over the full parent.                                                                         |
+| `row`                | rrp `Group`     | A resizable row/column. `orientation` comes from the node.                                                                         |
+| `splitter`           | rrp `Separator` | Resize handle between siblings (also matches `[data-separator]`, see below).                                                       |
+| `tabset`             | `div`           | A tabbed region. Carries `data-dragging-source` while the whole tabset is being dragged, and `data-tab-location` (`top`/`bottom`). |
+| `tabstrip`           | `div`           | The strip row: tablist plus a trailing toolbar slot.                                                                               |
+| `tablist`            | `div`           | `role="tablist"`, the tabs themselves.                                                                                             |
+| `tab-item`           | `span`          | Wraps one tab's button and its close button. `data-dragging` while dragged.                                                        |
+| `tab`                | `button`        | `role="tab"`. Carries `aria-selected` and `data-tab-id`.                                                                           |
+| `tab-close`          | `button`        | Per-tab close. `aria-label="Close <name>"`.                                                                                        |
+| `tab-rename`         | `input`         | Inline rename editor, shown during a rename.                                                                                       |
+| `tabset-toolbar`     | `div`           | Trailing controls in the strip: overflow menu, grip, custom toolbar slot, maximize.                                                |
+| `tab-overflow-root`  | `div`           | Wraps the overflow trigger and its menu; rendered when tabs don't fit the strip.                                                   |
+| `tab-overflow`       | `button`        | Overflow menu trigger. `aria-label="More tabs"`.                                                                                   |
+| `tab-overflow-menu`  | `div`           | `role="menu"`, lists the hidden tabs while open.                                                                                   |
+| `tab-overflow-item`  | `button`        | `role="menuitem"`, one hidden tab; selecting it activates the tab.                                                                 |
+| `tabset-grip`        | `button`        | Drags the whole tabset. `aria-label="Move tabset"`; shown when `draggableTabsets` is on and the tabset is not maximized.           |
+| `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                                                                            |
+| `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                  |
+| `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone). `pointer-events: none`.                                                         |
+| `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label.                                                        |
+| `separator`          | rrp `Separator` | rrp emits `data-separator` with `aria-orientation`; style splitters here.                                                          |
 
 The `splitter` handle is dashfoo's name; react-resizable-panels also stamps the
 same element with `data-separator` and an `aria-orientation` of `vertical` or
@@ -309,14 +314,17 @@ The `[data-dashfoo="dock-indicator"]` overlay positions itself inline, but every
 visual property reads from a CSS variable with a neutral fallback. Override them
 to theme the drag preview without touching layout.
 
-| Variable                      | Used for                     | Fallback                    |
-| ----------------------------- | ---------------------------- | --------------------------- |
-| `--dashfoo-dock-fill`         | zone fill (split preview)    | `rgba(125, 125, 135, 0.18)` |
-| `--dashfoo-dock-border`       | zone border color            | `rgba(160, 160, 170, 0.75)` |
-| `--dashfoo-dock-border-width` | zone border width            | `1px`                       |
-| `--dashfoo-dock-radius`       | zone corner radius           | `6px`                       |
-| `--dashfoo-dock-line`         | tab insertion line color     | `rgb(140, 140, 150)`        |
-| `--dashfoo-dock-line-radius`  | insertion line corner radius | `2px`                       |
+| Variable                      | Used for                     | Fallback                                       |
+| ----------------------------- | ---------------------------- | ---------------------------------------------- |
+| `--dashfoo-dock-fill`         | zone fill (split preview)    | `oklch(0.556 0 0 / 0.18)`                      |
+| `--dashfoo-dock-border`       | zone border color            | `oklch(0.708 0 0 / 0.75)`                      |
+| `--dashfoo-dock-border-width` | zone border width            | `1px`                                          |
+| `--dashfoo-dock-radius`       | zone corner radius           | `6px`                                          |
+| `--dashfoo-dock-line`         | tab insertion line color     | `oklch(0.556 0 0)`                             |
+| `--dashfoo-dock-line-radius`  | insertion line corner radius | `2px`                                          |
+| `--dashfoo-dock-transition`   | indicator move animation     | `left 60ms, top 60ms, width 60ms, height 60ms` |
+
+Set `--dashfoo-dock-transition: none` to disable the indicator animation.
 
 ```css
 :root {
@@ -383,7 +391,11 @@ type PersistConfig;
 
 // Responsive
 useResponsiveModel;
+matchBreakpoint; // does a breakpoint apply at a given width
+activeBreakpoint; // first matching breakpoint, else the last (the catch-all)
 type Breakpoint;
+type ResponsiveModel; // what useResponsiveModel returns
+type UseResponsiveModelOptions;
 ```
 
 The document type `Dashfoo`, node types (`TabNode`, `TabsetNode`, `RowNode`),
