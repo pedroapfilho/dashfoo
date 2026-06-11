@@ -48,9 +48,13 @@ test("a locked layout still selects tabs and maximizes tabsets", async ({ page }
   await expect(page.getByRole("tab", { name: "Activity" })).toBeVisible();
 });
 
-test("splitters are disabled in place: same gutter, no resize", async ({ page }) => {
+test("splitters are disabled in place: same gutter, no resize, no grab pill", async ({ page }) => {
   const splitter = page.locator('[data-dashfoo="splitter"]').first();
   await expect(splitter).toHaveAttribute("data-separator", "disabled");
+
+  // The theme hides the grab pill (the ::before handle) on disabled separators.
+  const pillDisplay = await splitter.evaluate((el) => getComputedStyle(el, "::before").display);
+  expect(pillDisplay).toBe("none");
 
   const before = await splitter.boundingBox();
   if (!before) {
@@ -80,6 +84,37 @@ test("dragging a tab in a locked layout is a no-op", async ({ page }) => {
   await dragTabTo(page, "Canvas", target.x + target.width / 2, target.y + target.height / 2);
 
   expect(await tabsByTabset(page)).toEqual(before);
+});
+
+test("a locked tab keeps symmetric padding without its close button", async ({ page }) => {
+  const padding = await page
+    .getByRole("tab", { name: "Canvas" })
+    .evaluate((el) => [getComputedStyle(el).paddingLeft, getComputedStyle(el).paddingRight]);
+
+  expect(padding[0]).toBe(padding[1]);
+});
+
+test("a locked layout stays responsive: it stacks into one column when narrow", async ({
+  page,
+}) => {
+  // Three tabsets side by side (two columns) at desktop width.
+  const columns = async (): Promise<number> => {
+    const xs = await page
+      .locator('[data-dashfoo="tabset"]')
+      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)));
+    return new Set(xs).size;
+  };
+  expect(await columns()).toBe(2);
+
+  await page.setViewportSize({ height: 900, width: 600 });
+  // The breakpoint swap rides a ResizeObserver, so the stacked model lands
+  // asynchronously — poll instead of asserting immediately.
+  await expect.poll(columns).toBe(1);
+  // Still locked after the stack swap.
+  await expect(page.locator('[data-dashfoo="tab-close"]')).toHaveCount(0);
+
+  await page.setViewportSize({ height: 720, width: 1280 });
+  await expect.poll(columns).toBe(2);
 });
 
 test("unlocking restores editing without losing the layout", async ({ page }) => {
