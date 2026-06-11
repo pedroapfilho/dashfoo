@@ -60,4 +60,4 @@ const MaximizeIcon = ({ maximized }: { maximized: boolean }): ReactNode =>
     </Icon>
   );
 
-export { CloseIcon, GripIcon, iconStyle, MaximizeIcon };
+export { CloseIcon, GripIcon, MaximizeIcon };
