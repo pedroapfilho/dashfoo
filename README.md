@@ -253,16 +253,19 @@ pnpm dev
 
 ## Scripts
 
-| Command             | Description                                |
-| ------------------- | ------------------------------------------ |
-| `pnpm dev`          | Start apps in development mode.            |
-| `pnpm build`        | Build every package and app.               |
-| `pnpm test`         | Run unit tests across the monorepo.        |
-| `pnpm lint`         | Run oxlint.                                |
-| `pnpm format`       | Format with oxfmt.                         |
-| `pnpm format:check` | Check formatting without writing.          |
-| `pnpm typecheck`    | Run TypeScript checks across the monorepo. |
-| `pnpm clean`        | Clean all build artifacts.                 |
+| Command                                                                       | Description                                                                                                                                                           |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                                                                    | Persistent watch mode for all packages and apps (tsdown `--watch` for packages, vite/next dev for apps). Use `pnpm --filter @dashfoo/react dev` to watch one package. |
+| `pnpm build`                                                                  | Build every package and app.                                                                                                                                          |
+| `pnpm verify`                                                                 | Pre-push check: lint + typecheck + test + build via turbo.                                                                                                            |
+| `pnpm test`                                                                   | Run unit tests across the monorepo.                                                                                                                                   |
+| `pnpm lint`                                                                   | Run oxlint.                                                                                                                                                           |
+| `pnpm format`                                                                 | Format with oxfmt.                                                                                                                                                    |
+| `pnpm format:check`                                                           | Check formatting without writing.                                                                                                                                     |
+| `pnpm typecheck`                                                              | Run TypeScript checks across the monorepo.                                                                                                                            |
+| `pnpm clean`                                                                  | Clean all build artifacts.                                                                                                                                            |
+| `pnpm --filter demo-vite exec playwright install --with-deps chromium` (once) | Install Playwright browsers — required once before running e2e tests.                                                                                                 |
+| `pnpm --filter demo-vite test:e2e`                                            | Run Playwright e2e tests for the demo app.                                                                                                                            |
 
 ## Stack
 
