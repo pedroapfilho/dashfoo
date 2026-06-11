@@ -15,8 +15,9 @@ Three packages:
   the reducer, geometry, and the XState machines. No React.
 - `@dashfoo/react` — `DashfooLayout`, the hooks, and the
   react-resizable-panels + dnd-kit adapters. This is what you render.
-- `@dashfoo/theme` — the optional default skin. Plain CSS over `--dashfoo-*`
-  tokens; the fast path to a visible layout.
+- `@dashfoo/theme` — the optional default skin over `--dashfoo-*` tokens; the
+  fast path to a visible layout. Ships a Tailwind v4 entry and a prebuilt CSS
+  file — use either.
 
 ## Step 1 — Install
 
@@ -387,11 +388,16 @@ with no intrinsic size, so without an explicit `width` (vertical) and `height`
 headless stylesheet must size both orientations.
 
 The shipped theme
-([`packages/theme/dashfoo.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/dashfoo.css))
+([`packages/theme/src/css/skin.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/src/css/skin.css))
 is the same idea written out in full plain CSS over `--dashfoo-*` tokens. It's
 worth reading once you want close controls, the grip, the maximize button, the
 overflow menu, and dock indicators styled — every one of those is a
 `data-dashfoo` selector you target the same way.
+
+Using Tailwind CSS v4? Import `@dashfoo/theme/tailwind.css` after
+`@import "tailwindcss"` in your CSS instead of the prebuilt `dashfoo.css` — same
+skin, plus `dashfoo-*` utilities generated from the tokens. See
+[theming](/theming#using-the-theme-with-tailwind-v4).
 
 ## Using Next.js?
 
@@ -438,7 +444,8 @@ notes:
   give the wrapper an explicit height (the `100dvh` div here) or put
   `html, body { height: 100% }` in `globals.css` and size the page's
   containers.
-- Import `@dashfoo/theme/dashfoo.css` once in `app/layout.tsx`.
+- Import `@dashfoo/theme/dashfoo.css` once in `app/layout.tsx` (or, if the app
+  runs Tailwind v4, `@import "@dashfoo/theme/tailwind.css"` in `globals.css`).
 - The `persist` prop is client-only. The storage adapter returns nothing
   during server rendering; the saved layout is read from `localStorage` in the
   browser.

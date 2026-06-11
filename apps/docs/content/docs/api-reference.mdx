@@ -414,14 +414,15 @@ Two XState machines, for hosts that bypass the React binding.
 
 ## @dashfoo/theme
 
-The opt-in default skin: plain CSS over `--dashfoo-*` tokens, light by default,
-dark via `data-dashfoo-theme="dark"` on any ancestor. The full token table is in
+The opt-in default skin over `--dashfoo-*` tokens, light by default, dark via
+`data-dashfoo-theme="dark"` on any ancestor. The full token table is in
 [theming](/theming).
 
-| Entry point                  | Contents                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------- |
-| `@dashfoo/theme/dashfoo.css` | The complete skin. It `@import`s `tokens.css`, so one import styles everything. |
-| `@dashfoo/theme/tokens.css`  | The tokens alone, for building your own skin on the same override surface.      |
+| Entry point                   | Contents                                                                                                                         |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `@dashfoo/theme/tailwind.css` | Tailwind v4 source entry: tokens + skin in cascade layers, plus an `@theme` bridge that generates `dashfoo-*` utilities.         |
+| `@dashfoo/theme/dashfoo.css`  | The prebuilt skin, compiled from the same source (tokens included, flattened). One import styles everything; no Tailwind needed. |
+| `@dashfoo/theme/tokens.css`   | The tokens alone, for building your own skin on the same override surface.                                                       |
 
 The only JS export is `DASHFOO_THEME_VERSION`, a version constant for runtime
 checks.

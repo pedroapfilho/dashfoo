@@ -11,12 +11,21 @@ by selecting on those attributes.
 
 You have two paths:
 
-1. **Import the default skin.** `@dashfoo/theme` ships a complete, framework-agnostic
-   plain-CSS skin over overridable `--dashfoo-*` tokens, light by default with an
-   opt-in dark variant. Most apps want this — the full token table is in
+1. **Import the default skin.** `@dashfoo/theme` ships a complete skin over
+   overridable `--dashfoo-*` tokens, light by default with an opt-in dark
+   variant. Most apps want this — the full token table is in
    [Design tokens and the dark theme](#design-tokens-and-the-dark-theme) below.
+   Tailwind v4 apps import the source entry into their pipeline; everyone else
+   imports the prebuilt CSS (compiled from the same source, no build step):
+
+   ```css
+   /* Tailwind v4 apps — also generates bg-dashfoo-* etc. utilities */
+   @import "tailwindcss";
+   @import "@dashfoo/theme/tailwind.css";
+   ```
 
    ```ts
+   // Apps without Tailwind — prebuilt, zero build
    import "@dashfoo/theme/dashfoo.css";
    ```
 
@@ -26,7 +35,25 @@ You have two paths:
 
 The examples below are plain CSS. If your app uses Tailwind you can `@apply`
 equivalents — the selectors are the same either way. The canonical worked skin is
-[`packages/theme/dashfoo.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/dashfoo.css).
+[`packages/theme/src/css/skin.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/src/css/skin.css).
+
+### Using the theme with Tailwind v4
+
+The `@dashfoo/theme/tailwind.css` entry does three things on top of the skin:
+
+- Tokens land in Tailwind's `theme` layer and the skin rules in the
+  `components` layer, so your utilities and unlayered CSS override the skin
+  without specificity wars. Import the theme before your own component-layer
+  CSS.
+- An `@theme inline` block bridges the tokens into Tailwind, generating
+  `dashfoo-*` utilities for your own markup: `bg-`/`text-`/`border-`/`ring-`
+  for the 11 color tokens, `rounded-dashfoo` / `rounded-dashfoo-sm`, and
+  `font-dashfoo`. Because the utilities inline `var(--dashfoo-*)`, they follow
+  the `[data-dashfoo-theme="dark"]` remap automatically — no `dark:` variant
+  needed.
+- Custom CSS should keep reading `var(--dashfoo-*)`, never the
+  `--color-dashfoo-*` mirrors — the mirrors resolve at `:root` and ignore
+  subtree dark remaps.
 
 ## Why attributes instead of class names
 
@@ -377,7 +404,7 @@ target guidance.
 
 If you import `@dashfoo/theme`, you reskin by remapping the shadcn-style
 `--dashfoo-*` tokens rather than rewriting rules. The tokens are defined in
-[`packages/theme/tokens.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/tokens.css)
+[`packages/theme/src/css/tokens.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/src/css/tokens.css)
 and are the intended override surface. The dark variant under
 `[data-dashfoo-theme="dark"]` remaps the same names with the inverted neutral
 scale.
@@ -477,7 +504,7 @@ you can target is the attribute and state tables above.
 
 ## See also
 
-- [`packages/theme/dashfoo.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/dashfoo.css) for the complete worked skin, and [`packages/theme/tokens.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/tokens.css) for the token defaults + dark overrides.
+- [`packages/theme/src/css/skin.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/src/css/skin.css) for the complete worked skin, and [`packages/theme/src/css/tokens.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/src/css/tokens.css) for the token defaults + dark overrides.
 - [`apps/demo-vite/src/index.css`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/index.css) for how the demo imports the theme.
 - [`packages/react/src/components/tabset-view.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/tabset-view.tsx) for the tabset markup and ARIA wiring.
 - [`packages/react/src/components/row-view.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/row-view.tsx) for the splitter (`<Separator data-dashfoo="splitter">`).

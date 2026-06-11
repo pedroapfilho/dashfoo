@@ -1,11 +1,14 @@
 /*
  * dashfoo default skin — plain CSS over the @dashfoo/react headless chrome.
- * Framework-agnostic (no Tailwind, no build step): import this file and the
- * layout is styled. Every value resolves through a shadcn-style --dashfoo-*
- * token from ./tokens.css, so reskinning is a token remap, not a rule rewrite.
+ * Every value resolves through a shadcn-style --dashfoo-* token from
+ * ./tokens.css, so reskinning is a token remap, not a rule rewrite.
+ *
+ * Deliberately plain CSS, no utilities/@apply: the rules must compile
+ * byte-identically into the zero-build artifact (dist/dashfoo.css) and stay
+ * decoupled from any consumer's Tailwind theme. Composed by ../tailwind.css
+ * (Tailwind v4 entry, layered) and ../../build/prebuilt.css (unlayered,
+ * compiled at package build).
  */
-
-@import "./tokens.css";
 
 [data-dashfoo="layout"] {
   background: var(--dashfoo-background);
@@ -111,7 +114,9 @@
   border-radius: 9999px;
   background: var(--dashfoo-primary);
 }
-/* the tab being lifted into the drag overlay: dim the source it leaves behind */
+/* the tab being lifted into the drag overlay: dim the source it leaves behind.
+   The ::after rule below ties the active-tab underline at (0,2,0) specificity
+   and wins only by source order — keep it after the :has([aria-selected]) rules. */
 [data-dashfoo="tab-item"][data-dragging] {
   opacity: 0.35;
 }
