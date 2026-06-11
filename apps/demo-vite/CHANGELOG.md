@@ -1,5 +1,22 @@
 # demo-vite
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [7dcc411]
+- Updated dependencies [34feaed]
+- Updated dependencies [c0eec7a]
+- Updated dependencies [7dcc411]
+- Updated dependencies [7dcc411]
+- Updated dependencies [70bdb84]
+- Updated dependencies [7dcc411]
+- Updated dependencies [7dcc411]
+- Updated dependencies [7dcc411]
+  - @dashfoo/core@0.2.0
+  - @dashfoo/theme@0.2.0
+  - @dashfoo/react@0.2.0
+
 ## 0.0.1
 
 ### Patch Changes

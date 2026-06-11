@@ -1,6 +1,6 @@
 {
   "name": "@dashfoo/theme",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Opt-in default skin for the @dashfoo/react headless chrome. Tailwind v4 entry with dashfoo utilities, or prebuilt plain CSS — both over overridable --dashfoo-* design tokens.",
   "license": "MIT",
   "author": "Pedro Filho <pedro@filho.me>",
