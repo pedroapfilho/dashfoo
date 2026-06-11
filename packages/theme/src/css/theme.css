@@ -1,0 +1,29 @@
+/*
+ * Tailwind v4 bridge — mirrors the runtime --dashfoo-* tokens into @theme
+ * namespaces so Tailwind consumers get utilities (bg-dashfoo-card,
+ * text-dashfoo-foreground, rounded-dashfoo, font-dashfoo, …) that stay in
+ * sync with the skin. `inline` is load-bearing: utilities must inline
+ * var(--dashfoo-*) so a [data-dashfoo-theme="dark"] subtree remap resolves
+ * at the element, not at :root. Custom CSS should keep reading the
+ * --dashfoo-* tokens directly, never these mirrors.
+ *
+ * splitter-size, dock-*, and the off-scale font-size tokens are deliberately
+ * unmapped — component-scoped values with no sensible utility surface.
+ */
+
+@theme inline {
+  --color-dashfoo-background: var(--dashfoo-background);
+  --color-dashfoo-card: var(--dashfoo-card);
+  --color-dashfoo-popover: var(--dashfoo-popover);
+  --color-dashfoo-muted: var(--dashfoo-muted);
+  --color-dashfoo-accent: var(--dashfoo-accent);
+  --color-dashfoo-foreground: var(--dashfoo-foreground);
+  --color-dashfoo-muted-foreground: var(--dashfoo-muted-foreground);
+  --color-dashfoo-accent-foreground: var(--dashfoo-accent-foreground);
+  --color-dashfoo-primary: var(--dashfoo-primary);
+  --color-dashfoo-border: var(--dashfoo-border);
+  --color-dashfoo-ring: var(--dashfoo-ring);
+  --radius-dashfoo: var(--dashfoo-radius);
+  --radius-dashfoo-sm: var(--dashfoo-radius-sm);
+  --font-dashfoo: var(--dashfoo-font);
+}

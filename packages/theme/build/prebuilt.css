@@ -1,0 +1,11 @@
+/*
+ * Build input for the zero-build artifact (dist/dashfoo.css) — not published.
+ * Unlayered on purpose: layered rules lose to ANY unlayered consumer CSS, so
+ * the prebuilt skin must keep winning on plain attribute-selector specificity
+ * exactly like the hand-written file it replaces. No tailwindcss imports and
+ * no theme.css: nothing from Tailwind (preflight, default theme vars, the
+ * @theme mirrors) may leak into non-Tailwind consumer pages.
+ */
+
+@import "../src/css/tokens.css";
+@import "../src/css/skin.css";

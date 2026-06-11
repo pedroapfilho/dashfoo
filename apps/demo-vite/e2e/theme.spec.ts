@@ -9,10 +9,15 @@ test.beforeEach(async ({ page }) => {
 
 test("the theme toggle flips dark mode and the choice survives a reload", async ({ page }) => {
   const html = page.locator("html");
+  const tabset = page.locator('[data-dashfoo="tabset"]').first();
   await expect(html).not.toHaveAttribute("data-dashfoo-theme", "dark");
+  // Computed-style check: the --dashfoo-card token must resolve through the
+  // theme pipeline, not just the attribute flip.
+  await expect(tabset).toHaveCSS("background-color", "oklch(1 0 0)");
 
   await page.getByRole("button", { name: "Switch to dark theme" }).click();
   await expect(html).toHaveAttribute("data-dashfoo-theme", "dark");
+  await expect(tabset).toHaveCSS("background-color", "oklch(0.205 0 0)");
 
   await page.reload();
   await expect(html).toHaveAttribute("data-dashfoo-theme", "dark"); // pre-paint script restored it

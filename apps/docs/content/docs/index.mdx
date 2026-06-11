@@ -16,9 +16,10 @@ Try the hosted demo at [demo.dashfoo.com](https://demo.dashfoo.com).
 ## At a glance
 
 - **Headless.** `@dashfoo/react` renders `data-dashfoo` markup with zero styling.
-  Target it with your own CSS, or drop in `@dashfoo/theme` — framework-agnostic
-  plain CSS over overridable `--dashfoo-*` tokens, light by default with opt-in
-  dark via `data-dashfoo-theme="dark"`.
+  Target it with your own CSS, or drop in `@dashfoo/theme` — a skin over
+  overridable `--dashfoo-*` tokens, light by default with opt-in dark via
+  `data-dashfoo-theme="dark"`, consumable as a Tailwind v4 entry or prebuilt
+  plain CSS.
 - **Model is the source of truth.** A plain, JSON-serializable object validated
   by `dashfooSchema`. `toJSON` / `fromJSON` round-trip it losslessly because
   content never lives in the model, only a `component` registry key.
@@ -31,11 +32,11 @@ Try the hosted demo at [demo.dashfoo.com](https://demo.dashfoo.com).
 
 ## The packages
 
-| Package          | Purpose                                                                                                                             |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `@dashfoo/core`  | Pure-TS engine: zod schema + derived types, the reducer, tree invariants, geometry, undo/redo, serialize, model builders. No React. |
-| `@dashfoo/react` | `DashfooLayout`, the `Panel` helper, the `persist` prop, hooks, and the resize / drag adapters. Headless `data-dashfoo` markup.     |
-| `@dashfoo/theme` | The opt-in default skin: plain CSS over `--dashfoo-*` tokens, light by default + opt-in dark.                                       |
+| Package          | Purpose                                                                                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@dashfoo/core`  | Pure-TS engine: zod schema + derived types, the reducer, tree invariants, geometry, undo/redo, serialize, model builders. No React.                      |
+| `@dashfoo/react` | `DashfooLayout`, the `Panel` helper, the `persist` prop, hooks, and the resize / drag adapters. Headless `data-dashfoo` markup.                          |
+| `@dashfoo/theme` | The opt-in default skin over `--dashfoo-*` tokens, light by default + opt-in dark. Tailwind v4 entry (with `dashfoo-*` utilities) or prebuilt plain CSS. |
 
 ## Where to go next
 

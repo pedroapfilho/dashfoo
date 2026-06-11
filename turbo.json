@@ -42,6 +42,10 @@
     },
     "clean": {
       "cache": false
+    },
+    "@dashfoo/theme#test": {
+      "dependsOn": ["build", "^build"],
+      "outputs": ["coverage/**"]
     }
   }
 }
