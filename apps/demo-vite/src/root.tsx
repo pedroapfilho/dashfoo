@@ -1,5 +1,5 @@
 import { Link, Outlet } from "@tanstack/react-router";
-import { Blocks, History, LayoutDashboard, Moon, Move, Sun } from "lucide-react";
+import { Blocks, History, LayoutDashboard, Lock, Moon, Move, Sun } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -13,6 +13,7 @@ const NAV = [
     to: "/controlled",
   },
   { exact: false, icon: Blocks, label: "Raw primitives", to: "/raw" },
+  { exact: false, icon: Lock, label: "Static layout", to: "/static" },
 ] as const;
 
 const THEME_KEY = "dashfoo:demo:theme";

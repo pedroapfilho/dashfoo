@@ -33,17 +33,33 @@ All 16 props. Pass either `model` or `defaultModel`; passing neither throws.
 | `onMaximizedTabsetChange` | `(tabsetId: string \| undefined) => void`                                  | —       | Fires when a tabset is maximized or restored.                                                                                                                              |
 | `renderTabLabel`          | `(tab: TabNode) => ReactNode`                                              | —       | Override the tab label. The accessible name stays `tab.name`.                                                                                                              |
 | `renderTabsetToolbar`     | `(tabset: TabsetNode) => ReactNode`                                        | —       | Inject custom controls into a tabset's toolbar.                                                                                                                            |
+| `editable`                | `boolean`                                                                  | `true`  | The umbrella switch. `false` renders a [static layout](#static-layouts): no tab/tabset drag, close, rename, splitter resize, or external drops.                            |
 | `closableTabs`            | `boolean`                                                                  | `true`  | Show the per-tab close control.                                                                                                                                            |
 | `renamableTabs`           | `boolean`                                                                  | `true`  | Allow double-click inline rename.                                                                                                                                          |
 | `maximizable`             | `boolean`                                                                  | `true`  | Show the tabset maximize/restore control.                                                                                                                                  |
+| `draggableTabs`           | `boolean`                                                                  | `true`  | Allow individual tabs to be dragged between tabsets.                                                                                                                       |
 | `draggableTabsets`        | `boolean`                                                                  | `true`  | Show the grip that drags a whole tabset.                                                                                                                                   |
+| `resizableSplits`         | `boolean`                                                                  | `true`  | Allow dragging the splitters between panels. `false` disables them but keeps them mounted, so the gutters hold their size.                                                 |
 | `keepMounted`             | `boolean`                                                                  | `false` | Keep inactive tab panels mounted (hidden) so their state survives a tab switch. By default inactive panels unmount.                                                        |
 
 The model's `global` block layers under the boolean props: a feature is on only
 if neither the prop nor the global (`tabEnableClose`, `tabEnableRename`,
-`tabSetEnableMaximize`) turns it off. The root element is
-`<div data-dashfoo="layout">` at 100% of its parent in both axes — a parent
+`tabSetEnableMaximize`, `tabEnableDrag`, `enableSplitResize`) turns it off, and
+— for everything except maximize — only while `editable` is on. The root element
+is `<div data-dashfoo="layout">` at 100% of its parent in both axes — a parent
 without a real height paints nothing (see [getting started](/getting-started)).
+
+### Static layouts
+
+`editable={false}` freezes the arrangement in one move: tabs and tabsets cannot
+be dragged, tabs cannot be closed or renamed, splitters stop resizing (they stay
+mounted, so nothing reflows), and the layout rejects drops from
+`useExternalTabSource` — even under a shared `DashfooDragProvider` while a
+sibling layout stays editable. The dashboard remains interactive as a viewer:
+tab selection, keyboard tab navigation, the overflow menu, and maximize/restore
+all keep working, and the imperative `DashfooHandle` / `dispatch` API still
+mutates the model programmatically. Flip the prop at runtime to build an "edit
+mode" toggle — no remount needed.
 
 ### `DashfooHandle`
 
@@ -170,18 +186,19 @@ label). `useLayout((state) => state.dispatch)` re-renders only when the
 selected slice changes. Throws outside `<DashfooLayout>` / `<Layout.Root>`.
 The `LayoutState` fields:
 
-| Field                                                              | Type                          | Description                                              |
-| ------------------------------------------------------------------ | ----------------------------- | -------------------------------------------------------- |
-| `dispatch`                                                         | `(action: Action) => void`    | The store's dispatch.                                    |
-| `closableTabs`, `renamableTabs`, `maximizable`, `draggableTabsets` | `boolean`                     | Effective values after the model globals are layered in. |
-| `keepMounted`                                                      | `boolean`                     | The resolved prop.                                       |
-| `maximizedTabsetId`                                                | `string \| undefined`         | The currently maximized tabset, if any.                  |
-| `renderTab`                                                        | `(tab: TabNode) => ReactNode` | The resolved content renderer (factory or registry).     |
-| `renderTabLabel`, `renderTabsetToolbar`                            | optional render props         | As passed to `DashfooLayout` / `Layout.Root`.            |
-| `splitDock`                                                        | `boolean`                     | From `global.enableSplitDock`.                           |
-| `tabLocation`                                                      | `"top" \| "bottom"`           | From `global.tabLocation`, default `"top"`.              |
-| `tabsetMinSize`                                                    | `number`                      | From `global.tabSetMinSize`, default `320` here.         |
-| `tabStripEnabled`                                                  | `boolean`                     | From `global.tabSetEnableTabStrip`.                      |
+| Field                                                                                                  | Type                          | Description                                                                                                |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `dispatch`                                                                                             | `(action: Action) => void`    | The store's dispatch.                                                                                      |
+| `closableTabs`, `renamableTabs`, `maximizable`, `draggableTabs`, `draggableTabsets`, `resizableSplits` | `boolean`                     | Effective values after `editable` and the model globals are layered in (`maximizable` ignores `editable`). |
+| `editable`                                                                                             | `boolean`                     | The umbrella prop as passed; gates every structural capability above except `maximizable`.                 |
+| `keepMounted`                                                                                          | `boolean`                     | The resolved prop.                                                                                         |
+| `maximizedTabsetId`                                                                                    | `string \| undefined`         | The currently maximized tabset, if any.                                                                    |
+| `renderTab`                                                                                            | `(tab: TabNode) => ReactNode` | The resolved content renderer (factory or registry).                                                       |
+| `renderTabLabel`, `renderTabsetToolbar`                                                                | optional render props         | As passed to `DashfooLayout` / `Layout.Root`.                                                              |
+| `splitDock`                                                                                            | `boolean`                     | From `global.enableSplitDock`.                                                                             |
+| `tabLocation`                                                                                          | `"top" \| "bottom"`           | From `global.tabLocation`, default `"top"`.                                                                |
+| `tabsetMinSize`                                                                                        | `number`                      | From `global.tabSetMinSize`, default `320` here.                                                           |
+| `tabStripEnabled`                                                                                      | `boolean`                     | From `global.tabSetEnableTabStrip`.                                                                        |
 
 ### `useTabset` / `useTab` / `useDragSubject`
 

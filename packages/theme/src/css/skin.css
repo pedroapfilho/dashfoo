@@ -81,6 +81,12 @@
   font-size: 12.5px;
   transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+/* the narrow right padding above leaves room for the close control; when none
+   renders (static layout, enableClose: false) the label needs symmetric padding
+   or it sits lopsided in the selected-tab surface */
+[data-dashfoo="tab"]:last-child {
+  padding-right: 0.75rem;
+}
 /* hover = a faded preview of the selected-tab surface; card (not accent) because
    accent matches the strip's muted background in light mode and would vanish */
 [data-dashfoo="tab-item"]:hover:not(:has([aria-selected="true"])) {
@@ -344,6 +350,15 @@
 [data-separator]:focus-visible {
   outline: 2px solid var(--dashfoo-ring);
   outline-offset: 2px;
+}
+/* a disabled separator (static layout) keeps its gutter size but loses every
+   resize cue: no grab pill, no resize cursor. Doubled attribute selector to
+   outweigh the per-orientation cursor rules above. */
+[data-separator="disabled"][aria-orientation] {
+  cursor: default;
+}
+[data-separator="disabled"]::before {
+  display: none;
 }
 
 /* respect reduced-motion: stop the dock indicator gliding between positions */

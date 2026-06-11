@@ -92,8 +92,9 @@ const TabsetTrigger = ({
   const startEditing = useTabset((state) => state.startEditing);
   const tabsRenamable = useTabset((state) => state.tabsRenamable);
   const visualSelected = useTabset((state) => state.visualSelected);
+  const draggableTabs = useLayout((state) => state.draggableTabs);
   const renderTabLabel = useLayout((state) => state.renderTabLabel);
-  const { ref } = useTabDraggable(tab.id, tab.enableDrag === false, tab.name);
+  const { ref } = useTabDraggable(tab.id, !draggableTabs || tab.enableDrag === false, tab.name);
   const refCallback = useMemo(() => mergeRefs<HTMLButtonElement>(ref, userRef), [ref, userRef]);
 
   if (editing) {

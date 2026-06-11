@@ -66,7 +66,11 @@ type DashfooLayoutProps = {
   closableTabs?: boolean;
   components?: Record<string, TabComponent>;
   defaultModel?: Dashfoo;
+  draggableTabs?: boolean;
   draggableTabsets?: boolean;
+  // false renders a static dashboard: no drag, close, rename, or resize. Tab
+  // selection, maximize, and the imperative ref API keep working.
+  editable?: boolean;
   factory?: (tab: TabNode) => ReactNode;
   keepMounted?: boolean;
   maximizable?: boolean;
@@ -79,6 +83,7 @@ type DashfooLayoutProps = {
   renamableTabs?: boolean;
   renderTabLabel?: (tab: TabNode) => ReactNode;
   renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
+  resizableSplits?: boolean;
 };
 
 // The batteries-included component: owns the store (controlled or uncontrolled),
@@ -90,7 +95,9 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     closableTabs = true,
     components,
     defaultModel,
+    draggableTabs = true,
     draggableTabsets = true,
+    editable = true,
     factory,
     keepMounted = false,
     maximizable = true,
@@ -103,6 +110,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     renamableTabs = true,
     renderTabLabel,
     renderTabsetToolbar,
+    resizableSplits = true,
   } = props;
 
   const persistConfig = useMemo(
@@ -191,7 +199,9 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     <Layout.Root
       closableTabs={closableTabs}
       dispatch={store.dispatch}
+      draggableTabs={draggableTabs}
       draggableTabsets={draggableTabsets}
+      editable={editable}
       keepMounted={keepMounted}
       maximizable={maximizable}
       model={store.model}
@@ -199,6 +209,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       renderTab={renderTab}
       renderTabLabel={renderTabLabel}
       renderTabsetToolbar={renderTabsetToolbar}
+      resizableSplits={resizableSplits}
     >
       <Layout.DragLayer>
         {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={store.model.layout} />}

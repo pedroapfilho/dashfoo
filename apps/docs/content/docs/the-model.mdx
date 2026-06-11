@@ -206,8 +206,10 @@ built-in defaults."
 ```ts
 type GlobalAttributes = {
   enableSplitDock?: boolean;
+  enableSplitResize?: boolean;
   splitterSize?: number;
   tabEnableClose?: boolean;
+  tabEnableDrag?: boolean;
   tabEnableRename?: boolean;
   tabLocation?: "top" | "bottom";
   tabSetEnableMaximize?: boolean;
@@ -216,17 +218,25 @@ type GlobalAttributes = {
 };
 ```
 
-Three keys are tree-wide defaults for the per-node `enable*` flags above:
+Four keys are tree-wide defaults for the per-node `enable*` flags above:
 `tabEnableClose` sits behind both the tabset and the tab `enableClose`,
-`tabEnableRename` backs `tab.enableRename`, and `tabSetEnableMaximize` backs
-`tabset.enableMaximize`. Set one to `false` to turn the feature off everywhere.
-`enableDrag` has no global counterpart; it is per-tab only.
+`tabEnableRename` backs `tab.enableRename`, `tabEnableDrag` backs
+`tab.enableDrag`, and `tabSetEnableMaximize` backs `tabset.enableMaximize`. Set
+one to `false` to turn the feature off everywhere.
 `tabLocation: "bottom"` moves the tab strip below the content;
 `tabSetEnableTabStrip: false` hides the strip entirely (a pure resizable-pane
-grid). `enableSplitDock` toggles whether drops can split a tabset at all.
+grid). `enableSplitDock` toggles whether drops can split a tabset at all, and
+`enableSplitResize: false` disables the splitters (the gutters stay mounted at
+their themed size, so nothing reflows).
 `splitterSize` sets the resize-handle gutter in pixels, and `tabSetMinSize`
 sets the default tabset minimum size in pixels. The React adapter uses `320`
 when `tabSetMinSize` is omitted.
+
+These globals travel with the serialized document. The renderer-level "make the
+whole dashboard static" switch is deliberately not a global — it is the
+`editable` prop on `DashfooLayout` / `Layout.Root` (see
+[static layouts](/api-reference#static-layouts)), so a layout saved while
+locked does not come back locked.
 
 ## A real model
 

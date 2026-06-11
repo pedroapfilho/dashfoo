@@ -83,6 +83,7 @@ type RowViewProps = {
 
 const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
   const dispatch = useLayout((state) => state.dispatch);
+  const resizableSplits = useLayout((state) => state.resizableSplits);
   const tabsetMinSize = useLayout((state) => state.tabsetMinSize);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
   const total = node.children.reduce((sum, child) => sum + (child.weight ?? 1), 0);
@@ -126,6 +127,11 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     if (syncing.current) {
       return;
     }
+    // Belt over the disabled Group/Separator: a non-resizable row never commits
+    // an adjustSplit, even if rrp reports a layout change for another reason.
+    if (!resizableSplits) {
+      return;
+    }
     const weights = node.children.map((child) => layout[child.id] ?? child.weight ?? 1);
     const weightsChanged = weights.some(
       (weight, index) => Math.abs(weight - (node.children[index]?.weight ?? 1)) > WEIGHT_EPSILON,
@@ -145,6 +151,7 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
   return (
     <Group
       data-dashfoo="row"
+      disabled={!resizableSplits}
       groupRef={groupRef}
       key={node.children.map((child) => child.id).join("|")}
       onLayoutChanged={handleLayoutChanged}
@@ -162,7 +169,9 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
 
         return (
           <Fragment key={child.id}>
-            {index > 0 ? <Separator data-dashfoo="splitter" /> : null}
+            {/* The separator stays mounted when resizing is off — removing it
+                would collapse the theme-sized gutter and reflow every panel. */}
+            {index > 0 ? <Separator data-dashfoo="splitter" disabled={!resizableSplits} /> : null}
             <Panel defaultSize={`${percent}%`} id={child.id} maxSize={max} minSize={min}>
               {child.type === "row" ? (
                 <RowView node={child} renderTabset={renderTabset} />

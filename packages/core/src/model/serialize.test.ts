@@ -39,6 +39,14 @@ describe("serialize", () => {
     expect(fromJSON(toJSON(input))).toEqual(input);
   });
 
+  test("round-trips the global editing flags", () => {
+    const input = model();
+    input.global.enableSplitResize = false;
+    input.global.tabEnableDrag = false;
+
+    expect(fromJSON(toJSON(input))).toEqual(input);
+  });
+
   test("toJSON produces a parseable JSON string", () => {
     expect(JSON.parse(toJSON(model())).layout.id).toBe("root");
   });

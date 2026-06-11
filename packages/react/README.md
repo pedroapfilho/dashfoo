@@ -59,24 +59,27 @@ a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-att
 
 ## `DashfooLayout` props
 
-| Prop                      | Type                                               | Default | Description                                                                            |
-| ------------------------- | -------------------------------------------------- | ------- | -------------------------------------------------------------------------------------- |
-| `model`                   | `Dashfoo`                                          | —       | Controlled document. When set, the prop is the source of truth.                        |
-| `defaultModel`            | `Dashfoo`                                          | —       | Uncontrolled initial document. The component owns it from there.                       |
-| `onModelChange`           | `(model: Dashfoo, action?: Action) => void`        | —       | Called after every change with the next model and the action that caused it.           |
-| `components`              | `Record<string, ComponentType<{ node: TabNode }>>` | —       | Registry mapping `tab.component` keys to components.                                   |
-| `factory`                 | `(tab: TabNode) => ReactNode`                      | —       | Render override. When provided, it resolves every tab and `components` is ignored.     |
-| `persist`                 | `string \| { key; storage?; debounceMs? }`         | —       | Auto-save the model (uncontrolled mode only). A bare string is a localStorage key.     |
-| `onAction`                | `(action: Action) => Action \| null`               | —       | Intercept each action before it commits — return it, a replacement, or `null` to veto. |
-| `onActiveTabsetChange`    | `(id: string \| undefined) => void`                | —       | Fires when the active tabset changes.                                                  |
-| `onMaximizedTabsetChange` | `(id: string \| undefined) => void`                | —       | Fires when a tabset is maximized or restored.                                          |
-| `renderTabLabel`          | `(tab: TabNode) => ReactNode`                      | —       | Override the tab label (the accessible name stays `tab.name`).                         |
-| `renderTabsetToolbar`     | `(tabset: TabsetNode) => ReactNode`                | —       | Inject custom controls into a tabset's toolbar.                                        |
-| `closableTabs`            | `boolean`                                          | `true`  | Show the per-tab close control.                                                        |
-| `renamableTabs`           | `boolean`                                          | `true`  | Allow double-click inline rename.                                                      |
-| `maximizable`             | `boolean`                                          | `true`  | Show the tabset maximize/restore control.                                              |
-| `draggableTabsets`        | `boolean`                                          | `true`  | Show the grip that drags a whole tabset.                                               |
-| `keepMounted`             | `boolean`                                          | `false` | Keep inactive tab panels mounted (hidden) so their state survives a tab switch.        |
+| Prop                      | Type                                               | Default | Description                                                                                                                         |
+| ------------------------- | -------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `model`                   | `Dashfoo`                                          | —       | Controlled document. When set, the prop is the source of truth.                                                                     |
+| `defaultModel`            | `Dashfoo`                                          | —       | Uncontrolled initial document. The component owns it from there.                                                                    |
+| `onModelChange`           | `(model: Dashfoo, action?: Action) => void`        | —       | Called after every change with the next model and the action that caused it.                                                        |
+| `components`              | `Record<string, ComponentType<{ node: TabNode }>>` | —       | Registry mapping `tab.component` keys to components.                                                                                |
+| `factory`                 | `(tab: TabNode) => ReactNode`                      | —       | Render override. When provided, it resolves every tab and `components` is ignored.                                                  |
+| `persist`                 | `string \| { key; storage?; debounceMs? }`         | —       | Auto-save the model (uncontrolled mode only). A bare string is a localStorage key.                                                  |
+| `onAction`                | `(action: Action) => Action \| null`               | —       | Intercept each action before it commits — return it, a replacement, or `null` to veto.                                              |
+| `onActiveTabsetChange`    | `(id: string \| undefined) => void`                | —       | Fires when the active tabset changes.                                                                                               |
+| `onMaximizedTabsetChange` | `(id: string \| undefined) => void`                | —       | Fires when a tabset is maximized or restored.                                                                                       |
+| `renderTabLabel`          | `(tab: TabNode) => ReactNode`                      | —       | Override the tab label (the accessible name stays `tab.name`).                                                                      |
+| `renderTabsetToolbar`     | `(tabset: TabsetNode) => ReactNode`                | —       | Inject custom controls into a tabset's toolbar.                                                                                     |
+| `editable`                | `boolean`                                          | `true`  | `false` renders a static layout: no drag, close, rename, or splitter resize. Tab selection, maximize, and the ref API keep working. |
+| `closableTabs`            | `boolean`                                          | `true`  | Show the per-tab close control.                                                                                                     |
+| `renamableTabs`           | `boolean`                                          | `true`  | Allow double-click inline rename.                                                                                                   |
+| `maximizable`             | `boolean`                                          | `true`  | Show the tabset maximize/restore control.                                                                                           |
+| `draggableTabs`           | `boolean`                                          | `true`  | Allow individual tabs to be dragged between tabsets.                                                                                |
+| `draggableTabsets`        | `boolean`                                          | `true`  | Show the grip that drags a whole tabset.                                                                                            |
+| `resizableSplits`         | `boolean`                                          | `true`  | Allow dragging the splitters; `false` disables them in place (gutters keep their size).                                             |
+| `keepMounted`             | `boolean`                                          | `false` | Keep inactive tab panels mounted (hidden) so their state survives a tab switch.                                                     |
 
 You must pass either `model` or `defaultModel`. Passing neither throws.
 
@@ -175,19 +178,22 @@ with the right role and ARIA wiring, ready for you to style.
 
 ### Per-node enable flags
 
-The three top-level chrome props are global gates. Individual nodes can opt out
+The top-level chrome props are layout-wide gates. Individual nodes can opt out
 through optional boolean fields in the model (a flag defaults to enabled unless
-explicitly `false`). A control shows only when both the global prop and the
-node's flag allow it.
+explicitly `false`). A control shows only when the `editable` umbrella, the
+chrome prop, the model global, and the node's flag all allow it (`maximizable`
+ignores `editable` — maximize is view state, not a structural edit).
 
-| Field             | On node | Disables                                         |
-| ----------------- | ------- | ------------------------------------------------ |
-| `enableClose`     | tab     | the close control for that tab                   |
-| `enableClose`     | tabset  | closing for every tab in the tabset              |
-| `enableRename`    | tab     | double-click rename for that tab                 |
-| `enableDrag`      | tab     | dragging that tab                                |
-| `enableMaximize`  | tabset  | the maximize control for that tabset             |
-| `enableSplitDock` | global  | splitting a tabset on drop (drops stack instead) |
+| Field               | On node | Disables                                         |
+| ------------------- | ------- | ------------------------------------------------ |
+| `enableClose`       | tab     | the close control for that tab                   |
+| `enableClose`       | tabset  | closing for every tab in the tabset              |
+| `enableRename`      | tab     | double-click rename for that tab                 |
+| `enableDrag`        | tab     | dragging that tab                                |
+| `enableMaximize`    | tabset  | the maximize control for that tabset             |
+| `tabEnableDrag`     | global  | tree-wide default behind `tab.enableDrag`        |
+| `enableSplitDock`   | global  | splitting a tabset on drop (drops stack instead) |
+| `enableSplitResize` | global  | dragging the splitters (gutters keep their size) |
 
 ```ts
 { id: "logs", type: "tab", name: "Logs", component: "logs", enableClose: false }

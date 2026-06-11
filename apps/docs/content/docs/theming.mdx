@@ -272,11 +272,12 @@ The resize handle is a react-resizable-panels `<Separator>`. It carries both
 `aria-orientation` set by rrp. Orientation lives on the separator itself, so you
 read direction from the attribute rather than from the parent row.
 
-| Selector                                          | Matches                                                 |
-| ------------------------------------------------- | ------------------------------------------------------- |
-| `[data-separator]`                                | Every splitter.                                         |
-| `[data-separator][aria-orientation="vertical"]`   | Splitter between side-by-side panels (drag left/right). |
-| `[data-separator][aria-orientation="horizontal"]` | Splitter between stacked panels (drag up/down).         |
+| Selector                                          | Matches                                                                                                                                             |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[data-separator]`                                | Every splitter.                                                                                                                                     |
+| `[data-separator][aria-orientation="vertical"]`   | Splitter between side-by-side panels (drag left/right).                                                                                             |
+| `[data-separator][aria-orientation="horizontal"]` | Splitter between stacked panels (drag up/down).                                                                                                     |
+| `[data-separator="disabled"]`                     | Splitter in a non-resizable layout (`resizableSplits` / `editable` off). The theme keeps its gutter size but hides the grab pill and resize cursor. |
 
 The handle is invisible by default. The theme gives it a wide hit area with the
 right cursor per orientation, then paints a thin pill with a `::before` so the
