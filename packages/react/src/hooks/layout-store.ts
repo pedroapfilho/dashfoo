@@ -13,7 +13,9 @@ import { createStore, useStore } from "zustand";
 type LayoutState = {
   closableTabs: boolean;
   dispatch: (action: Action) => void;
+  draggableTabs: boolean;
   draggableTabsets: boolean;
+  editable: boolean;
   keepMounted: boolean;
   maximizable: boolean;
   maximizedTabsetId: string | undefined;
@@ -21,6 +23,7 @@ type LayoutState = {
   renderTab: (tab: TabNode) => ReactNode;
   renderTabLabel: ((tab: TabNode) => ReactNode) | undefined;
   renderTabsetToolbar: ((tabset: TabsetNode) => ReactNode) | undefined;
+  resizableSplits: boolean;
   splitDock: boolean;
   tabLocation: "bottom" | "top";
   tabsetMinSize: number;

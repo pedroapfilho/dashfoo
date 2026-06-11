@@ -345,6 +345,15 @@
   outline: 2px solid var(--dashfoo-ring);
   outline-offset: 2px;
 }
+/* a disabled separator (static layout) keeps its size but drops every resize cue;
+   doubled attribute selector to outweigh the per-orientation cursor rules above */
+[data-separator="disabled"][aria-orientation] {
+  cursor: default;
+}
+[data-separator="disabled"]:hover::before,
+[data-separator="disabled"]:focus-visible::before {
+  background: var(--dashfoo-ring);
+}
 
 /* respect reduced-motion: stop the dock indicator gliding between positions */
 @media (prefers-reduced-motion: reduce) {

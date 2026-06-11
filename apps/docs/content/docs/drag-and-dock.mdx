@@ -346,14 +346,28 @@ off-by-one correction is needed when a tab moves within its own strip.
 
 ## Gates
 
-Three flags decide what a drag can do. One is global, one is per tab, and one
-is a layout prop.
+These flags decide what a drag can do — some global, some per tab, some layout
+props.
 
-| Gate               | Scope        | Where it lives           | Default | Effect when off                                        |
-| ------------------ | ------------ | ------------------------ | ------- | ------------------------------------------------------ |
-| `enableSplitDock`  | global       | `global.enableSplitDock` | on      | A drop over a tabset body stacks instead of splitting. |
-| `enableDrag`       | per tab      | `tab.enableDrag`         | on      | That tab can't be picked up at all.                    |
-| `draggableTabsets` | whole layout | `<DashfooLayout>` prop   | on      | No grip is rendered; tabsets can't be dragged whole.   |
+| Gate               | Scope        | Where it lives           | Default | Effect when off                                                  |
+| ------------------ | ------------ | ------------------------ | ------- | ---------------------------------------------------------------- |
+| `editable`         | whole layout | `<DashfooLayout>` prop   | on      | No drags start, and the layout is not a drop target (see below). |
+| `enableSplitDock`  | global       | `global.enableSplitDock` | on      | A drop over a tabset body stacks instead of splitting.           |
+| `draggableTabs`    | whole layout | `<DashfooLayout>` prop   | on      | No tab can be picked up; `tab.enableDrag` becomes moot.          |
+| `tabEnableDrag`    | global       | `global.tabEnableDrag`   | on      | Tree-wide default behind `tab.enableDrag`.                       |
+| `enableDrag`       | per tab      | `tab.enableDrag`         | on      | That tab can't be picked up at all.                              |
+| `draggableTabsets` | whole layout | `<DashfooLayout>` prop   | on      | No grip is rendered; tabsets can't be dragged whole.             |
+
+### The editable gate
+
+`editable={false}` makes the layout static. On the source side every internal
+draggable is disabled, so no drag can start from it. On the target side the
+adapter gates at drag time: `resolveIntent` returns `null` for a non-editable
+layout (no dock indicator, no drop target) and the `COMMIT` subscription drops
+the action — so even a drag that started before `editable` flipped off, or an
+external-source drag arriving through a shared `DashfooDragProvider`, cannot
+land a structural change. A sibling editable layout under the same provider
+still accepts those drags.
 
 ### Global gate
 

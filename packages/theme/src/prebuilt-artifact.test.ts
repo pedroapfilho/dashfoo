@@ -32,6 +32,12 @@ describe("dist/dashfoo.css", () => {
     expect(horizontal).toContain("height: var(--dashfoo-splitter-size)");
   });
 
+  test("keeps disabled separators sized but drops their resize cues", () => {
+    // Static layouts disable the separator; it must keep the gutter rules above
+    // while the doubled-attribute cursor override survives the build.
+    expect(artifact).toContain('[data-separator="disabled"][aria-orientation]');
+  });
+
   test("ships unlayered with zero Tailwind leakage", () => {
     expect(artifact).not.toContain("@layer");
     expect(artifact).not.toContain("@theme");

@@ -15,7 +15,12 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
   children: ReactNode;
   closableTabs?: boolean;
   dispatch: (action: Action) => void;
+  draggableTabs?: boolean;
   draggableTabsets?: boolean;
+  // The umbrella switch: false turns off every structural edit (tab/tabset drag,
+  // close, rename, splitter resize, external drops) in one go, leaving view
+  // interactions (tab selection, maximize, overflow) and dispatch untouched.
+  editable?: boolean;
   keepMounted?: boolean;
   maximizable?: boolean;
   model: Dashfoo;
@@ -23,6 +28,7 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
   renderTab: (tab: TabNode) => ReactNode;
   renderTabLabel?: (tab: TabNode) => ReactNode;
   renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
+  resizableSplits?: boolean;
 };
 
 // The frame of a hand-built layout: creates the scoped layout store every part
@@ -33,7 +39,9 @@ const LayoutRoot = ({
   children,
   closableTabs = true,
   dispatch,
+  draggableTabs = true,
   draggableTabsets = true,
+  editable = true,
   keepMounted = false,
   maximizable = true,
   model,
@@ -41,23 +49,30 @@ const LayoutRoot = ({
   renderTab,
   renderTabLabel,
   renderTabsetToolbar,
+  resizableSplits = true,
   style,
   ...props
 }: LayoutRootProps): ReactNode => {
   // Model-level globals act as a default layer under the component props: a
   // feature is on unless the prop, the global, or the per-node flag turns it off.
+  // `editable` is an extra AND-term over every structural capability — but not
+  // maximize, which is reversible view state (same class as tab selection) and
+  // stays available in a static layout.
   const global = model.global;
   const snapshot: LayoutState = {
-    closableTabs: closableTabs && global.tabEnableClose !== false,
+    closableTabs: editable && closableTabs && global.tabEnableClose !== false,
     dispatch,
-    draggableTabsets,
+    draggableTabs: editable && draggableTabs && global.tabEnableDrag !== false,
+    draggableTabsets: editable && draggableTabsets,
+    editable,
     keepMounted,
     maximizable: maximizable && global.tabSetEnableMaximize !== false,
     maximizedTabsetId: model.maximizedTabsetId,
-    renamableTabs: renamableTabs && global.tabEnableRename !== false,
+    renamableTabs: editable && renamableTabs && global.tabEnableRename !== false,
     renderTab,
     renderTabLabel,
     renderTabsetToolbar,
+    resizableSplits: editable && resizableSplits && global.enableSplitResize !== false,
     splitDock: global.enableSplitDock !== false,
     tabLocation: global.tabLocation ?? "top",
     tabsetMinSize: global.tabSetMinSize ?? DEFAULT_TABSET_MIN_SIZE,

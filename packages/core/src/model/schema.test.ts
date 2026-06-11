@@ -62,6 +62,15 @@ describe("dashfooSchema", () => {
     expect(parsed.global.splitterSize).toBe(6);
   });
 
+  test("global editing flags are accepted and preserved", () => {
+    const parsed = dashfooSchema.parse({
+      ...validModel,
+      global: { enableSplitResize: false, tabEnableDrag: false },
+    });
+    expect(parsed.global.enableSplitResize).toBe(false);
+    expect(parsed.global.tabEnableDrag).toBe(false);
+  });
+
   test("accepts row dimensions and tabSetMinSize", () => {
     const parsed = dashfooSchema.parse({
       ...validModel,

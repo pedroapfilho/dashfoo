@@ -192,6 +192,11 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
 
   useEffect(() => {
     const subscription = actorRef.on("COMMIT", (emitted) => {
+      // Mirrors the resolveIntent gate: even a drag whose `editable` was
+      // flipped off mid-flight cannot land a structural action.
+      if (layoutStore?.getState().editable === false) {
+        return;
+      }
       const commit = onCommit ?? layoutStore?.getState().dispatch;
       if (!commit) {
         warnOnce(
@@ -241,6 +246,13 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       point: Point,
       draggedId?: string,
     ): DropIntent | null => {
+      // A non-editable layout is never a drop target — no indicator, no intent.
+      // Read at drag time (getState, not a subscription) like splitDock below,
+      // so a runtime flip is honored without re-rendering the layer; this also
+      // rejects external-source drops arriving via a shared manager.
+      if (layoutStore?.getState().editable === false) {
+        return null;
+      }
       const tabIds = [...element.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].map(
         (tab) => tab.dataset.tabId ?? "",
       );
