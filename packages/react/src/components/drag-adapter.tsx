@@ -102,7 +102,16 @@ const subjectFor = (source: {
       console.warn("[dashfoo] external drag source is missing its createTab function");
       return null;
     }
-    const parsed = tabNodeSchema.safeParse(data.createTab());
+    let candidate: unknown;
+    try {
+      candidate = data.createTab();
+    } catch (error) {
+      // A consumer callback that throws must abort the drag, not break dragging.
+      // oxlint-disable-next-line no-console
+      console.warn("[dashfoo] external drag source createTab threw", error);
+      return null;
+    }
+    const parsed = tabNodeSchema.safeParse(candidate);
     if (!parsed.success) {
       // oxlint-disable-next-line no-console
       console.warn("[dashfoo] external drag source returned an invalid tab", parsed.error);
@@ -296,4 +305,11 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
 // The draggable/droppable hooks and the drag contexts live in ./drag-hooks to
 // keep this module under the size cap and avoid a circular import; re-exported
 // here so consumers still import the whole drag surface from "./drag-adapter".
-export { DragProvider, useDragSubject, useTabDraggable, useTabsetDraggable, useTabsetDroppable };
+export {
+  DragProvider,
+  subjectFor,
+  useDragSubject,
+  useTabDraggable,
+  useTabsetDraggable,
+  useTabsetDroppable,
+};

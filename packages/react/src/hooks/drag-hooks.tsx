@@ -161,6 +161,7 @@ const useExternalTabSource = ({
 }: ExternalTabSourceOptions): { ref: (element: Element | null) => void } => {
   const id = useId();
   const createTabRef = useRef(createTab);
+  // Dependency-less on purpose: a plain ref sync so drags always call the latest createTab.
   useEffect(() => {
     createTabRef.current = createTab;
   });
