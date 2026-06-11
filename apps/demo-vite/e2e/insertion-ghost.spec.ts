@@ -5,9 +5,11 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole("tab", { name: "Canvas" }).first()).toBeVisible();
 });
 
-// Regression: dropping at the end of a strip must place the insertion line past
+// Regression: dropping at the end of a strip must place the insertion ghost past
 // the last tab's close button — not between the label and the close.
-test("the end-of-strip insertion line sits past the last tab's close button", async ({ page }) => {
+test("the end-of-strip insertion ghost starts past the last tab's close button", async ({
+  page,
+}) => {
   const firstTabset = page.locator('[data-dashfoo="tabset"]').first();
   const notesItem = firstTabset.locator('[data-dashfoo="tab-item"]', { hasText: "Notes" });
   const closeBox = await notesItem.locator('[data-dashfoo="tab-close"]').boundingBox();
@@ -26,10 +28,9 @@ test("the end-of-strip insertion line sits past the last tab's close button", as
     steps: 12,
   });
 
-  const line = await page.locator('[data-dashfoo="dock-indicator"]').boundingBox();
-  expect(line).not.toBeNull();
-  const lineCenter = (line?.x ?? 0) + (line?.width ?? 0) / 2;
-  expect(lineCenter).toBeGreaterThanOrEqual(closeBox.x + closeBox.width - 2);
+  const ghost = await page.locator('[data-dashfoo="dock-indicator"]').boundingBox();
+  expect(ghost).not.toBeNull();
+  expect(ghost?.x ?? 0).toBeGreaterThanOrEqual(closeBox.x + closeBox.width - 2);
 
   await page.mouse.up();
 });

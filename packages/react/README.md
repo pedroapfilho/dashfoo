@@ -345,7 +345,7 @@ you.
 | `tabset-grip`        | `button`        | Drags the whole tabset. `aria-label="Move tabset"`; shown when `draggableTabsets` is on and the tabset is not maximized.           |
 | `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                                                                            |
 | `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                  |
-| `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone). `pointer-events: none`.                                                         |
+| `dock-indicator`     | `div`           | The drag preview overlay (ghost tab or zone pane). `pointer-events: none`.                                                         |
 | `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label.                                                        |
 | `separator`          | rrp `Separator` | rrp emits `data-separator` with `aria-orientation`; style splitters here.                                                          |
 
@@ -360,15 +360,14 @@ The `[data-dashfoo="dock-indicator"]` overlay positions itself inline, but every
 visual property reads from a CSS variable with a neutral fallback. Override them
 to theme the drag preview without touching layout.
 
-| Variable                      | Used for                     | Fallback                                       |
-| ----------------------------- | ---------------------------- | ---------------------------------------------- |
-| `--dashfoo-dock-fill`         | zone fill (split preview)    | `oklch(0.556 0 0 / 0.18)`                      |
-| `--dashfoo-dock-border`       | zone border color            | `oklch(0.708 0 0 / 0.75)`                      |
-| `--dashfoo-dock-border-width` | zone border width            | `1px`                                          |
-| `--dashfoo-dock-radius`       | zone corner radius           | `6px`                                          |
-| `--dashfoo-dock-line`         | tab insertion line color     | `oklch(0.556 0 0)`                             |
-| `--dashfoo-dock-line-radius`  | insertion line corner radius | `2px`                                          |
-| `--dashfoo-dock-transition`   | indicator move animation     | `left 60ms, top 60ms, width 60ms, height 60ms` |
+| Variable                      | Used for                 | Fallback                                       |
+| ----------------------------- | ------------------------ | ---------------------------------------------- |
+| `--dashfoo-dock-fill`         | indicator fill           | `oklch(0.556 0 0 / 0.18)`                      |
+| `--dashfoo-dock-border`       | indicator border color   | `oklch(0.708 0 0 / 0.75)`                      |
+| `--dashfoo-dock-border-width` | indicator border width   | `1px`                                          |
+| `--dashfoo-dock-radius`       | indicator corner radius  | `6px`                                          |
+| `--dashfoo-dock-tab-radius`   | insertion-ghost radius   | `var(--dashfoo-dock-radius, 6px)`              |
+| `--dashfoo-dock-transition`   | indicator move animation | `left 60ms, top 60ms, width 60ms, height 60ms` |
 
 Set `--dashfoo-dock-transition: none` to disable the indicator animation.
 
@@ -376,7 +375,6 @@ Set `--dashfoo-dock-transition: none` to disable the indicator animation.
 :root {
   --dashfoo-dock-fill: rgba(255, 255, 255, 0.1);
   --dashfoo-dock-border: rgba(255, 255, 255, 0.4);
-  --dashfoo-dock-line: rgba(255, 255, 255, 0.85);
 }
 ```
 

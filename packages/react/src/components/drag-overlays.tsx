@@ -7,7 +7,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { ActorRefFrom } from "xstate";
 
 import type { Zone } from "../lib/tab-insertion";
-import { insertionLineRect } from "../lib/tab-insertion";
+import { insertionGhostRect } from "../lib/tab-insertion";
 
 // The drag adapter's two overlays: the dock indicator (where the drop will
 // land) and the pointer-anchored preview chip. Split from drag-adapter.tsx to
@@ -39,18 +39,16 @@ const paneStyle = (zone: Zone): CSSProperties => ({
   width: zone.width,
 });
 
-const lineStyle = (zone: Zone): CSSProperties => ({
-  ...overlayBase,
-  background: "var(--dashfoo-dock-line, oklch(0.556 0 0))",
-  borderRadius: "var(--dashfoo-dock-line-radius, 2px)",
-  height: zone.height,
-  left: zone.x,
-  top: zone.y,
-  width: zone.width,
+// The insertion ghost shares the pane's fill and border but carries the tab's
+// corner shape, so it reads as the tab it previews (the shipped theme rounds
+// only the top corners, like its tabs).
+const ghostStyle = (zone: Zone): CSSProperties => ({
+  ...paneStyle(zone),
+  borderRadius: "var(--dashfoo-dock-tab-radius, var(--dashfoo-dock-radius, 6px))",
 });
 
 // Whole-tab-item rects (label + close button), excluding the dragged tab. The
-// insertion line lands on these boundaries so the "after the last tab" position
+// insertion ghost lands on these boundaries so the "after the last tab" position
 // sits past the close button, not between the label and the close.
 const tabItemRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
   [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab-item"]')].flatMap((item) =>
@@ -59,13 +57,39 @@ const tabItemRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
       : [item.getBoundingClientRect()],
   );
 
-// A "where it will land" indicator driven off the machine's live intent: an
-// insertion line in the tab bar for a stack, the matching content half for a split.
+// When the dragged source's own size is unknown (e.g. it vanished mid-drag),
+// fall back to the target strip's average tab size, else a plausible default.
+const FALLBACK_GHOST_SIZE = { height: 32, width: 96 };
+
+type GhostSize = { height: number; width: number };
+
+const ghostSize = (
+  sourceSize: GhostSize | undefined,
+  itemRects: ReadonlyArray<DOMRect>,
+): GhostSize => {
+  if (sourceSize) {
+    return sourceSize;
+  }
+  if (itemRects.length > 0) {
+    return {
+      height: itemRects.reduce((sum, rect) => sum + rect.height, 0) / itemRects.length,
+      width: itemRects.reduce((sum, rect) => sum + rect.width, 0) / itemRects.length,
+    };
+  }
+  return FALLBACK_GHOST_SIZE;
+};
+
+// A "where it will land" indicator driven off the machine's live intent: a
+// tab-sized ghost in the tab bar for a stack, the matching content half for a
+// split. One unkeyed div, so React reuses the DOM node and the position/size
+// transition morphs between the two shapes instead of remounting.
 const DockIndicator = ({
   actorRef,
+  getSourceSize,
   getTabsetElement,
 }: {
   actorRef: DragActor;
+  getSourceSize: () => GhostSize | undefined;
   getTabsetElement: (id: string) => HTMLElement | undefined;
 }): ReactNode => {
   const intent = useSelector(actorRef, (snapshot) => snapshot.context.intent);
@@ -80,16 +104,18 @@ const DockIndicator = ({
   if (intent.location === "center") {
     const strip = element.querySelector('[data-dashfoo="tabstrip"]');
     if (strip) {
-      const line = insertionLineRect(
+      const items = tabItemRects(strip, draggedId);
+      const ghost = insertionGhostRect(
         strip.getBoundingClientRect(),
-        tabItemRects(strip, draggedId),
+        items,
         intent.index ?? 0,
+        ghostSize(getSourceSize(), items),
       );
-      return <div data-dashfoo="dock-indicator" key="line" style={lineStyle(line)} />;
+      return <div data-dashfoo="dock-indicator" style={ghostStyle(ghost)} />;
     }
   }
   const zone = zoneRect(element.getBoundingClientRect(), intent.location);
-  return <div data-dashfoo="dock-indicator" key="pane" style={paneStyle(zone)} />;
+  return <div data-dashfoo="dock-indicator" style={paneStyle(zone)} />;
 };
 
 const previewStyle: CSSProperties = { left: 0, position: "fixed", top: 0, zIndex: 9999 };
@@ -119,4 +145,4 @@ const DragPreview = ({
 };
 
 export { DockIndicator, DragPreview };
-export type { DragPreviewState };
+export type { DragPreviewState, GhostSize };

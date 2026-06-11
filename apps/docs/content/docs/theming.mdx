@@ -121,7 +121,7 @@ want to confirm a selector before you write the rule.
 | `panel-icon`         | `<span>`                | `Panel.Icon` leading slot.                                                |
 | `panel-badge`        | `<span>`                | `Panel.Badge` trailing slot.                                              |
 | `panel-body`         | `<div>`                 | `Panel.Body` scrollable content.                                          |
-| `dock-indicator`     | `<div>`                 | The drag overlay: insertion line or drop-zone pane.                       |
+| `dock-indicator`     | `<div>`                 | The drag overlay: ghost tab or drop-zone pane.                            |
 | `drag-preview`       | `<div>`                 | The chip that follows the pointer while dragging a tab/tabset.            |
 | `splitter`           | rrp `<Separator>`       | The resize handle between panels. Also matchable as `[data-separator]`.   |
 
@@ -331,27 +331,26 @@ without touching the element's selector.
 
 | Variable                      | Default fallback                               | Controls                                                    |
 | ----------------------------- | ---------------------------------------------- | ----------------------------------------------------------- |
-| `--dashfoo-dock-fill`         | `oklch(0.556 0 0 / 0.18)`                      | Drop-zone pane background.                                  |
-| `--dashfoo-dock-border`       | `oklch(0.708 0 0 / 0.75)`                      | Drop-zone pane border color.                                |
-| `--dashfoo-dock-border-width` | `1px`                                          | Drop-zone pane border width.                                |
-| `--dashfoo-dock-radius`       | `6px`                                          | Drop-zone pane corner radius.                               |
-| `--dashfoo-dock-line`         | `oklch(0.556 0 0)`                             | Tab-strip insertion line color.                             |
-| `--dashfoo-dock-line-radius`  | `2px`                                          | Insertion line corner radius.                               |
+| `--dashfoo-dock-fill`         | `oklch(0.556 0 0 / 0.18)`                      | Indicator background.                                       |
+| `--dashfoo-dock-border`       | `oklch(0.708 0 0 / 0.75)`                      | Indicator border color.                                     |
+| `--dashfoo-dock-border-width` | `1px`                                          | Indicator border width.                                     |
+| `--dashfoo-dock-radius`       | `6px`                                          | Indicator corner radius.                                    |
+| `--dashfoo-dock-tab-radius`   | `var(--dashfoo-dock-radius, 6px)`              | Insertion-ghost corner shape.                               |
 | `--dashfoo-dock-transition`   | `left 60ms, top 60ms, width 60ms, height 60ms` | Position glide; the theme sets `none` under reduced motion. |
 
 The indicator takes two visual forms from the same element. Dropping onto a tab
-strip paints a thin insertion line (`--dashfoo-dock-line`); dropping onto the tabset
-body to split paints a filled pane (`--dashfoo-dock-fill` plus the border vars).
-You do not select between them; setting the variables covers both.
+strip paints a ghost shaped like the tab it previews — the dragged tab's box,
+with `--dashfoo-dock-tab-radius` for its corners; dropping onto the tabset body
+to split paints a filled pane covering the zone. Both share the same fill and
+border vars, so setting them covers both forms.
 
-The shipped theme derives the three color vars from its semantic tokens, so the
+The shipped theme derives the two color vars from its semantic tokens, so the
 indicators follow the light and dark palettes automatically:
 
 ```css
 :root {
   --dashfoo-dock-fill: color-mix(in oklab, var(--dashfoo-primary) 10%, transparent);
   --dashfoo-dock-border: var(--dashfoo-ring);
-  --dashfoo-dock-line: var(--dashfoo-primary);
 }
 ```
 
@@ -362,7 +361,6 @@ tokens:
 :root {
   --dashfoo-dock-fill: color-mix(in oklab, var(--accent) 18%, transparent);
   --dashfoo-dock-border: var(--accent);
-  --dashfoo-dock-line: var(--accent);
 }
 ```
 
@@ -426,14 +424,14 @@ scale.
 | `--dashfoo-font`              | `ui-sans-serif, system-ui, …`                                  | Chrome font family                          |
 | `--dashfoo-font-size`         | `13px`                                                         | Base chrome font size                       |
 | `--dashfoo-splitter-size`     | `1rem`                                                         | Resize-handle hit area (see note)           |
-| `--dashfoo-dock-fill`         | `color-mix(in oklab, var(--dashfoo-primary) 10%, transparent)` | Split-zone fill while dragging              |
-| `--dashfoo-dock-border`       | `var(--dashfoo-ring)`                                          | Split-zone border                           |
-| `--dashfoo-dock-line`         | `var(--dashfoo-primary)`                                       | Tab insertion line                          |
+| `--dashfoo-dock-fill`         | `color-mix(in oklab, var(--dashfoo-primary) 10%, transparent)` | Dock-indicator fill while dragging          |
+| `--dashfoo-dock-border`       | `var(--dashfoo-ring)`                                          | Dock-indicator border                       |
+| `--dashfoo-dock-tab-radius`   | `var(--dashfoo-radius-sm) var(--dashfoo-radius-sm) 0 0`        | Insertion-ghost corner shape                |
 
-The four optional dock tokens from the indicator table above
+The three optional dock tokens from the indicator table above
 (`--dashfoo-dock-border-width`, `--dashfoo-dock-radius`,
-`--dashfoo-dock-line-radius`, `--dashfoo-dock-transition`) are unset by default
-and complete the set: 22 overridable tokens in total.
+`--dashfoo-dock-transition`) are unset by default and complete the set: 21
+overridable tokens in total.
 
 > **Splitter size.** `--dashfoo-splitter-size` is the default; the model's
 > `global.splitterSize` (a number, in px) overrides it per-layout via an inline
