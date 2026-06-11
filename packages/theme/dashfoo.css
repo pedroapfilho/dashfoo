@@ -64,6 +64,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  border-radius: 0.375rem 0.375rem 0 0;
 }
 [data-dashfoo="tab"] {
   cursor: pointer;
