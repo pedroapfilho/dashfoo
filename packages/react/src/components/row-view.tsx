@@ -1,14 +1,14 @@
 "use client";
 
-import type { Dimension, RowNode } from "@dashfoo/core";
+import type { Dimension, RowNode, TabsetNode } from "@dashfoo/core";
 import type { CSSProperties, ReactNode } from "react";
 import { Fragment, useLayoutEffect, useMemo, useRef } from "react";
 import type { GroupImperativeHandle, Layout, Orientation } from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
-import { useDashfooContext } from "../hooks/context";
+import { useLayout } from "../hooks/layout-store";
 
-import { TabsetView } from "./tabset-view";
+import { TabsetView } from "./tabset/tabset-view";
 
 // This module is the resize adapter: the only place that imports
 // react-resizable-panels. It maps the model's responsive weights to rrp's
@@ -74,8 +74,16 @@ const descendantMinSize = (
     : Math.max(...childMinimums);
 };
 
-const RowView = ({ node }: { node: RowNode }): ReactNode => {
-  const { dispatch, tabsetMinSize } = useDashfooContext();
+type RowViewProps = {
+  node: RowNode;
+  // Substitutes a custom tabset composition at every leaf of the split tree;
+  // defaults to the stock TabsetView.
+  renderTabset?: (node: TabsetNode) => ReactNode;
+};
+
+const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
+  const dispatch = useLayout((state) => state.dispatch);
+  const tabsetMinSize = useLayout((state) => state.tabsetMinSize);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
   const total = node.children.reduce((sum, child) => sum + (child.weight ?? 1), 0);
   const desiredLayout = useMemo(
@@ -156,7 +164,11 @@ const RowView = ({ node }: { node: RowNode }): ReactNode => {
           <Fragment key={child.id}>
             {index > 0 ? <Separator data-dashfoo="splitter" /> : null}
             <Panel defaultSize={`${percent}%`} id={child.id} maxSize={max} minSize={min}>
-              {child.type === "row" ? <RowView node={child} /> : <TabsetView node={child} />}
+              {child.type === "row" ? (
+                <RowView node={child} renderTabset={renderTabset} />
+              ) : (
+                (renderTabset?.(child) ?? <TabsetView node={child} />)
+              )}
             </Panel>
           </Fragment>
         );
@@ -166,3 +178,4 @@ const RowView = ({ node }: { node: RowNode }): ReactNode => {
 };
 
 export { RowView };
+export type { RowViewProps };

@@ -2,20 +2,16 @@
 
 import type { Action, Dashfoo, DockLocation, TabNode, TabsetNode } from "@dashfoo/core";
 import { findTabset } from "@dashfoo/core";
-import type { ComponentType, CSSProperties, ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useMemo } from "react";
 
-import { DashfooContext } from "../hooks/context";
 import type { PersistConfig, StorageAdapter } from "../hooks/persistence";
 import { localStorageAdapter, usePersistence } from "../hooks/persistence";
 import { useDashfooStore } from "../hooks/store";
 
-import { DragProvider } from "./drag-adapter";
-import { RowView } from "./row-view";
-import { TabsetView } from "./tabset-view";
+import { Layout } from "./layout";
 
 const DEFAULT_PERSIST_DEBOUNCE_MS = 300;
-const DEFAULT_TABSET_MIN_SIZE = 320;
 
 // `persist` accepts a bare localStorage key or a full target (custom storage,
 // debounce). Controlled mode (a `model` prop, no `defaultModel`) skips it —
@@ -85,10 +81,9 @@ type DashfooLayoutProps = {
   renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
 };
 
-const rootStyle = { display: "flex", height: "100%", width: "100%" } as const;
-
-// The top-level component. Owns the store (controlled or uncontrolled), resolves
-// tab content via a components registry or a factory, and renders the layout tree.
+// The batteries-included component: owns the store (controlled or uncontrolled),
+// resolves tab content via a components registry or a factory, and assembles the
+// same Layout/Tabset primitives a hand-built layout would use.
 // forwardRef (not the React 19 ref-as-prop) keeps the React 18 peer working.
 const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref): ReactNode => {
   const {
@@ -187,70 +182,28 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     [components, factory],
   );
 
-  // Model-level globals act as a default layer under the component props: a
-  // feature is on unless the prop, the global, or the per-node flag turns it off.
-  const global = store.model.global;
-  const effectiveClosable = closableTabs && global.tabEnableClose !== false;
-  const effectiveRenamable = renamableTabs && global.tabEnableRename !== false;
-  const effectiveMaximizable = maximizable && global.tabSetEnableMaximize !== false;
-  const tabLocation = global.tabLocation ?? "top";
-  const tabsetMinSize = global.tabSetMinSize ?? DEFAULT_TABSET_MIN_SIZE;
-  const tabStripEnabled = global.tabSetEnableTabStrip !== false;
-
-  const contextValue = useMemo(
-    () => ({
-      closableTabs: effectiveClosable,
-      dispatch: store.dispatch,
-      draggableTabsets,
-      keepMounted,
-      maximizable: effectiveMaximizable,
-      maximizedTabsetId: store.model.maximizedTabsetId,
-      renamableTabs: effectiveRenamable,
-      renderTab,
-      renderTabLabel,
-      renderTabsetToolbar,
-      tabLocation,
-      tabsetMinSize,
-      tabStripEnabled,
-    }),
-    [
-      draggableTabsets,
-      effectiveClosable,
-      effectiveMaximizable,
-      effectiveRenamable,
-      keepMounted,
-      renderTab,
-      renderTabLabel,
-      renderTabsetToolbar,
-      store.dispatch,
-      store.model.maximizedTabsetId,
-      tabLocation,
-      tabsetMinSize,
-      tabStripEnabled,
-    ],
-  );
-
-  const handleCommit = store.dispatch;
-  const splitDock = global.enableSplitDock !== false;
-
-  const layoutStyle: CSSProperties =
-    global.splitterSize === undefined
-      ? rootStyle
-      : ({ ...rootStyle, "--dashfoo-splitter-size": `${global.splitterSize}px` } as CSSProperties);
-
   // A maximized tabset fills the frame on its own; otherwise the row tree renders.
   const maximized = store.model.maximizedTabsetId
     ? findTabset(store.model, store.model.maximizedTabsetId)
     : undefined;
 
   return (
-    <DashfooContext.Provider value={contextValue}>
-      <DragProvider onCommit={handleCommit} splitDock={splitDock}>
-        <div data-dashfoo="layout" style={layoutStyle}>
-          {maximized ? <TabsetView node={maximized} /> : <RowView node={store.model.layout} />}
-        </div>
-      </DragProvider>
-    </DashfooContext.Provider>
+    <Layout.Root
+      closableTabs={closableTabs}
+      dispatch={store.dispatch}
+      draggableTabsets={draggableTabsets}
+      keepMounted={keepMounted}
+      maximizable={maximizable}
+      model={store.model}
+      renamableTabs={renamableTabs}
+      renderTab={renderTab}
+      renderTabLabel={renderTabLabel}
+      renderTabsetToolbar={renderTabsetToolbar}
+    >
+      <Layout.DragLayer>
+        {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={store.model.layout} />}
+      </Layout.DragLayer>
+    </Layout.Root>
   );
 });
 

@@ -1,6 +1,5 @@
 "use client";
 
-import type { RefObject } from "react";
 import { useEffect, useState } from "react";
 
 // The ids of the tabs clipped by the tablist's visible box — past the right edge
@@ -16,34 +15,35 @@ const overflowingIds = (tablist: Element): Array<string> => {
 };
 
 // Recomputes the overflowing ids when the tablist resizes, scrolls, or its tab
-// labels/widths change. `signature` folds tab id+name so renames recompute even
-// when the count is unchanged. Returns [] until measured (and in jsdom, where
-// rects are 0).
-const useTabOverflow = (
-  tablistRef: RefObject<HTMLElement | null>,
-  signature: string,
-): Array<string> => {
+// labels/widths change. Takes the element (not a ref) so a tablist that mounts
+// late — or is swapped by a custom composition — re-arms the observers.
+// `signature` folds tab id+name so renames recompute even when the count is
+// unchanged. Returns [] until measured (and in jsdom, where rects are 0).
+const useTabOverflow = (tablist: HTMLElement | null, signature: string): Array<string> => {
   const [overflow, setOverflow] = useState<Array<string>>([]);
 
   useEffect(() => {
-    const element = tablistRef.current;
-    if (!element) {
-      return;
-    }
+    // No tablist (e.g. the strip is disabled) means nothing can overflow.
     const recompute = (): void => {
-      setOverflow(overflowingIds(element));
+      setOverflow((previous) => {
+        const next = tablist ? overflowingIds(tablist) : [];
+        return next.length === 0 && previous.length === 0 ? previous : next;
+      });
     };
     recompute();
+    if (!tablist) {
+      return;
+    }
     const observer = new ResizeObserver(recompute);
-    observer.observe(element);
+    observer.observe(tablist);
     // Scrolling the strip changes which tabs are clipped on the left/right without
     // resizing it, so listen for scroll too.
-    element.addEventListener("scroll", recompute, { passive: true });
+    tablist.addEventListener("scroll", recompute, { passive: true });
     return () => {
       observer.disconnect();
-      element.removeEventListener("scroll", recompute);
+      tablist.removeEventListener("scroll", recompute);
     };
-  }, [tablistRef, signature]);
+  }, [tablist, signature]);
 
   return overflow;
 };

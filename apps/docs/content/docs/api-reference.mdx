@@ -120,6 +120,19 @@ adds a `data-dashfoo` attribute for styling.
 Prop types are exported as `PanelRootProps`, `PanelHeaderProps`,
 `PanelBodyProps`, `PanelTitleProps`, `PanelIconProps`, and `PanelBadgeProps`.
 
+### `Layout` and `Tabset` compound parts
+
+The primitives `DashfooLayout` itself is built from, exported for hand-built
+layouts. `Layout.Root` (the frame + layout store), `Layout.DragLayer`
+(drag-dock, optional), `Layout.Rows` (the split tree, with a `renderTabset`
+render prop), and `Layout.Tabset` (the stock tabset composition) — plus the
+full tabset decomposition under `Tabset.*`: `Root`, `TabStrip`, `Tablist`,
+`Tab`, `Trigger`, `RenameInput`, `CloseButton`, `Content`, `Toolbar`,
+`OverflowMenu`, `Grip`, and `MaximizeButton`. Each part spreads native props
+and is unstyled beyond minimal structural flex. See
+[Build your own layout](/docs/build-your-own-layout) for the part table and a
+complete example.
+
 ### `useDashfooStore`
 
 The store `DashfooLayout` uses internally, exposed for hosts that render their
@@ -149,11 +162,13 @@ Returns a `DashfooStore`:
 | `canRedo`  | `() => boolean`            | Reads the live actor snapshot.                           |
 | `setModel` | `(model: Dashfoo) => void` | Replace the whole document and reset undo history.       |
 
-### `useDashfooContext`
+### `useLayout`
 
-Reaches the layout's resolved configuration and `dispatch` from inside custom
-chrome — a `renderTabsetToolbar` button, a custom tab label. Throws when called
-outside `<DashfooLayout>`. Returns a `DashfooContextValue`:
+Selector hook over the layout store — the layout's resolved configuration and
+`dispatch`, for custom chrome (a `renderTabsetToolbar` button, a custom tab
+label). `useLayout((state) => state.dispatch)` re-renders only when the
+selected slice changes. Throws outside `<DashfooLayout>` / `<Layout.Root>`.
+The `LayoutState` fields:
 
 | Field                                                              | Type                          | Description                                              |
 | ------------------------------------------------------------------ | ----------------------------- | -------------------------------------------------------- |
@@ -162,12 +177,26 @@ outside `<DashfooLayout>`. Returns a `DashfooContextValue`:
 | `keepMounted`                                                      | `boolean`                     | The resolved prop.                                       |
 | `maximizedTabsetId`                                                | `string \| undefined`         | The currently maximized tabset, if any.                  |
 | `renderTab`                                                        | `(tab: TabNode) => ReactNode` | The resolved content renderer (factory or registry).     |
-| `renderTabLabel`, `renderTabsetToolbar`                            | optional render props         | As passed to `DashfooLayout`.                            |
+| `renderTabLabel`, `renderTabsetToolbar`                            | optional render props         | As passed to `DashfooLayout` / `Layout.Root`.            |
+| `splitDock`                                                        | `boolean`                     | From `global.enableSplitDock`.                           |
 | `tabLocation`                                                      | `"top" \| "bottom"`           | From `global.tabLocation`, default `"top"`.              |
 | `tabsetMinSize`                                                    | `number`                      | From `global.tabSetMinSize`, default `320` here.         |
 | `tabStripEnabled`                                                  | `boolean`                     | From `global.tabSetEnableTabStrip`.                      |
 
-The raw context object is also exported as `DashfooContext`.
+### `useTabset` / `useTab` / `useDragSubject`
+
+`useTabset((state) => …)` selects from the per-tabset store inside
+`<Tabset.Root>`: `node`, `visualSelected`, `activeTab`, `isMaximized`,
+`editingTabId`, `overflowItems`, the resolved flags (`tabsClosable`,
+`tabsRenamable`, `showMaximize`), and the actions (`selectTab`, `closeTab`,
+`renameTab`, `startEditing`, `toggleMaximize`, `selectOverflowTab`).
+
+`useTab()` returns `{ tab, index }` — which tab the part belongs to — inside
+`<Tabset.Tab>`.
+
+`useDragSubject()` returns the live drag subject (`{ kind: "tab" | "tabset" |
+"external", id }`) or `null`, including outside a drag layer. See
+[Build your own layout](/docs/build-your-own-layout).
 
 ### `usePersistence`
 

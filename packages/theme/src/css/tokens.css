@@ -41,6 +41,8 @@
   --dashfoo-dock-fill: color-mix(in oklab, var(--dashfoo-primary) 10%, transparent);
   --dashfoo-dock-border: var(--dashfoo-ring);
   --dashfoo-dock-line: var(--dashfoo-primary);
+  /* the dock pane previews a panel position, so it carries the panel radius */
+  --dashfoo-dock-radius: var(--dashfoo-radius);
 }
 
 /* Opt-in dark theme: same neutral scale inverted. Only the lightness-bearing
