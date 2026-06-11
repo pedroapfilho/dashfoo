@@ -12,6 +12,11 @@ type History = {
   present: Dashfoo;
 };
 
+// Snapshots are full model clones, so an unbounded past grows memory for the
+// life of the session (every action — even a tab click — is one step). 100
+// steps is far beyond practical undo depth while keeping memory flat.
+const HISTORY_LIMIT = 100;
+
 const createHistory = (present: Dashfoo): History => ({
   future: [],
   past: [],
@@ -23,7 +28,7 @@ const canRedo = (history: History): boolean => history.future.length > 0;
 
 const dispatch = (history: History, action: Action): History => {
   const present = reducer(history.present, action);
-  return { future: [], past: [...history.past, history.present], present };
+  return { future: [], past: [...history.past, history.present].slice(-HISTORY_LIMIT), present };
 };
 
 const undo = (history: History): History => {
@@ -45,10 +50,10 @@ const redo = (history: History): History => {
   }
   return {
     future: rest,
-    past: [...history.past, history.present],
+    past: [...history.past, history.present].slice(-HISTORY_LIMIT),
     present: next,
   };
 };
 
-export { canRedo, canUndo, createHistory, dispatch, redo, undo };
+export { canRedo, canUndo, createHistory, dispatch, HISTORY_LIMIT, redo, undo };
 export type { History };

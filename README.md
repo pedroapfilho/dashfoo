@@ -164,7 +164,7 @@ import { reducer, normalize, toJSON, fromJSON } from "@dashfoo/core";
 const next = reducer(model, { type: "renameTab", tabId: "chart", name: "Price" });
 ```
 
-The reducer is pure and immutable, runs the self-healing invariants (`normalize`) after every action, and validates action payloads against `actionSchema` at the boundary. `resolveDockTarget` is a pure geometry function: outer bands of a tabset resolve to a split, the center to a tab stack. Undo/redo is a pure helper over `past · present · future`; every committed action is one undo step, and a splitter drag lands as a single step because `react-resizable-panels` v4 commits one `adjustSplit` per release. Serialization is `toJSON` / `fromJSON`, the latter validating an untrusted payload against the schema (whose `version` field is pinned to the current format).
+The reducer is pure and immutable, runs the self-healing invariants (`normalize`) after every action, and validates action payloads against `actionSchema` at the boundary. `resolveDockTarget` is a pure geometry function: outer bands of a tabset resolve to a split, the center to a tab stack. Undo/redo is a pure helper over `past · present · future`; every committed action is one undo step (the most recent 100 are kept), and a splitter drag lands as a single step because `react-resizable-panels` v4 commits one `adjustSplit` per release. Serialization is `toJSON` / `fromJSON`, the latter validating an untrusted payload against the schema (whose `version` field is pinned to the current format).
 
 ### The react adapters
 

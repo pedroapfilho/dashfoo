@@ -214,7 +214,7 @@ if (canRedo(history)) history = redo(history);
 Every dispatched action is its own undo step; there is no coalescing. A splitter
 drag still lands as one step because react-resizable-panels v4 commits a single
 `adjustSplit` when the drag is released, not a per-frame stream. Any new dispatch
-clears the redo `future`.
+clears the redo `future`. History keeps the most recent `HISTORY_LIMIT` (100) steps; older snapshots are dropped.
 
 ## Serialize
 

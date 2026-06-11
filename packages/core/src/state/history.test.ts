@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import type { Dashfoo, TabNode } from "../model/schema";
 
-import { canRedo, canUndo, createHistory, dispatch, redo, undo } from "./history";
+import { canRedo, canUndo, createHistory, dispatch, HISTORY_LIMIT, redo, undo } from "./history";
 
 const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab" });
 
@@ -88,5 +88,49 @@ describe("history", () => {
     history = dispatch(history, { index: 1, tabsetId: "ts1", type: "selectTab" });
 
     expect(canRedo(history)).toBe(false);
+  });
+
+  test("past is capped at HISTORY_LIMIT", () => {
+    let history = createHistory(model());
+    for (let i = 0; i < HISTORY_LIMIT + 10; i++) {
+      history = dispatch(history, { name: `tab-${i}`, tabId: "t1", type: "renameTab" });
+    }
+
+    expect(history.past.length).toBe(HISTORY_LIMIT);
+  });
+
+  test("oldest steps are dropped, newest kept", () => {
+    let history = createHistory(model());
+    // dispatch 10 steps that will be trimmed, then HISTORY_LIMIT more that are kept
+    for (let i = 0; i < 10; i++) {
+      history = dispatch(history, { name: `early-${i}`, tabId: "t1", type: "renameTab" });
+    }
+    // record what the state looks like after the 10th dispatch (oldest kept step)
+    const stateAfterTenth = history.present;
+    for (let i = 0; i < HISTORY_LIMIT; i++) {
+      history = dispatch(history, { name: `late-${i}`, tabId: "t1", type: "renameTab" });
+    }
+
+    // undo all HISTORY_LIMIT kept steps — should arrive at stateAfterTenth
+    for (let i = 0; i < HISTORY_LIMIT; i++) {
+      history = undo(history);
+    }
+
+    expect(history.present).toEqual(stateAfterTenth);
+    expect(canUndo(history)).toBe(false);
+  });
+
+  test("redo respects the cap", () => {
+    let history = createHistory(model());
+    for (let i = 0; i < HISTORY_LIMIT; i++) {
+      history = dispatch(history, { name: `step-${i}`, tabId: "t1", type: "renameTab" });
+    }
+    const preUndoPresent = history.present;
+
+    history = undo(history);
+    history = redo(history);
+
+    expect(history.past.length).toBe(HISTORY_LIMIT);
+    expect(history.present).toEqual(preUndoPresent);
   });
 });
