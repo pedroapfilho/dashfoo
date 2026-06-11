@@ -10,7 +10,7 @@ value somewhere on every change and loading it back on the next visit.
 
 The easiest way is the **`persist` prop**: pass a localStorage key and
 `DashfooLayout` wires up the whole loop — load once, validate the stored
-payload, debounce-save every change, and flush on unmount. A `ref` exposes
+payload, debounce-save every change, and flush on page hide and unmount. A `ref` exposes
 `resetLayout()` to clear the saved copy and return to the default.
 
 ```tsx
@@ -170,29 +170,31 @@ Pass the result as `defaultModel`. The `persist` prop then saves changes under
 the same key as usual. The same shape without the `migrate` call is the plain
 validated load, for hosts that read storage outside the `persist` prop.
 
-## Debounced save and unmount flush
+## Debounced save and flush
 
 Persistence does not write on every change. Each change serializes the model with
 `toJSON`, stashes it as a pending write, and schedules a flush `debounceMs`
 (default 300 ms) later. A burst of changes — dragging a splitter produces many —
 collapses into one write.
 
-The pending write carries the `key` it was produced for. If `key` changes while a
-save is queued, the flush still writes under the original key, so a key switch can
-never write the old model under the new key.
+The pending write carries the `key` and `storage` it was produced for. If the
+config changes while a save is queued, the flush still writes to the original
+target, so a config switch can never write the old model into the new one.
 
-A change still in the debounce window when the component unmounts would normally
-be lost. A cleanup effect flushes the pending write on unmount, so navigating away
-right after a drag still saves the last change.
+A change still in the debounce window when the page goes away would normally be
+lost — a reload or tab close never unmounts React, so the debounce timer simply
+dies with the page. Persistence flushes the pending write on `pagehide` and when
+the page becomes hidden (`visibilitychange`), as well as in a cleanup effect on
+unmount, so reloading right after a drag still saves the last change.
 
 `resetLayout()` (on the [imperative handle](/controlled-and-history)) is the
 inverse: it cancels any pending timer, drops the pending write, removes the stored
 key, and resets the live model to the original `defaultModel`.
 
-## Worked example: the demo persistence page
+## Worked example: the demo overview page
 
-The demo's persistence route
-([`apps/demo-vite/src/pages/persistence.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/persistence.tsx))
+The demo's overview route
+([`apps/demo-vite/src/pages/overview.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/overview.tsx))
 is the whole pattern in one component:
 
 ```tsx
@@ -202,22 +204,22 @@ import { useMemo, useRef } from "react";
 
 import { renderPanel } from "../components/panels";
 import { Button, DemoStage } from "../components/ui";
-import { playgroundModel } from "../models";
+import { overviewModel } from "../models";
 
-const PersistencePage = () => {
-  const defaultModel = useMemo(() => playgroundModel(), []);
+const OverviewPage = () => {
+  const defaultModel = useMemo(() => overviewModel(), []);
   const layout = useRef<DashfooHandle>(null);
 
   return (
     <DemoStage
       actions={<Button onClick={() => layout.current?.resetLayout()}>Clear saved layout</Button>}
       description="Saved to localStorage on every change (validated on load). Rearrange it, then reload — your arrangement survives."
-      title="Persistence"
+      title="Overview"
     >
       <DashfooLayout
         defaultModel={defaultModel}
         factory={renderPanel}
-        persist="dashfoo:demo:persistence"
+        persist="dashfoo:demo:overview"
         ref={layout}
       />
     </DemoStage>
@@ -253,5 +255,5 @@ wiring.
   — the hook, both adapters, and the `StorageAdapter` type.
 - [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts)
   — `fromJSON` / `toJSON` and `parseModel`.
-- [`apps/demo-vite/src/pages/persistence.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/persistence.tsx)
+- [`apps/demo-vite/src/pages/overview.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/overview.tsx)
   — the end-to-end worked example.

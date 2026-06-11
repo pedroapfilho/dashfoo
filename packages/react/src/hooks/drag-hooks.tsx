@@ -1,14 +1,26 @@
 "use client";
 
-import type { DragSubject } from "@dashfoo/core";
-import { Draggable } from "@dnd-kit/dom";
-import type { DragDropManager } from "@dnd-kit/dom";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
+import type { DragSubject, TabNode } from "@dashfoo/core";
+import { Accessibility, Draggable, DragDropManager, Feedback, KeyboardSensor } from "@dnd-kit/dom";
+import type { Context } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";
 
 // Shared drag contexts + the draggable/droppable hooks. Lives apart from
 // drag-adapter.tsx so the contexts can be owned here without a circular import:
 // drag-adapter imports these for DragProvider and re-exports the hooks, and this
 // module never reaches back into drag-adapter.
+
+// Plugins drop the screen-reader announcer and the visual Feedback plugin (the
+// adapter renders its own preview). Sensors drop the KeyboardSensor: its nudge
+// model double-binds the arrow keys the tab strip already uses for
+// roving-tabindex navigation, so keyboard docking needs its own interaction
+// design rather than this sensor. Pointer drag only.
+const createDragManager = (): DragDropManager =>
+  new DragDropManager({
+    plugins: (defaults) =>
+      defaults.filter((plugin) => plugin !== Accessibility && plugin !== Feedback),
+    sensors: (defaults) => defaults.filter((sensor) => sensor !== KeyboardSensor),
+  });
 
 type DragContextValue = {
   manager: DragDropManager;
@@ -16,6 +28,12 @@ type DragContextValue = {
 };
 
 const DragContext = createContext<DragContextValue | null>(null);
+
+// A manager owned by DashfooDragProvider, shared between a layout and external
+// tab sources outside it so drags can cross that boundary. The annotation keeps
+// declaration emit from expanding @dnd-kit's non-exported generic defaults.
+const SharedDragManagerContext: Context<DragDropManager | null> =
+  createContext<DragDropManager | null>(null);
 
 const DragSubjectContext = createContext<DragSubject | null>(null);
 
@@ -60,11 +78,14 @@ const useDraggableEntity = (
   label: string,
 ): { ref: (element: Element | null) => void } => {
   const context = useContext(DragContext);
+  // Internal draggables (tabs, grips) live under DragProvider; external tab
+  // sources sit outside it and reach the manager via DashfooDragProvider.
+  const sharedManager = useContext(SharedDragManagerContext);
+  const manager = context?.manager ?? sharedManager;
   const { draggableRef, elementRef, ref } = useDraggableHandle();
   const { data, id } = descriptor;
 
   useEffect(() => {
-    const manager = context?.manager;
     if (!manager || disabled) {
       return undefined;
     }
@@ -75,7 +96,7 @@ const useDraggableEntity = (
       draggable.destroy();
       draggableRef.current = null;
     };
-  }, [context, data, disabled, draggableRef, elementRef, id]);
+  }, [data, disabled, draggableRef, elementRef, id, manager]);
 
   useEffect(() => {
     const draggable = draggableRef.current;
@@ -120,13 +141,47 @@ const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | nu
   return { ref };
 };
 
+type ExternalTabSourceOptions = {
+  // Must return a fresh TabNode (unique id) per call — each drop inserts a new
+  // tab, and duplicate ids would fail the model's invariants.
+  createTab: () => TabNode;
+  disabled?: boolean;
+  label?: string;
+};
+
+// Makes any element outside a layout a drag source that inserts a new tab when
+// dropped on a DashfooLayout under the same DashfooDragProvider. The adapter
+// recognizes the { type: "external" } payload and commits an addNode instead of
+// a move. The ref-indirection keeps `data` referentially stable (the
+// construction effect tracks it) while drags always call the latest createTab.
+const useExternalTabSource = ({
+  createTab,
+  disabled = false,
+  label = "",
+}: ExternalTabSourceOptions): { ref: (element: Element | null) => void } => {
+  const id = useId();
+  const createTabRef = useRef(createTab);
+  // Dependency-less on purpose: a plain ref sync so drags always call the latest createTab.
+  useEffect(() => {
+    createTabRef.current = createTab;
+  });
+  const data = useMemo(
+    () => ({ createTab: (): TabNode => createTabRef.current(), type: "external" }),
+    [],
+  );
+  return useDraggableEntity({ data, id: `external-${id}` }, disabled, label);
+};
+
 const useDragSubject = (): DragSubject | null => useContext(DragSubjectContext);
 
-export type { DragContextValue };
+export type { DragContextValue, ExternalTabSourceOptions };
 export {
+  createDragManager,
   DragContext,
   DragSubjectContext,
+  SharedDragManagerContext,
   useDragSubject,
+  useExternalTabSource,
   useTabDraggable,
   useTabsetDraggable,
   useTabsetDroppable,

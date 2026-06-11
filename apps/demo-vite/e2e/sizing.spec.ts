@@ -1,10 +1,10 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
-const KEY = "dashfoo:demo:sizing";
-
-const sidePanel = (page: Page): Locator => page.locator("#side");
-const mainPanel = (page: Page): Locator => page.locator("#main");
+// Sizing constraints on the docking layout: tabset "a" sets min: 180, "b" uses
+// the engine default.
+const aPanel = (page: Page): Locator => page.locator("#a");
+const bPanel = (page: Page): Locator => page.locator("#b");
 const splitter = (page: Page): Locator => page.locator('[data-dashfoo="splitter"]').first();
 
 const panelWidth = async (panel: Locator): Promise<number> => {
@@ -28,34 +28,30 @@ const dragSplitterTo = async (page: Page, x: number): Promise<void> => {
 };
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/sizing");
-  await page.evaluate((key) => {
-    localStorage.removeItem(key);
-  }, KEY);
-  await page.reload();
-  await expect(page.getByRole("tab", { name: "Navigator" })).toBeVisible();
+  await page.goto("/docking");
+  await expect(page.getByRole("tab", { name: "Canvas" })).toBeVisible();
 });
 
 test("a tabset with an explicit min width cannot be dragged smaller", async ({ page }) => {
-  const side = await sidePanel(page).boundingBox();
-  if (!side) {
-    throw new Error("side panel has no bounding box");
+  const a = await aPanel(page).boundingBox();
+  if (!a) {
+    throw new Error("tabset a has no bounding box");
   }
 
-  await dragSplitterTo(page, side.x + 20);
+  await dragSplitterTo(page, a.x + 20);
 
-  await expect.poll(() => panelWidth(sidePanel(page))).toBeGreaterThanOrEqual(179);
+  await expect.poll(() => panelWidth(aPanel(page))).toBeGreaterThanOrEqual(179);
 });
 
 test("tabsets use the default min width when no node min is set", async ({ page }) => {
-  const main = await mainPanel(page).boundingBox();
-  if (!main) {
-    throw new Error("main panel has no bounding box");
+  const b = await bPanel(page).boundingBox();
+  if (!b) {
+    throw new Error("tabset b has no bounding box");
   }
 
-  await dragSplitterTo(page, main.x + main.width - 10);
+  await dragSplitterTo(page, b.x + b.width - 10);
 
-  await expect.poll(() => panelWidth(mainPanel(page))).toBeGreaterThanOrEqual(319);
+  await expect.poll(() => panelWidth(bPanel(page))).toBeGreaterThanOrEqual(319);
 });
 
 test("the overview side column keeps descendant tabset minimum width", async ({ page }) => {

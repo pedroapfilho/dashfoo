@@ -1,2 +1,13 @@
 @import "tailwindcss";
 @import "@dashfoo/theme/dashfoo.css";
+
+/* The shell's dark: variant keys off the same attribute the dashfoo theme
+ * uses, so one toggle flips the demo chrome and the layout together. */
+@custom-variant dark (&:where([data-dashfoo-theme="dark"], [data-dashfoo-theme="dark"] *));
+
+html {
+  color-scheme: light;
+}
+html[data-dashfoo-theme="dark"] {
+  color-scheme: dark;
+}

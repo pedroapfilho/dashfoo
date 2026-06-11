@@ -214,7 +214,7 @@ if (canRedo(history)) history = redo(history);
 Every dispatched action is its own undo step; there is no coalescing. A splitter
 drag still lands as one step because react-resizable-panels v4 commits a single
 `adjustSplit` when the drag is released, not a per-frame stream. Any new dispatch
-clears the redo `future`.
+clears the redo `future`. History keeps the most recent `HISTORY_LIMIT` (100) steps; older snapshots are dropped.
 
 ## Serialize
 
@@ -261,9 +261,11 @@ const current = actor.getSnapshot().context.history.present;
 The drag/dock interaction lifecycle (`idle` → `dragging` → `idle`), driven by
 abstract events the dnd-kit adapter maps from pointer and keyboard input. It owns
 transient drag state only and never touches the document. On a valid `DROP` it
-**emits** a `COMMIT` carrying a `moveNode` action (the drag subject is a tab) or a
-`moveTabset` action (the subject is a whole tabset, dragged by its grip), which
-the React layer forwards to `dashfooMachine`.
+**emits** a `COMMIT` carrying a `moveNode` action (the drag subject is a tab), a
+`moveTabset` action (the subject is a whole tabset, dragged by its grip), or an
+`addNode` action (an `external` subject — content dragged in from outside the
+layout, carrying the `TabNode` to insert), which the React layer forwards to
+`dashfooMachine`.
 
 | Event    | Payload              |
 | -------- | -------------------- |

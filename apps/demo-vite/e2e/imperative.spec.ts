@@ -51,6 +51,23 @@ test("the imperative handle drives undo/redo with correct history flags", async 
   await expect(redo).toBeDisabled();
 });
 
+test("widget buttons add and remove tabs through the handle, and undo restores them", async ({
+  page,
+}) => {
+  // playground model: Canvas/Detail (active tabset) + Metrics/Tasks
+  await page.getByRole("button", { name: "History" }).click();
+  await expect(page.getByRole("tab", { name: "History" })).toBeVisible();
+
+  // make the new tab the selected one, then close it via the handle
+  await page.getByRole("tab", { name: "History" }).click();
+  await page.getByRole("button", { name: "Close active tab" }).click();
+  await expect(page.getByRole("tab", { name: "History" })).toHaveCount(0);
+
+  // both imperative mutations ride the same history as direct interactions
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(page.getByRole("tab", { name: "History" })).toBeVisible();
+});
+
 test("undo and redo restore resized panel dimensions", async ({ page }) => {
   await page.setViewportSize({ height: 900, width: 1600 });
   await page.reload();

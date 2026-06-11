@@ -11,10 +11,10 @@ const PlaceholderPanel = ({ node }: { node: TabNode }): ReactNode => (
     </Panel.Header>
     <Panel.Body>
       <div className="flex flex-col gap-2">
-        <div className="h-2 w-4/5 rounded-full bg-neutral-100" />
-        <div className="h-2 w-3/5 rounded-full bg-neutral-100" />
-        <div className="h-2 w-2/5 rounded-full bg-neutral-100" />
-        <p className="mt-2 text-[11px] text-neutral-500">
+        <div className="h-2 w-4/5 rounded-full bg-neutral-100 dark:bg-neutral-800" />
+        <div className="h-2 w-3/5 rounded-full bg-neutral-100 dark:bg-neutral-800" />
+        <div className="h-2 w-2/5 rounded-full bg-neutral-100 dark:bg-neutral-800" />
+        <p className="mt-2 text-[11px] text-neutral-500 dark:text-neutral-400">
           Placeholder panel — drag this tab to rearrange the layout.
         </p>
       </div>

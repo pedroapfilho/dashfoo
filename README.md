@@ -164,14 +164,14 @@ import { reducer, normalize, toJSON, fromJSON } from "@dashfoo/core";
 const next = reducer(model, { type: "renameTab", tabId: "chart", name: "Price" });
 ```
 
-The reducer is pure and immutable, runs the self-healing invariants (`normalize`) after every action, and validates action payloads against `actionSchema` at the boundary. `resolveDockTarget` is a pure geometry function: outer bands of a tabset resolve to a split, the center to a tab stack. Undo/redo is a pure helper over `past · present · future`; every committed action is one undo step, and a splitter drag lands as a single step because `react-resizable-panels` v4 commits one `adjustSplit` per release. Serialization is `toJSON` / `fromJSON`, the latter validating an untrusted payload against the schema (whose `version` field is pinned to the current format).
+The reducer is pure and immutable, runs the self-healing invariants (`normalize`) after every action, and validates action payloads against `actionSchema` at the boundary. `resolveDockTarget` is a pure geometry function: outer bands of a tabset resolve to a split, the center to a tab stack. Undo/redo is a pure helper over `past · present · future`; every committed action is one undo step (the most recent 100 are kept), and a splitter drag lands as a single step because `react-resizable-panels` v4 commits one `adjustSplit` per release. Serialization is `toJSON` / `fromJSON`, the latter validating an untrusted payload against the schema (whose `version` field is pinned to the current format).
 
 ### The react adapters
 
 `@dashfoo/react` binds a `dashfooMachine` actor to React. The two primitives are isolated behind adapters so the engine never imports them directly:
 
 - The **resize adapter** wraps `react-resizable-panels`, mapping `weight` to percentage layout and `Dimension` to fixed/min/max panel sizes, and commits `adjustSplit`.
-- The **drag adapter** drives the framework-agnostic `@dnd-kit/dom` `0.4.0` core imperatively (no React bindings). It renders its own drag-preview chip, hit-tests the pointer against the registered tabsets, forwards the lifecycle into the dock machine via `resolveDockTarget`, and commits `moveNode` (a tab drag) or `moveTabset` (a tabset dragged by its grip). Drag is **pointer-only** — see [the drag guide](https://docs.dashfoo.dev/drag-and-dock) for the a11y note.
+- The **drag adapter** drives the framework-agnostic `@dnd-kit/dom` `0.4.0` core imperatively (no React bindings). It renders its own drag-preview chip, hit-tests the pointer against the registered tabsets, forwards the lifecycle into the dock machine via `resolveDockTarget`, and commits `moveNode` (a tab drag), `moveTabset` (a tabset dragged by its grip), or `addNode` (an external source dragged in via `DashfooDragProvider` + `useExternalTabSource`). Drag is **pointer-only** — see [the drag guide](https://docs.dashfoo.dev/drag-and-dock) for the a11y note.
 
 XState is internal — it never appears in the public API. `useDashfooStore` exposes `{ model, dispatch, undo, redo, canUndo, canRedo, setModel }`; in controlled mode every change routes through `onModelChange`, in uncontrolled mode the actor owns the document with full undo/redo. Persistence is a single `persist="key"` prop (or the lower-level `usePersistence` hook): it debounce-saves the model to a swappable `StorageAdapter` (localStorage, sessionStorage, in-memory, or your own), validating on load.
 
@@ -235,7 +235,7 @@ import "@dashfoo/theme/dashfoo.css"; // neutral oklch tokens, light by default
 
 ## Demo
 
-`apps/demo-vite` is a neutral TanStack Router showcase that drives dashfoo across seven pages: an overview, a docking sandbox, the tabset chrome, persistence, controlled mode, responsive restructuring, and panel sizing.
+`apps/demo-vite` is a neutral TanStack Router showcase across three pages: an overview (a composite layout persisted to localStorage — rearrange, reload, it survives), a docking sandbox with a widget marketplace (drag widgets into the layout from outside it, or add them with a button), and an imperative-control page (undo/redo, add/remove widgets, live model inspector).
 
 Hosted demo: [demo.dashfoo.com](https://demo.dashfoo.com).
 
@@ -253,16 +253,19 @@ pnpm dev
 
 ## Scripts
 
-| Command             | Description                                |
-| ------------------- | ------------------------------------------ |
-| `pnpm dev`          | Start apps in development mode.            |
-| `pnpm build`        | Build every package and app.               |
-| `pnpm test`         | Run unit tests across the monorepo.        |
-| `pnpm lint`         | Run oxlint.                                |
-| `pnpm format`       | Format with oxfmt.                         |
-| `pnpm format:check` | Check formatting without writing.          |
-| `pnpm typecheck`    | Run TypeScript checks across the monorepo. |
-| `pnpm clean`        | Clean all build artifacts.                 |
+| Command                                                                       | Description                                                                                                                                                           |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                                                                    | Persistent watch mode for all packages and apps (tsdown `--watch` for packages, vite/next dev for apps). Use `pnpm --filter @dashfoo/react dev` to watch one package. |
+| `pnpm build`                                                                  | Build every package and app.                                                                                                                                          |
+| `pnpm verify`                                                                 | Pre-push check: lint + typecheck + test + build via turbo.                                                                                                            |
+| `pnpm test`                                                                   | Run unit tests across the monorepo.                                                                                                                                   |
+| `pnpm lint`                                                                   | Run oxlint.                                                                                                                                                           |
+| `pnpm format`                                                                 | Format with oxfmt.                                                                                                                                                    |
+| `pnpm format:check`                                                           | Check formatting without writing.                                                                                                                                     |
+| `pnpm typecheck`                                                              | Run TypeScript checks across the monorepo.                                                                                                                            |
+| `pnpm clean`                                                                  | Clean all build artifacts.                                                                                                                                            |
+| `pnpm --filter demo-vite exec playwright install --with-deps chromium` (once) | Install Playwright browsers — required once before running e2e tests.                                                                                                 |
+| `pnpm --filter demo-vite test:e2e`                                            | Run Playwright e2e tests for the demo app.                                                                                                                            |
 
 ## Stack
 

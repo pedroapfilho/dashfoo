@@ -29,6 +29,7 @@
 
   /* shape + type */
   --dashfoo-radius: 0.625rem;
+  --dashfoo-radius-sm: 0.375rem; /* nested chrome: tabs, focus ring, menus */
   --dashfoo-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --dashfoo-font-size: 13px;
 

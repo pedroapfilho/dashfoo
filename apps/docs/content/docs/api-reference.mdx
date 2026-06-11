@@ -175,7 +175,8 @@ The load/save half behind the `persist` prop, usable standalone.
 `usePersistence(config: PersistConfig | null, defaultModel: Dashfoo | undefined)`
 loads the saved model once (validated; falls back to `defaultModel` on miss or
 corruption, pruning corrupt values with a warning), debounce-saves every change,
-and flushes a pending save on unmount. A `null` config makes it a no-op.
+and flushes a pending save on page hide (`pagehide` /
+`visibilitychange` → hidden) and on unmount. A `null` config makes it a no-op.
 
 | Type            | Shape                                                                                       |
 | --------------- | ------------------------------------------------------------------------------------------- |
@@ -189,6 +190,17 @@ and flushes a pending save on unmount. A `null` config makes it a no-op.
 | `StorageAdapter`         | `{ getItem: (key: string) => string \| null; setItem: (key: string, value: string) => void; removeItem: (key: string) => void }` | The minimal localStorage-shaped contract.                                                                      |
 | `localStorageAdapter`    | `StorageAdapter`                                                                                                                 | SSR-safe browser adapter: reads return `null` and writes warn instead of throwing when storage is unavailable. |
 | `memoryStorageAdapter()` | `() => StorageAdapter`                                                                                                           | Factory returning a fresh Map-backed adapter — tests, SSR, ephemeral layouts.                                  |
+
+### External drag sources
+
+Drag new tabs in from outside the layout — see
+[drag &amp; dock](/drag-and-dock#dragging-in-from-outside) for the full flow.
+
+| Export                     | Signature                                                          | Description                                                                                          |
+| -------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `DashfooDragProvider`      | `({ children }) => ReactNode`                                      | Shares one drag manager between a layout and outside sources. A standalone layout needs no provider. |
+| `useExternalTabSource`     | `(options: ExternalTabSourceOptions) => { ref }`                   | Registers an element as a drag source; put `ref` on it.                                              |
+| `ExternalTabSourceOptions` | `{ createTab: () => TabNode; label?: string; disabled?: boolean }` | `createTab` runs at drag start and must mint a fresh tab id per call.                                |
 
 ### `useResponsiveModel`
 
