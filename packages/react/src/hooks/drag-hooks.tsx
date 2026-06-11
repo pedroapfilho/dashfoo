@@ -1,25 +1,51 @@
 "use client";
 
 import type { DragSubject, TabNode } from "@dashfoo/core";
-import { Accessibility, Draggable, DragDropManager, Feedback, KeyboardSensor } from "@dnd-kit/dom";
+import { Accessibility, Draggable, DragDropManager, Feedback, PointerSensor } from "@dnd-kit/dom";
 import type { Context } from "react";
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";
+import type { StoreApi } from "zustand";
+import { createStore, useStore } from "zustand";
 
 // Shared drag contexts + the draggable/droppable hooks. Lives apart from
 // drag-adapter.tsx so the contexts can be owned here without a circular import:
 // drag-adapter imports these for DragProvider and re-exports the hooks, and this
 // module never reaches back into drag-adapter.
 
+const INTERACTIVE_SELECTOR = `
+  input:not([disabled]),
+  select:not([disabled]),
+  textarea:not([disabled]),
+  button:not([disabled]),
+  a[href],
+  [contenteditable]:not([contenteditable="false"])
+`;
+
+// The sensor's default preventActivation vetoes any pointerdown whose target is
+// an element child of the draggable: closest() walks up to the trigger button
+// itself and calls it "interactive". Plain-text labels dodge that (text nodes
+// are not elements), but custom labels render elements inside the trigger and
+// would silently lose dragging. Allow the draggable itself as the handle while
+// still refusing genuinely interactive children nested in a label.
+const preventActivation = (event: PointerEvent, source: Draggable): boolean => {
+  const { target } = event;
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  const interactive = target.closest(INTERACTIVE_SELECTOR);
+  return interactive !== null && interactive !== source.element;
+};
+
 // Plugins drop the screen-reader announcer and the visual Feedback plugin (the
-// adapter renders its own preview). Sensors drop the KeyboardSensor: its nudge
-// model double-binds the arrow keys the tab strip already uses for
-// roving-tabindex navigation, so keyboard docking needs its own interaction
-// design rather than this sensor. Pointer drag only.
+// adapter renders its own preview). Sensors keep only a configured
+// PointerSensor — the KeyboardSensor's nudge model double-binds the arrow keys
+// the tab strip already uses for roving-tabindex navigation, so keyboard
+// docking needs its own interaction design rather than that sensor.
 const createDragManager = (): DragDropManager =>
   new DragDropManager({
     plugins: (defaults) =>
       defaults.filter((plugin) => plugin !== Accessibility && plugin !== Feedback),
-    sensors: (defaults) => defaults.filter((sensor) => sensor !== KeyboardSensor),
+    sensors: () => [PointerSensor.configure({ preventActivation })],
   });
 
 type DragContextValue = {
@@ -35,7 +61,23 @@ const DragContext = createContext<DragContextValue | null>(null);
 const SharedDragManagerContext: Context<DragDropManager | null> =
   createContext<DragDropManager | null>(null);
 
-const DragSubjectContext = createContext<DragSubject | null>(null);
+// The live drag subject rides a scoped zustand store (created per DragLayer, fed
+// by the dragDockMachine subscription) instead of a context value, so a drag
+// start/end re-renders only the parts that select the subject — never the
+// provider subtree.
+type DragSubjectState = { subject: DragSubject | null };
+
+type DragSubjectStore = StoreApi<DragSubjectState>;
+
+const createDragSubjectStore = (): DragSubjectStore =>
+  createStore<DragSubjectState>(() => ({ subject: null }));
+
+// Stable empty store so useDragSubject keeps an unconditional hook order (and
+// returns null) outside a DragLayer — parts must keep working drag-free.
+const nullSubjectStore = createDragSubjectStore();
+
+const DragSubjectStoreContext: Context<DragSubjectStore | null> =
+  createContext<DragSubjectStore | null>(null);
 
 // Tracks a Draggable's element across renders without rebuilding it. Returned by
 // the draggable hooks; their effects own the Draggable's lifecycle.
@@ -172,13 +214,17 @@ const useExternalTabSource = ({
   return useDraggableEntity({ data, id: `external-${id}` }, disabled, label);
 };
 
-const useDragSubject = (): DragSubject | null => useContext(DragSubjectContext);
+const useDragSubject = (): DragSubject | null => {
+  const store = useContext(DragSubjectStoreContext);
+  return useStore(store ?? nullSubjectStore, (state) => state.subject);
+};
 
-export type { DragContextValue, ExternalTabSourceOptions };
+export type { DragContextValue, DragSubjectStore, ExternalTabSourceOptions };
 export {
   createDragManager,
+  createDragSubjectStore,
   DragContext,
-  DragSubjectContext,
+  DragSubjectStoreContext,
   SharedDragManagerContext,
   useDragSubject,
   useExternalTabSource,

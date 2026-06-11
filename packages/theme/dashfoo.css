@@ -65,6 +65,7 @@
   display: flex;
   align-items: center;
   border-radius: var(--dashfoo-radius-sm) var(--dashfoo-radius-sm) 0 0;
+  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 [data-dashfoo="tab"] {
   cursor: pointer;
@@ -75,6 +76,12 @@
   color: var(--dashfoo-muted-foreground);
   font: inherit;
   font-size: 12.5px;
+  transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* hover = a faded preview of the selected-tab surface; card (not accent) because
+   accent matches the strip's muted background in light mode and would vanish */
+[data-dashfoo="tab-item"]:hover:not(:has([aria-selected="true"])) {
+  background: color-mix(in oklab, var(--dashfoo-card) 50%, transparent);
 }
 [data-dashfoo="tab-item"]:hover [data-dashfoo="tab"] {
   color: var(--dashfoo-foreground);
@@ -125,6 +132,9 @@
   border-radius: 4px;
   color: var(--dashfoo-muted-foreground);
   cursor: pointer;
+  transition:
+    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 [data-dashfoo="tab-close"]:hover {
   background: var(--dashfoo-accent);
@@ -275,7 +285,8 @@
   padding: 0.875rem;
 }
 
-/* drag overlay = the chip that follows the pointer (label or tabset name) */
+/* drag overlay = the chip that follows the pointer (label or tabset name).
+   Panel radius (not radius-sm) so the preview reads as the card it will become. */
 [data-dashfoo="drag-preview"] {
   display: flex;
   align-items: center;
@@ -283,7 +294,7 @@
   padding: 0.25rem 0.625rem;
   background: var(--dashfoo-popover);
   border: 1px solid var(--dashfoo-border);
-  border-radius: var(--dashfoo-radius-sm);
+  border-radius: var(--dashfoo-radius);
   color: var(--dashfoo-foreground);
   font-family: var(--dashfoo-font);
   font-size: 12.5px;

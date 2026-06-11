@@ -26,8 +26,13 @@ const controlledRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/controlled",
 });
+const rawRoute = createRoute({
+  component: lazyRouteComponent(() => import("./pages/raw"), "RawPage"),
+  getParentRoute: () => rootRoute,
+  path: "/raw",
+});
 
-const routeTree = rootRoute.addChildren([indexRoute, dockingRoute, controlledRoute]);
+const routeTree = rootRoute.addChildren([indexRoute, dockingRoute, controlledRoute, rawRoute]);
 
 const router = createRouter({ defaultPreload: "intent", routeTree });
 

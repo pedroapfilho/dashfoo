@@ -1,0 +1,143 @@
+---
+title: Build your own layout
+description: Compose the Layout and Tabset primitives into a custom layout — the same parts DashfooLayout is built from, with your own chrome, labels, and toolbars.
+---
+
+`DashfooLayout` is a thin assembly of exported primitives. When its chrome
+doesn't fit — you want custom tab labels, a different toolbar order, extra
+controls in the strip — compose the same parts yourself. Nothing is lost:
+selection, close-with-focus-restore, inline rename, keyboard navigation,
+overflow, maximize, and drag-dock all live in the parts, not in
+`DashfooLayout`.
+
+## The three layers
+
+A hand-built layout wires three things:
+
+1. **A store.** `useDashfooStore({ defaultModel })` owns the model, dispatch,
+   and undo/redo — exactly what `DashfooLayout` uses internally.
+2. **The `Layout` frame.** `Layout.Root` takes `model`, `dispatch`, and
+   `renderTab`, and provides the layout store every part below reads through
+   selectors. `Layout.DragLayer` opts the tree into drag-dock (omit it and
+   everything still works without dragging). `Layout.Rows` renders the split
+   tree on the resize adapter.
+3. **A tabset composition.** Pass `renderTabset` to `Layout.Rows` to substitute
+   your own arrangement of `Tabset.*` parts at every leaf — or use
+   `Layout.Tabset`, the stock composition, where custom chrome isn't needed.
+
+```tsx
+import { Layout, Tabset, useDashfooStore } from "@dashfoo/react";
+
+const App = () => {
+  const store = useDashfooStore({ defaultModel });
+
+  return (
+    <Layout.Root dispatch={store.dispatch} model={store.model} renderTab={renderTab}>
+      <Layout.DragLayer>
+        <Layout.Rows node={store.model.layout} renderTabset={(node) => <MyTabset node={node} />} />
+      </Layout.DragLayer>
+    </Layout.Root>
+  );
+};
+```
+
+## Composing a tabset
+
+`Tabset.Root` creates a per-tabset store; the parts inside coordinate through
+it, so they can be reordered, wrapped, or omitted freely:
+
+```tsx
+const MyTabset = ({ node }: { node: TabsetNode }) => (
+  <Tabset.Root node={node}>
+    <Tabset.TabStrip>
+      <Tabset.Tablist>
+        {node.children.map((tab) => (
+          <Tabset.Tab key={tab.id} tab={tab}>
+            <Tabset.Trigger>
+              <MyLabel />
+            </Tabset.Trigger>
+            <Tabset.RenameInput />
+            <Tabset.CloseButton />
+          </Tabset.Tab>
+        ))}
+      </Tabset.Tablist>
+      <Tabset.Toolbar>
+        <TabCounter />
+        <Tabset.OverflowMenu />
+        <Tabset.MaximizeButton />
+        <Tabset.Grip />
+      </Tabset.Toolbar>
+    </Tabset.TabStrip>
+    <Tabset.Content />
+  </Tabset.Root>
+);
+```
+
+Custom parts read the same stores the built-in parts do:
+
+```tsx
+import { useTab, useTabset } from "@dashfoo/react";
+
+// A label that knows which tab it is and whether it's selected.
+const MyLabel = () => {
+  const { index, tab } = useTab();
+  const selected = useTabset((state) => state.visualSelected === index);
+  return <span className={selected ? "font-bold" : undefined}>{tab.name}</span>;
+};
+
+// A toolbar add-on the stock composition doesn't have.
+const TabCounter = () => {
+  const count = useTabset((state) => state.node.children.length);
+  return <span>{count} tabs</span>;
+};
+```
+
+The hooks are selector-based: a part re-renders only when its selected slice
+changes, so a drag pulse or a rename in one tab doesn't wake the rest of the
+strip.
+
+## What each part owns
+
+| Part                                              | Owns                                                                                                                              |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `Tabset.Root`                                     | The per-tabset store, drop registration, overflow measurement, the drag-out selection preview, and focus restore after a close.   |
+| `Tabset.Tablist`                                  | `role="tablist"` and the WAI-ARIA roving-tabindex keyboard model (arrows, Home/End).                                              |
+| `Tabset.Tab`                                      | Tab identity for the parts inside, and focus return after a rename.                                                               |
+| `Tabset.Trigger`                                  | The `role="tab"` button: ids and aria wiring, select on click, rename on double-click, tab dragging. Children override the label. |
+| `Tabset.RenameInput`                              | The inline editor (Enter commits, Escape cancels, blur commits once); renders only while its tab is being renamed.                |
+| `Tabset.CloseButton`                              | Close without selecting; hides while renaming or when the tab isn't closable.                                                     |
+| `Tabset.Content`                                  | The `role="tabpanel"` pane(s), `keepMounted` included. A children render-prop overrides the layout's `renderTab` for this tabset. |
+| `Tabset.OverflowMenu` / `Grip` / `MaximizeButton` | Self-hide when their feature is off, so compositions never need the visibility conditions by hand.                                |
+
+A11y wiring (`aria-controls`, `aria-labelledby`, `aria-selected`, roving
+`tabIndex`) flows through the stores — it stays correct in any part order.
+
+## Maximize
+
+In a hand-built layout, maximize is the host's branch — exactly what
+`DashfooLayout` does internally:
+
+```tsx
+import { findTabset } from "@dashfoo/core";
+
+const maximized = store.model.maximizedTabsetId
+  ? findTabset(store.model, store.model.maximizedTabsetId)
+  : undefined;
+
+{maximized ? <MyTabset node={maximized} /> : <Layout.Rows node={store.model.layout} … />}
+```
+
+## Guard rails
+
+Misuse is never silent. A part rendered outside its provider throws
+(`Tabset.Trigger` outside `Tabset.Tab`, any tabset part outside `Tabset.Root`).
+Soft mistakes — two `Tablist`s under one `Root`, a `Tab` whose node isn't in
+the tabset, double-click rename with no `RenameInput` composed — log a
+`[dashfoo]` warning and degrade gracefully.
+
+## Working reference
+
+The demo's **Raw primitives** page (`apps/demo-vite/src/pages/raw.tsx`) builds
+a complete layout this way — custom labels, a tab counter, reordered toolbar,
+undo/redo buttons wired to the store — with no `DashfooLayout` anywhere, and
+its Playwright suite drags, renames, and maximizes against it.

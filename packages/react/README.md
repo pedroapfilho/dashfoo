@@ -394,8 +394,96 @@ It binds an XState actor to React, normalizes the incoming model, and exposes
 `dispatch` plus undo/redo. Uncontrolled mode gives full history; controlled mode
 routes changes through `onModelChange` and keeps the actor in sync.
 
-`useDashfooContext` returns the live context (`dispatch`, `renderTab`, the chrome
-flags) and throws outside a `<DashfooLayout>`. Use it from a custom view.
+Three selector hooks read the scoped stores the primitives coordinate through.
+Each takes a selector and re-renders only when the selected slice changes:
+
+```ts
+const dispatch = useLayout((state) => state.dispatch); // layout-wide config + dispatch; throws outside <DashfooLayout>/<Layout.Root>
+const node = useTabset((state) => state.node); // per-tabset state; throws outside <Tabset.Root>
+const { index, tab } = useTab(); // which tab a part belongs to; throws outside <Tabset.Tab>
+```
+
+`useDragSubject()` returns the live drag subject (`{ kind, id }` for a tab or
+tabset being dragged) or `null` — including outside a drag layer — for
+drag-aware styling in custom parts.
+
+## Build your own layout
+
+`DashfooLayout` is a thin assembly of exported primitives — you can compose the
+same parts yourself when you need custom chrome. Two compound namespaces, same
+pattern as `Panel`:
+
+| Part                    | Element                                  | Role                                                                                                            |
+| ----------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `Layout.Root`           | `div[data-dashfoo="layout"]`             | Creates the layout store. Takes `model`, `dispatch`, `renderTab`, and the chrome flags `DashfooLayout` accepts. |
+| `Layout.DragLayer`      | none (overlays)                          | Opts the tree into drag-dock. Omit it and everything else still works, just without dragging.                   |
+| `Layout.Rows`           | rrp split tree                           | Renders a `RowNode` recursively. `renderTabset` swaps in a custom tabset composition at every leaf.             |
+| `Layout.Tabset`         | —                                        | The stock tabset composition, for leaves that don't need custom chrome.                                         |
+| `Tabset.Root`           | `div[data-dashfoo="tabset"]`             | Creates the per-tabset store; owns drop registration, overflow measurement, and focus restore after close.      |
+| `Tabset.TabStrip`       | `div[data-dashfoo="tabstrip"]`           | The strip row (drag hit-testing targets this attribute).                                                        |
+| `Tabset.Tablist`        | `div[data-dashfoo="tablist"]`            | `role="tablist"` + roving-tabindex arrow/Home/End navigation.                                                   |
+| `Tabset.Tab`            | `span[data-dashfoo="tab-item"]`          | Per-tab wrapper; provides identity to the parts inside.                                                         |
+| `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: select on click, rename on double-click, draggable. Children override the label.                |
+| `Tabset.RenameInput`    | `input[data-dashfoo="tab-rename"]`       | Inline rename editor; renders only while its tab is being renamed.                                              |
+| `Tabset.CloseButton`    | `button[data-dashfoo="tab-close"]`       | Closes the tab with focus restore; hides when the tab isn't closable.                                           |
+| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted`. Children render-prop overrides `renderTab`.                |
+| `Tabset.Toolbar`        | `div[data-dashfoo="tabset-toolbar"]`     | Trailing toolbar container.                                                                                     |
+| `Tabset.OverflowMenu`   | menu button                              | Lists clipped tabs; hides when nothing overflows.                                                               |
+| `Tabset.Grip`           | `button[data-dashfoo="tabset-grip"]`     | Drag handle for the whole tabset; hides when tabset dragging is off.                                            |
+| `Tabset.MaximizeButton` | `button[data-dashfoo="tabset-maximize"]` | Maximize/restore toggle; hides when maximize is off.                                                            |
+
+All parts spread native props (`className`, `style`, handlers) like `Panel`;
+the structural attributes (`role`, ids, `data-dashfoo`) are applied after the
+spread because drag hit-testing and overflow measurement query them.
+
+```tsx
+import { Layout, Tabset, useDashfooStore, useTab } from "@dashfoo/react";
+
+const MyTabset = ({ node }: { node: TabsetNode }) => (
+  <Tabset.Root node={node}>
+    <Tabset.TabStrip>
+      <Tabset.Tablist>
+        {node.children.map((tab) => (
+          <Tabset.Tab key={tab.id} tab={tab}>
+            <Tabset.Trigger>
+              <MyLabel /> {/* reads useTab()/useTabset() */}
+            </Tabset.Trigger>
+            <Tabset.RenameInput />
+            <Tabset.CloseButton />
+          </Tabset.Tab>
+        ))}
+      </Tabset.Tablist>
+      <Tabset.Toolbar>
+        <Tabset.OverflowMenu />
+        <Tabset.MaximizeButton />
+        <Tabset.Grip />
+      </Tabset.Toolbar>
+    </Tabset.TabStrip>
+    <Tabset.Content />
+  </Tabset.Root>
+);
+
+const MyLayout = () => {
+  const store = useDashfooStore({ defaultModel });
+  return (
+    <Layout.Root dispatch={store.dispatch} model={store.model} renderTab={renderTab}>
+      <Layout.DragLayer>
+        <Layout.Rows node={store.model.layout} renderTabset={(node) => <MyTabset node={node} />} />
+      </Layout.DragLayer>
+    </Layout.Root>
+  );
+};
+```
+
+Maximize is the host's concern in a hand-built layout: when
+`model.maximizedTabsetId` is set, render that tabset alone (via `findTabset`
+from `@dashfoo/core`) instead of `Layout.Rows` — that's all `DashfooLayout`
+does. The demo's "Raw primitives" page (`apps/demo-vite/src/pages/raw.tsx`) is
+a complete working reference.
+
+Misuse is never silent: parts outside their provider throw, and soft mistakes
+(two `Tablist`s, a `Tab` whose node isn't in the tabset, renaming without a
+`RenameInput`) warn with `[dashfoo]` and degrade gracefully.
 
 ## Exports
 
@@ -417,15 +505,28 @@ type PanelIconProps;
 type PanelRootProps;
 type PanelTitleProps;
 
-// Store
+// Layout primitives (build your own layout)
+Layout; // Layout.Root / Layout.DragLayer / Layout.Rows / Layout.Tabset
+type LayoutRootProps;
+type LayoutDragLayerProps;
+type LayoutRowsProps;
+type LayoutTabsetProps;
+
+// Tabset primitives
+Tabset; // Tabset.Root / .TabStrip / .Tablist / .Tab / .Trigger / .RenameInput / .CloseButton / .Content / .Toolbar / .OverflowMenu / .Grip / .MaximizeButton
+type TabsetRootProps; // …and a Props type per part
+
+// Store + selector hooks
 useDashfooStore;
 type DashfooStore;
 type UseDashfooStoreOptions;
-
-// Context
-DashfooContext;
-useDashfooContext;
-type DashfooContextValue;
+useLayout; // select from the layout store (throws outside Layout.Root/DashfooLayout)
+type LayoutState;
+useTabset; // select from the enclosing tabset store (throws outside Tabset.Root)
+type TabsetState;
+useTab; // { tab, index } identity (throws outside Tabset.Tab)
+type TabContextValue;
+useDragSubject; // the live drag subject, or null
 
 // External drag sources
 DashfooDragProvider; // shares one drag manager between a layout and outside sources

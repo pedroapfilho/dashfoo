@@ -3,7 +3,7 @@
 import type { Action, DockLocation, DragSubject, DropIntent, Point } from "@dashfoo/core";
 import { dragDockMachine, resolveDockTarget, tabNodeSchema } from "@dashfoo/core";
 import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/dom";
-import { useActorRef, useSelector } from "@xstate/react";
+import { useActorRef } from "@xstate/react";
 import type { ReactNode } from "react";
 import {
   useCallback,
@@ -18,15 +18,18 @@ import {
 import type { DragContextValue } from "../hooks/drag-hooks";
 import {
   createDragManager,
+  createDragSubjectStore,
   DragContext,
-  DragSubjectContext,
+  DragSubjectStoreContext,
   SharedDragManagerContext,
   useDragSubject,
   useTabDraggable,
   useTabsetDraggable,
   useTabsetDroppable,
 } from "../hooks/drag-hooks";
+import { LayoutStoreContext } from "../hooks/layout-store";
 import { insertionIndex, pointInRect, shouldAllowDrop } from "../lib/tab-insertion";
+import { warnOnce } from "../lib/warn-once";
 
 import type { DragPreviewState } from "./drag-overlays";
 import { DockIndicator, DragPreview } from "./drag-overlays";
@@ -124,13 +127,17 @@ const subjectFor = (source: {
 
 type DragProviderProps = {
   children: ReactNode;
-  onCommit: (action: Action) => void;
+  // Defaults to the layout store's dispatch when rendered under Layout.Root.
+  onCommit?: (action: Action) => void;
+  // Defaults to the layout store's splitDock (model global), else true.
   splitDock?: boolean;
 };
 
-const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProps): ReactNode => {
+const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): ReactNode => {
   const actorRef = useActorRef(dragDockMachine);
-  const dragSubject = useSelector(actorRef, (snapshot) => snapshot.context.subject);
+  // Nullable read on purpose (not the throwing useLayout hook): the drag layer
+  // also works standalone with an explicit onCommit, e.g. in tests.
+  const layoutStore = useContext(LayoutStoreContext);
   const tabsets = useRef(new Map<string, HTMLElement>());
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const [preview, setPreview] = useState<DragPreviewState | null>(null);
@@ -153,14 +160,38 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
     );
   }
 
+  // The drag subject store: fed by the machine subscription, read by parts via
+  // useDragSubject selectors. Guarded so OVER pulses (every pointer move) don't
+  // notify subscribers — only an actual subject change (drag start/end) does.
+  const [subjectStore] = useState(() => createDragSubjectStore());
   useEffect(() => {
-    const subscription = actorRef.on("COMMIT", (emitted) => {
-      onCommit(emitted.action);
+    const subscription = actorRef.subscribe((snapshot) => {
+      const subject = snapshot.context.subject;
+      if (subjectStore.getState().subject !== subject) {
+        subjectStore.setState({ subject });
+      }
     });
     return () => {
       subscription.unsubscribe();
     };
-  }, [actorRef, onCommit]);
+  }, [actorRef, subjectStore]);
+
+  useEffect(() => {
+    const subscription = actorRef.on("COMMIT", (emitted) => {
+      const commit = onCommit ?? layoutStore?.getState().dispatch;
+      if (!commit) {
+        warnOnce(
+          "drag-layer-no-commit",
+          "Layout.DragLayer has neither an onCommit prop nor a <Layout.Root> above it; drops are ignored",
+        );
+        return;
+      }
+      commit(emitted.action);
+    });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [actorRef, layoutStore, onCommit]);
 
   const registerTabset = useCallback((id: string, element: HTMLElement | null): void => {
     if (element) {
@@ -201,13 +232,16 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
         return null;
       }
       const intent = intentForTabset(targetId, element, point, draggedId);
-      // When splitting is disabled, a drop over the body stacks instead of splits.
-      if (!splitDock && intent.location.startsWith("split-")) {
+      // When splitting is disabled, a drop over the body stacks instead of
+      // splits. Resolved at drag time (getState, not a subscription) so a model
+      // global flip mid-session is honored without re-rendering the layer.
+      const splitDockResolved = splitDock ?? layoutStore?.getState().splitDock ?? true;
+      if (!splitDockResolved && intent.location.startsWith("split-")) {
         return { location: "center", targetId };
       }
       return intent;
     },
-    [splitDock],
+    [layoutStore, splitDock],
   );
 
   // Position the preview imperatively (transform only) so following the pointer
@@ -293,11 +327,11 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
 
   return (
     <DragContext.Provider value={contextValue}>
-      <DragSubjectContext.Provider value={dragSubject}>
+      <DragSubjectStoreContext.Provider value={subjectStore}>
         {children}
         <DockIndicator actorRef={actorRef} getTabsetElement={getTabsetElement} />
         <DragPreview overlayRef={attachOverlay} preview={preview} />
-      </DragSubjectContext.Provider>
+      </DragSubjectStoreContext.Provider>
     </DragContext.Provider>
   );
 };
@@ -313,3 +347,4 @@ export {
   useTabsetDraggable,
   useTabsetDroppable,
 };
+export type { DragProviderProps };
