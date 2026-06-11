@@ -1,0 +1,11 @@
+/*
+ * Tailwind v4 entry — import after `@import "tailwindcss";` in your CSS.
+ * Tokens land in the theme layer and the skin in the components layer, so
+ * your utilities and unlayered CSS override the skin without specificity
+ * wars. Non-Tailwind apps should import "@dashfoo/theme/dashfoo.css"
+ * (the prebuilt artifact compiled from these same files) instead.
+ */
+
+@import "./css/tokens.css" layer(theme);
+@import "./css/theme.css";
+@import "./css/skin.css" layer(components);

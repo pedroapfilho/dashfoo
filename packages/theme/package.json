@@ -1,7 +1,7 @@
 {
   "name": "@dashfoo/theme",
   "version": "0.1.0",
-  "description": "Opt-in default skin for the @dashfoo/react headless chrome. Framework-agnostic plain CSS over overridable --dashfoo-* design tokens.",
+  "description": "Opt-in default skin for the @dashfoo/react headless chrome. Tailwind v4 entry with dashfoo utilities, or prebuilt plain CSS — both over overridable --dashfoo-* design tokens.",
   "license": "MIT",
   "author": "Pedro Filho <pedro@filho.me>",
   "repository": {
@@ -11,12 +11,13 @@
   },
   "files": [
     "dist",
-    "dashfoo.css",
-    "tokens.css"
+    "src/tailwind.css",
+    "src/css"
   ],
   "type": "module",
   "sideEffects": [
-    "*.css"
+    "*.css",
+    "**/*.css"
   ],
   "types": "dist/index.d.ts",
   "exports": {
@@ -24,14 +25,16 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./dashfoo.css": "./dashfoo.css",
-    "./tokens.css": "./tokens.css"
+    "./dashfoo.css": "./dist/dashfoo.css",
+    "./tailwind.css": "./src/tailwind.css",
+    "./tokens.css": "./src/css/tokens.css"
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && pnpm run build:css",
+    "build:css": "tailwindcss --input ./build/prebuilt.css --output ./dist/dashfoo.css",
     "clean": "rm -rf dist",
     "dev": "tsdown --watch",
     "lint": "oxlint src",
@@ -44,6 +47,8 @@
   "devDependencies": {
     "@repo/config-vitest": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@tailwindcss/cli": "4.3.0",
+    "tailwindcss": "4.3.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   }

@@ -2,10 +2,17 @@
 
 The opt-in default skin for the `@dashfoo/react` headless docking chrome.
 
-Framework-agnostic **plain CSS** — no Tailwind, no Base UI, no build step. It
-styles every `data-dashfoo` element through overridable shadcn-style semantic
+It styles every `data-dashfoo` element through overridable shadcn-style semantic
 `--dashfoo-*` tokens, ships a neutral light theme by default, and an opt-in dark
 variant. Import it and the layout is styled; remap a few tokens to make it yours.
+
+Two artifacts, one source:
+
+- **`@dashfoo/theme/tailwind.css`** — a Tailwind CSS v4 source entry. Import it
+  into your Tailwind pipeline and you also get `dashfoo-*` utilities
+  (`bg-dashfoo-card`, `rounded-dashfoo`, …) generated from the same tokens.
+- **`@dashfoo/theme/dashfoo.css`** — a prebuilt plain-CSS file compiled from the
+  same source at package build time. No Tailwind, no build step required.
 
 ## Install
 
@@ -15,14 +22,45 @@ pnpm add @dashfoo/theme
 
 ## Use
 
-Import the full skin once, anywhere in your app's entry:
+### With Tailwind CSS v4
+
+Import the theme after `tailwindcss` in your CSS entry (Vite and Next/PostCSS
+setups are identical):
+
+```css
+@import "tailwindcss";
+@import "@dashfoo/theme/tailwind.css";
+```
+
+Tokens land in Tailwind's `theme` layer and the skin in the `components` layer,
+so your own utilities and unlayered CSS override the skin without specificity
+wars — import the theme before your own component-layer CSS.
+
+The entry also bridges the tokens into `@theme`, generating utilities for your
+own markup that stay in sync with the skin (including the dark remap — no
+`dark:` variant needed):
+
+| Tokens                                                    | Utilities                                                              |
+| --------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `--dashfoo-background` … `--dashfoo-ring` (all 11 colors) | `bg-dashfoo-*`, `text-dashfoo-*`, `border-dashfoo-*`, `ring-dashfoo-*` |
+| `--dashfoo-radius`, `--dashfoo-radius-sm`                 | `rounded-dashfoo`, `rounded-dashfoo-sm`                                |
+| `--dashfoo-font`                                          | `font-dashfoo`                                                         |
+
+> **Custom CSS should read `var(--dashfoo-*)`, never the `--color-dashfoo-*`
+> mirrors.** The mirrors exist only to generate utilities; reading them directly
+> resolves at `:root` and ignores subtree dark remaps.
+
+### Without Tailwind
+
+Import the prebuilt skin once, anywhere in your app's entry:
 
 ```ts
 import "@dashfoo/theme/dashfoo.css";
 ```
 
-That's it — `dashfoo.css` already `@import`s the tokens, so every `data-dashfoo`
-element from `@dashfoo/react` is styled. The chrome is light neutral by default.
+That's it — the file is compiled from the same source as the Tailwind entry
+(tokens included), so every `data-dashfoo` element from `@dashfoo/react` is
+styled. The chrome is light neutral by default.
 
 ### Dark theme
 
@@ -34,6 +72,14 @@ Dark is opt-in. Set `data-dashfoo-theme="dark"` on any ancestor (typically
 ```
 
 Scope it to a subtree instead by putting the attribute on a wrapping element.
+
+Tailwind users who want their own `dark:` variants to key off the same
+attribute can define a custom variant in their app CSS (the theme deliberately
+doesn't ship one — your app owns the `dark` variant):
+
+```css
+@custom-variant dark (&:where([data-dashfoo-theme="dark"], [data-dashfoo-theme="dark"] *));
+```
 
 ### Tokens only
 
@@ -56,6 +102,15 @@ Reskinning is a token remap — you never touch the chrome rules. Override on
   --dashfoo-card: #131a26;
   --dashfoo-foreground: #e8f0ff;
   --dashfoo-radius: 6px;
+}
+```
+
+Tailwind apps can point tokens at their own palette the same way:
+
+```css
+:root {
+  --dashfoo-primary: var(--color-blue-600);
+  --dashfoo-ring: var(--color-blue-400);
 }
 ```
 

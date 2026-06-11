@@ -3,6 +3,9 @@ packages:
   - packages/*
 
 allowBuilds:
+  # Prebuilt binaries ship via optionalDependencies; the build script is only
+  # a node-gyp fallback and the watcher is only used by `tailwindcss --watch`.
+  "@parcel/watcher": false
   esbuild: true
   sharp: true
 
@@ -12,3 +15,6 @@ onlyBuiltDependencies:
   - lightningcss
   - sharp
   - unrs-resolver
+
+ignoredBuiltDependencies:
+  - "@parcel/watcher"
