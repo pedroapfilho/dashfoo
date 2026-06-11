@@ -5,6 +5,8 @@ node_modules/
 # build
 dist/
 build/
+# packages/theme/build/ holds the tracked Tailwind *input* (not an artifact)
+!packages/theme/build/
 .turbo/
 *.tsbuildinfo
 
