@@ -2,7 +2,7 @@ import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooDragProvider, DashfooLayout, useExternalTabSource } from "@dashfoo/react";
 import { GripVertical, Plus, RotateCcw } from "lucide-react";
 import type { ReactNode } from "react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 import { renderPanel } from "../components/panels";
 import { Button, DemoStage } from "../components/ui";
@@ -47,11 +47,10 @@ const WidgetCard = ({
 };
 
 const DockingPage = (): ReactNode => {
-  const [resetKey, setResetKey] = useState(0);
   const layout = useRef<DashfooHandle>(null);
 
   const handleReset = (): void => {
-    setResetKey((value) => value + 1);
+    layout.current?.resetLayout();
   };
 
   const handleAddWidget = (widget: WidgetDefinition): void => {
@@ -86,12 +85,7 @@ const DockingPage = (): ReactNode => {
             ))}
           </aside>
           <div className="min-h-0 min-w-0 flex-1">
-            <DashfooLayout
-              defaultModel={dockingModel()}
-              factory={renderPanel}
-              key={resetKey}
-              ref={layout}
-            />
+            <DashfooLayout defaultModel={dockingModel()} factory={renderPanel} ref={layout} />
           </div>
         </div>
       </DashfooDragProvider>
