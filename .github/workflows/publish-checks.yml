@@ -25,5 +25,5 @@ jobs:
         run: |
           (cd packages/core && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only)
           (cd packages/react && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only)
-          # tokens.css is a CSS-only export with no types/JS for attw to resolve.
-          (cd packages/theme && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only --exclude-entrypoints ./tokens.css)
+          # The CSS entrypoints are style-only exports with no types/JS for attw to resolve.
+          (cd packages/theme && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only --exclude-entrypoints ./tokens.css ./dashfoo.css)
