@@ -4,9 +4,13 @@
 // DashfooLayout (store binding, registry/factory, views), the docking chrome
 // (close/rename/maximize), and layout persistence.
 
-export * from "./context";
-export * from "./dashfoo-layout";
-export * from "./panel";
-export * from "./persistence";
-export * from "./responsive";
-export * from "./store";
+export * from "./hooks/context";
+export * from "./components/dashfoo-layout";
+export * from "./components/drag-root";
+export * from "./components/panel";
+export * from "./hooks/persistence";
+export * from "./hooks/responsive";
+export * from "./hooks/store";
+// drag-hooks stays internal except the external-source surface.
+export { useExternalTabSource } from "./hooks/drag-hooks";
+export type { ExternalTabSourceOptions } from "./hooks/drag-hooks";

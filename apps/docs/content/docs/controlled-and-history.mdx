@@ -1,6 +1,6 @@
 ---
 title: Controlled mode and undo/redo
-description: Uncontrolled vs controlled mode, the undo/redo history, and the hooks to observe or intercept changes.
+description: Uncontrolled vs controlled mode, the built-in undo/redo history, the imperative handle, and the hooks to observe or intercept changes.
 ---
 
 `DashfooLayout` runs in one of two modes, decided by which prop you pass.
@@ -10,8 +10,9 @@ internals. Give it `model` and `onModelChange` instead, and the prop
 becomes the source of truth. Every edit routes out to you, and nothing
 changes on screen until you feed a new `model` back in.
 
-This guide covers both modes, then walks the demo's controlled page:
-external history with undo/redo and a live JSON inspector.
+This guide covers both modes, the imperative handle that drives the layout
+from outside, and a worked controlled-mode example: external history with
+undo/redo and a live JSON inspector.
 
 ## The two modes
 
@@ -22,16 +23,24 @@ The mode is mutually exclusive at the prop level.
 | Uncontrolled | `defaultModel`            | the actor inside   | built in      |
 | Controlled   | `model` + `onModelChange` | your component     | yours to keep |
 
-Both go through `useDashfooStore`, which `DashfooLayout` calls for you.
-The store's options type is the contract:
+Both go through `useDashfooStore`, which `DashfooLayout` calls for you. The
+hook is also a public export of `@dashfoo/react` for headless use. Its full
+options type:
 
 ```ts
 type UseDashfooStoreOptions = {
   defaultModel?: Dashfoo;
   model?: Dashfoo;
+  onAction?: (action: Action) => Action | null;
+  onActiveTabsetChange?: (tabsetId: string | undefined) => void;
+  onMaximizedTabsetChange?: (tabsetId: string | undefined) => void;
   onModelChange?: (model: Dashfoo, action?: Action) => void;
 };
 ```
+
+The last four are the same callbacks `DashfooLayout` accepts as props; it
+forwards them straight through. They work in both modes and are covered in
+[Observing and intercepting changes](#observing-and-intercepting-changes).
 
 Pass one of `model` or `defaultModel`. Passing neither throws:
 
@@ -53,34 +62,161 @@ const Workspace = () => <DashfooLayout defaultModel={playgroundModel()} factory=
 ```
 
 Behind the scenes the actor keeps a `History` record: `past`, `present`,
-`future`, plus a `lastKey` used to coalesce drags. Every dispatched
-`Action` runs through the pure `reducer` and pushes a new entry. The
-store exposes `canUndo` / `canRedo` / `undo` / `redo` derived from that
-history, so chrome controls can wire to them directly.
+and `future`. Every dispatched `Action` runs through the pure `reducer` and
+pushes a new entry. The store derives `canUndo` / `canRedo` / `undo` /
+`redo` from that history, and the [imperative handle](#the-imperative-handle)
+surfaces them, so chrome controls can wire up without touching internals.
 
 `onModelChange` is optional here. Add it and you get a read-only feed of
 every committed model (and the `action` that produced it) without giving
 up the actor's own history. The actor stays the source of truth.
 
-### How drags collapse into one undo step
+### One action, one undo step
 
-Resize actions are the only coalescable ones. A splitter drag emits many
-actions per frame, but should undo as a single step. The history keys
-them by the node being resized:
+There is no coalescing. Every committed action pushes exactly one undo
+step and clears the redo branch:
 
 ```ts
-const coalesceKey = (action: Action): string | undefined => {
-  if (action.type === "adjustSplit") {
-    return `adjustSplit:${action.rowId}`;
-  }
-  return undefined;
+type History = {
+  future: Array<Dashfoo>;
+  past: Array<Dashfoo>;
+  present: Dashfoo;
+};
+
+const dispatch = (history: History, action: Action): History => {
+  const present = reducer(history.present, action);
+  return { future: [], past: [...history.past, history.present], present };
 };
 ```
 
-While the key matches the previous one, `dispatch` overwrites `present`
-without growing `past`. Resize a different splitter and the key changes,
-which starts a fresh undo step. Everything that isn't a resize gets
-`undefined` and always commits its own step.
+A splitter drag still undoes as a single step, but not because the history
+folds anything: the resize layer (react-resizable-panels v4) commits one
+`adjustSplit` when the drag is released, not a burst of actions per frame.
+One commit, one step. The reasoning is recorded in
+[`packages/core/src/state/history.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/state/history.ts).
+
+`canUndo` and `canRedo` on the store are functions, not booleans. They read
+the live actor snapshot, so a caller checking them right after `undo()` —
+inside `onModelChange`, for instance — sees the fresh value rather than a
+one-render-stale one.
+
+## The imperative handle
+
+`DashfooLayout` exposes an imperative API via `ref`, so a toolbar, command
+palette, or keyboard shortcut can drive the layout without rebuilding the
+store's plumbing:
+
+```ts
+type DashfooHandle = {
+  addTab: (
+    tab: TabNode,
+    target: { index?: number; location?: DockLocation; targetId: string },
+  ) => void;
+  canRedo: () => boolean;
+  canUndo: () => boolean;
+  closeTab: (tabId: string) => void;
+  dispatch: (action: Action) => void;
+  getModel: () => Dashfoo;
+  maximizeTabset: (tabsetId: string | null) => void;
+  redo: () => void;
+  renameTab: (tabId: string, name: string) => void;
+  resetLayout: () => void;
+  selectTab: (tabsetId: string, index: number) => void;
+  undo: () => void;
+};
+```
+
+| Method              | What it does                                                                                                                                                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `addTab`            | Inserts a tab at `targetId` (an existing tabset id). `location` defaults to `"center"` (into the tabset, selected); `"split-*"` creates a new tabset beside it. `index` positions within the strip. |
+| `canUndo`/`canRedo` | Read the live history flags.                                                                                                                                                                        |
+| `closeTab`          | Dispatches `deleteTab` for the given tab id.                                                                                                                                                        |
+| `dispatch`          | Escape hatch: send any raw `Action`.                                                                                                                                                                |
+| `getModel`          | Returns the current model.                                                                                                                                                                          |
+| `maximizeTabset`    | Maximizes the tabset, or restores with `null`.                                                                                                                                                      |
+| `undo`/`redo`       | Step through the built-in history.                                                                                                                                                                  |
+| `renameTab`         | Dispatches `renameTab` with the new name.                                                                                                                                                           |
+| `resetLayout`       | Restores `defaultModel`, clearing undo history and any persisted copy.                                                                                                                              |
+| `selectTab`         | Selects the tab at `index` in the given tabset.                                                                                                                                                     |
+
+The action-dispatching methods work in both modes — in controlled mode the
+resulting model arrives through `onModelChange` like any other edit.
+`undo`, `redo`, and `resetLayout` are uncontrolled-only; in controlled mode
+they are no-ops because the host owns history and the default model.
+
+A worked runtime example — open a tab from a button, plus undo/redo and
+reset:
+
+```tsx
+import { tab } from "@dashfoo/core";
+import type { DashfooHandle } from "@dashfoo/react";
+import { DashfooLayout } from "@dashfoo/react";
+import type { ReactNode } from "react";
+import { useCallback, useRef, useState } from "react";
+
+import { playgroundModel } from "./models";
+import { renderPanel } from "./panels";
+
+const defaultModel = playgroundModel();
+
+const Workspace = (): ReactNode => {
+  const layout = useRef<DashfooHandle>(null);
+  const [history, setHistory] = useState({ canRedo: false, canUndo: false });
+
+  // canUndo/canRedo read the live actor snapshot, so sample them when the
+  // model changes (an event), not during render.
+  const handleModelChange = useCallback((): void => {
+    setHistory({
+      canRedo: layout.current?.canRedo() ?? false,
+      canUndo: layout.current?.canUndo() ?? false,
+    });
+  }, []);
+
+  const handleAddChart = (): void => {
+    layout.current?.addTab(tab("chart", "New chart", { id: crypto.randomUUID() }), {
+      location: "split-right",
+      targetId: "main",
+    });
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div aria-label="Layout controls" role="toolbar">
+        <button onClick={handleAddChart} type="button">
+          Add chart
+        </button>
+        <button disabled={!history.canUndo} onClick={() => layout.current?.undo()} type="button">
+          Undo
+        </button>
+        <button disabled={!history.canRedo} onClick={() => layout.current?.redo()} type="button">
+          Redo
+        </button>
+        <button onClick={() => layout.current?.resetLayout()} type="button">
+          Reset
+        </button>
+      </div>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <DashfooLayout
+          defaultModel={defaultModel}
+          factory={renderPanel}
+          onModelChange={handleModelChange}
+          ref={layout}
+        />
+      </div>
+    </div>
+  );
+};
+```
+
+Two details to get right. `targetId` must be the id of a tabset that exists
+in the model — the dispatch is a silent no-op otherwise — so give your drop
+target an explicit id (here `"main"`) when building the model. And a tab's
+id defaults to its component string, so adding a second `"chart"` tab
+without an explicit `id` collides with the first; generate one per call.
+
+The demo's [controlled page](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/controlled.tsx)
+is this pattern end to end: handle-driven undo/redo buttons, ⌘Z / ⇧⌘Z
+shortcuts, and a live model inspector fed from `onModelChange`.
 
 ## Controlled: the prop is the source of truth
 
@@ -95,36 +231,26 @@ const Workspace = () => {
 };
 ```
 
-The wiring inside the store makes the data flow explicit. When `model`
-is set, a dispatch computes the next model with the pure reducer and
-hands it to `onModelChange` rather than mutating the actor:
-
-```ts
-const dispatch = useCallback(
-  (action: Action) => {
-    if (controlledModel !== undefined) {
-      onModelChange?.(reducer(controlledModel, action), action);
-      return;
-    }
-    actorRef.send({ action, type: "DISPATCH" });
-    onModelChange?.(actorRef.getSnapshot().context.history.present, action);
-  },
-  [actorRef, controlledModel, onModelChange],
-);
-```
+When `model` is set, a dispatch never touches the actor. The store runs
+`onAction` first (which may veto or replace the action), computes the next
+model with the pure `reducer`, and hands the result to `onModelChange`. A
+dispatch that produces no change emits nothing.
 
 Two consequences follow from this.
 
 First, the screen does not update until your new `model` arrives. If
 `onModelChange` does nothing, the layout sits still. That is the
 contract: you own the model, so you decide when it changes. A `useEffect`
-syncs your `model` back into the actor on every change, so the inspector
-and any internal selectors still observe the current document.
+syncs each new `model` prop back into the actor, so the inspector and any
+internal selectors still observe the current document.
 
-Second, the actor's own undo/redo is bypassed. The store still exposes
-`undo` and `redo`, but in controlled mode they operate on the actor's
-internal stack, not your external one. If you want undo/redo in
-controlled mode, you keep the history yourself. That's the next section.
+Second, undo and redo are no-ops in controlled mode. Both early-return
+without touching anything or firing `onModelChange`, and `canUndo` /
+`canRedo` always report `false`: the controlled sync resets the actor's
+history on every update, so its stacks stay empty. There is no hidden
+internal stack to fall back on. If you want undo/redo in controlled mode,
+you keep the history yourself. That's the
+[worked example](#worked-example-external-history--undoredo--inspector) below.
 
 ## Models are normalized at the boundary
 
@@ -149,9 +275,9 @@ perfectly-formed tree. Pass something reasonable and the boundary cleans it.
 
 ## Worked example: external history + undo/redo + inspector
 
-The demo's controlled page is the full pattern. It keeps a `past` /
-`present` / `future` record in component state, drives the layout from
-`present`, and rebuilds the stack on every change.
+This is the controlled-mode recipe for undo/redo: keep a `past` /
+`present` / `future` record in component state, drive the layout from
+`present`, and rebuild the stack on every change.
 
 The history shape, kept locally:
 
@@ -278,6 +404,9 @@ Beyond `onModelChange`, `DashfooLayout` exposes hooks that work in either mode:
 | `renderTabLabel`          | Override a tab's rendered label (the accessible name stays `tab.name`).             |
 | `renderTabsetToolbar`     | Inject custom controls into a tabset's toolbar.                                     |
 
+The first three are also `useDashfooStore` options; the two render props
+belong to the layout component only.
+
 `onAction` is the interception point — e.g. confirm before a `deleteTab`, or
 remap a drop:
 
@@ -290,23 +419,29 @@ remap a drop:
 
 ## Choosing a mode
 
-| Question                                            | Mode         |
-| --------------------------------------------------- | ------------ |
-| Do you just want a working layout with undo/redo?   | Uncontrolled |
-| Do you need to persist or sync the model elsewhere? | either       |
-| Do you need custom history (depth caps, branching)? | Controlled   |
-| Do you need to mutate the model from outside?       | Controlled   |
-| Do you want the smallest amount of wiring?          | Uncontrolled |
+| Question                                              | Mode                    |
+| ----------------------------------------------------- | ----------------------- |
+| Do you want a working layout with built-in undo/redo? | Uncontrolled            |
+| Do you need to persist or sync the model elsewhere?   | either                  |
+| Do you need custom history (depth caps, branching)?   | Controlled              |
+| Do you need toolbar- or shortcut-driven edits?        | either — use the handle |
+| Do you want the smallest amount of wiring?            | Uncontrolled            |
 
 Start uncontrolled. Pass `defaultModel`, add `onModelChange` if you need
-to observe or persist, and let the actor keep history. Move to controlled
-only when you need the model to be yours: external state, a custom undo
-policy, or edits driven from outside the layout.
+to observe or persist, and drive runtime edits through the imperative
+handle. Move to controlled only when you need the model to be yours:
+external state, a custom undo policy, or a document that lives outside
+React entirely.
 
 ## See also
 
-- `apps/demo-vite/src/pages/controlled.tsx` for the end-to-end page.
-- `useDashfooStore` in `@dashfoo/react` for the store wiring.
-- `History`, `canUndo`, `canRedo`, and `dispatch` in `@dashfoo/core` for
-  the built-in history implementation.
-- `normalize` in `@dashfoo/core` for the boundary invariants.
+- [`apps/demo-vite/src/pages/controlled.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/controlled.tsx)
+  for the imperative handle and history demo, end to end.
+- [`packages/react/src/hooks/store.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/hooks/store.ts)
+  for the store wiring, including the controlled-mode guards.
+- [`packages/react/src/components/dashfoo-layout.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/dashfoo-layout.tsx)
+  for `DashfooHandle` and the full prop surface.
+- [`packages/core/src/state/history.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/state/history.ts)
+  for the built-in history implementation.
+- [`packages/core/src/model/invariants.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/invariants.ts)
+  for the boundary invariants behind `normalize`.

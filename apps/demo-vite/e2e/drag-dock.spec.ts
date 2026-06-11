@@ -8,9 +8,9 @@ const tabsByTabset = (page: Page): Promise<Array<Array<string | null>>> =>
     ),
   );
 
-const tradesCount = async (page: Page): Promise<number> => {
+const tasksCount = async (page: Page): Promise<number> => {
   const tabs = await tabsByTabset(page);
-  return tabs.flat().filter((label) => label === "Trades").length;
+  return tabs.flat().filter((label) => label === "Tasks").length;
 };
 
 const dragTabTo = async (page: Page, label: string, x: number, y: number): Promise<void> => {
@@ -28,21 +28,21 @@ const dragTabTo = async (page: Page, label: string, x: number, y: number): Promi
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("tab", { name: "Chart" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Canvas" })).toBeVisible();
 });
 
 test("dragging a tab to the center of another tabset stacks it there", async ({ page }) => {
-  const chart = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
-  if (!chart) {
-    throw new Error("no chart tabset box");
+  const canvas = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
+  if (!canvas) {
+    throw new Error("no canvas tabset box");
   }
 
-  await dragTabTo(page, "Trades", chart.x + chart.width / 2, chart.y + chart.height / 2);
+  await dragTabTo(page, "Tasks", canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
 
   // poll past dnd-kit's drop animation before asserting the settled model.
-  await expect.poll(() => tradesCount(page)).toBe(1);
+  await expect.poll(() => tasksCount(page)).toBe(1);
   const tabs = await tabsByTabset(page);
-  expect(tabs[0]).toContain("Trades");
+  expect(tabs[0]).toContain("Tasks");
 });
 
 test("dropping a tab onto another tabset's tab strip stacks it there (not a split)", async ({
@@ -54,54 +54,54 @@ test("dropping a tab onto another tabset's tab strip stacks it there (not a spli
     throw new Error("no tab strip box");
   }
 
-  // drop onto the chart tab strip (right of its existing tabs)
-  await dragTabTo(page, "Trades", strip.x + strip.width - 24, strip.y + strip.height / 2);
+  // drop onto the canvas tab strip (right of its existing tabs)
+  await dragTabTo(page, "Tasks", strip.x + strip.width - 24, strip.y + strip.height / 2);
 
-  await expect.poll(() => tradesCount(page)).toBe(1);
-  // it should join the chart tabset, keeping 3 tabsets (a split would make 4)
+  await expect.poll(() => tasksCount(page)).toBe(1);
+  // it should join the canvas tabset, keeping 3 tabsets (a split would make 4)
   await expect.poll(() => tabsByTabset(page).then((tabs) => tabs.length)).toBe(3);
   const tabs = await tabsByTabset(page);
-  expect(tabs[0]).toContain("Trades");
+  expect(tabs[0]).toContain("Tasks");
 });
 
 test("dragging a tab to the left edge of a tabset splits it into a new tabset", async ({
   page,
 }) => {
-  const chart = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
-  if (!chart) {
-    throw new Error("no chart tabset box");
+  const canvas = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
+  if (!canvas) {
+    throw new Error("no canvas tabset box");
   }
   const initial = await tabsByTabset(page);
   const before = initial.length;
 
-  await dragTabTo(page, "Trades", chart.x + chart.width * 0.08, chart.y + chart.height / 2);
+  await dragTabTo(page, "Tasks", canvas.x + canvas.width * 0.08, canvas.y + canvas.height / 2);
 
   // settle past the drop animation, then assert the split created one new tabset.
-  await expect.poll(() => tradesCount(page)).toBe(1);
+  await expect.poll(() => tasksCount(page)).toBe(1);
   await expect.poll(() => tabsByTabset(page).then((tabs) => tabs.length)).toBe(before + 1);
 });
 
 test("clicking a tab still selects it (the drag sensor does not hijack the click)", async ({
   page,
 }) => {
-  await page.getByRole("tab", { name: "Depth" }).click();
+  await page.getByRole("tab", { name: "Detail" }).click();
 
-  await expect(page.getByRole("tab", { name: "Depth" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: "Detail" })).toHaveAttribute("aria-selected", "true");
 });
 
 test("a dock indicator appears while dragging over a tabset and clears after drop", async ({
   page,
 }) => {
-  const chart = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
-  const box = await page.getByRole("tab", { name: "Trades" }).boundingBox();
-  if (!chart || !box) {
+  const canvas = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
+  const box = await page.getByRole("tab", { name: "Tasks" }).boundingBox();
+  if (!canvas || !box) {
     throw new Error("missing boxes");
   }
   const indicator = page.locator('[data-dashfoo="dock-indicator"]');
   await expect(indicator).toHaveCount(0);
 
-  const leftX = chart.x + chart.width * 0.06;
-  const midY = chart.y + chart.height / 2;
+  const leftX = canvas.x + canvas.width * 0.06;
+  const midY = canvas.y + canvas.height / 2;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
@@ -110,11 +110,11 @@ test("a dock indicator appears while dragging over a tabset and clears after dro
   await page.waitForTimeout(80);
 
   await expect(indicator).toBeVisible();
-  // it should highlight the chart tabset's left half (split-left), not the
+  // it should highlight the canvas tabset's left half (split-left), not the
   // tabset the drag started in nor the whole tabset (center).
   const indicatorBox = await indicator.boundingBox();
-  expect(indicatorBox?.x ?? Infinity).toBeLessThan(chart.x + 40);
-  expect(indicatorBox?.width ?? Infinity).toBeLessThan(chart.width * 0.7);
+  expect(indicatorBox?.x ?? Infinity).toBeLessThan(canvas.x + 40);
+  expect(indicatorBox?.width ?? Infinity).toBeLessThan(canvas.width * 0.7);
 
   await page.mouse.up();
   await expect(indicator).toHaveCount(0);
@@ -122,10 +122,10 @@ test("a dock indicator appears while dragging over a tabset and clears after dro
 
 test("the stack indicator is a thin insertion line in the tab bar", async ({ page }) => {
   const first = page.locator('[data-dashfoo="tabset"]').first();
-  const chart = await first.boundingBox();
+  const canvas = await first.boundingBox();
   const strip = await first.locator('[data-dashfoo="tabstrip"]').boundingBox();
-  const box = await page.getByRole("tab", { name: "Trades" }).boundingBox();
-  if (!chart || !strip || !box) {
+  const box = await page.getByRole("tab", { name: "Tasks" }).boundingBox();
+  if (!canvas || !strip || !box) {
     throw new Error("missing boxes");
   }
   const indicator = page.locator('[data-dashfoo="dock-indicator"]');
@@ -143,50 +143,50 @@ test("the stack indicator is a thin insertion line in the tab bar", async ({ pag
   const ind = await indicator.boundingBox();
   // a thin vertical line (not a block over the strip or the whole tabset).
   expect(ind?.width ?? Infinity).toBeLessThan(8);
-  expect(ind?.height ?? Infinity).toBeLessThan(chart.height * 0.3);
+  expect(ind?.height ?? Infinity).toBeLessThan(canvas.height * 0.3);
 
   await page.mouse.up();
 });
 
 test("dropping on a tab-strip slot inserts the tab at that position", async ({ page }) => {
-  const depth = await page.getByRole("tab", { name: "Depth" }).boundingBox();
-  if (!depth) {
-    throw new Error("no Depth tab box");
+  const detail = await page.getByRole("tab", { name: "Detail" }).boundingBox();
+  if (!detail) {
+    throw new Error("no Detail tab box");
   }
 
-  // drop on the boundary just left of Depth — index 1, between Chart and Depth.
-  await dragTabTo(page, "Trades", depth.x + 2, depth.y + depth.height / 2);
+  // drop on the boundary just left of Detail — index 1, between Canvas and Detail.
+  await dragTabTo(page, "Tasks", detail.x + 2, detail.y + detail.height / 2);
 
   await expect
     .poll(() => tabsByTabset(page).then((tabs) => tabs[0]))
-    .toEqual(["Chart", "Trades", "Depth"]);
+    .toEqual(["Canvas", "Tasks", "Detail"]);
 });
 
 test("adjacent widgets are separated by a visible gutter", async ({ page }) => {
   const tabsets = page.locator('[data-dashfoo="tabset"]');
-  const chart = await tabsets.nth(0).boundingBox(); // left
-  const book = await tabsets.nth(1).boundingBox(); // top-right
-  const positions = await tabsets.nth(2).boundingBox(); // bottom-right
-  if (!chart || !book || !positions) {
+  const canvas = await tabsets.nth(0).boundingBox(); // left
+  const activity = await tabsets.nth(1).boundingBox(); // top-right
+  const metrics = await tabsets.nth(2).boundingBox(); // bottom-right
+  if (!canvas || !activity || !metrics) {
     throw new Error("missing tabset boxes");
   }
 
   // a real resizable gutter sits between panels, not touching edges (the rrp
   // separator must carry width/height — it collapses to 0 if the theme misses it).
-  const horizontalGutter = book.x - (chart.x + chart.width);
-  const verticalGutter = positions.y - (book.y + book.height);
+  const horizontalGutter = activity.x - (canvas.x + canvas.width);
+  const verticalGutter = metrics.y - (activity.y + activity.height);
   expect(horizontalGutter).toBeGreaterThanOrEqual(12);
   expect(verticalGutter).toBeGreaterThanOrEqual(12);
 });
 
 test("reordering a tab within its own tabset ignores the tab being moved", async ({ page }) => {
-  const depth = await page.getByRole("tab", { name: "Depth" }).boundingBox();
-  if (!depth) {
-    throw new Error("no Depth tab box");
+  const detail = await page.getByRole("tab", { name: "Detail" }).boundingBox();
+  if (!detail) {
+    throw new Error("no Detail tab box");
   }
 
-  // drag Chart (the first tab) past Depth in its own strip → [Depth, Chart].
-  await dragTabTo(page, "Chart", depth.x + depth.width + 12, depth.y + depth.height / 2);
+  // drag Canvas (the first tab) past Detail in its own strip → [Detail, Canvas].
+  await dragTabTo(page, "Canvas", detail.x + detail.width + 12, detail.y + detail.height / 2);
 
-  await expect.poll(() => tabsByTabset(page).then((tabs) => tabs[0])).toEqual(["Depth", "Chart"]);
+  await expect.poll(() => tabsByTabset(page).then((tabs) => tabs[0])).toEqual(["Detail", "Canvas"]);
 });

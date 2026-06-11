@@ -3,8 +3,8 @@
 The opt-in default skin for the `@dashfoo/react` headless docking chrome.
 
 Framework-agnostic **plain CSS** — no Tailwind, no Base UI, no build step. It
-styles every `data-dashfoo` element through overridable `--dashfoo-*` design
-tokens, ships a neutral grayscale dark theme by default, and an opt-in light
+styles every `data-dashfoo` element through overridable shadcn-style semantic
+`--dashfoo-*` tokens, ships a neutral light theme by default, and an opt-in dark
 variant. Import it and the layout is styled; remap a few tokens to make it yours.
 
 ## Install
@@ -22,15 +22,15 @@ import "@dashfoo/theme/dashfoo.css";
 ```
 
 That's it — `dashfoo.css` already `@import`s the tokens, so every `data-dashfoo`
-element from `@dashfoo/react` is styled. The chrome is dark grayscale by default.
+element from `@dashfoo/react` is styled. The chrome is light neutral by default.
 
-### Light theme
+### Dark theme
 
-Light is opt-in. Set `data-dashfoo-theme="light"` on any ancestor (typically
+Dark is opt-in. Set `data-dashfoo-theme="dark"` on any ancestor (typically
 `<html>`); everything inside inverts:
 
 ```html
-<html data-dashfoo-theme="light"></html>
+<html data-dashfoo-theme="dark"></html>
 ```
 
 Scope it to a subtree instead by putting the attribute on a wrapping element.
@@ -52,35 +52,44 @@ Reskinning is a token remap — you never touch the chrome rules. Override on
 
 ```css
 :root {
-  --dashfoo-bg: #0b0f17;
-  --dashfoo-surface: #131a26;
-  --dashfoo-text-emphasis: #e8f0ff;
+  --dashfoo-background: #0b0f17;
+  --dashfoo-card: #131a26;
+  --dashfoo-foreground: #e8f0ff;
   --dashfoo-radius: 6px;
 }
 ```
 
 ### Token reference
 
-These are defined in `tokens.css` and are the intended override surface.
+These are defined in `tokens.css` and are the intended override surface. The
+dark variant under `[data-dashfoo-theme="dark"]` remaps the same names with the
+inverted neutral scale.
 
-| Token                     | Default (dark)                | Controls                             |
-| ------------------------- | ----------------------------- | ------------------------------------ |
-| `--dashfoo-bg`            | `#0a0a0b`                     | Layout background                    |
-| `--dashfoo-surface`       | `#161617`                     | Tabset + panel + tab-content surface |
-| `--dashfoo-strip`         | `#101011`                     | Tab strip background                 |
-| `--dashfoo-border`        | `rgba(255,255,255,0.08)`      | Default borders                      |
-| `--dashfoo-border-strong` | `rgba(255,255,255,0.16)`      | Focused / emphasized borders         |
-| `--dashfoo-text`          | `#ededee`                     | Primary text                         |
-| `--dashfoo-text-muted`    | `#8b8b8f`                     | Idle tabs, secondary text            |
-| `--dashfoo-text-faint`    | `#5f5f63`                     | Icons, close/grip/maximize controls  |
-| `--dashfoo-text-emphasis` | `#fafafa`                     | Active tab, focus ring, selection    |
-| `--dashfoo-radius`        | `10px`                        | Tabset / menu corner radius          |
-| `--dashfoo-font`          | `ui-sans-serif, system-ui, …` | Chrome font family                   |
-| `--dashfoo-font-size`     | `13px`                        | Base chrome font size                |
-| `--dashfoo-splitter-size` | `1rem`                        | Resize-handle hit area (see note)    |
-| `--dashfoo-dock-fill`     | `rgba(255,255,255,0.1)`       | Split-zone fill while dragging       |
-| `--dashfoo-dock-border`   | `rgba(255,255,255,0.4)`       | Split-zone border                    |
-| `--dashfoo-dock-line`     | `rgba(255,255,255,0.85)`      | Tab insertion line                   |
+| Token                         | Default (light)                                                | Controls                                    |
+| ----------------------------- | -------------------------------------------------------------- | ------------------------------------------- |
+| `--dashfoo-background`        | `oklch(1 0 0)`                                                 | Layout background                           |
+| `--dashfoo-card`              | `oklch(1 0 0)`                                                 | Tabset + tab-content surface, selected tab  |
+| `--dashfoo-popover`           | `oklch(1 0 0)`                                                 | Overflow menu + drag-preview surface        |
+| `--dashfoo-muted`             | `oklch(0.97 0 0)`                                              | Tab strip + panel-badge background          |
+| `--dashfoo-accent`            | `oklch(0.97 0 0)`                                              | Hover surface on controls + menu items      |
+| `--dashfoo-foreground`        | `oklch(0.145 0 0)`                                             | Primary text, active tab                    |
+| `--dashfoo-muted-foreground`  | `oklch(0.556 0 0)`                                             | Idle tabs, icons, secondary text            |
+| `--dashfoo-accent-foreground` | `oklch(0.205 0 0)`                                             | Text on hovered controls + menu items       |
+| `--dashfoo-primary`           | `oklch(0.205 0 0)`                                             | Active-tab underline, dock-indicator accent |
+| `--dashfoo-border`            | `oklch(0.922 0 0)`                                             | Default borders                             |
+| `--dashfoo-ring`              | `oklch(0.708 0 0)`                                             | Focus rings, rename input, splitter grip    |
+| `--dashfoo-radius`            | `0.625rem`                                                     | Tabset / menu corner radius                 |
+| `--dashfoo-font`              | `ui-sans-serif, system-ui, …`                                  | Chrome font family                          |
+| `--dashfoo-font-size`         | `13px`                                                         | Base chrome font size                       |
+| `--dashfoo-splitter-size`     | `1rem`                                                         | Resize-handle hit area (see note)           |
+| `--dashfoo-dock-fill`         | `color-mix(in oklab, var(--dashfoo-primary) 10%, transparent)` | Split-zone fill while dragging              |
+| `--dashfoo-dock-border`       | `var(--dashfoo-ring)`                                          | Split-zone border                           |
+| `--dashfoo-dock-line`         | `var(--dashfoo-primary)`                                       | Tab insertion line                          |
+
+The dock tokens are derived from the semantic tokens, so they track theme and
+overrides automatically. When no theme CSS is loaded at all, `@dashfoo/react`
+falls back inline to neutral values: `oklch(0.556 0 0 / 0.18)` fill,
+`oklch(0.708 0 0 / 0.75)` border, `oklch(0.556 0 0)` line.
 
 The drag/dock indicators also read four **optional** properties that are unset by
 default (they fall back to the value shown). Override them only to retune the

@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { createActor } from "xstate";
 
-import { canRedo, canUndo } from "../history";
-import type { Dashfoo, TabNode } from "../schema";
+import type { Dashfoo, TabNode } from "../model/schema";
+import { canRedo, canUndo } from "../state/history";
 
 import { dashfooMachine } from "./dashfoo-machine";
 

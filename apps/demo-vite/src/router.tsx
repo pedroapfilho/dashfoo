@@ -21,35 +21,13 @@ const dockingRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/docking",
 });
-const chromeRoute = createRoute({
-  component: lazyRouteComponent(() => import("./pages/chrome"), "ChromePage"),
-  getParentRoute: () => rootRoute,
-  path: "/chrome",
-});
-const persistenceRoute = createRoute({
-  component: lazyRouteComponent(() => import("./pages/persistence"), "PersistencePage"),
-  getParentRoute: () => rootRoute,
-  path: "/persistence",
-});
 const controlledRoute = createRoute({
   component: lazyRouteComponent(() => import("./pages/controlled"), "ImperativeControlPage"),
   getParentRoute: () => rootRoute,
   path: "/controlled",
 });
-const responsiveRoute = createRoute({
-  component: lazyRouteComponent(() => import("./pages/responsive"), "ResponsivePage"),
-  getParentRoute: () => rootRoute,
-  path: "/responsive",
-});
 
-const routeTree = rootRoute.addChildren([
-  indexRoute,
-  dockingRoute,
-  chromeRoute,
-  persistenceRoute,
-  controlledRoute,
-  responsiveRoute,
-]);
+const routeTree = rootRoute.addChildren([indexRoute, dockingRoute, controlledRoute]);
 
 const router = createRouter({ defaultPreload: "intent", routeTree });
 

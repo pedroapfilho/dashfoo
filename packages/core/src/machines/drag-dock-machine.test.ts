@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { createActor } from "xstate";
 
-import type { Action } from "../actions";
+import type { Action } from "../state/actions";
 
 import { dragDockMachine } from "./drag-dock-machine";
 
@@ -68,6 +68,23 @@ describe("dragDockMachine", () => {
       targetId: "ts1",
       type: "moveNode",
     });
+  });
+
+  test("an external subject emits an addNode commit carrying its tab on drop", () => {
+    const { actor, committed } = startDrag();
+    const tab = { component: "metrics", id: "w1", name: "Metrics", type: "tab" } as const;
+    actor.send({ subject: { id: "external-w1", kind: "external", tab }, type: "START" });
+    actor.send({ intent: { index: 1, location: "center", targetId: "ts2" }, type: "OVER" });
+    actor.send({ type: "DROP" });
+
+    expect(committed[0]).toEqual({
+      index: 1,
+      location: "center",
+      tab,
+      targetId: "ts2",
+      type: "addNode",
+    });
+    expect(actor.getSnapshot().value).toBe("idle");
   });
 
   test("a tabset subject emits a moveTabset commit on drop", () => {

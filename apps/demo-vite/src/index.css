@@ -1,22 +1,13 @@
 @import "tailwindcss";
 @import "@dashfoo/theme/dashfoo.css";
 
-/*
- * The dashfoo chrome (every data-dashfoo element + the --dashfoo-* tokens) is
- * styled by @dashfoo/theme. This file keeps only the demo's own palette: the
- * df-* Tailwind tokens its bespoke content (nav, panel bodies) uses directly.
- * Neutral grayscale throughout — no hue leaks into the layout.
- */
+/* The shell's dark: variant keys off the same attribute the dashfoo theme
+ * uses, so one toggle flips the demo chrome and the layout together. */
+@custom-variant dark (&:where([data-dashfoo-theme="dark"], [data-dashfoo-theme="dark"] *));
 
-@theme {
-  --color-df-bg: #0a0a0b;
-  --color-df-surface: #161617;
-  --color-df-strip: #101011;
-  --color-df-border: rgba(255, 255, 255, 0.08);
-  --color-df-border-strong: rgba(255, 255, 255, 0.16);
-  --color-df-text: #ededee;
-  --color-df-muted: #8b8b8f;
-  --color-df-faint: #5f5f63;
-  --color-df-emphasis: #fafafa;
-  --radius-df: 10px;
+html {
+  color-scheme: light;
+}
+html[data-dashfoo-theme="dark"] {
+  color-scheme: dark;
 }

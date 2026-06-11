@@ -1,17 +1,36 @@
+import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooLayout } from "@dashfoo/react";
+import { Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useMemo, useRef } from "react";
 
 import { renderPanel } from "../components/panels";
-import { DemoStage } from "../components/ui";
-import { tradingModel } from "../models";
+import { Button, DemoStage } from "../components/ui";
+import { overviewModel } from "../models";
 
-const OverviewPage = (): ReactNode => (
-  <DemoStage
-    description="A dense, real-world layout. Drag tabs to restack or split, drag a splitter to resize, double-click a tab to rename, and use the maximize button to focus a panel. Data streams via TanStack Query."
-    title="Trading terminal"
-  >
-    <DashfooLayout defaultModel={tradingModel()} factory={renderPanel} />
-  </DemoStage>
-);
+const OverviewPage = (): ReactNode => {
+  const defaultModel = useMemo(() => overviewModel(), []);
+  const layout = useRef<DashfooHandle>(null);
+  const handleClear = (): void => layout.current?.resetLayout();
+
+  return (
+    <DemoStage
+      actions={
+        <Button icon={<Trash2 size={14} />} onClick={handleClear}>
+          Clear saved layout
+        </Button>
+      }
+      description="A composite layout. Drag tabs to restack or split, drag splitters to resize, double-click to rename, maximize to focus. Every change is saved to localStorage — reload and your arrangement survives. Clear it to return to the default."
+      title="Overview"
+    >
+      <DashfooLayout
+        defaultModel={defaultModel}
+        factory={renderPanel}
+        persist="dashfoo:demo:overview"
+        ref={layout}
+      />
+    </DemoStage>
+  );
+};
 
 export { OverviewPage };

@@ -12,12 +12,16 @@ library decides which one is active.
 
 ## The two pieces
 
-- **`stackModel(model, orientation?)`** (`@dashfoo/core`) — a pure transform that
-  flattens any layout into a single column (default) of all its tabsets, in
-  document order. It is the "mobile layout from a
-  desktop layout" building block.
-- **`useResponsiveModel({ breakpoints })`** (`@dashfoo/react`) — picks the model
-  for the active breakpoint and returns props to spread onto `<DashfooLayout>`.
+- **`stackModel(model, orientation?)`** (`@dashfoo/core`,
+  [source](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/stack.ts)) —
+  a pure transform that flattens any layout into a single column (default) of all
+  its tabsets, in document order, each with equal weight; a maximized tabset is
+  unmaximized. It is the "mobile layout from a desktop layout" building block.
+- **`useResponsiveModel({ breakpoints })`** (`@dashfoo/react`,
+  [source](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/hooks/responsive.ts)) —
+  picks the model for the active breakpoint. It returns `defaultModel`, a `key`
+  to remount `<DashfooLayout>` on, the active `breakpoint` id, and a
+  `containerRef` to attach to the element it should measure.
 
 ## Wiring it up
 
@@ -28,15 +32,28 @@ attach `containerRef` to) **or** a media query (`{ media: string }`, via
 Breakpoints are evaluated top to bottom; the first match wins.
 
 ```tsx
-import { stackModel } from "@dashfoo/core";
+import type { Dashfoo, TabNode } from "@dashfoo/core";
+import { model, row, stackModel, tab, tabset } from "@dashfoo/core";
 import { DashfooLayout, useResponsiveModel } from "@dashfoo/react";
+import type { ReactNode } from "react";
 import { useMemo } from "react";
 
-const Dashboard = ({ base }: { base: Dashfoo }) => {
-  // Memoize so the breakpoints array is stable across renders.
+const desktopModel = (): Dashfoo =>
+  model(
+    row([
+      tabset([tab("chart", "Chart"), tab("trades", "Trades")], { id: "left", weight: 2 }),
+      tabset([tab("book", "Order Book")], { id: "right", weight: 1 }),
+    ]),
+  );
+
+const renderPanel = (node: TabNode): ReactNode => <div>{node.name}</div>;
+
+const Dashboard = (): ReactNode => {
+  // Memoize so the model identity and the breakpoints array are stable across renders.
+  const base = useMemo(() => desktopModel(), []);
   const breakpoints = useMemo(
     () => [
-      { id: "mobile", query: { maxWidth: 720 }, model: stackModel(base) },
+      { id: "mobile", model: stackModel(base), query: { maxWidth: 720 } },
       { id: "desktop", model: base },
     ],
     [base],
@@ -46,10 +63,12 @@ const Dashboard = ({ base }: { base: Dashfoo }) => {
   return (
     <div ref={containerRef} style={{ height: "100%" }}>
       {/* remount on `key` so the new breakpoint's model is seeded */}
-      <DashfooLayout key={key} defaultModel={defaultModel} factory={renderPanel} />
+      <DashfooLayout defaultModel={defaultModel} factory={renderPanel} key={key} />
     </div>
   );
 };
+
+export { Dashboard };
 ```
 
 Keying off `containerRef` (not the viewport) is deliberate: a docking layout often
@@ -70,7 +89,7 @@ independently.
 ## Custom transforms
 
 `stackModel` is one transform; you are not limited to it. A breakpoint's `model`
-is just a `Dashfoo`, so you can hand-author a tablet layout, or write your own
+is a plain `Dashfoo`, so you can hand-author a tablet layout, or write your own
 transform over the base model (hide a panel, change weights, move a tabset).
 Anything that produces a valid model works.
 

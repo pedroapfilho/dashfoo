@@ -9,6 +9,7 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "typecheck": "turbo run typecheck",
+    "verify": "turbo run lint typecheck test build",
     "build": "turbo run build",
     "clean": "turbo run clean && rm -rf node_modules",
     "test": "turbo run test",
