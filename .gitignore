@@ -4,6 +4,7 @@ node_modules/
 
 # build
 dist/
+build/
 .turbo/
 *.tsbuildinfo
 
@@ -18,8 +19,14 @@ playwright-report/
 
 # env
 .env
+.env.local
 .env.*
+.env.*.local
 !.env.example
+
+# tooling
+.fallow/
+*.log
 
 # editor / os
 .DS_Store
@@ -31,4 +38,4 @@ playwright-report/
 
 # brainstorming companion (not source)
 .superpowers/
-plans/
+/plans/

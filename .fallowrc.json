@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "oxlint.config.ts",
+    "**/tsdown.config.ts",
+    "apps/demo-vite/src/main.tsx",
+    "apps/demo-vite/src/pages/*.tsx",
+    "apps/demo-vite/playwright.config.ts",
+    "apps/demo-vite/e2e/**/*.spec.ts",
+    "apps/docs/app/layout.tsx",
+    "apps/docs/source.config.ts"
+  ],
+  "ignorePatterns": ["apps/docs/content/**", "apps/docs/next-env.d.ts"],
+  "ignoreExports": [{ "file": "apps/docs/app/**/route.ts", "exports": ["generateStaticParams"] }],
+  "ignoreDependencies": ["@vitest/coverage-v8", "jsdom"]
+}
