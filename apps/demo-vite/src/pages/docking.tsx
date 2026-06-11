@@ -27,16 +27,16 @@ const WidgetCard = ({
 
   return (
     <div
-      className="flex shrink-0 cursor-grab touch-none items-center gap-2 rounded-md border border-neutral-200 bg-white py-1.5 pr-1.5 pl-2.5 text-xs text-neutral-700 select-none"
+      className="flex shrink-0 cursor-grab touch-none items-center gap-2 rounded-md border border-neutral-200 bg-white py-1.5 pr-1.5 pl-2.5 text-xs text-neutral-700 select-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
       data-testid={`widget-${widget.component}`}
       ref={ref}
     >
-      <GripVertical aria-hidden className="text-neutral-300" size={14} />
+      <GripVertical aria-hidden className="text-neutral-300 dark:text-neutral-600" size={14} />
       <widget.icon aria-hidden size={14} strokeWidth={1.75} />
       <span className="md:flex-1">{widget.name}</span>
       <button
         aria-label={`Add ${widget.name}`}
-        className="rounded p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+        className="rounded p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
         onClick={handleAdd}
         type="button"
       >
@@ -72,7 +72,7 @@ const DockingPage = (): ReactNode => {
         </Button>
       }
       description="Drag a tab onto another strip to stack it, toward a tabset edge to split. Grow the dashboard from the widget list: drag a widget in (or add it with its button) and close its tab to remove it."
-      title="Docking & widgets"
+      title="Docking & Widgets"
     >
       <DashfooDragProvider>
         <div className="flex h-full min-h-0 flex-col gap-3 md:flex-row">
