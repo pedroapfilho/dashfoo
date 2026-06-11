@@ -151,6 +151,47 @@ Internally the grip registers with dnd-kit under the id `grip-<tabsetId>`, so
 it never collides with the tabset's own registered id; the real tabset id rides
 in the draggable's data and becomes the `moveTabset` source.
 
+## Dragging in from outside
+
+Both drags above move nodes that already live in the model. External drag
+sources add a third kind: an element outside the layout — a widget list, a
+palette — that inserts a **new** tab when dropped on a tabset.
+
+Wrap the layout and the sources in `DashfooDragProvider` so they share one drag
+manager, and register each source with `useExternalTabSource`:
+
+```tsx
+import { createTabId, tab } from "@dashfoo/core";
+import { DashfooDragProvider, DashfooLayout, useExternalTabSource } from "@dashfoo/react";
+
+const WidgetCard = ({ component, name }: { component: string; name: string }) => {
+  const { ref } = useExternalTabSource({
+    createTab: () => tab(component, name, { id: createTabId() }),
+    label: name,
+  });
+  return <div ref={ref}>{name}</div>;
+};
+
+const App = () => (
+  <DashfooDragProvider>
+    <WidgetCard component="metrics" name="Metrics" />
+    <DashfooLayout defaultModel={model} components={registry} />
+  </DashfooDragProvider>
+);
+```
+
+An external drag resolves against the same landing zones — stack on a strip or
+body, split on an edge — but the drop commits an `addNode` action carrying the
+`TabNode` that `createTab` returned, instead of a `moveNode`. `createTab` runs
+once per drag (at drag start) and must mint a fresh id each call; the result is
+validated against the tab schema, and an invalid node warns and cancels the
+drag. A drop outside any tabset is a no-op.
+
+The demo's [docking page](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/docking.tsx)
+pairs each draggable card with an "Add" button that calls `addTab` on the
+imperative handle — pointer drag is the only drag input, so the button is the
+keyboard path.
+
 ## How resolution layers
 
 For a pointer over a tabset, the adapter's `resolveIntent` runs the checks in a
@@ -195,8 +236,9 @@ never touches the document, and the reducer owns the model.
 
 ```
 drag hooks      →  dnd-kit/dom  →  dragDockMachine  →  COMMIT        →  reducer
-  (tab + grip      (pointer +      (OVER / DROP        (moveNode |      (action
-   draggables)      hit-test)       lifecycle)          moveTabset)      applied)
+  (tab + grip +    (pointer +      (OVER / DROP        (moveNode |      (action
+   external         hit-test)       lifecycle)          moveTabset |     applied)
+   draggables)                                          addNode)
 ```
 
 ### 1. The drag hooks mark the sources
@@ -220,8 +262,9 @@ wire the DOM to the drag system. None of them is exported from
 `DragProvider` constructs one `@dnd-kit/dom` `DragDropManager` (minus the
 `Feedback` and `Accessibility` plugins and the keyboard sensor) and subscribes to
 its monitor for three events. On `dragstart` it reads the source's data to
-decide the subject kind — a grip carries `type: "tabset"`, a tab carries its
-own id — sends `START`, and shows its own `data-dashfoo="drag-preview"` chip.
+decide the subject kind — a grip carries `type: "tabset"`, an external source
+carries `type: "external"`, a tab carries its own id — sends `START`, and shows
+its own `data-dashfoo="drag-preview"` chip.
 On `dragmove` it reads the live pointer, finds the tabset under it, resolves an
 intent, and sends `OVER` (positioning the preview chip imperatively, no
 re-render). On `dragend` it re-resolves from the final pointer, sends a last
@@ -234,24 +277,32 @@ where the user actually released.
 ### 3. `dragDockMachine` runs the lifecycle
 
 The XState machine has two states, `idle` and `dragging`. `START` stashes the
-subject (its `kind` is `"tab"` or `"tabset"`) and enters `dragging`. Each `OVER`
-assigns the live intent (the indicator reads it). `DROP` checks the
-`hasValidDrop` guard, which requires both a subject and an intent to be present,
-and when valid emits a `COMMIT`. The subject's kind picks the action:
+subject (its `kind` is `"tab"`, `"tabset"`, or `"external"` — the last carrying
+the `TabNode` to insert) and enters `dragging`. Each `OVER` assigns the live
+intent (the indicator reads it). `DROP` checks the `hasValidDrop` guard, which
+requires both a subject and an intent to be present, and when valid emits a
+`COMMIT`. The subject's kind picks the action:
 
 ```ts
 emit(({ context }) => {
   const { intent, subject } = requireDrop(context);
-  return {
-    action: {
-      index: intent.index,
-      location: intent.location,
-      sourceId: subject.id,
-      targetId: intent.targetId,
-      type: subject.kind === "tabset" ? "moveTabset" : "moveNode",
-    },
-    type: "COMMIT",
-  };
+  const action: Action =
+    subject.kind === "external"
+      ? {
+          index: intent.index,
+          location: intent.location,
+          tab: subject.tab,
+          targetId: intent.targetId,
+          type: "addNode",
+        }
+      : {
+          index: intent.index,
+          location: intent.location,
+          sourceId: subject.id,
+          targetId: intent.targetId,
+          type: subject.kind === "tabset" ? "moveTabset" : "moveNode",
+        };
+  return { action, type: "COMMIT" };
 });
 ```
 
@@ -261,8 +312,9 @@ machine never mutates the model; it only emits the action.
 ### 4. `COMMIT` forwards the action
 
 `DragProvider` subscribes to the machine's `COMMIT` emission and forwards the
-action — `moveNode` for a tab drag, `moveTabset` for a grip drag — to
-`onCommit`, which `DashfooLayout` wires straight to `store.dispatch`.
+action — `moveNode` for a tab drag, `moveTabset` for a grip drag, `addNode` for
+an external source — to `onCommit`, which `DashfooLayout` wires straight to
+`store.dispatch`.
 
 ### 5. The reducer applies the move
 

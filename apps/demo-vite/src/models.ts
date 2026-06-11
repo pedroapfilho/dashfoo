@@ -29,13 +29,15 @@ const overviewModel = (): Dashfoo =>
     { activeTabsetId: "ts-main" },
   );
 
-// A sandbox for stacking/splitting/reordering by dragging tabs.
+// A sandbox for stacking/splitting/reordering by dragging tabs. Tabset "a"
+// carries a min width so the splitter also demos sizing constraints.
 const dockingModel = (): Dashfoo =>
   model(
     row(
       [
         tabset([tab("canvas", "Canvas"), tab("detail", "Detail"), tab("notes", "Notes")], {
           id: "a",
+          min: 180,
           weight: 1,
         }),
         tabset([tab("activity", "Activity"), tab("tasks", "Tasks")], {
@@ -48,26 +50,7 @@ const dockingModel = (): Dashfoo =>
     { activeTabsetId: "a" },
   );
 
-// Exercises the tabset chrome: close, rename (double-click), maximize.
-const chromeModel = (): Dashfoo =>
-  model(
-    row(
-      [
-        tabset([tab("canvas", "Canvas"), tab("detail", "Detail"), tab("notes", "Notes")], {
-          id: "main",
-          weight: 3,
-        }),
-        tabset([tab("metrics", "Metrics"), tab("history", "History")], {
-          id: "side",
-          weight: 2,
-        }),
-      ],
-      { id: "root" },
-    ),
-    { activeTabsetId: "main" },
-  );
-
-// A small layout used to demonstrate persistence and controlled mode.
+// A small layout used to demonstrate controlled mode.
 const playgroundModel = (): Dashfoo =>
   model(
     row(
@@ -86,23 +69,4 @@ const playgroundModel = (): Dashfoo =>
     { activeTabsetId: "left" },
   );
 
-const sizingModel = (): Dashfoo =>
-  model(
-    row(
-      [
-        tabset([tab("navigator", "Navigator"), tab("alerts", "Alerts")], {
-          id: "side",
-          min: 180,
-          weight: 1,
-        }),
-        tabset([tab("canvas", "Canvas"), tab("detail", "Detail"), tab("metrics", "Metrics")], {
-          id: "main",
-          weight: 3,
-        }),
-      ],
-      { id: "root" },
-    ),
-    { activeTabsetId: "side" },
-  );
-
-export { chromeModel, dockingModel, overviewModel, playgroundModel, sizingModel };
+export { dockingModel, overviewModel, playgroundModel };

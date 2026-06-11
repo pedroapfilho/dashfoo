@@ -145,18 +145,18 @@ const usePersistence = (
   }, [config]);
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // The pending write carries the key it was produced for, so a key change while
-  // a save is queued cannot write the old value under the new key.
-  const pending = useRef<{ key: string; value: string } | null>(null);
+  // The pending write carries the key and storage it was produced for, so a
+  // config change while a save is queued cannot write the old value into the
+  // new target.
+  const pending = useRef<{ key: string; storage: StorageAdapter; value: string } | null>(null);
 
   const flush = useCallback((): void => {
     if (timer.current !== null) {
       clearTimeout(timer.current);
       timer.current = null;
     }
-    const current = configRef.current;
-    if (pending.current !== null && current !== null) {
-      current.storage.setItem(pending.current.key, pending.current.value);
+    if (pending.current !== null) {
+      pending.current.storage.setItem(pending.current.key, pending.current.value);
       pending.current = null;
     }
   }, []);
@@ -167,7 +167,7 @@ const usePersistence = (
       if (current === null) {
         return;
       }
-      pending.current = { key: current.key, value: toJSON(next) };
+      pending.current = { key: current.key, storage: current.storage, value: toJSON(next) };
       if (timer.current !== null) {
         clearTimeout(timer.current);
       }
@@ -176,13 +176,28 @@ const usePersistence = (
     [flush],
   );
 
-  // Flush a pending save on unmount so the last change is never lost.
-  useEffect(
-    () => () => {
+  // Flush a pending save on unmount so the last change is never lost — and on
+  // page teardown: a reload or navigation never unmounts React, so the debounced
+  // timer dies with the page. pagehide is the teardown signal (bfcache-safe);
+  // visibilitychange→hidden covers backgrounded tabs killed without a pagehide
+  // (mobile). flush() is idempotent, so overlapping signals are harmless.
+  useEffect(() => {
+    const handlePageHide = (): void => {
       flush();
-    },
-    [flush],
-  );
+    };
+    const handleVisibilityChange = (): void => {
+      if (document.visibilityState === "hidden") {
+        flush();
+      }
+    };
+    window.addEventListener("pagehide", handlePageHide);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      flush();
+    };
+  }, [flush]);
 
   const clear = useCallback((): void => {
     if (timer.current !== null) {

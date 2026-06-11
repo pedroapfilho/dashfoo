@@ -1,30 +1,35 @@
 "use client";
 
-import type { Action, DockLocation, DropIntent, Point } from "@dashfoo/core";
-import { dragDockMachine, resolveDockTarget, zoneRect } from "@dashfoo/core";
-import { Accessibility, DragDropManager, Feedback, KeyboardSensor } from "@dnd-kit/dom";
+import type { Action, DockLocation, DragSubject, DropIntent, Point } from "@dashfoo/core";
+import { dragDockMachine, resolveDockTarget, tabNodeSchema } from "@dashfoo/core";
 import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/dom";
 import { useActorRef, useSelector } from "@xstate/react";
-import type { CSSProperties, ReactNode } from "react";
-import { useCallback, useEffect, useInsertionEffect, useMemo, useRef, useState } from "react";
-import type { ActorRefFrom } from "xstate";
+import type { ReactNode } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useInsertionEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import type { DragContextValue } from "../hooks/drag-hooks";
 import {
+  createDragManager,
   DragContext,
   DragSubjectContext,
+  SharedDragManagerContext,
   useDragSubject,
   useTabDraggable,
   useTabsetDraggable,
   useTabsetDroppable,
 } from "../hooks/drag-hooks";
-import type { Zone } from "../lib/tab-insertion";
-import {
-  insertionIndex,
-  insertionLineRect,
-  pointInRect,
-  shouldAllowDrop,
-} from "../lib/tab-insertion";
+import { insertionIndex, pointInRect, shouldAllowDrop } from "../lib/tab-insertion";
+
+import type { DragPreviewState } from "./drag-overlays";
+import { DockIndicator, DragPreview } from "./drag-overlays";
 
 // This module is the drag adapter: it (with ./drag-hooks) is where @dnd-kit is
 // touched. It wires the framework-agnostic @dnd-kit/dom core (no React bindings)
@@ -35,23 +40,11 @@ import {
 // no Feedback plugin, no placeholder clone, and none of the CSS workarounds those
 // required.
 
-type DragActor = ActorRefFrom<typeof dragDockMachine>;
-
 // The dragged tab is excluded so its own slot never counts toward the order —
 // the insertion index and line are measured against the tabs it will land among.
 const tabRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
   [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].flatMap((tab) =>
     tab.dataset.tabId === excludeId ? [] : [tab.getBoundingClientRect()],
-  );
-
-// Whole-tab-item rects (label + close button), excluding the dragged tab. The
-// insertion line lands on these boundaries so the "after the last tab" position
-// sits past the close button, not between the label and the close.
-const tabItemRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
-  [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab-item"]')].flatMap((item) =>
-    item.querySelector<HTMLElement>('[data-dashfoo="tab"]')?.dataset.tabId === excludeId
-      ? []
-      : [item.getBoundingClientRect()],
   );
 
 // The tab strip is always a "stack as a tab" target, with an insertion index that
@@ -80,104 +73,44 @@ const intentForTabset = (
   return { location, targetId: id };
 };
 
-const overlayBase: CSSProperties = {
-  boxSizing: "border-box",
-  pointerEvents: "none",
-  position: "fixed",
-  // Overridable so a theme can drop it under prefers-reduced-motion.
-  transition: "var(--dashfoo-dock-transition, left 60ms, top 60ms, width 60ms, height 60ms)",
-  zIndex: 9999,
-};
-
-// Only position/size are fixed inline; every visual property is an overridable
-// CSS var with a neutral fallback, so a consumer's data-dashfoo="dock-indicator"
-// theme fully owns the look.
-const paneStyle = (zone: Zone): CSSProperties => ({
-  ...overlayBase,
-  background: "var(--dashfoo-dock-fill, oklch(0.556 0 0 / 0.18))",
-  border:
-    "var(--dashfoo-dock-border-width, 1px) solid var(--dashfoo-dock-border, oklch(0.708 0 0 / 0.75))",
-  borderRadius: "var(--dashfoo-dock-radius, 6px)",
-  height: zone.height,
-  left: zone.x,
-  top: zone.y,
-  width: zone.width,
-});
-
-const lineStyle = (zone: Zone): CSSProperties => ({
-  ...overlayBase,
-  background: "var(--dashfoo-dock-line, oklch(0.556 0 0))",
-  borderRadius: "var(--dashfoo-dock-line-radius, 2px)",
-  height: zone.height,
-  left: zone.x,
-  top: zone.y,
-  width: zone.width,
-});
-
-// A "where it will land" indicator driven off the machine's live intent: an
-// insertion line in the tab bar for a stack, the matching content half for a split.
-const DockIndicator = ({
-  actorRef,
-  getTabsetElement,
-}: {
-  actorRef: DragActor;
-  getTabsetElement: (id: string) => HTMLElement | undefined;
-}): ReactNode => {
-  const intent = useSelector(actorRef, (snapshot) => snapshot.context.intent);
-  const draggedId = useSelector(actorRef, (snapshot) => snapshot.context.subject?.id);
-  if (!intent) {
-    return null;
-  }
-  const element = getTabsetElement(intent.targetId);
-  if (!element) {
-    return null;
-  }
-  if (intent.location === "center") {
-    const strip = element.querySelector('[data-dashfoo="tabstrip"]');
-    if (strip) {
-      const line = insertionLineRect(
-        strip.getBoundingClientRect(),
-        tabItemRects(strip, draggedId),
-        intent.index ?? 0,
-      );
-      return <div data-dashfoo="dock-indicator" key="line" style={lineStyle(line)} />;
-    }
-  }
-  const zone = zoneRect(element.getBoundingClientRect(), intent.location);
-  return <div data-dashfoo="dock-indicator" key="pane" style={paneStyle(zone)} />;
-};
-
-// The pointer-anchored chip that follows the cursor while dragging.
+// The pointer-anchored preview chip follows the cursor at this offset.
 const PREVIEW_OFFSET: Point = { x: 12, y: 8 };
-
-const previewStyle: CSSProperties = { left: 0, position: "fixed", top: 0, zIndex: 9999 };
-
-type DragPreviewState = { label: string; x: number; y: number };
-
-const DragPreview = ({
-  overlayRef,
-  preview,
-}: {
-  overlayRef: (element: HTMLDivElement | null) => void;
-  preview: DragPreviewState | null;
-}): ReactNode => {
-  if (!preview) {
-    return null;
-  }
-  return (
-    <div
-      data-dashfoo="drag-preview"
-      ref={overlayRef}
-      style={{ ...previewStyle, transform: `translate(${preview.x}px, ${preview.y}px)` }}
-    >
-      {preview.label}
-    </div>
-  );
-};
 
 const labelOf = (source: { data?: Record<string, unknown> } | null): string => {
   const raw = source?.data?.label;
   return typeof raw === "string" ? raw : "";
+};
+
+const isTabFactory = (value: unknown): value is () => unknown => typeof value === "function";
+
+// A tabset grip carries { tabsetId, type: "tabset" }; an external source
+// (useExternalTabSource) carries { createTab, type: "external" } and its tab is
+// built and validated at drag start; a plain tab carries its id. null aborts
+// the drag — the machine stays idle, so the following OVER/DROP are ignored.
+const subjectFor = (source: {
+  data?: Record<string, unknown>;
+  id: string | number;
+}): DragSubject | null => {
+  const data = source.data;
+  if (data?.type === "tabset") {
+    return { id: String(data.tabsetId), kind: "tabset" };
+  }
+  if (data?.type === "external") {
+    if (!isTabFactory(data.createTab)) {
+      // A wired-up source that can't produce a tab must not fail silently.
+      // oxlint-disable-next-line no-console
+      console.warn("[dashfoo] external drag source is missing its createTab function");
+      return null;
+    }
+    const parsed = tabNodeSchema.safeParse(data.createTab());
+    if (!parsed.success) {
+      // oxlint-disable-next-line no-console
+      console.warn("[dashfoo] external drag source returned an invalid tab", parsed.error);
+      return null;
+    }
+    return { id: String(source.id), kind: "external", tab: parsed.data };
+  }
+  return { id: String(source.id), kind: "tab" };
 };
 
 type DragProviderProps = {
@@ -193,23 +126,23 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const [preview, setPreview] = useState<DragPreviewState | null>(null);
 
-  // One manager for the whole layout. Plugins drop the screen-reader announcer
-  // and the visual Feedback plugin (we render our own preview). Sensors drop the
-  // KeyboardSensor: its nudge model double-binds the arrow keys the tab strip
-  // already uses for roving-tabindex navigation, so keyboard docking needs its
-  // own interaction design rather than this sensor. Pointer drag only.
-  // useState lazily constructs it once; the destroy rides a useInsertionEffect
-  // cleanup (not useEffect) so StrictMode's simulated unmount doesn't tear down
-  // the live instance — the same pattern @dnd-kit/react uses internally.
-  const [manager] = useState(
-    () =>
-      new DragDropManager({
-        plugins: (defaults) =>
-          defaults.filter((plugin) => plugin !== Accessibility && plugin !== Feedback),
-        sensors: (defaults) => defaults.filter((sensor) => sensor !== KeyboardSensor),
-      }),
-  );
-  useInsertionEffect(() => () => manager.destroy(), [manager]);
+  // One manager for the whole layout — the shared one when a DashfooDragProvider
+  // sits above (so external sources participate in this layout's drags), else
+  // our own. useState lazily constructs it once; the destroy rides a
+  // useInsertionEffect cleanup (not useEffect) so StrictMode's simulated unmount
+  // doesn't tear down the live instance — the same pattern @dnd-kit/react uses
+  // internally.
+  const sharedManager = useContext(SharedDragManagerContext);
+  const [ownManager] = useState(() => (sharedManager ? null : createDragManager()));
+  useInsertionEffect(() => () => ownManager?.destroy(), [ownManager]);
+  const manager = sharedManager ?? ownManager;
+  if (manager === null) {
+    // Only reachable when a DashfooDragProvider unmounts while its layout stays
+    // mounted — surface the misuse instead of dragging against a dead manager.
+    throw new Error(
+      "[dashfoo] DashfooDragProvider unmounted while its layout is still mounted; keep the provider above the layout or remount the layout",
+    );
+  }
 
   useEffect(() => {
     const subscription = actorRef.on("COMMIT", (emitted) => {
@@ -287,21 +220,17 @@ const DragProvider = ({ children, onCommit, splitDock = true }: DragProviderProp
       if (!source) {
         return;
       }
-      // A tabset grip carries { tabsetId, type: "tabset" }; a tab carries its id.
-      const isTabset = source.data?.type === "tabset";
+      const subject = subjectFor(source);
+      if (!subject) {
+        return;
+      }
       const point = event.operation.position.current;
       setPreview({
         label: labelOf(source),
         x: point.x + PREVIEW_OFFSET.x,
         y: point.y + PREVIEW_OFFSET.y,
       });
-      actorRef.send({
-        subject: {
-          id: isTabset ? String(source.data.tabsetId) : String(source.id),
-          kind: isTabset ? "tabset" : "tab",
-        },
-        type: "START",
-      });
+      actorRef.send({ subject, type: "START" });
     };
 
     // dnd-kit's dragmove gives the live pointer on every move, which drives the

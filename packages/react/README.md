@@ -200,6 +200,50 @@ Rows and tabsets can carry `min` and `max` dimensions from `@dashfoo/core`.
 tabset has no node-level `min`, it uses `global.tabSetMinSize`; when that global
 is omitted, the React adapter falls back to `320px`.
 
+## External drag sources
+
+Tabs normally move within a layout. To drag new content in from outside it — a
+widget list, a palette, a marketplace — wrap both sides in `DashfooDragProvider`
+and register each source with `useExternalTabSource`. Dropping a source on the
+layout inserts the tab it creates (stacking on a strip or body, splitting on an
+edge), exactly like an internal tab drop. A drop outside any tabset is a no-op.
+
+```tsx
+import { createTabId, tab } from "@dashfoo/core";
+import { DashfooDragProvider, DashfooLayout, useExternalTabSource } from "@dashfoo/react";
+
+const WidgetCard = ({ component, name }: { component: string; name: string }) => {
+  const { ref } = useExternalTabSource({
+    createTab: () => tab(component, name, { id: createTabId() }),
+    label: name,
+  });
+  return <div ref={ref}>{name}</div>;
+};
+
+const App = () => (
+  <DashfooDragProvider>
+    <WidgetCard component="metrics" name="Metrics" />
+    <DashfooLayout defaultModel={model} components={registry} />
+  </DashfooDragProvider>
+);
+```
+
+`createTab` runs at drag start and must return a fresh `TabNode` with a unique
+id per call (`createNodeId` / `createTabId` from `@dashfoo/core` mint one). The
+returned node is validated against the model schema; an invalid tab warns and
+cancels the drag. `DashfooDragProvider` is optional everywhere else — a
+standalone layout needs no provider. Pointer drag is the only drag input, so
+offer a click-to-add path (e.g. `ref.addTab(...)`) alongside the drag for
+keyboard access.
+
+`useExternalTabSource` options:
+
+| Option      | Type            | Default      | Description                                |
+| ----------- | --------------- | ------------ | ------------------------------------------ |
+| `createTab` | `() => TabNode` | — (required) | Builds the tab to insert; called per drag. |
+| `label`     | `string`        | `""`         | The drag preview chip text.                |
+| `disabled`  | `boolean`       | `false`      | Unregisters the source while true.         |
+
 ## Persistence
 
 The `persist` prop saves an uncontrolled layout and restores it on load. It loads
@@ -228,8 +272,10 @@ const Layout = () => {
 
 `persist` accepts a bare localStorage key or `{ key, storage?, debounceMs? }` for
 a custom store (sessionStorage, in-memory, your own). A pending save flushes on
-unmount, so the last change is never lost. It applies to uncontrolled mode only;
-in controlled mode, save the model yourself in `onModelChange`.
+unmount and on page hide (reload, tab close, navigation, the page going to the
+background), so the last change is never lost — even inside the debounce window.
+It applies to uncontrolled mode only; in controlled mode, save the model yourself
+in `onModelChange`.
 
 The lower-level `usePersistence` load/save primitive (that `persist` is built on)
 is also exported, for hosts that drive the store directly. See the
@@ -380,6 +426,11 @@ type UseDashfooStoreOptions;
 DashfooContext;
 useDashfooContext;
 type DashfooContextValue;
+
+// External drag sources
+DashfooDragProvider; // shares one drag manager between a layout and outside sources
+useExternalTabSource;
+type ExternalTabSourceOptions;
 
 // Persistence
 usePersistence; // load/save primitive (the `persist` prop builds on this)

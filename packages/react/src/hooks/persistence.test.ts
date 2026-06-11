@@ -122,6 +122,28 @@ describe("usePersistence", () => {
     expect(storage.getItem("new")).toBeNull();
   });
 
+  test("a queued save lands in the storage it was produced for after a config change", () => {
+    const oldStorage = memoryStorageAdapter();
+    const newStorage = memoryStorageAdapter();
+    const { rerender, result } = renderHook(
+      ({ storage }: { storage: ReturnType<typeof memoryStorageAdapter> }) =>
+        usePersistence({ debounceMs: 300, key: "layout", storage }, modelWith("Default")),
+      { initialProps: { storage: oldStorage } },
+    );
+
+    act(() => {
+      result.current.save(modelWith("Edited"));
+    });
+    // Swap the storage backend while the debounced write is still queued.
+    rerender({ storage: newStorage });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(oldStorage.getItem("layout")).toBe(toJSON(modelWith("Edited")));
+    expect(newStorage.getItem("layout")).toBeNull();
+  });
+
   test("debounce-saves the latest model and collapses rapid changes", () => {
     const storage = memoryStorageAdapter();
     const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
@@ -161,6 +183,48 @@ describe("usePersistence", () => {
       result.current.save(modelWith("Edited"));
     });
     unmount();
+
+    expect(storage.getItem("layout")).toBe(toJSON(modelWith("Edited")));
+  });
+
+  test("flushes a pending save on pagehide", () => {
+    const storage = memoryStorageAdapter();
+    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
+
+    act(() => {
+      result.current.save(modelWith("Edited"));
+    });
+    expect(storage.getItem("layout")).toBeNull(); // still debounced
+
+    act(() => {
+      window.dispatchEvent(new Event("pagehide"));
+    });
+
+    expect(storage.getItem("layout")).toBe(toJSON(modelWith("Edited")));
+  });
+
+  test("flushes a pending save when the page becomes hidden, not while visible", () => {
+    const storage = memoryStorageAdapter();
+    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
+
+    act(() => {
+      result.current.save(modelWith("Edited"));
+    });
+    // jsdom reports "visible" by default; a visible change must not flush.
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(storage.getItem("layout")).toBeNull();
+
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => "hidden",
+    });
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    // Drop the own property so the prototype getter is back for other tests.
+    Reflect.deleteProperty(document, "visibilityState");
 
     expect(storage.getItem("layout")).toBe(toJSON(modelWith("Edited")));
   });

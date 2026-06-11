@@ -1,17 +1,18 @@
 import { expect, test } from "@playwright/test";
 
+// Tabset chrome (close, rename, maximize) on the overview layout.
 test.beforeEach(async ({ page }) => {
-  await page.goto("/chrome");
+  await page.goto("/");
   await expect(page.getByRole("tab", { name: "Canvas" })).toBeVisible();
 });
 
 test("closing a tab removes it", async ({ page }) => {
-  await expect(page.getByRole("tab", { name: "Notes" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Tasks" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Close Notes" }).click();
+  await page.getByRole("button", { name: "Close Tasks" }).click();
 
-  await expect(page.getByRole("tab", { name: "Notes" })).toHaveCount(0);
-  await expect(page.getByRole("tab", { name: "Canvas" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Tasks" })).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: "Activity" })).toBeVisible();
 });
 
 test("double-clicking a tab renames it inline", async ({ page }) => {

@@ -1,13 +1,16 @@
 import type { Dashfoo } from "@dashfoo/core";
+import { findTabset } from "@dashfoo/core";
 import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooLayout } from "@dashfoo/react";
-import { Redo2, Undo2 } from "lucide-react";
+import { Plus, Redo2, Undo2, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { renderPanel } from "../components/panels";
 import { Button, DemoStage } from "../components/ui";
 import { playgroundModel } from "../models";
+import type { WidgetDefinition } from "../widgets";
+import { addTargetId, createWidgetTab, WIDGETS } from "../widgets";
 
 type View = { canRedo: boolean; canUndo: boolean; model: Dashfoo };
 
@@ -31,6 +34,32 @@ const ImperativeControlPage = (): ReactNode => {
 
   const handleRedo = useCallback((): void => {
     layout.current?.redo();
+  }, []);
+
+  const handleAddWidget = useCallback((widget: WidgetDefinition): void => {
+    const handle = layout.current;
+    if (!handle) {
+      return;
+    }
+    const targetId = addTargetId(handle.getModel());
+    if (targetId) {
+      handle.addTab(createWidgetTab(widget), { location: "center", targetId });
+    }
+  }, []);
+
+  // Remove the tab the user is looking at: the selected tab of the focused tabset.
+  const handleCloseActive = useCallback((): void => {
+    const handle = layout.current;
+    if (!handle) {
+      return;
+    }
+    const model = handle.getModel();
+    const tabsetId = addTargetId(model);
+    const tabset = tabsetId === undefined ? undefined : findTabset(model, tabsetId);
+    const activeTab = tabset?.children[tabset.selected ?? 0];
+    if (activeTab) {
+      handle.closeTab(activeTab.id);
+    }
   }, []);
 
   // ⌘Z / ⇧⌘Z, ignored while typing (e.g. renaming a tab).
@@ -58,6 +87,8 @@ const ImperativeControlPage = (): ReactNode => {
     };
   }, [handleRedo, handleUndo]);
 
+  const hasTabs = addTargetId(view.model) !== undefined;
+
   return (
     <DemoStage
       actions={
@@ -70,10 +101,24 @@ const ImperativeControlPage = (): ReactNode => {
           </Button>
         </>
       }
-      description="DashfooLayout exposes an imperative handle via ref — undo/redo, getModel, addTab, maximizeTabset, and more. These buttons and ⌘Z / ⇧⌘Z drive the engine's own history; no external state is rebuilt. The live model is mirrored in the inspector."
+      description="DashfooLayout exposes an imperative handle via ref — addTab and closeTab drive the widget buttons below, undo/redo and ⌘Z / ⇧⌘Z drive the engine's own history; no external state is rebuilt. The live model is mirrored in the inspector."
       title="Imperative control & history"
     >
-      <div className="flex h-full min-h-0 gap-3">
+      <div className="flex h-full min-h-0 flex-col gap-3 lg:flex-row">
+        <div className="flex shrink-0 flex-wrap content-start items-start gap-2 lg:w-44 lg:flex-col lg:flex-nowrap lg:overflow-y-auto">
+          {WIDGETS.map((widget) => (
+            <Button
+              icon={<Plus size={14} />}
+              key={widget.component}
+              onClick={() => handleAddWidget(widget)}
+            >
+              {widget.name}
+            </Button>
+          ))}
+          <Button disabled={!hasTabs} icon={<X size={14} />} onClick={handleCloseActive}>
+            Close active tab
+          </Button>
+        </div>
         <div className="min-h-0 min-w-0 flex-1">
           <DashfooLayout
             defaultModel={initial}
@@ -82,7 +127,7 @@ const ImperativeControlPage = (): ReactNode => {
             ref={layout}
           />
         </div>
-        <pre className="hidden w-80 shrink-0 overflow-auto rounded-lg border border-neutral-200 bg-white p-3 text-[10px] leading-relaxed text-neutral-500 lg:block">
+        <pre className="hidden w-80 shrink-0 overflow-auto rounded-lg border border-neutral-200 bg-white p-3 text-[10px] leading-relaxed text-neutral-500 xl:block">
           {JSON.stringify(view.model, null, 2)}
         </pre>
       </div>
