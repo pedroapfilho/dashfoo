@@ -1,9 +1,12 @@
 import type { Rect } from "@dashfoo/core";
 import { describe, expect, test } from "vitest";
 
-import { insertionIndex, insertionLineRect, pointInRect, shouldAllowDrop } from "./tab-insertion";
+import { insertionGhostRect, insertionIndex, pointInRect, shouldAllowDrop } from "./tab-insertion";
 
 const r = (x: number, width: number): Rect => ({ height: 30, width, x, y: 0 });
+
+// a tab-item resting inside a taller strip (y=8, height=30), 60 wide
+const item = (x: number): Rect => ({ height: 30, width: 60, x, y: 8 });
 
 describe("pointInRect", () => {
   const rect: Rect = { height: 100, width: 200, x: 10, y: 20 };
@@ -44,20 +47,55 @@ describe("insertionIndex", () => {
   });
 });
 
-describe("insertionLineRect", () => {
+describe("insertionGhostRect", () => {
   const strip: Rect = { height: 36, width: 300, x: 10, y: 5 };
-  const items = [r(10, 60), r(70, 60), r(130, 60)]; // last item ends at x=190
+  const items = [item(10), item(70), item(130)]; // last item ends at x=190
+  const size = { height: 28, width: 60 };
 
-  test("before a given tab sits at that tab-item's left edge", () => {
-    expect(insertionLineRect(strip, items, 1)).toEqual({ height: 36, width: 2, x: 69, y: 5 });
+  test("before a given tab takes that tab-item's slot and vertical box", () => {
+    expect(insertionGhostRect(strip, items, 1, size)).toEqual({
+      height: 30,
+      width: 60,
+      x: 70,
+      y: 8,
+    });
   });
 
-  test("at the end sits past the last tab-item (its right edge)", () => {
-    expect(insertionLineRect(strip, items, 3)).toEqual({ height: 36, width: 2, x: 189, y: 5 });
+  test("at the end starts past the last tab-item, anchored to its vertical box", () => {
+    expect(insertionGhostRect(strip, items, 3, size)).toEqual({
+      height: 30,
+      width: 60,
+      x: 190,
+      y: 8,
+    });
   });
 
-  test("no tabs falls back to the strip's left edge", () => {
-    expect(insertionLineRect(strip, [], 0)).toEqual({ height: 36, width: 2, x: 9, y: 5 });
+  test("no tabs falls back to the dragged tab's height, resting on the strip bottom", () => {
+    expect(insertionGhostRect(strip, [], 0, size)).toEqual({
+      height: 28,
+      width: 60,
+      x: 10,
+      y: 13, // strip bottom (5 + 36) minus the tab height
+    });
+  });
+
+  test("clamps to the strip's right edge when the slot would overflow", () => {
+    // boundary at x=190, but a 130-wide ghost must not pass the strip end (x=310)
+    expect(insertionGhostRect(strip, items, 3, { height: 28, width: 130 })).toEqual({
+      height: 30,
+      width: 130,
+      x: 180,
+      y: 8,
+    });
+  });
+
+  test("a tab wider than the strip is clamped to the strip itself", () => {
+    expect(insertionGhostRect(strip, items, 0, { height: 28, width: 500 })).toEqual({
+      height: 30,
+      width: 300,
+      x: 10,
+      y: 8,
+    });
   });
 });
 

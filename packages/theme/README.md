@@ -137,24 +137,23 @@ inverted neutral scale.
 | `--dashfoo-font`              | `ui-sans-serif, system-ui, …`                                  | Chrome font family                          |
 | `--dashfoo-font-size`         | `13px`                                                         | Base chrome font size                       |
 | `--dashfoo-splitter-size`     | `1rem`                                                         | Resize-handle hit area (see note)           |
-| `--dashfoo-dock-fill`         | `color-mix(in oklab, var(--dashfoo-primary) 10%, transparent)` | Split-zone fill while dragging              |
-| `--dashfoo-dock-border`       | `var(--dashfoo-ring)`                                          | Split-zone border                           |
-| `--dashfoo-dock-line`         | `var(--dashfoo-primary)`                                       | Tab insertion line                          |
+| `--dashfoo-dock-fill`         | `color-mix(in oklab, var(--dashfoo-primary) 10%, transparent)` | Dock-indicator fill while dragging          |
+| `--dashfoo-dock-border`       | `var(--dashfoo-ring)`                                          | Dock-indicator border                       |
+| `--dashfoo-dock-tab-radius`   | `var(--dashfoo-radius-sm) var(--dashfoo-radius-sm) 0 0`        | Insertion-ghost corner shape (tab-like)     |
 
 The dock tokens are derived from the semantic tokens, so they track theme and
 overrides automatically. When no theme CSS is loaded at all, `@dashfoo/react`
-falls back inline to neutral values: `oklch(0.556 0 0 / 0.18)` fill,
-`oklch(0.708 0 0 / 0.75)` border, `oklch(0.556 0 0)` line.
+falls back inline to neutral values: `oklch(0.556 0 0 / 0.18)` fill and
+`oklch(0.708 0 0 / 0.75)` border.
 
-The drag/dock indicators also read four **optional** properties that are unset by
+The drag/dock indicator also reads three **optional** properties that are unset by
 default (they fall back to the value shown). Override them only to retune the
 indicator look:
 
 | Token                         | Fallback                                       | Controls                               |
 | ----------------------------- | ---------------------------------------------- | -------------------------------------- |
-| `--dashfoo-dock-border-width` | `1px`                                          | Split-zone border width                |
-| `--dashfoo-dock-radius`       | `6px`                                          | Split-zone corner radius               |
-| `--dashfoo-dock-line-radius`  | `2px`                                          | Insertion-line corner radius           |
+| `--dashfoo-dock-border-width` | `1px`                                          | Indicator border width                 |
+| `--dashfoo-dock-radius`       | `6px`                                          | Indicator corner radius                |
 | `--dashfoo-dock-transition`   | `left 60ms, top 60ms, width 60ms, height 60ms` | Indicator glide; set `none` to disable |
 
 > **Splitter size.** `--dashfoo-splitter-size` is the default; the model's
@@ -192,7 +191,7 @@ emitted by `@dashfoo/react` with zero imposed styling.
 | `[data-dashfoo="panel-icon"]`        | `Panel` leading-icon slot                                               |
 | `[data-dashfoo="panel-badge"]`       | `Panel` live badge                                                      |
 | `[data-dashfoo="panel-body"]`        | `Panel` scrollable body                                                 |
-| `[data-dashfoo="dock-indicator"]`    | Live dock indicator (insertion line / split zone)                       |
+| `[data-dashfoo="dock-indicator"]`    | Live dock indicator (ghost tab / split zone)                            |
 | `[data-dashfoo="drag-preview"]`      | The chip that follows the pointer while dragging                        |
 
 ### State selectors

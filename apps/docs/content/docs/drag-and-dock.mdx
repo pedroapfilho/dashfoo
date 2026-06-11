@@ -9,7 +9,7 @@ share the same landing zones, and which outcome fires depends entirely on
 where the pointer is when you let go:
 
 - **Over a tab strip.** The drop stacks into that tabset. A tab lands at a
-  specific insertion index, with a thin insertion line showing the slot; a
+  specific insertion index, with a tab-sized ghost showing where it will sit; a
   tabset merges all of its tabs onto the end of the target strip.
 - **Over a tabset body.** The drop splits the tabset, creating a new region
   to the left, right, top, or bottom.
@@ -72,10 +72,12 @@ computed `index`:
 { index: insertionIndex(tabRects(strip, draggedId), point.x), location: "center", targetId: id }
 ```
 
-The on-screen feedback is a 2px vertical line (`insertionLineRect`) drawn at the
-slot boundary. The line is measured against whole tab items (label plus close
-button), so the "after the last tab" position sits past the last close button
-rather than between the label and the close.
+The on-screen feedback is a tab-sized ghost (`insertionGhostRect`) drawn at the
+slot boundary: it takes the dragged tab's width and the vertical box of the
+strip's resident tab items, clamped so it never leaves the strip. The slot is
+measured against whole tab items (label plus close button), so the "after the
+last tab" position sits past the last close button rather than between the
+label and the close.
 
 For a tabset dragged by its grip, a strip drop still resolves to `center`, but
 the index does not apply: the committed `moveTabset` appends every tab from the
@@ -397,15 +399,14 @@ The drop indicator carries `data-dashfoo="dock-indicator"`. Following the
 headless contract, the adapter sets only position and size inline; every visual
 property is an overridable CSS custom property with a neutral fallback:
 
-| Variable                      | Default                                        | Applies to               |
-| ----------------------------- | ---------------------------------------------- | ------------------------ |
-| `--dashfoo-dock-fill`         | `oklch(0.556 0 0 / 0.18)`                      | split band               |
-| `--dashfoo-dock-border`       | `oklch(0.708 0 0 / 0.75)`                      | split band               |
-| `--dashfoo-dock-border-width` | `1px`                                          | split band               |
-| `--dashfoo-dock-radius`       | `6px`                                          | split band               |
-| `--dashfoo-dock-line`         | `oklch(0.556 0 0)`                             | tab-strip insertion line |
-| `--dashfoo-dock-line-radius`  | `2px`                                          | tab-strip insertion line |
-| `--dashfoo-dock-transition`   | `left 60ms, top 60ms, width 60ms, height 60ms` | both overlays            |
+| Variable                      | Default                                        | Applies to             |
+| ----------------------------- | ---------------------------------------------- | ---------------------- |
+| `--dashfoo-dock-fill`         | `oklch(0.556 0 0 / 0.18)`                      | ghost tab + split band |
+| `--dashfoo-dock-border`       | `oklch(0.708 0 0 / 0.75)`                      | ghost tab + split band |
+| `--dashfoo-dock-border-width` | `1px`                                          | ghost tab + split band |
+| `--dashfoo-dock-radius`       | `6px`                                          | ghost tab + split band |
+| `--dashfoo-dock-tab-radius`   | `var(--dashfoo-dock-radius, 6px)`              | ghost tab              |
+| `--dashfoo-dock-transition`   | `left 60ms, top 60ms, width 60ms, height 60ms` | both forms             |
 
 `--dashfoo-dock-transition` controls how the indicator glides between
 positions; set it to `none` to disable the movement, for example under
@@ -418,7 +419,7 @@ positions; set it to `none` to disable the movement, for example under
 - [`resolveDockTarget`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/geometry/geometry.ts)
   in `@dashfoo/core` for the band math and `BandOptions`.
 - [`tab-insertion.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/lib/tab-insertion.ts)
-  in `@dashfoo/react` for the insertion index, the insertion line, and the
+  in `@dashfoo/react` for the insertion index, the insertion ghost, and the
   no-op drop filter.
 - [`drag-adapter.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/drag-adapter.tsx)
   in `@dashfoo/react` for the manager, the hit-testing, and the indicator.
