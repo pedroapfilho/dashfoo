@@ -28,14 +28,6 @@ const ImperativeControlPage = (): ReactNode => {
     });
   }, []);
 
-  const handleUndo = useCallback((): void => {
-    layout.current?.undo();
-  }, []);
-
-  const handleRedo = useCallback((): void => {
-    layout.current?.redo();
-  }, []);
-
   const handleAddWidget = useCallback((widget: WidgetDefinition): void => {
     const handle = layout.current;
     if (!handle) {
@@ -75,9 +67,9 @@ const ImperativeControlPage = (): ReactNode => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
         if (event.shiftKey) {
-          handleRedo();
+          layout.current?.redo();
         } else {
-          handleUndo();
+          layout.current?.undo();
         }
       }
     };
@@ -85,7 +77,7 @@ const ImperativeControlPage = (): ReactNode => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [handleRedo, handleUndo]);
+  }, []);
 
   const hasTabs = addTargetId(view.model) !== undefined;
 
@@ -93,10 +85,18 @@ const ImperativeControlPage = (): ReactNode => {
     <DemoStage
       actions={
         <>
-          <Button disabled={!view.canUndo} icon={<Undo2 size={14} />} onClick={handleUndo}>
+          <Button
+            disabled={!view.canUndo}
+            icon={<Undo2 size={14} />}
+            onClick={() => layout.current?.undo()}
+          >
             Undo
           </Button>
-          <Button disabled={!view.canRedo} icon={<Redo2 size={14} />} onClick={handleRedo}>
+          <Button
+            disabled={!view.canRedo}
+            icon={<Redo2 size={14} />}
+            onClick={() => layout.current?.redo()}
+          >
             Redo
           </Button>
         </>
