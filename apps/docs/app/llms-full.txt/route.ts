@@ -9,7 +9,17 @@ export const revalidate = false;
  * read in one fetch.
  */
 export const GET = async () => {
-  const scanned = await Promise.all(source.getPages().map(getLLMText));
+  // allSettled: page conversions are independent, so one broken page degrades
+  // the document instead of 500ing the whole route.
+  const pages = source.getPages();
+  const results = await Promise.allSettled(pages.map(getLLMText));
+  const scanned = results.flatMap((result, index) => {
+    if (result.status === "fulfilled") {
+      return [result.value];
+    }
+    console.warn(`[dashfoo docs] llms-full.txt skipped ${pages[index]?.url}`, result.reason);
+    return [];
+  });
 
   return new Response(scanned.join("\n\n"));
 };
