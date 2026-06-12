@@ -1,9 +1,10 @@
 import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooDragProvider, DashfooLayout, useExternalTabSource } from "@dashfoo/react";
-import { GripVertical, Plus, RotateCcw } from "lucide-react";
+import { Grid2x2, GripVertical, Plus, RotateCcw } from "lucide-react";
 import type { ReactNode } from "react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
+import { DropZoneOverlay } from "../components/drop-zone-overlay";
 import { renderPanel } from "../components/panels";
 import { Button, DemoStage } from "../components/ui";
 import { dockingModel } from "../models";
@@ -48,9 +49,15 @@ const WidgetCard = ({
 
 const DockingPage = (): ReactNode => {
   const layout = useRef<DashfooHandle>(null);
+  const layoutContainer = useRef<HTMLDivElement>(null);
+  const [showDropZones, setShowDropZones] = useState(true);
 
   const handleReset = (): void => {
     layout.current?.resetLayout();
+  };
+
+  const handleToggleDropZones = (): void => {
+    setShowDropZones((show) => !show);
   };
 
   const handleAddWidget = (widget: WidgetDefinition): void => {
@@ -67,11 +74,16 @@ const DockingPage = (): ReactNode => {
   return (
     <DemoStage
       actions={
-        <Button icon={<RotateCcw size={14} />} onClick={handleReset}>
-          Reset layout
-        </Button>
+        <>
+          <Button icon={<Grid2x2 size={14} />} onClick={handleToggleDropZones}>
+            {showDropZones ? "Hide drop zones" : "Show drop zones"}
+          </Button>
+          <Button icon={<RotateCcw size={14} />} onClick={handleReset}>
+            Reset layout
+          </Button>
+        </>
       }
-      description="Drag a tab onto another strip to stack it, toward a tabset edge to split. Grow the dashboard from the widget list: drag a widget in (or add it with its button) and close its tab to remove it."
+      description="Drag a tab onto another strip to stack it, toward a tabset edge to split. Grow the dashboard from the widget list: drag a widget in (or add it with its button) and close its tab to remove it. While dragging, the drop-zone map paints every region and where a drop there would land."
       title="Docking & Widgets"
     >
       <DashfooDragProvider>
@@ -84,10 +96,11 @@ const DockingPage = (): ReactNode => {
               <WidgetCard key={widget.component} onAdd={handleAddWidget} widget={widget} />
             ))}
           </aside>
-          <div className="min-h-0 min-w-0 flex-1">
+          <div className="min-h-0 min-w-0 flex-1" ref={layoutContainer}>
             <DashfooLayout defaultModel={dockingModel()} factory={renderPanel} ref={layout} />
           </div>
         </div>
+        <DropZoneOverlay containerRef={layoutContainer} enabled={showDropZones} />
       </DashfooDragProvider>
     </DemoStage>
   );

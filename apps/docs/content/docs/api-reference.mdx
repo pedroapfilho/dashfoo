@@ -200,7 +200,7 @@ The `LayoutState` fields:
 | `tabsetMinSize`                                                                                        | `number`                      | From `global.tabSetMinSize`, default `320` here.                                                           |
 | `tabStripEnabled`                                                                                      | `boolean`                     | From `global.tabSetEnableTabStrip`.                                                                        |
 
-### `useTabset` / `useTab` / `useDragSubject`
+### `useTabset` / `useTab` / `useDragSubject` / `useDropIntent`
 
 `useTabset((state) => …)` selects from the per-tabset store inside
 `<Tabset.Root>`: `node`, `visualSelected`, `activeTab`, `isMaximized`,
@@ -214,6 +214,14 @@ The `LayoutState` fields:
 `useDragSubject()` returns the live drag subject (`{ kind: "tab" | "tabset" |
 "external", id }`) or `null`, including outside a drag layer. See
 [Build your own layout](/docs/build-your-own-layout).
+
+`useDropIntent()` returns the live drop intent (`{ targetId, location, index? }`
+— where the drag would land if dropped right now) or `null` when nothing is
+dragging or the pointer is over no valid target (empty space, a non-editable
+layout, or a suppressed no-op drop). Both hooks work anywhere under a layout;
+under a `DashfooDragProvider` they work anywhere under the provider. Pair with
+`dockZonePolygons` from `@dashfoo/core` for custom drop indicators and drop-zone
+visualizations.
 
 ### `usePersistence`
 
@@ -380,10 +388,11 @@ breakpoint. See [responsive](/responsive).
 
 ### Geometry
 
-| Export              | Signature                                                        | Description                                                                                                                     |
-| ------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `resolveDockTarget` | `(pointer: Point, rect: Rect, opts?: BandOptions) => DockTarget` | Center of a tabset resolves to `{ kind: "tab" }` (stack); within an outer edge band (default 22%) to `{ kind: "split", edge }`. |
-| `zoneRect`          | `(rect: Rect, location: DockLocation) => Rect`                   | The region the dock indicator highlights: the whole rect for `center`, the matching half for a `split-*`.                       |
+| Export              | Signature                                                        | Description                                                                                                                                                                                             |
+| ------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resolveDockTarget` | `(pointer: Point, rect: Rect, opts?: BandOptions) => DockTarget` | Center of a tabset resolves to `{ kind: "tab" }` (stack); within an outer edge band (default 22%) to `{ kind: "split", edge }`.                                                                         |
+| `dockZonePolygons`  | `(rect: Rect, opts?: BandOptions) => Array<DockZone>`            | The full hit-region partition behind `resolveDockTarget`: the inner center rect plus four edge trapezoids, as polygons. Shares the band default, so a painted map always agrees with the live hit-test. |
+| `zoneRect`          | `(rect: Rect, location: DockLocation) => Rect`                   | The region the dock indicator highlights: the whole rect for `center`, the matching half for a `split-*`.                                                                                               |
 
 Types: `Point` (`{ x: number; y: number }`), `Rect`
 (`{ x: number; y: number; width: number; height: number }`), `DockTarget`,

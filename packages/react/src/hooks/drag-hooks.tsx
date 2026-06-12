@@ -1,6 +1,6 @@
 "use client";
 
-import type { DragSubject, TabNode } from "@dashfoo/core";
+import type { DragSubject, DropIntent, TabNode } from "@dashfoo/core";
 import { Accessibility, Draggable, DragDropManager, Feedback, PointerSensor } from "@dnd-kit/dom";
 import type { Context } from "react";
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";
@@ -61,16 +61,42 @@ const DragContext = createContext<DragContextValue | null>(null);
 const SharedDragManagerContext: Context<DragDropManager | null> =
   createContext<DragDropManager | null>(null);
 
-// The live drag subject rides a scoped zustand store (created per DragLayer, fed
-// by the dragDockMachine subscription) instead of a context value, so a drag
-// start/end re-renders only the parts that select the subject — never the
-// provider subtree.
-type DragSubjectState = { subject: DragSubject | null };
+// The live drag subject and drop intent ride a scoped zustand store instead of a
+// context value, so a drag start/end re-renders only the parts that select the
+// subject — never the provider subtree. The store is owned by the nearest
+// DashfooDragProvider when one exists (so anything under it, layout or not, can
+// observe drags) and by the DragLayer otherwise; the dragDockMachine
+// subscription feeds it. Intent updates are value-guarded by the adapter
+// (sameDropIntent) so OVER pulses only notify when the resolved drop changes.
+// intentOwner disambiguates layouts sharing one store: each layer hit-tests only
+// its own tabsets, so a null intent from one layer must not erase the live
+// intent another layer resolved.
+type DragSubjectState = {
+  intent: DropIntent | null;
+  intentOwner: string | null;
+  subject: DragSubject | null;
+};
 
 type DragSubjectStore = StoreApi<DragSubjectState>;
 
 const createDragSubjectStore = (): DragSubjectStore =>
-  createStore<DragSubjectState>(() => ({ subject: null }));
+  createStore<DragSubjectState>(() => ({ intent: null, intentOwner: null, subject: null }));
+
+// Whether two intents resolve the same drop. Intents are rebuilt on every
+// pointer move, so identity alone would notify subscribers on each pulse.
+const sameDropIntent = (a: DropIntent | null, b: DropIntent | null): boolean =>
+  a === b ||
+  (a !== null &&
+    b !== null &&
+    a.index === b.index &&
+    a.location === b.location &&
+    a.targetId === b.targetId);
+
+// Whether two subjects describe the same drag. Layouts sharing a manager each
+// build their own subject object for the same drag, so identity alone would
+// write twice per drag start.
+const sameDragSubject = (a: DragSubject | null, b: DragSubject | null): boolean =>
+  a === b || (a !== null && b !== null && a.id === b.id && a.kind === b.kind);
 
 // Stable empty store so useDragSubject keeps an unconditional hook order (and
 // returns null) outside a DragLayer — parts must keep working drag-free.
@@ -219,14 +245,26 @@ const useDragSubject = (): DragSubject | null => {
   return useStore(store ?? nullSubjectStore, (state) => state.subject);
 };
 
+// The live drop intent: where the drag would land if dropped right now, null
+// when nothing is dragging or the pointer is over no valid target (a no-op
+// drop, a non-editable layout, or empty space). Lets consumers render their own
+// drop indicators alongside the built-in one.
+const useDropIntent = (): DropIntent | null => {
+  const store = useContext(DragSubjectStoreContext);
+  return useStore(store ?? nullSubjectStore, (state) => state.intent);
+};
+
 export type { DragContextValue, DragSubjectStore, ExternalTabSourceOptions };
 export {
   createDragManager,
   createDragSubjectStore,
   DragContext,
   DragSubjectStoreContext,
+  sameDragSubject,
+  sameDropIntent,
   SharedDragManagerContext,
   useDragSubject,
+  useDropIntent,
   useExternalTabSource,
   useTabDraggable,
   useTabsetDraggable,

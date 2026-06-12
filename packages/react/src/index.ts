@@ -30,7 +30,8 @@ export type { LayoutState } from "./hooks/layout-store";
 export * from "./hooks/persistence";
 export * from "./hooks/responsive";
 export * from "./hooks/store";
-// drag-hooks stays internal except the external-source surface and the
-// drag-subject read custom parts need for drag-aware styling.
-export { useDragSubject, useExternalTabSource } from "./hooks/drag-hooks";
+// drag-hooks stays internal except the external-source surface and the live
+// drag reads (subject + drop intent) custom parts need for drag-aware styling
+// and consumer-rendered drop indicators.
+export { useDragSubject, useDropIntent, useExternalTabSource } from "./hooks/drag-hooks";
 export type { ExternalTabSourceOptions } from "./hooks/drag-hooks";

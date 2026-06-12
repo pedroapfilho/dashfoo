@@ -9,6 +9,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useInsertionEffect,
   useMemo,
   useRef,
@@ -21,6 +22,8 @@ import {
   createDragSubjectStore,
   DragContext,
   DragSubjectStoreContext,
+  sameDragSubject,
+  sameDropIntent,
   SharedDragManagerContext,
   useDragSubject,
   useTabDraggable,
@@ -31,7 +34,7 @@ import { LayoutStoreContext } from "../hooks/layout-store";
 import { insertionIndex, pointInRect, shouldAllowDrop } from "../lib/tab-insertion";
 import { warnOnce } from "../lib/warn-once";
 
-import type { DragPreviewState, GhostSize } from "./drag-overlays";
+import type { DragPreviewState } from "./drag-overlays";
 import { DockIndicator, DragPreview } from "./drag-overlays";
 
 // This module is the drag adapter: it (with ./drag-hooks) is where @dnd-kit is
@@ -44,7 +47,7 @@ import { DockIndicator, DragPreview } from "./drag-overlays";
 // required.
 
 // The dragged tab is excluded so its own slot never counts toward the order —
-// the insertion index and ghost are measured against the tabs it will land among.
+// the insertion index and line are measured against the tabs it will land among.
 const tabRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
   [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].flatMap((tab) =>
     tab.dataset.tabId === excludeId ? [] : [tab.getBoundingClientRect()],
@@ -85,17 +88,6 @@ const labelOf = (source: { data?: Record<string, unknown> } | null): string => {
 };
 
 const isTabFactory = (value: unknown): value is () => unknown => typeof value === "function";
-
-// The size the insertion ghost should take: the dragged tab-item's own box
-// (label + close), else the raw source element's (tabset grips, external chips).
-const sourceSizeOf = (element: Element | null | undefined): GhostSize | undefined => {
-  if (!element) {
-    return undefined;
-  }
-  const item = element.closest('[data-dashfoo="tab-item"]') ?? element;
-  const rect = item.getBoundingClientRect();
-  return rect.width > 0 && rect.height > 0 ? { height: rect.height, width: rect.width } : undefined;
-};
 
 // A tabset grip carries { tabsetId, type: "tabset" }; an external source
 // (useExternalTabSource) carries { createTab, type: "external" } and its tab is
@@ -151,9 +143,6 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
   const layoutStore = useContext(LayoutStoreContext);
   const tabsets = useRef(new Map<string, HTMLElement>());
   const overlayRef = useRef<HTMLDivElement | null>(null);
-  // Captured once at drag start so the insertion ghost keeps the dragged tab's
-  // size even after the pointer leaves its original strip.
-  const sourceSize = useRef<GhostSize | undefined>(undefined);
   const [preview, setPreview] = useState<DragPreviewState | null>(null);
 
   // One manager for the whole layout — the shared one when a DashfooDragProvider
@@ -175,20 +164,35 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
   }
 
   // The drag subject store: fed by the machine subscription, read by parts via
-  // useDragSubject selectors. Guarded so OVER pulses (every pointer move) don't
-  // notify subscribers — only an actual subject change (drag start/end) does.
-  const [subjectStore] = useState(() => createDragSubjectStore());
+  // useDragSubject/useDropIntent selectors. Inherited from DashfooDragProvider
+  // when one sits above (so consumers outside the layout can observe drags),
+  // else owned here. Guarded so OVER pulses (every pointer move) don't notify
+  // subscribers — only a subject change (drag start/end) or a value-level
+  // intent change (the resolved drop moved) does. ownerId scopes intent writes:
+  // layouts sharing a store each hit-test only their own tabsets, so this
+  // layer's null must not erase an intent another layer resolved.
+  const inheritedStore = useContext(DragSubjectStoreContext);
+  const [subjectStore] = useState(() => inheritedStore ?? createDragSubjectStore());
+  const ownerId = useId();
   useEffect(() => {
     const subscription = actorRef.subscribe((snapshot) => {
-      const subject = snapshot.context.subject;
-      if (subjectStore.getState().subject !== subject) {
+      const { intent, subject } = snapshot.context;
+      const state = subjectStore.getState();
+      if (intent !== null) {
+        if (!sameDropIntent(state.intent, intent) || state.intentOwner !== ownerId) {
+          subjectStore.setState({ intent, intentOwner: ownerId });
+        }
+      } else if (state.intent !== null && state.intentOwner === ownerId) {
+        subjectStore.setState({ intent: null, intentOwner: null });
+      }
+      if (!sameDragSubject(subjectStore.getState().subject, subject)) {
         subjectStore.setState({ subject });
       }
     });
     return () => {
       subscription.unsubscribe();
     };
-  }, [actorRef, subjectStore]);
+  }, [actorRef, ownerId, subjectStore]);
 
   useEffect(() => {
     const subscription = actorRef.on("COMMIT", (emitted) => {
@@ -221,8 +225,6 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
   }, []);
 
   const getTabsetElement = useCallback((id: string) => tabsets.current.get(id), []);
-
-  const getSourceSize = useCallback(() => sourceSize.current, []);
 
   // Which registered tabset sits under the pointer. Tabsets tile (never overlap),
   // so the first rect that contains the point is the unambiguous target — no
@@ -296,7 +298,6 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
         return;
       }
       const point = event.operation.position.current;
-      sourceSize.current = sourceSizeOf(source.element);
       setPreview({
         label: labelOf(source),
         x: point.x + PREVIEW_OFFSET.x,
@@ -323,7 +324,6 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
     // commit in one synchronous pair.
     const handleEnd = (event: DragEndEvent): void => {
       setPreview(null);
-      sourceSize.current = undefined;
       if (event.canceled) {
         actorRef.send({ type: "CANCEL" });
         return;
@@ -359,11 +359,7 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
     <DragContext.Provider value={contextValue}>
       <DragSubjectStoreContext.Provider value={subjectStore}>
         {children}
-        <DockIndicator
-          actorRef={actorRef}
-          getSourceSize={getSourceSize}
-          getTabsetElement={getTabsetElement}
-        />
+        <DockIndicator actorRef={actorRef} getTabsetElement={getTabsetElement} />
         <DragPreview overlayRef={attachOverlay} preview={preview} />
       </DragSubjectStoreContext.Provider>
     </DragContext.Provider>

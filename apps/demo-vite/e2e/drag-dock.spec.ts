@@ -120,19 +120,11 @@ test("a dock indicator appears while dragging over a tabset and clears after dro
   await expect(indicator).toHaveCount(0);
 });
 
-test("the stack indicator is a tab-sized ghost in the tab bar", async ({ page }) => {
+test("the stack indicator is a thin insertion line in the tab bar", async ({ page }) => {
   const first = page.locator('[data-dashfoo="tabset"]').first();
   const strip = await first.locator('[data-dashfoo="tabstrip"]').boundingBox();
-  // a resident of the target strip: the ghost must take the same vertical box
-  const neighbor = await first
-    .locator('[data-dashfoo="tab-item"]', { hasText: "Canvas" })
-    .boundingBox();
-  const item = await page
-    .locator('[data-dashfoo="tab-item"]', { hasText: "Tasks" })
-    .first()
-    .boundingBox();
   const box = await page.getByRole("tab", { name: "Tasks" }).boundingBox();
-  if (!strip || !neighbor || !item || !box) {
+  if (!strip || !box) {
     throw new Error("missing boxes");
   }
   const indicator = page.locator('[data-dashfoo="dock-indicator"]');
@@ -148,11 +140,10 @@ test("the stack indicator is a tab-sized ghost in the tab bar", async ({ page })
 
   await expect(indicator).toBeVisible();
   const ind = await indicator.boundingBox();
-  // a ghost shaped exactly like a tab: the dragged tab-item's width, the target
-  // strip's tab-item vertical box — not a thin line, not a strip-height block.
-  expect(Math.abs((ind?.width ?? 0) - item.width)).toBeLessThanOrEqual(4);
-  expect(Math.abs((ind?.height ?? 0) - neighbor.height)).toBeLessThanOrEqual(2);
-  expect(Math.abs((ind?.y ?? 0) - neighbor.y)).toBeLessThanOrEqual(2);
+  // a thin caret spanning the strip height — not a tab-sized block.
+  expect(ind?.width ?? Infinity).toBeLessThanOrEqual(6);
+  expect(Math.abs((ind?.height ?? 0) - strip.height)).toBeLessThanOrEqual(2);
+  expect(Math.abs((ind?.y ?? 0) - strip.y)).toBeLessThanOrEqual(2);
   expect(ind?.x ?? -Infinity).toBeGreaterThanOrEqual(strip.x - 1);
   expect((ind?.x ?? Infinity) + (ind?.width ?? 0)).toBeLessThanOrEqual(strip.x + strip.width + 1);
 

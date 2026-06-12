@@ -20,31 +20,27 @@ const insertionIndex = (rects: ReadonlyArray<Rect>, pointerX: number): number =>
   return found === -1 ? rects.length : found;
 };
 
-// A tab-sized ghost marking where the dragged tab will land, mirroring the dock
-// pane preview. Measured against whole tab-item rects (label + close), so the
-// "after the last tab" position sits past the last close button rather than
-// between the label and the close. The neighbors also anchor the ghost's y and
-// height, so it sits exactly where a real tab does (tabs don't fill the strip);
-// an empty strip falls back to the dragged tab's own height, bottom-aligned the
-// way tabs rest on the strip's baseline. Clamped so the ghost never leaves the
-// strip.
-const insertionGhostRect = (
+// How wide the insertion line is, centered on the slot boundary.
+const INSERTION_LINE_WIDTH = 4;
+
+// The thin vertical line marking where a tab will be inserted. Measured against
+// whole tab-item rects (label + close), so the "after the last tab" position sits
+// past the last close button rather than between the label and the close.
+// Clamped so the line never leaves the strip.
+const insertionLineRect = (
   stripRect: Rect,
   itemRects: ReadonlyArray<Rect>,
   index: number,
-  tabSize: { height: number; width: number },
 ): Zone => {
   const at = itemRects[index];
   const last = itemRects.at(-1);
-  const anchor = at ?? last;
   const x = at?.x ?? (last ? last.x + last.width : stripRect.x);
-  const width = Math.min(tabSize.width, stripRect.width);
-  const height = anchor?.height ?? Math.min(tabSize.height, stripRect.height);
+  const left = x - INSERTION_LINE_WIDTH / 2;
   return {
-    height,
-    width,
-    x: Math.max(stripRect.x, Math.min(x, stripRect.x + stripRect.width - width)),
-    y: anchor?.y ?? stripRect.y + stripRect.height - height,
+    height: stripRect.height,
+    width: INSERTION_LINE_WIDTH,
+    x: Math.max(stripRect.x, Math.min(left, stripRect.x + stripRect.width - INSERTION_LINE_WIDTH)),
+    y: stripRect.y,
   };
 };
 
@@ -65,5 +61,5 @@ const shouldAllowDrop = (
   return true;
 };
 
-export { insertionGhostRect, insertionIndex, pointInRect, shouldAllowDrop };
+export { insertionIndex, insertionLineRect, pointInRect, shouldAllowDrop };
 export type { Zone };
