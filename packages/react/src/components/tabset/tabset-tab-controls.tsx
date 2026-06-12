@@ -1,8 +1,9 @@
 "use client";
 
 import type { ComponentProps, FocusEvent, KeyboardEvent, MouseEvent, ReactNode } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
+import { mergeRefs } from "../../lib/merge-refs";
 import { CloseIcon } from "../tabset-icons";
 
 import { useTab, useTabset } from "./tabset-store";
@@ -24,6 +25,7 @@ const RenameEditor = ({
   const commitRename = useTabset((state) => state.commitRename);
   const ref = useRef<HTMLInputElement | null>(null);
   const done = useRef(false);
+  const refCallback = useMemo(() => mergeRefs<HTMLInputElement>(ref, userRef), [userRef]);
 
   useEffect(() => {
     ref.current?.focus();
@@ -58,14 +60,7 @@ const RenameEditor = ({
       defaultValue={defaultValue ?? tab.name}
       onBlur={handleCommitOnBlur}
       onKeyDown={handleKeyDown}
-      ref={(element) => {
-        ref.current = element;
-        if (typeof userRef === "function") {
-          userRef(element);
-        } else if (userRef) {
-          userRef.current = element;
-        }
-      }}
+      ref={refCallback}
       type="text"
     />
   );
