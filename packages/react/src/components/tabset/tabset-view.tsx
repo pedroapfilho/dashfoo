@@ -14,6 +14,11 @@ import { TabsetCloseButton, TabsetRenameInput } from "./tabset-tab-controls";
 import { TabsetTablist, TabsetTabStrip } from "./tabset-tablist";
 import { TabsetGrip, TabsetMaximizeButton, TabsetToolbar } from "./tabset-toolbar";
 
+// Static JSX hoisted to module scope (elements are immutable, so one instance
+// is safely shared) — DefaultTabsetLayout re-renders on every selection change
+// and must not rebuild it each time.
+const tabsetContent = <TabsetContent />;
+
 // The canonical composition of the Tabset parts — what DashfooLayout and
 // Layout.Rows render by default, and the reference for anyone composing the
 // parts by hand. Lives inside Tabset.Root because the toolbar-visibility
@@ -58,17 +63,15 @@ const DefaultTabsetLayout = (): ReactNode => {
     </TabsetTabStrip>
   ) : null;
 
-  const content = <TabsetContent />;
-
   return tabLocation === "bottom" ? (
     <>
-      {content}
+      {tabsetContent}
       {strip}
     </>
   ) : (
     <>
       {strip}
-      {content}
+      {tabsetContent}
     </>
   );
 };
