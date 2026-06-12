@@ -1,4 +1,7 @@
 "use client";
+/* oxlint-disable react-doctor/no-multi-comp -- the popover is one compound
+   primitive in three parts; splitting trigger/content into separate files
+   would be a worse abstraction than the standard single-file pattern. */
 import type { ComponentPropsWithRef, ReactNode } from "react";
 import { createContext, use, useId } from "react";
 

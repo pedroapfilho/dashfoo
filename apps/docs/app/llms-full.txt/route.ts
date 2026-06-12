@@ -21,5 +21,11 @@ export const GET = async () => {
     return [];
   });
 
+  // Partial failure degrades the document; total failure means the content
+  // pipeline is broken — fail the build instead of caching an empty file forever.
+  if (pages.length > 0 && scanned.length === 0) {
+    throw new Error("llms-full.txt: every page conversion failed");
+  }
+
   return new Response(scanned.join("\n\n"));
 };

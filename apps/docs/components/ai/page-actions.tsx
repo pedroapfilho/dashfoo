@@ -1,8 +1,7 @@
 "use client";
 import { usePathname } from "fumadocs-core/framework";
-import { useCopyButton } from "fumadocs-ui/utils/use-copy-button";
 import { Check, ChevronDown, Copy, ExternalLinkIcon, TextIcon } from "lucide-react";
-import { type ComponentProps, useMemo, useTransition } from "react";
+import { type ComponentProps, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { cn } from "../../lib/cn";
 import { buttonVariants } from "../ui/button";
@@ -23,20 +22,43 @@ const MarkdownCopyButton = ({
   markdownUrl: string;
 }) => {
   const [isPending, startTransition] = useTransition();
-  const [checked, onClick] = useCopyButton(() => {
+  // fumadocs' useCopyButton flips its checked state as soon as the callback
+  // returns, so a failed copy would still flash the success check — own the
+  // status instead and only set it once the clipboard write settles.
+  const [status, setStatus] = useState<"copied" | "failed" | "idle">("idle");
+  const timeoutRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  const showStatus = (next: "copied" | "failed"): void => {
+    setStatus(next);
+    window.clearTimeout(timeoutRef.current);
+    timeoutRef.current = window.setTimeout(() => {
+      setStatus("idle");
+    }, 1500);
+  };
+
+  const handleClick = (): void => {
     startTransition(async () => {
-      try {
-        const promise =
-          cache.get(markdownUrl) ??
-          (async () => {
-            const res = await fetch(markdownUrl);
-            if (!res.ok) {
-              // A 404/500 body must not be cached and copied as "markdown".
-              throw new Error(`fetching ${markdownUrl} failed with ${res.status}`);
-            }
-            return res.text();
-          })();
+      const cached = cache.get(markdownUrl);
+      const promise =
+        cached ??
+        (async () => {
+          const res = await fetch(markdownUrl);
+          if (!res.ok) {
+            // A 404/500 body must not be cached and copied as "markdown".
+            throw new Error(`fetching ${markdownUrl} failed with ${res.status}`);
+          }
+          return res.text();
+        })();
+      if (!cached) {
         cache.set(markdownUrl, promise);
+      }
+      try {
         // ClipboardItem takes the pending promise so the write keeps the
         // user-activation Safari requires across the fetch.
         await navigator.clipboard.write([
@@ -44,20 +66,27 @@ const MarkdownCopyButton = ({
             "text/plain": promise,
           }),
         ]);
+        showStatus("copied");
       } catch (error) {
-        // A failed fetch must not poison the cache — drop it so the next click
-        // retries instead of re-awaiting the same rejection forever. And
-        // surfacing the error beats a click that silently copies nothing.
-        cache.delete(markdownUrl);
+        // A failed fetch must not poison the cache — but only the fetch: on a
+        // clipboard-write failure the cached markdown is still good. The write
+        // already settled, so this await just inspects the outcome.
+        try {
+          await promise;
+        } catch {
+          cache.delete(markdownUrl);
+        }
+        // The user must see the failure, not just the console.
+        showStatus("failed");
         console.warn("[dashfoo docs] copying the page Markdown failed", error);
       }
     });
-  });
+  };
 
   return (
     <button
       disabled={isPending}
-      onClick={onClick}
+      onClick={handleClick}
       type="button"
       {...props}
       className={cn(
@@ -69,8 +98,8 @@ const MarkdownCopyButton = ({
         props.className,
       )}
     >
-      {checked ? <Check /> : <Copy />}
-      {props.children ?? "Copy Markdown"}
+      {status === "copied" ? <Check /> : <Copy />}
+      {status === "failed" ? "Copy failed" : (props.children ?? "Copy Markdown")}
     </button>
   );
 };
