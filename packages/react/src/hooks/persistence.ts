@@ -2,7 +2,7 @@
 
 import type { Dashfoo } from "@dashfoo/core";
 import { fromJSON, toJSON } from "@dashfoo/core";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // A minimal localStorage-shaped backend so layouts can persist to anything: the
 // browser, sessionStorage, an in-memory map, or a custom store.
@@ -211,7 +211,9 @@ const usePersistence = (
     }
   }, []);
 
-  return { clear, initialModel, save };
+  // Memoized so callers can hold the whole object in hook deps without their
+  // memoization dissolving on every render.
+  return useMemo(() => ({ clear, initialModel, save }), [clear, initialModel, save]);
 };
 
 export { localStorageAdapter, memoryStorageAdapter, usePersistence };

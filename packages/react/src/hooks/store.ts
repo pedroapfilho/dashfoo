@@ -3,7 +3,7 @@
 import type { Action, Dashfoo } from "@dashfoo/core";
 import { canRedo, canUndo, dashfooMachine, normalize, reducer } from "@dashfoo/core";
 import { useActorRef, useSelector } from "@xstate/react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 type DashfooStore = {
   canRedo: () => boolean;
@@ -134,16 +134,21 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
 
   // Functions, not booleans: they read the live actor snapshot so a caller
   // reading them right after undo/redo (e.g. inside onModelChange) sees the fresh
-  // value, not the one-render-stale useSelector result.
-  return {
-    canRedo: () => canRedo(actorRef.getSnapshot().context.history),
-    canUndo: () => canUndo(actorRef.getSnapshot().context.history),
-    dispatch,
-    model,
-    redo,
-    setModel,
-    undo,
-  };
+  // value, not the one-render-stale useSelector result. Memoized so callers can
+  // hold the whole store in hook deps without their memoization dissolving on
+  // every render.
+  return useMemo(
+    () => ({
+      canRedo: () => canRedo(actorRef.getSnapshot().context.history),
+      canUndo: () => canUndo(actorRef.getSnapshot().context.history),
+      dispatch,
+      model,
+      redo,
+      setModel,
+      undo,
+    }),
+    [actorRef, dispatch, model, redo, setModel, undo],
+  );
 };
 
 export { useDashfooStore };
