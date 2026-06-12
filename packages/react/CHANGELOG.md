@@ -1,5 +1,23 @@
 # @dashfoo/react
 
+## 0.3.0
+
+### Minor Changes
+
+- 301dcce: The tab-strip drop indicator is a thin insertion line again instead of a tab-shaped ghost, keeping the dock pane's fill and border styling (`--dashfoo-dock-fill` / `--dashfoo-dock-border`). The line is 4px wide, spans the strip height, centers on the slot boundary, and is clamped inside the strip. `--dashfoo-dock-tab-radius` is gone; the new `--dashfoo-dock-line-radius` (default `2px`) rounds the line's ends.
+- 1439a72: Static layouts: editing can now be disabled.
+  - `@dashfoo/react`: new `editable` prop (default `true`) on `DashfooLayout` and `Layout.Root` — `false` turns off every structural edit at once (tab/tabset drag, close, rename, splitter resize, external drops) while tab selection, maximize, the overflow menu, and the imperative ref API keep working. New granular flags `resizableSplits` and `draggableTabs` (both default `true`); a non-editable layout also rejects drops at the adapter level, so external-source drags under a shared `DashfooDragProvider` can't land in it. Toggleable at runtime without remounting.
+  - `@dashfoo/core`: new optional global attributes `enableSplitResize` (backs splitter resizing) and `tabEnableDrag` (tree-wide default behind `tab.enableDrag`).
+  - `@dashfoo/theme`: disabled splitters (`[data-separator="disabled"]`) keep their gutter size but lose the grab pill and resize cursor; a tab without a close control gets symmetric padding so the label no longer sits lopsided.
+
+- 301dcce: Add `useDropIntent()`: the live drop intent (`{ targetId, location, index? }` — where the drag would land if dropped right now), or `null` when nothing is dragging or the pointer is over no valid target. `DashfooDragProvider` now also hosts the drag store, so `useDragSubject` and `useDropIntent` work anywhere under the provider (widget lists, custom drop indicators), not just inside the layout.
+
+### Patch Changes
+
+- Updated dependencies [301dcce]
+- Updated dependencies [1439a72]
+  - @dashfoo/core@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes
