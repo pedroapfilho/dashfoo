@@ -9,7 +9,7 @@ share the same landing zones, and which outcome fires depends entirely on
 where the pointer is when you let go:
 
 - **Over a tab strip.** The drop stacks into that tabset. A tab lands at a
-  specific insertion index, with a tab-sized ghost showing where it will sit; a
+  specific insertion index, with a thin insertion line marking the slot; a
   tabset merges all of its tabs onto the end of the target strip.
 - **Over a tabset body.** The drop splits the tabset, creating a new region
   to the left, right, top, or bottom.
@@ -72,12 +72,11 @@ computed `index`:
 { index: insertionIndex(tabRects(strip, draggedId), point.x), location: "center", targetId: id }
 ```
 
-The on-screen feedback is a tab-sized ghost (`insertionGhostRect`) drawn at the
-slot boundary: it takes the dragged tab's width and the vertical box of the
-strip's resident tab items, clamped so it never leaves the strip. The slot is
-measured against whole tab items (label plus close button), so the "after the
-last tab" position sits past the last close button rather than between the
-label and the close.
+The on-screen feedback is a thin vertical line (`insertionLineRect`) centered
+on the slot boundary, spanning the strip's height and clamped so it never
+leaves the strip. The slot is measured against whole tab items (label plus
+close button), so the "after the last tab" position sits past the last close
+button rather than between the label and the close.
 
 For a tabset dragged by its grip, a strip drop still resolves to `center`, but
 the index does not apply: the committed `moveTabset` appends every tab from the
@@ -94,7 +93,7 @@ splits toward the closest edge:
 
 ```ts
 const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): DockTarget => {
-  const band = opts?.bandFraction ?? 0.22;
+  const band = opts?.bandFraction ?? DEFAULT_BAND_FRACTION; // 0.22
   // a zero-size tabset has no meaningful edges; dividing by its width/height
   // yields NaN distances that would silently resolve to a bogus split.
   if (rect.width <= 0 || rect.height <= 0) {
@@ -121,6 +120,14 @@ last.
 The indicator for a split highlights the matching half of the tabset:
 `split-left` paints the left half, `split-top` the top half, and so on
 (`zoneRect`).
+
+To see or paint the whole partition at once, `dockZonePolygons(rect)` enumerates
+the five hit regions as polygons — the inner center rect and four edge
+trapezoids whose seams run diagonally from each rect corner to the matching
+inner corner. It shares the band default with `resolveDockTarget`, so a map
+painted from the polygons always agrees with the live hit-test. The demo's
+Docking page uses it (with `useDropIntent`) for a drop-zone visualization that
+paints every candidate region during a drag.
 
 ## Dragging a whole tabset
 
@@ -413,14 +420,14 @@ The drop indicator carries `data-dashfoo="dock-indicator"`. Following the
 headless contract, the adapter sets only position and size inline; every visual
 property is an overridable CSS custom property with a neutral fallback:
 
-| Variable                      | Default                                        | Applies to             |
-| ----------------------------- | ---------------------------------------------- | ---------------------- |
-| `--dashfoo-dock-fill`         | `oklch(0.556 0 0 / 0.18)`                      | ghost tab + split band |
-| `--dashfoo-dock-border`       | `oklch(0.708 0 0 / 0.75)`                      | ghost tab + split band |
-| `--dashfoo-dock-border-width` | `1px`                                          | ghost tab + split band |
-| `--dashfoo-dock-radius`       | `6px`                                          | ghost tab + split band |
-| `--dashfoo-dock-tab-radius`   | `var(--dashfoo-dock-radius, 6px)`              | ghost tab              |
-| `--dashfoo-dock-transition`   | `left 60ms, top 60ms, width 60ms, height 60ms` | both forms             |
+| Variable                      | Default                                        | Applies to                  |
+| ----------------------------- | ---------------------------------------------- | --------------------------- |
+| `--dashfoo-dock-fill`         | `oklch(0.556 0 0 / 0.18)`                      | insertion line + split band |
+| `--dashfoo-dock-border`       | `oklch(0.708 0 0 / 0.75)`                      | insertion line + split band |
+| `--dashfoo-dock-border-width` | `1px`                                          | insertion line + split band |
+| `--dashfoo-dock-radius`       | `6px`                                          | split band                  |
+| `--dashfoo-dock-line-radius`  | `2px`                                          | insertion line              |
+| `--dashfoo-dock-transition`   | `left 60ms, top 60ms, width 60ms, height 60ms` | both forms                  |
 
 `--dashfoo-dock-transition` controls how the indicator glides between
 positions; set it to `none` to disable the movement, for example under
@@ -428,12 +435,25 @@ positions; set it to `none` to disable the movement, for example under
 `[data-dashfoo="dock-indicator"]` rule to fully own the look — the
 [theming guide](/theming) has worked recipes.
 
+## Rendering your own indicator
+
+When CSS variables aren't enough, the drag is fully observable from the
+outside. `useDropIntent()` returns the live drop intent — `{ targetId,
+location, index? }`, or `null` when nothing is dragging or the pointer is over
+no valid target — and `useDragSubject()` returns what is being dragged. Both
+work anywhere under a layout, or anywhere under a `DashfooDragProvider` when
+one wraps the tree. Combine them with `dockZonePolygons` from `@dashfoo/core`
+(the exact hit-region partition `resolveDockTarget` uses) and the
+`data-dashfoo="tabset"` / `"tabstrip"` / `"tab"` markup to paint anything from
+a custom highlight to a full drop-zone map — the demo's Docking page renders a
+voronoi-style visualization of every candidate region this way.
+
 ## See also
 
 - [`resolveDockTarget`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/geometry/geometry.ts)
   in `@dashfoo/core` for the band math and `BandOptions`.
 - [`tab-insertion.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/lib/tab-insertion.ts)
-  in `@dashfoo/react` for the insertion index, the insertion ghost, and the
+  in `@dashfoo/react` for the insertion index, the insertion line, and the
   no-op drop filter.
 - [`drag-adapter.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/drag-adapter.tsx)
   in `@dashfoo/react` for the manager, the hit-testing, and the indicator.

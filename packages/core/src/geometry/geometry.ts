@@ -5,6 +5,11 @@ type Point = { x: number; y: number };
 type Rect = { height: number; width: number; x: number; y: number };
 type DockTarget = { kind: "tab" } | { edge: Edge; kind: "split" };
 type BandOptions = { bandFraction?: number };
+type DockZone = { location: DockLocation; points: Array<Point> };
+
+// Shared by resolveDockTarget and dockZonePolygons so the painted map and the
+// live hit-test can never disagree on where the edge bands end.
+const DEFAULT_BAND_FRACTION = 0.22;
 
 // Fractional distance of the pointer from each of the four edges of a rect.
 const edgeDistances = (
@@ -34,7 +39,7 @@ const closestEdge = (d: { bottom: number; left: number; right: number; top: numb
 // pointer is in the center, or splitting the tabset when it is within an outer
 // band (default 22%) of one of the four edges — the closer edge wins in corners.
 const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): DockTarget => {
-  const band = opts?.bandFraction ?? 0.22;
+  const band = opts?.bandFraction ?? DEFAULT_BAND_FRACTION;
   // a zero-size tabset has no meaningful edges; dividing by its width/height
   // yields NaN distances that would silently resolve to a bogus split.
   if (rect.width <= 0 || rect.height <= 0) {
@@ -47,6 +52,37 @@ const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): Dock
     return { kind: "tab" };
   }
   return { edge: closestEdge(distances), kind: "split" };
+};
+
+// The full hit-region partition of a tabset for resolveDockTarget: four edge
+// trapezoids and the inner center rect. Seams between adjacent edge zones sit
+// where the fractional edge distances tie — straight diagonals from each rect
+// corner to the matching inner-rect corner — so the map is an exact picture of
+// which location a pointer anywhere over the rect resolves to. A zero-size rect
+// collapses to a single center polygon, mirroring resolveDockTarget's fallback.
+const dockZonePolygons = (rect: Rect, opts?: BandOptions): Array<DockZone> => {
+  const { height: h, width: w, x, y } = rect;
+  const nw: Point = { x, y };
+  const ne: Point = { x: x + w, y };
+  const se: Point = { x: x + w, y: y + h };
+  const sw: Point = { x, y: y + h };
+  if (w <= 0 || h <= 0) {
+    return [{ location: "center", points: [nw, ne, se, sw] }];
+  }
+  const band = opts?.bandFraction ?? DEFAULT_BAND_FRACTION;
+  const bx = band * w;
+  const by = band * h;
+  const innerNw: Point = { x: x + bx, y: y + by };
+  const innerNe: Point = { x: x + w - bx, y: y + by };
+  const innerSe: Point = { x: x + w - bx, y: y + h - by };
+  const innerSw: Point = { x: x + bx, y: y + h - by };
+  return [
+    { location: "center", points: [innerNw, innerNe, innerSe, innerSw] },
+    { location: "split-left", points: [nw, innerNw, innerSw, sw] },
+    { location: "split-right", points: [ne, se, innerSe, innerNe] },
+    { location: "split-top", points: [nw, ne, innerNe, innerNw] },
+    { location: "split-bottom", points: [sw, innerSw, innerSe, se] },
+  ];
 };
 
 // The region the dock indicator highlights for a given location over a tabset:
@@ -73,5 +109,5 @@ const zoneRect = (rect: Rect, location: DockLocation): Rect => {
   }
 };
 
-export { resolveDockTarget, zoneRect };
-export type { BandOptions, DockTarget, Point, Rect };
+export { dockZonePolygons, resolveDockTarget, zoneRect };
+export type { BandOptions, DockTarget, DockZone, Point, Rect };
