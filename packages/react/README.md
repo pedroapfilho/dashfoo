@@ -351,7 +351,7 @@ you.
 | `tabset-grip`        | `button`        | Drags the whole tabset. `aria-label="Move tabset"`; shown when `draggableTabsets` is on and the tabset is not maximized.           |
 | `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                                                                            |
 | `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                  |
-| `dock-indicator`     | `div`           | The drag preview overlay (ghost tab or zone pane). `pointer-events: none`.                                                         |
+| `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone pane). `pointer-events: none`.                                                    |
 | `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label.                                                        |
 | `separator`          | rrp `Separator` | rrp emits `data-separator` with `aria-orientation`; style splitters here.                                                          |
 
@@ -372,7 +372,7 @@ to theme the drag preview without touching layout.
 | `--dashfoo-dock-border`       | indicator border color   | `oklch(0.708 0 0 / 0.75)`                      |
 | `--dashfoo-dock-border-width` | indicator border width   | `1px`                                          |
 | `--dashfoo-dock-radius`       | indicator corner radius  | `6px`                                          |
-| `--dashfoo-dock-tab-radius`   | insertion-ghost radius   | `var(--dashfoo-dock-radius, 6px)`              |
+| `--dashfoo-dock-line-radius`  | insertion-line radius    | `2px`                                          |
 | `--dashfoo-dock-transition`   | indicator move animation | `left 60ms, top 60ms, width 60ms, height 60ms` |
 
 Set `--dashfoo-dock-transition: none` to disable the indicator animation.
@@ -410,6 +410,16 @@ const { index, tab } = useTab(); // which tab a part belongs to; throws outside 
 `useDragSubject()` returns the live drag subject (`{ kind, id }` for a tab or
 tabset being dragged) or `null` — including outside a drag layer — for
 drag-aware styling in custom parts.
+
+`useDropIntent()` returns the live drop intent (`{ targetId, location, index? }`
+— where the drag would land if dropped right now) or `null` when nothing is
+dragging or the pointer is over no valid target (empty space, a non-editable
+layout, or a no-op drop the library suppresses). Together with
+`dockZonePolygons` from `@dashfoo/core` it supports consumer-rendered drop
+indicators and drop-zone visualizations alongside the built-in indicator. Both
+hooks work anywhere under a layout; under a `DashfooDragProvider` they work
+anywhere under the provider (the provider hosts the drag store, so widget lists
+and overlays outside the layout observe the same drag).
 
 ## Build your own layout
 
@@ -531,9 +541,10 @@ type TabsetState;
 useTab; // { tab, index } identity (throws outside Tabset.Tab)
 type TabContextValue;
 useDragSubject; // the live drag subject, or null
+useDropIntent; // where the drag would land if dropped right now, or null
 
 // External drag sources
-DashfooDragProvider; // shares one drag manager between a layout and outside sources
+DashfooDragProvider; // shares one drag manager + drag store between a layout and outside sources
 useExternalTabSource;
 type ExternalTabSourceOptions;
 

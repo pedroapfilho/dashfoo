@@ -139,7 +139,7 @@ inverted neutral scale.
 | `--dashfoo-splitter-size`     | `1rem`                                                         | Resize-handle hit area (see note)           |
 | `--dashfoo-dock-fill`         | `color-mix(in oklab, var(--dashfoo-primary) 10%, transparent)` | Dock-indicator fill while dragging          |
 | `--dashfoo-dock-border`       | `var(--dashfoo-ring)`                                          | Dock-indicator border                       |
-| `--dashfoo-dock-tab-radius`   | `var(--dashfoo-radius-sm) var(--dashfoo-radius-sm) 0 0`        | Insertion-ghost corner shape (tab-like)     |
+| `--dashfoo-dock-line-radius`  | `2px`                                                          | Insertion-line corner radius (pill ends)    |
 
 The dock tokens are derived from the semantic tokens, so they track theme and
 overrides automatically. When no theme CSS is loaded at all, `@dashfoo/react`
@@ -191,7 +191,7 @@ emitted by `@dashfoo/react` with zero imposed styling.
 | `[data-dashfoo="panel-icon"]`        | `Panel` leading-icon slot                                               |
 | `[data-dashfoo="panel-badge"]`       | `Panel` live badge                                                      |
 | `[data-dashfoo="panel-body"]`        | `Panel` scrollable body                                                 |
-| `[data-dashfoo="dock-indicator"]`    | Live dock indicator (ghost tab / split zone)                            |
+| `[data-dashfoo="dock-indicator"]`    | Live dock indicator (insertion line / split zone)                       |
 | `[data-dashfoo="drag-preview"]`      | The chip that follows the pointer while dragging                        |
 
 ### State selectors

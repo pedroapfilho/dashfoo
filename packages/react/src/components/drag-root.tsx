@@ -3,7 +3,12 @@
 import type { ReactNode } from "react";
 import { useInsertionEffect, useState } from "react";
 
-import { createDragManager, SharedDragManagerContext } from "../hooks/drag-hooks";
+import {
+  createDragManager,
+  createDragSubjectStore,
+  DragSubjectStoreContext,
+  SharedDragManagerContext,
+} from "../hooks/drag-hooks";
 
 // Shares one DragDropManager between a DashfooLayout and external tab sources
 // (useExternalTabSource) rendered outside it, so a drag can start at a widget
@@ -15,10 +20,17 @@ const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode =
   // doesn't tear down the live instance — the same pattern DragProvider uses.
   const [manager] = useState(createDragManager);
   useInsertionEffect(() => () => manager.destroy(), [manager]);
+  // Hosting the drag store here (the nested DragLayer adopts it instead of
+  // creating its own) lets useDragSubject/useDropIntent observe the drag from
+  // anywhere under the provider — widget lists, custom drop indicators — not
+  // just from inside the layout.
+  const [subjectStore] = useState(createDragSubjectStore);
 
   return (
     <SharedDragManagerContext.Provider value={manager}>
-      {children}
+      <DragSubjectStoreContext.Provider value={subjectStore}>
+        {children}
+      </DragSubjectStoreContext.Provider>
     </SharedDragManagerContext.Provider>
   );
 };

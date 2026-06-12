@@ -42,8 +42,8 @@
   --dashfoo-dock-border: var(--dashfoo-ring);
   /* the dock pane previews a panel position, so it carries the panel radius */
   --dashfoo-dock-radius: var(--dashfoo-radius);
-  /* the insertion ghost previews a tab, so it carries the tab's corner shape */
-  --dashfoo-dock-tab-radius: var(--dashfoo-radius-sm) var(--dashfoo-radius-sm) 0 0;
+  /* the insertion line is a thin caret between tabs, so its ends are pills */
+  --dashfoo-dock-line-radius: 2px;
 }
 
 /* Opt-in dark theme: same neutral scale inverted. Only the lightness-bearing

@@ -186,6 +186,7 @@ call them directly for custom drag logic.
 
 ```ts
 resolveDockTarget(pointer, rect, opts?): DockTarget;
+dockZonePolygons(rect, opts?): Array<DockZone>;
 zoneRect(rect, location): Rect;
 ```
 
@@ -195,6 +196,13 @@ an outer band of one of the four edges (default 22%; the closer edge wins in
 corners). It accepts `{ bandFraction }` to tune the band. `zoneRect` returns the
 region the dock indicator highlights for a `DockLocation`: the whole tabset for a
 `center` stack, the matching half for a split. `Point` and `Rect` are exported.
+
+`dockZonePolygons` enumerates the full hit-region partition behind
+`resolveDockTarget` as five polygons (`{ location, points }`): the inner center
+rect and four edge trapezoids whose seams run from each rect corner to the
+matching inner corner. The two functions share the band default, so a map
+painted from the polygons always agrees with the live hit-test — use it to
+visualize drop zones or to build custom drop indicators.
 
 ## History (undo / redo)
 
@@ -297,8 +305,8 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 `findAttributedNode`, `findTabsetParent`, `findDuplicateIds`;
 types `AttributedNode`, `TabContainer`, `TabLocation`.
 
-`geometry` — `resolveDockTarget`, `zoneRect`; types `DockTarget`,
-`BandOptions`, `Point`, `Rect`.
+`geometry` — `resolveDockTarget`, `dockZonePolygons`, `zoneRect`; types
+`DockTarget`, `DockZone`, `BandOptions`, `Point`, `Rect`.
 
 `history` — `createHistory`, `dispatch`, `undo`, `redo`, `canUndo`, `canRedo`;
 type `History`.
