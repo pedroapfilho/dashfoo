@@ -86,6 +86,9 @@ const findAttributedNodeInRow = (row: RowNode, id: string): AttributedNode | und
     if (child.id === id) {
       return child;
     }
+    // Single-id recursive search invoked once per lookup over small layout
+    // trees — building a Map per call would cost more than it saves.
+    // oxlint-disable-next-line react-doctor/js-index-maps
     const tab = child.children.find((candidate) => candidate.id === id);
     if (tab) {
       return tab;
