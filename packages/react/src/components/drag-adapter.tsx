@@ -149,7 +149,9 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
   // Nullable read on purpose (not the throwing useLayout hook): the drag layer
   // also works standalone with an explicit onCommit, e.g. in tests.
   const layoutStore = useContext(LayoutStoreContext);
-  const tabsets = useRef(new Map<string, HTMLElement>());
+  // useState (not useRef(new Map())) so the registry is built once instead of
+  // allocating a throwaway Map on every render.
+  const [tabsets] = useState(() => new Map<string, HTMLElement>());
   const overlayRef = useRef<HTMLDivElement | null>(null);
   // Captured once at drag start so the insertion ghost keeps the dragged tab's
   // size even after the pointer leaves its original strip.
@@ -190,6 +192,17 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
     };
   }, [actorRef, subjectStore]);
 
+  // Consumer-supplied inputs ride refs (the configRef pattern from
+  // usePersistence) so the machine subscriptions below stay attached across
+  // re-renders — an inline onCommit or a flipped splitDock must not tear down
+  // and re-attach the listeners on a hot path.
+  const onCommitRef = useRef(onCommit);
+  const splitDockRef = useRef(splitDock);
+  useEffect(() => {
+    onCommitRef.current = onCommit;
+    splitDockRef.current = splitDock;
+  });
+
   useEffect(() => {
     const subscription = actorRef.on("COMMIT", (emitted) => {
       // Mirrors the resolveIntent gate: even a drag whose `editable` was
@@ -197,7 +210,7 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       if (layoutStore?.getState().editable === false) {
         return;
       }
-      const commit = onCommit ?? layoutStore?.getState().dispatch;
+      const commit = onCommitRef.current ?? layoutStore?.getState().dispatch;
       if (!commit) {
         warnOnce(
           "drag-layer-no-commit",
@@ -210,37 +223,48 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
     return () => {
       subscription.unsubscribe();
     };
-  }, [actorRef, layoutStore, onCommit]);
+  }, [actorRef, layoutStore]);
 
-  const registerTabset = useCallback((id: string, element: HTMLElement | null): void => {
-    if (element) {
-      tabsets.current.set(id, element);
-    } else {
-      tabsets.current.delete(id);
-    }
-  }, []);
+  const registerTabset = useCallback(
+    (id: string, element: HTMLElement | null): void => {
+      if (element) {
+        tabsets.set(id, element);
+      } else {
+        tabsets.delete(id);
+      }
+    },
+    [tabsets],
+  );
 
-  const getTabsetElement = useCallback((id: string) => tabsets.current.get(id), []);
+  const getTabsetElement = useCallback((id: string) => tabsets.get(id), [tabsets]);
 
   const getSourceSize = useCallback(() => sourceSize.current, []);
 
-  // Which registered tabset sits under the pointer. Tabsets tile (never overlap),
-  // so the first rect that contains the point is the unambiguous target — no
-  // dnd-kit collision detection needed.
-  const tabsetAt = useCallback((point: Point): { element: HTMLElement; id: string } | undefined => {
-    for (const [id, element] of tabsets.current) {
-      if (pointInRect(point, element.getBoundingClientRect())) {
-        return { element, id };
-      }
-    }
-    return undefined;
+  const attachOverlay = useCallback((element: HTMLDivElement | null): void => {
+    overlayRef.current = element;
   }, []);
 
-  // The dock intent for a pointer over a tabset, or null when the drop would be a
-  // no-op: a tabset dragged onto itself, or the sole tab of a tabset dropped back
-  // onto that same tabset. Otherwise the tabset resolves to center/split.
-  const resolveIntent = useCallback(
-    (
+  // The helpers live inside the effect (per the React docs' "move it into the
+  // effect" guidance) so the monitor listeners attach once per manager instead
+  // of re-subscribing whenever a render rebuilds a callback.
+  useEffect(() => {
+    // Which registered tabset sits under the pointer. Tabsets tile (never
+    // overlap), so the first rect that contains the point is the unambiguous
+    // target — no dnd-kit collision detection needed.
+    const tabsetAt = (point: Point): { element: HTMLElement; id: string } | undefined => {
+      for (const [id, element] of tabsets) {
+        if (pointInRect(point, element.getBoundingClientRect())) {
+          return { element, id };
+        }
+      }
+      return undefined;
+    };
+
+    // The dock intent for a pointer over a tabset, or null when the drop would
+    // be a no-op: a tabset dragged onto itself, or the sole tab of a tabset
+    // dropped back onto that same tabset. Otherwise the tabset resolves to
+    // center/split.
+    const resolveIntent = (
       targetId: string,
       element: HTMLElement,
       point: Point,
@@ -263,29 +287,22 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       // When splitting is disabled, a drop over the body stacks instead of
       // splits. Resolved at drag time (getState, not a subscription) so a model
       // global flip mid-session is honored without re-rendering the layer.
-      const splitDockResolved = splitDock ?? layoutStore?.getState().splitDock ?? true;
+      const splitDockResolved = splitDockRef.current ?? layoutStore?.getState().splitDock ?? true;
       if (!splitDockResolved && intent.location.startsWith("split-")) {
         return { location: "center", targetId };
       }
       return intent;
-    },
-    [layoutStore, splitDock],
-  );
+    };
 
-  // Position the preview imperatively (transform only) so following the pointer
-  // never triggers a React re-render.
-  const positionOverlay = useCallback((point: Point): void => {
-    const element = overlayRef.current;
-    if (element) {
-      element.style.transform = `translate(${point.x + PREVIEW_OFFSET.x}px, ${point.y + PREVIEW_OFFSET.y}px)`;
-    }
-  }, []);
+    // Position the preview imperatively (transform only) so following the
+    // pointer never triggers a React re-render.
+    const positionOverlay = (point: Point): void => {
+      const element = overlayRef.current;
+      if (element) {
+        element.style.transform = `translate(${point.x + PREVIEW_OFFSET.x}px, ${point.y + PREVIEW_OFFSET.y}px)`;
+      }
+    };
 
-  const attachOverlay = useCallback((element: HTMLDivElement | null): void => {
-    overlayRef.current = element;
-  }, []);
-
-  useEffect(() => {
     const handleStart = (event: DragStartEvent): void => {
       const source = event.operation.source;
       if (!source) {
@@ -348,7 +365,7 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       offMove();
       offEnd();
     };
-  }, [actorRef, manager, positionOverlay, resolveIntent, tabsetAt]);
+  }, [actorRef, layoutStore, manager, tabsets]);
 
   const contextValue = useMemo<DragContextValue>(
     () => ({ manager, registerTabset }),
