@@ -285,7 +285,7 @@ in `onModelChange`.
 
 The lower-level `usePersistence` load/save primitive (that `persist` is built on)
 is also exported, for hosts that drive the store directly. See the
-[persistence guide](https://docs.dashfoo.dev/persistence) for the storage seam,
+[persistence guide](https://docs.dashfoo.com/persistence) for the storage seam,
 validation pipeline, and SSR notes.
 
 ### Options
