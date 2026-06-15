@@ -71,8 +71,17 @@ const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("dashfoo:landin
 const RootLayout = ({ children }: { children: ReactNode }) => (
   <html lang="en" suppressHydrationWarning>
     <head>
-      {/* eslint-disable-next-line react/no-danger */}
+      {/*
+       * Must be a raw, parser-blocking inline <script> so it runs before first
+       * paint. next/script (even beforeInteractive) only enqueues to __next_s,
+       * which is drained by async framework chunks after paint — reintroducing
+       * the theme flash this guards against. THEME_SCRIPT is a hardcoded
+       * constant with zero attacker-controllable input.
+       */}
+      {/* oxlint-disable react/no-danger */}
+      {/* react-doctor-disable-next-line react-doctor/no-danger, react-doctor/nextjs-no-native-script */}
       <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      {/* oxlint-enable react/no-danger */}
     </head>
     <body className="bg-dashfoo-background text-dashfoo-foreground font-dashfoo antialiased">
       {children}

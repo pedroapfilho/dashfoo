@@ -17,6 +17,7 @@
     "@dashfoo/theme": "workspace:*",
     "@fontsource-variable/geist-mono": "^5.2.8",
     "@tailwindcss/postcss": "^4.3.0",
+    "hast-util-to-jsx-runtime": "^2.3.6",
     "lucide-react": "^1.17.0",
     "next": "^16.0.0",
     "react": "^19.2.6",
