@@ -151,6 +151,45 @@ describe("moveTabset", () => {
 
     expect(tabsetById(next, "ts1")?.children.map((t) => t.id)).toEqual(["t1", "t2", "t3"]);
     expect(next.layout.children.map((c) => c.id)).toEqual(["ts1"]);
+    // The merge selects the source's previously-visible tab: ts2.selected was 0 and
+    // the target (ts1) had 2 tabs, so the merged-in tab lands at index 2.
+    expect(tabsetById(next, "ts1")?.selected).toBe(2);
+  });
+
+  test("center merge selects the source's non-zero selected tab in the merged array", () => {
+    const model: Dashfoo = {
+      activeTabsetId: "ts1",
+      global: {},
+      layout: {
+        children: [
+          { children: [tab("t1")], id: "ts1", selected: 0, type: "tabset", weight: 50 },
+          {
+            children: [tab("s1"), tab("s2")],
+            id: "ts2",
+            selected: 1,
+            type: "tabset",
+            weight: 50,
+          },
+        ],
+        id: "root",
+        orientation: "row",
+        type: "row",
+      },
+      version: 1,
+    };
+
+    const next = reducer(model, {
+      location: "center",
+      sourceId: "ts2",
+      targetId: "ts1",
+      type: "moveTabset",
+    });
+
+    const merged = tabsetById(next, "ts1");
+    expect(merged?.children.map((t) => t.id)).toEqual(["t1", "s1", "s2"]);
+    // target had 1 tab, source.selected was 1 → merged selected is 1 + 1 = 2 (s2).
+    expect(merged?.selected).toBe(2);
+    expect(merged?.children[merged.selected]?.id).toBe("s2");
   });
 
   test("split-right moves the whole tabset beside the target", () => {
