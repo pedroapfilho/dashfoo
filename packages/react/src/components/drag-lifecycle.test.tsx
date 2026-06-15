@@ -1,11 +1,11 @@
 /*
- * Step 1: Assertable surface of DragDropManager (@dnd-kit/dom@0.4.0)
+ * Step 1: Assertable surface of DragDropManager (@dnd-kit/dom@0.5.0)
  *
  * Sources read:
- *   node_modules/.pnpm/@dnd-kit+dom@0.4.0/node_modules/@dnd-kit/dom/index.d.ts
- *   node_modules/.pnpm/@dnd-kit+abstract@0.4.0/node_modules/@dnd-kit/abstract/index.d.ts
- *   node_modules/.pnpm/@dnd-kit+dom@0.4.0/node_modules/@dnd-kit/dom/index.js   (runtime)
- *   node_modules/.pnpm/@dnd-kit+abstract@0.4.0/node_modules/@dnd-kit/abstract/index.js (runtime)
+ *   node_modules/.pnpm/@dnd-kit+dom@0.5.0/node_modules/@dnd-kit/dom/index.d.ts
+ *   node_modules/.pnpm/@dnd-kit+abstract@0.5.0/node_modules/@dnd-kit/abstract/index.d.ts
+ *   node_modules/.pnpm/@dnd-kit+dom@0.5.0/node_modules/@dnd-kit/dom/index.js   (runtime)
+ *   node_modules/.pnpm/@dnd-kit+abstract@0.5.0/node_modules/@dnd-kit/abstract/index.js (runtime)
  *
  * Q1 — Registry of draggables readable?
  *   YES. `manager.registry: DragDropRegistry` exposes:

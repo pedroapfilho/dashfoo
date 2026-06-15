@@ -9,7 +9,7 @@ A **headless React docking-layout library** (tabs, tabsets, splits, drag-dock) �
 ## Layout
 
 - `packages/core` — framework-free engine: zod schemas, pure reducer (structuredClone + normalize), xstate v5 machines, tree/geometry/history/serialize. Published, ESM-only.
-- `packages/react` — `@dashfoo/react`: DashfooLayout on react-resizable-panels v4 + @dnd-kit/dom (pinned 0.4.0, pre-1.0 — bump deliberately, the drag adapter is the only touch point). Published, ESM-only, "use client".
+- `packages/react` — `@dashfoo/react`: DashfooLayout on react-resizable-panels v4 + @dnd-kit/dom (`^0.5.0`, pre-1.0 — bump deliberately, the drag adapter is the only touch point). Published, ESM-only, "use client".
 - `packages/theme` — plain-CSS theme. Published, changesets-ignored.
 - `packages/config-typescript` + `packages/config-vitest` — `@repo/*` internal presets (tsconfig + vitest), never published or renamed.
 - `apps/demo-vite` — Vite + TanStack Router demo; Playwright e2e in `e2e/`.
@@ -58,7 +58,7 @@ Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (c
 
 ## Notable decisions
 
-- Primitives stay internal: `react-resizable-panels`, `@dnd-kit/dom` `0.4.0`, and XState are bundled dependencies behind adapters, never peers and never in the public API.
+- Primitives stay internal: `react-resizable-panels`, `@dnd-kit/dom` `^0.5.0`, and XState are bundled dependencies behind adapters, never peers and never in the public API.
 - The model is the single source of truth: plain JSON-serializable object, invariants self-heal after every action.
 - Unlike the library template, this repo keeps Playwright e2e (extra `e2e.yml` workflow) — dnd-kit drag behavior is untestable in jsdom. `publish-checks.yml` adds typecheck + publint + @arethetypeswrong on the published packages.
 - This repo follows the fleet's `library` profile (template: `~/dev/acme-package`, verified by `~/dev/orchestrator`).
