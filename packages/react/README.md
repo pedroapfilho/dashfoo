@@ -15,7 +15,7 @@ paint.
 It builds on three engines:
 
 - **[react-resizable-panels](https://github.com/bvaughn/react-resizable-panels)** for splitter resize (the resize adapter is the only file that imports it).
-- **[@dnd-kit/dom](https://github.com/clauderic/dnd-kit) 0.4** — the framework-agnostic core (no React bindings) — for drag (the drag adapter is the only file that touches it; pointer-only).
+- **[@dnd-kit/dom](https://github.com/clauderic/dnd-kit) 0.5** — the framework-agnostic core (no React bindings) — for drag (the drag adapter is the only file that touches it; pointer-only).
 - **[@dashfoo/core](https://www.npmjs.com/package/@dashfoo/core)** for the document: a zod schema, a pure reducer, and the XState machines that drive state and the drag lifecycle.
 
 ## Install
