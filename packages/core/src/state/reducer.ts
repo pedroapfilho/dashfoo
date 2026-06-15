@@ -184,7 +184,16 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       if (action.location === "center") {
         const target = findTabset(draft, action.targetId);
         if (target) {
+          const mergeStart = target.children.length;
+          // Clamp the source's selection against the SOURCE's own tab count before
+          // offsetting. normalize's clampSelected only bounds against the FINAL
+          // merged length, so a stale/out-of-range source.selected would otherwise
+          // resolve to a valid-but-wrong merged index (an original target tab, or
+          // the wrong source tab) that normalize cannot catch. Clamp here so the
+          // merged selection always lands on a tab that came from the source.
+          const sourceSelected = Math.min(Math.max(source.selected, 0), source.children.length - 1);
           target.children.push(...source.children);
+          target.selected = mergeStart + sourceSelected;
           removeTabset(draft.layout, action.sourceId);
         }
         return;

@@ -151,6 +151,45 @@ describe("moveTabset", () => {
 
     expect(tabsetById(next, "ts1")?.children.map((t) => t.id)).toEqual(["t1", "t2", "t3"]);
     expect(next.layout.children.map((c) => c.id)).toEqual(["ts1"]);
+    // The merge selects the source's previously-visible tab: ts2.selected was 0 and
+    // the target (ts1) had 2 tabs, so the merged-in tab lands at index 2.
+    expect(tabsetById(next, "ts1")?.selected).toBe(2);
+  });
+
+  test("center merge selects the source's non-zero selected tab in the merged array", () => {
+    const model: Dashfoo = {
+      activeTabsetId: "ts1",
+      global: {},
+      layout: {
+        children: [
+          { children: [tab("t1")], id: "ts1", selected: 0, type: "tabset", weight: 50 },
+          {
+            children: [tab("s1"), tab("s2")],
+            id: "ts2",
+            selected: 1,
+            type: "tabset",
+            weight: 50,
+          },
+        ],
+        id: "root",
+        orientation: "row",
+        type: "row",
+      },
+      version: 1,
+    };
+
+    const next = reducer(model, {
+      location: "center",
+      sourceId: "ts2",
+      targetId: "ts1",
+      type: "moveTabset",
+    });
+
+    const merged = tabsetById(next, "ts1");
+    expect(merged?.children.map((t) => t.id)).toEqual(["t1", "s1", "s2"]);
+    // target had 1 tab, source.selected was 1 → merged selected is 1 + 1 = 2 (s2).
+    expect(merged?.selected).toBe(2);
+    expect(merged?.children[merged.selected]?.id).toBe("s2");
   });
 
   test("split-right moves the whole tabset beside the target", () => {
@@ -283,5 +322,32 @@ describe("split weight geometry", () => {
     expect(tabsetById(next, "ts1")?.weight).toBe(50);
     expect(tabsetById(next, "ts2")?.weight).toBe(50);
     expect(next.layout.children.map((c) => c.id)).toEqual(["ts1", "ts2"]);
+  });
+
+  test("moveTabset split into a mismatched orientation wraps the target in a new row", () => {
+    // splitModel()'s root is row-oriented; split-bottom is column orientation, so
+    // moving ts2 onto ts1 mismatches the parent and forces placeBesideTarget's
+    // wrapping else. ts2 survives the move (a split move detaches the whole tabset,
+    // unlike a center merge which destroys the source), placed beside ts1 with both
+    // halves at 50. Detaching ts2 leaves the root row with the lone wrapping column
+    // row as its only child, so normalize absorbs the wrap into the root: the final
+    // layout is a column-oriented root holding [ts1, ts2] directly.
+    const next = reducer(splitModel(), {
+      location: "split-bottom",
+      sourceId: "ts2",
+      targetId: "ts1",
+      type: "moveTabset",
+    });
+
+    expect(next.layout.orientation).toBe("column");
+    expect(next.layout.children.map((c) => c.id)).toEqual(["ts1", "ts2"]);
+
+    const wrappedTarget = tabsetById(next, "ts1");
+    const movedSource = tabsetById(next, "ts2");
+    expect(wrappedTarget?.type).toBe("tabset");
+    expect(wrappedTarget?.weight).toBe(50);
+    expect(movedSource?.weight).toBe(50);
+    expect(movedSource?.children.map((t) => t.id)).toEqual(["t3"]);
+    expect(findTab(next, "t3")?.container.id).toBe("ts2");
   });
 });
