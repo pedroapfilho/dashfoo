@@ -74,7 +74,7 @@ export const Dashboard = () => (
 );
 ```
 
-The builders (`model` / `row` / `tabset` / `tab`) fill the mechanical fields (`type`, `version`, `selected`) so you only write what matters; the output is the same plain object you could also write by hand (see [the model guide](https://docs.dashfoo.dev/the-model)).
+The builders (`model` / `row` / `tabset` / `tab`) fill the mechanical fields (`type`, `version`, `selected`) so you only write what matters; the output is the same plain object you could also write by hand (see [the model guide](https://docs.dashfoo.com/the-model)).
 
 A `components` registry maps each `tab.component` key to a `ComponentType<{ node: TabNode }>`. Prefer a single function? Pass `factory` instead and switch on the tab yourself:
 
@@ -171,7 +171,7 @@ The reducer is pure and immutable, runs the self-healing invariants (`normalize`
 `@dashfoo/react` binds a `dashfooMachine` actor to React. The two primitives are isolated behind adapters so the engine never imports them directly:
 
 - The **resize adapter** wraps `react-resizable-panels`, mapping `weight` to percentage layout and `Dimension` to fixed/min/max panel sizes, and commits `adjustSplit`.
-- The **drag adapter** drives the framework-agnostic `@dnd-kit/dom` `0.4.0` core imperatively (no React bindings). It renders its own drag-preview chip, hit-tests the pointer against the registered tabsets, forwards the lifecycle into the dock machine via `resolveDockTarget`, and commits `moveNode` (a tab drag), `moveTabset` (a tabset dragged by its grip), or `addNode` (an external source dragged in via `DashfooDragProvider` + `useExternalTabSource`). Drag is **pointer-only** — see [the drag guide](https://docs.dashfoo.dev/drag-and-dock) for the a11y note.
+- The **drag adapter** drives the framework-agnostic `@dnd-kit/dom` `0.4.0` core imperatively (no React bindings). It renders its own drag-preview chip, hit-tests the pointer against the registered tabsets, forwards the lifecycle into the dock machine via `resolveDockTarget`, and commits `moveNode` (a tab drag), `moveTabset` (a tabset dragged by its grip), or `addNode` (an external source dragged in via `DashfooDragProvider` + `useExternalTabSource`). Drag is **pointer-only** — see [the drag guide](https://docs.dashfoo.com/drag-and-dock) for the a11y note.
 
 XState is internal — it never appears in the public API. `useDashfooStore` exposes `{ model, dispatch, undo, redo, canUndo, canRedo, setModel }`; in controlled mode every change routes through `onModelChange`, in uncontrolled mode the actor owns the document with full undo/redo. Persistence is a single `persist="key"` prop (or the lower-level `usePersistence` hook): it debounce-saves the model to a swappable `StorageAdapter` (localStorage, sessionStorage, in-memory, or your own), validating on load.
 
@@ -199,7 +199,7 @@ XState is internal — it never appears in the public API. `useDashfooStore` exp
 | `dock-indicator`                                              | The live drag-dock indicator (insertion line / zone) |
 | `drag-preview`                                                | The chip that follows the pointer while dragging     |
 
-State hooks: `[data-dashfoo="tab-item"][data-dragging]` (a tab being dragged), `[data-dashfoo="tabset"][data-dragging-source]` (a tabset being dragged by its grip), `[aria-selected="true"]` on the active tab, `[aria-pressed="true"]` on a maximized tabset. The full token + attribute contract is in [the theming guide](https://docs.dashfoo.dev/theming).
+State hooks: `[data-dashfoo="tab-item"][data-dragging]` (a tab being dragged), `[data-dashfoo="tabset"][data-dragging-source]` (a tabset being dragged by its grip), `[aria-selected="true"]` on the active tab, `[aria-pressed="true"]` on a maximized tabset. The full token + attribute contract is in [the theming guide](https://docs.dashfoo.com/theming).
 
 ```css
 [data-dashfoo="tabset"] {
@@ -246,7 +246,7 @@ pnpm dev
 
 ## Docs and links
 
-- **Documentation** — [docs.dashfoo.dev](https://docs.dashfoo.dev): [getting started](https://docs.dashfoo.dev/getting-started), [the model](https://docs.dashfoo.dev/the-model), [drag and dock](https://docs.dashfoo.dev/drag-and-dock), [controlled mode & history](https://docs.dashfoo.dev/controlled-and-history), [persistence](https://docs.dashfoo.dev/persistence), [responsive layouts](https://docs.dashfoo.dev/responsive), [theming](https://docs.dashfoo.dev/theming), and the [API reference](https://docs.dashfoo.dev/api-reference). The content lives in [`apps/docs/content/docs`](./apps/docs/content/docs) — the single source for the guides.
+- **Documentation** — [docs.dashfoo.com](https://docs.dashfoo.com): [getting started](https://docs.dashfoo.com/getting-started), [the model](https://docs.dashfoo.com/the-model), [drag and dock](https://docs.dashfoo.com/drag-and-dock), [controlled mode & history](https://docs.dashfoo.com/controlled-and-history), [persistence](https://docs.dashfoo.com/persistence), [responsive layouts](https://docs.dashfoo.com/responsive), [theming](https://docs.dashfoo.com/theming), and the [API reference](https://docs.dashfoo.com/api-reference). The content lives in [`apps/docs/content/docs`](./apps/docs/content/docs) — the single source for the guides.
 - **Package READMEs** — [`@dashfoo/core`](./packages/core/README.md), [`@dashfoo/react`](./packages/react/README.md), [`@dashfoo/theme`](./packages/theme/README.md) — per-package API reference, also shown on npm.
 - **Architecture decisions** — `docs/adr/` (the record behind the headless engine, the one-XState-actor-system state model, and the pinned primitive choices).
 - **Design spec** — [`docs/superpowers/specs/2026-06-02-dashfoo-design.md`](./docs/superpowers/specs/2026-06-02-dashfoo-design.md) — the full goals, non-goals, model, action set, machine map, and build sequence.

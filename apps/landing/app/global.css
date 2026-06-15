@@ -2,8 +2,9 @@
 @import "@dashfoo/theme/tailwind.css";
 
 /* Geist Mono is the dashfoo brand font for the demos (the published theme keeps
- * its system stack). Overriding --dashfoo-font is an app-level remap, not a
- * library change, so it also reaches the embedded DashfooLayout. */
+ * its system stack). Mapping the Tailwind font tokens covers utility classes,
+ * and overriding --dashfoo-font (an app-level remap, not a library change)
+ * carries it into the embedded DashfooLayout too. */
 @theme {
   --font-sans: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -13,12 +14,9 @@
   --dashfoo-font: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-body {
-  font-family: var(--dashfoo-font);
-}
-
-/* The shell's dark: variant keys off the same attribute the dashfoo theme
- * uses, so one toggle flips the demo chrome and the layout together. */
+/* The marketing chrome and the embedded DashfooLayout share one toggle: the
+ * dark: variant and the dashfoo theme both key off data-dashfoo-theme, so
+ * flipping the attribute on <html> reskins page and layout together. */
 @custom-variant dark (&:where([data-dashfoo-theme="dark"], [data-dashfoo-theme="dark"] *));
 
 html {
@@ -26,4 +24,11 @@ html {
 }
 html[data-dashfoo-theme="dark"] {
   color-scheme: dark;
+}
+
+/* Smooth in-page anchor jumps, disabled under reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }

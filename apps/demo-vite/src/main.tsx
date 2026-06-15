@@ -1,3 +1,4 @@
+import "@fontsource-variable/geist-mono/index.css";
 import "./index.css";
 
 import { RouterProvider } from "@tanstack/react-router";

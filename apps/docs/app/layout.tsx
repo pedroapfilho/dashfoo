@@ -6,10 +6,10 @@ import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
   description:
-    "Documentation for dashfoo: a headless React docking-layout library — tiled, resizable, tabbed regions with a serializable model and zero imposed styling.",
-  metadataBase: new URL("https://docs.dashfoo.dev"),
+    "Documentation for dashfoo: a headless React docking-layout library with tiled, resizable, tabbed regions, a serializable model, and zero imposed styling.",
+  metadataBase: new URL("https://docs.dashfoo.com"),
   title: {
-    default: "dashfoo — headless React docking layout",
+    default: "dashfoo: headless React docking layout",
     template: "%s · dashfoo docs",
   },
 };

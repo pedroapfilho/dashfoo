@@ -2,16 +2,16 @@
 
 A headless React docking-layout library — tiled, resizable, tabbed regions with a serializable model and zero imposed styling. The guides live on the docs site; the package READMEs carry the per-package API reference; the ADRs record the architecture decisions.
 
-## Guides — [docs.dashfoo.dev](https://docs.dashfoo.dev)
+## Guides — [docs.dashfoo.com](https://docs.dashfoo.com)
 
-- [Getting started](https://docs.dashfoo.dev/getting-started)
-- [The layout model](https://docs.dashfoo.dev/the-model)
-- [Drag and dock](https://docs.dashfoo.dev/drag-and-dock)
-- [Controlled mode and undo/redo](https://docs.dashfoo.dev/controlled-and-history)
-- [Persisting layouts](https://docs.dashfoo.dev/persistence)
-- [Adaptive (responsive) layouts](https://docs.dashfoo.dev/responsive)
-- [Theming the headless chrome](https://docs.dashfoo.dev/theming)
-- [API reference](https://docs.dashfoo.dev/api-reference)
+- [Getting started](https://docs.dashfoo.com/getting-started)
+- [The layout model](https://docs.dashfoo.com/the-model)
+- [Drag and dock](https://docs.dashfoo.com/drag-and-dock)
+- [Controlled mode and undo/redo](https://docs.dashfoo.com/controlled-and-history)
+- [Persisting layouts](https://docs.dashfoo.com/persistence)
+- [Adaptive (responsive) layouts](https://docs.dashfoo.com/responsive)
+- [Theming the headless chrome](https://docs.dashfoo.com/theming)
+- [API reference](https://docs.dashfoo.com/api-reference)
 
 The guide sources are the single source of truth in [`apps/docs/content/docs`](../apps/docs/content/docs) — edit them there. There is no second copy to keep in sync.
 

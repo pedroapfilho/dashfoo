@@ -1,36 +1,34 @@
 {
-  "name": "demo-vite",
-  "version": "0.0.3",
+  "name": "landing",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -b && vite build",
-    "clean": "rm -rf dist node_modules",
-    "dev": "vite",
-    "lint": "oxlint src",
-    "start": "vite preview",
-    "test:e2e": "playwright test",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "dev": "portless run --name dashfoo next dev --turbopack",
+    "build": "next build",
+    "start": "next start -p 4100",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint app",
+    "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
     "@dashfoo/core": "workspace:*",
     "@dashfoo/react": "workspace:*",
     "@dashfoo/theme": "workspace:*",
     "@fontsource-variable/geist-mono": "^5.2.8",
-    "@tailwindcss/vite": "^4.3.0",
-    "@tanstack/react-router": "^1.170.10",
+    "@tailwindcss/postcss": "^4.3.0",
     "lucide-react": "^1.17.0",
+    "next": "^16.0.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "shiki": "^3.0.0",
     "tailwindcss": "^4.3.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.48.0",
     "@repo/typescript-config": "workspace:*",
+    "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.2",
-    "typescript": "^6.0.3",
-    "vite": "^8.0.16"
+    "typescript": "^6.0.3"
   }
 }

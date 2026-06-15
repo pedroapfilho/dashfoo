@@ -15,6 +15,12 @@ export const baseOptions = (): BaseLayoutProps => ({
   links: [
     {
       external: true,
+      text: "Home",
+      type: "button",
+      url: "https://dashfoo.com",
+    },
+    {
+      external: true,
       text: "Demo",
       type: "button",
       url: "https://demo.dashfoo.com",

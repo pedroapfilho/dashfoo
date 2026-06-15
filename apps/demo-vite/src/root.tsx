@@ -1,5 +1,15 @@
 import { Link, Outlet } from "@tanstack/react-router";
-import { Blocks, History, LayoutDashboard, Lock, Moon, Move, Sun } from "lucide-react";
+import {
+  Blocks,
+  BookOpen,
+  History,
+  Home,
+  LayoutDashboard,
+  Lock,
+  Moon,
+  Move,
+  Sun,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -14,6 +24,13 @@ const NAV = [
   },
   { exact: false, icon: Blocks, label: "Raw primitives", to: "/raw" },
   { exact: false, icon: Lock, label: "Static layout", to: "/static" },
+] as const;
+
+// Cross-links to the other dashfoo surfaces. Kept out of the scrolling demo
+// <nav> so they stay pinned beside the theme toggle at any width.
+const EXTERNAL = [
+  { href: "https://docs.dashfoo.com", icon: BookOpen, label: "Docs" },
+  { href: "https://dashfoo.com", icon: Home, label: "dashfoo.com" },
 ] as const;
 
 const THEME_KEY = "dashfoo:demo:theme";
@@ -75,6 +92,20 @@ const RootLayout = (): ReactNode => (
           </Link>
         ))}
       </nav>
+      <div className="flex shrink-0 items-center gap-1">
+        {EXTERNAL.map((item) => (
+          <a
+            className="flex shrink-0 items-center gap-2 rounded-md px-2.5 py-2 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+            href={item.href}
+            key={item.href}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <item.icon size={15} strokeWidth={1.75} />
+            {item.label}
+          </a>
+        ))}
+      </div>
       <ThemeToggle />
     </header>
     <main className="min-h-0 flex-1 overflow-hidden">
