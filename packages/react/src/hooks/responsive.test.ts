@@ -88,13 +88,28 @@ describe("activeBreakpoint", () => {
 });
 
 describe("useResponsiveModel", () => {
-  test("returns the active model + a containerRef function", () => {
+  test("returns the active model + a containerRef function, unlocked by default", () => {
     const { result } = renderHook(() =>
       useResponsiveModel({ breakpoints: [{ id: "desktop", model: DESKTOP }] }),
     );
     expect(typeof result.current.containerRef).toBe("function");
-    expect(result.current.defaultModel).toBe(DESKTOP);
+    expect(result.current.model).toBe(DESKTOP);
     expect(result.current.breakpoint).toBe("desktop");
-    expect(typeof result.current.key).toBe("string");
+    expect(result.current.isCompact).toBe(false);
+    expect(result.current.draggableTabs).toBe(true);
+    expect(result.current.draggableTabsets).toBe(true);
+    expect(result.current.resizableSplits).toBe(true);
+  });
+
+  test("a compact breakpoint locks every structural interaction", () => {
+    // width seeds POSITIVE_INFINITY, so a compact catch-all is the active one.
+    const { result } = renderHook(() =>
+      useResponsiveModel({ breakpoints: [{ compact: true, id: "stacked", model: MOBILE }] }),
+    );
+    expect(result.current.isCompact).toBe(true);
+    expect(result.current.model).toBe(MOBILE);
+    expect(result.current.draggableTabs).toBe(false);
+    expect(result.current.draggableTabsets).toBe(false);
+    expect(result.current.resizableSplits).toBe(false);
   });
 });

@@ -97,7 +97,12 @@ const DockingPage = (): ReactNode => {
             ))}
           </aside>
           <div className="min-h-0 min-w-0 flex-1" ref={layoutContainer}>
-            <DashfooLayout defaultModel={dockingModel()} factory={renderPanel} ref={layout} />
+            <DashfooLayout
+              defaultModel={dockingModel()}
+              factory={renderPanel}
+              ref={layout}
+              responsive={{ maxWidth: 720 }}
+            />
           </div>
         </div>
         <DropZoneOverlay containerRef={layoutContainer} enabled={showDropZones} />

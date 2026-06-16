@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
 
+import { reducer } from "../state/reducer";
+
 import type { Dashfoo } from "./schema";
 import { stackModel } from "./stack";
 
@@ -9,7 +11,10 @@ const nested = (): Dashfoo => ({
   layout: {
     children: [
       {
-        children: [{ component: "c", id: "t1", name: "A", type: "tab" }],
+        children: [
+          { component: "c", id: "t1", name: "A", type: "tab" },
+          { component: "c", id: "t1b", name: "A2", type: "tab" },
+        ],
         id: "ts-a",
         selected: 0,
         type: "tabset",
@@ -53,5 +58,20 @@ describe("stackModel", () => {
 
   test("orientation row stacks horizontally", () => {
     expect(stackModel(nested(), "row").layout.orientation).toBe("row");
+  });
+
+  // The responsive lock-on-mobile design renders stackModel as a view-only
+  // projection while dispatch still targets the canonical model. That only works
+  // because tabset ids survive stacking: a tap-to-select in the narrow view
+  // dispatches a tabset id that still resolves against the desktop model.
+  test("a selectTab using a stacked-view tabset id lands on the canonical model", () => {
+    const source = nested();
+    const stacked = stackModel(source);
+    const tabsetId = stacked.layout.children[0].id;
+    expect(tabsetId).toBe("ts-a");
+
+    const next = reducer(source, { index: 1, tabsetId, type: "selectTab" });
+    const tabset = next.layout.children[0];
+    expect(tabset.type === "tabset" && tabset.selected).toBe(1);
   });
 });

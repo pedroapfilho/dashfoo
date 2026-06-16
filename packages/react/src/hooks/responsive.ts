@@ -4,6 +4,10 @@ import type { Dashfoo } from "@dashfoo/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type Breakpoint = {
+  // When true, the active breakpoint locks every structural interaction (tab and
+  // tabset drag, split resize) — the lock-on-mobile model. Pair it with a stacked
+  // model so the narrow view is read-only and tap-navigable. Defaults to false.
+  compact?: boolean;
   id: string;
   model: Dashfoo;
   query?: { maxWidth: number } | { media: string };
@@ -14,8 +18,11 @@ type UseResponsiveModelOptions = { breakpoints: Array<Breakpoint> };
 type ResponsiveModel = {
   breakpoint: string;
   containerRef: (element: HTMLElement | null) => void;
-  defaultModel: Dashfoo;
-  key: string;
+  draggableTabs: boolean;
+  draggableTabsets: boolean;
+  isCompact: boolean;
+  model: Dashfoo;
+  resizableSplits: boolean;
 };
 
 const hasMatchMedia = (): boolean =>
@@ -43,16 +50,12 @@ const activeBreakpoint = (breakpoints: Array<Breakpoint>, width: number): Breakp
   return breakpoints.find((breakpoint) => matchBreakpoint(breakpoint, width)) ?? fallback;
 };
 
-// Picks a model for the active breakpoint, keyed off the container's own width
-// (ResizeObserver) and/or media queries. Spread the result onto DashfooLayout
-// and remount on `key`.
-const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): ResponsiveModel => {
-  // seed the catch-all width so server and client agree on the first render
-  // (no hydration mismatch); the ResizeObserver supplies the real container
-  // width on mount. innerWidth is the viewport, not our container, so it would
-  // pick the wrong breakpoint and thrash the DashfooLayout key={active.id} remount.
+// Tracks a single element's content-box width via ResizeObserver. Seeds
+// POSITIVE_INFINITY so server and first client render agree on the widest
+// breakpoint (no hydration mismatch, no compact flash on desktop); the observer
+// supplies the real width on mount. The returned ref callback is stable.
+const useContainerWidth = (): [(element: HTMLElement | null) => void, number] => {
   const [width, setWidth] = useState<number>(Number.POSITIVE_INFINITY);
-  const [, setMediaTick] = useState(0);
   const observerRef = useRef<ResizeObserver | null>(null);
 
   const containerRef = useCallback((element: HTMLElement | null): void => {
@@ -76,6 +79,18 @@ const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): Respons
     },
     [],
   );
+
+  return [containerRef, width];
+};
+
+// Picks a model for the active breakpoint, keyed off the container's own width
+// (ResizeObserver) and/or media queries, and derives the structural-interaction
+// flags from the breakpoint's `compact`. Feed model + flags onto DashfooLayout
+// (or Layout.Root) as reactive props and attach containerRef to the wrapper —
+// no key/remount, so store, history, and tab state survive a breakpoint cross.
+const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): ResponsiveModel => {
+  const [containerRef, width] = useContainerWidth();
+  const [, setMediaTick] = useState(0);
 
   useEffect(() => {
     if (!hasMatchMedia()) {
@@ -103,8 +118,17 @@ const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): Respons
   }, [breakpoints]);
 
   const active = activeBreakpoint(breakpoints, width);
-  return { breakpoint: active.id, containerRef, defaultModel: active.model, key: active.id };
+  const isCompact = active.compact === true;
+  return {
+    breakpoint: active.id,
+    containerRef,
+    draggableTabs: !isCompact,
+    draggableTabsets: !isCompact,
+    isCompact,
+    model: active.model,
+    resizableSplits: !isCompact,
+  };
 };
 
-export { activeBreakpoint, matchBreakpoint, useResponsiveModel };
+export { activeBreakpoint, matchBreakpoint, useContainerWidth, useResponsiveModel };
 export type { Breakpoint, ResponsiveModel, UseResponsiveModelOptions };

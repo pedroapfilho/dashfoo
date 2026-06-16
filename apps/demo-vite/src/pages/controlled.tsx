@@ -125,6 +125,7 @@ const ImperativeControlPage = (): ReactNode => {
             factory={renderPanel}
             onModelChange={handleModelChange}
             ref={layout}
+            responsive={{ maxWidth: 720 }}
           />
         </div>
         <pre className="hidden w-80 shrink-0 overflow-auto rounded-lg border border-neutral-200 bg-white p-3 text-[10px] leading-relaxed text-neutral-500 xl:block dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
