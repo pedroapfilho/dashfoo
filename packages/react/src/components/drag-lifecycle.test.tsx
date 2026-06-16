@@ -59,10 +59,6 @@ import { DragContext, SharedDragManagerContext } from "../hooks/drag-hooks";
 import { DragProvider } from "./drag-adapter";
 import { DashfooDragProvider } from "./drag-root";
 
-// ---------------------------------------------------------------------------
-// helpers
-// ---------------------------------------------------------------------------
-
 // Checks whether the manager's sensor registry is non-empty. PointerSensor is
 // registered synchronously at construction time. After `manager.destroy()`,
 // `registry.sensors.destroy()` clears the internal Map and .values returns [].
@@ -70,10 +66,7 @@ import { DashfooDragProvider } from "./drag-root";
 const isManagerLive = (manager: DragDropManager): boolean =>
   manager.registry.sensors.values.length > 0;
 
-// ---------------------------------------------------------------------------
 // Step 2: shared vs own manager selection
-// ---------------------------------------------------------------------------
-
 describe("shared vs own manager selection", () => {
   test("standalone DragProvider creates its own non-null manager", () => {
     let capturedManager: DragDropManager | null = null;
@@ -125,10 +118,7 @@ describe("shared vs own manager selection", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Step 3: StrictMode survival
-// ---------------------------------------------------------------------------
-
 describe("StrictMode survival", () => {
   test("DashfooDragProvider: manager survives StrictMode double-mount and stays live", () => {
     // Collects every manager the Probe sees across all renders.
@@ -189,9 +179,7 @@ describe("StrictMode survival", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Step 4: useExternalTabSource registration lifecycle (feasibility-gated)
-// ---------------------------------------------------------------------------
 // Registry IS readable (see Q1 above), but Entity.register() is deferred via
 // queueMicrotask. We await Promise.resolve() to flush the microtask queue
 // before asserting registration, and unmount to trigger the useEffect cleanup.
