@@ -11,14 +11,12 @@ import type { OverflowItem } from "../tab-overflow";
 
 // The per-tabset coordination store behind <Tabset.Root>. Model-derived fields
 // (node, visualSelected, flags) are synced in by Root each render; coordination
-// state (rename editor, overflow, the registered tablist) lives here so sibling
-// parts stay in lockstep without prop threading. editingTabId being a single
-// field guarantees at most one open rename editor per tabset.
-// Model-derived fields (node, visualSelected, flags) are synced in by Root each
-// render; coordination state (editingTabId, overflowItems, tablistElement,
-// restoreFocus) is owned here; actions read live state via get(). restoreFocus
-// is set by closeTab so Root's post-delete effect knows to move focus to the
-// newly-selected tab instead of leaving it on <body>.
+// state (editingTabId, overflowItems, tablistElement, restoreFocus) lives here
+// so sibling parts stay in lockstep without prop threading; actions read live
+// state via get(). editingTabId being a single field guarantees at most one open
+// rename editor per tabset. restoreFocus is set by closeTab so Root's post-delete
+// effect knows to move focus to the newly-selected tab instead of leaving it on
+// <body>.
 type TabsetState = {
   activeTab: TabNode | undefined;
   cancelRename: () => void;
