@@ -1,9 +1,16 @@
 import type { TabsetNode } from "@dashfoo/core";
-import { findTabset } from "@dashfoo/core";
-import { Layout, Tabset, useDashfooStore, useTab, useTabset } from "@dashfoo/react";
+import { findTabset, stackModel } from "@dashfoo/core";
+import {
+  Layout,
+  Tabset,
+  useContainerWidth,
+  useDashfooStore,
+  useTab,
+  useTabset,
+} from "@dashfoo/react";
 import { Redo2, Undo2 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 
 import { renderPanel } from "../components/panels";
 import { Button, DemoStage } from "../components/ui";
@@ -65,12 +72,31 @@ const RawTabset = ({ node }: { node: TabsetNode }): ReactNode => (
 // The whole layout assembled by hand: useDashfooStore owns the model,
 // Layout.Root provides the store, Layout.DragLayer opts into drag-dock, and
 // Layout.Rows renders the split tree with the custom tabset at every leaf.
+// Responsive without DashfooLayout: useContainerWidth drives a stacked projection
+// and locks the drag/resize flags below the breakpoint.
 const RawPage = (): ReactNode => {
   const defaultModel = useMemo(() => dockingModel(), []);
   const store = useDashfooStore({ defaultModel });
-  const maximized = store.model.maximizedTabsetId
-    ? findTabset(store.model, store.model.maximizedTabsetId)
-    : undefined;
+  const [containerRef, width] = useContainerWidth();
+  const isCompact = width <= 720;
+  const view = useMemo(
+    () => (isCompact ? stackModel(store.model) : store.model),
+    [isCompact, store.model],
+  );
+  const maximized = view.maximizedTabsetId ? findTabset(view, view.maximizedTabsetId) : undefined;
+  // Drop the adjustSplit rrp auto-fires while re-measuring the stacked view, so
+  // it never corrupts the canonical model. The ref is written during render (the
+  // gate must be current before rrp's onLayoutChanged), mirroring DashfooLayout's
+  // built-in `responsive` prop.
+  const isCompactRef = useRef(isCompact);
+  // oxlint-disable-next-line react-hooks-js/refs
+  isCompactRef.current = isCompact;
+  const dispatch = (action: Parameters<typeof store.dispatch>[0]): void => {
+    if (isCompactRef.current && action.type === "adjustSplit") {
+      return;
+    }
+    store.dispatch(action);
+  };
   const handleUndo = (): void => store.undo();
   const handleRedo = (): void => store.redo();
 
@@ -89,13 +115,21 @@ const RawPage = (): ReactNode => {
       description="No DashfooLayout here. This page wires useDashfooStore to Layout.Root, Layout.DragLayer, and Layout.Rows by hand, and composes every tabset from the Tabset.* parts — custom tab labels, a tab counter in the toolbar, reordered controls. Everything still drags, docks, renames, and maximizes."
       title="Raw primitives"
     >
-      <Layout.Root dispatch={store.dispatch} model={store.model} renderTab={renderPanel}>
+      <Layout.Root
+        dispatch={dispatch}
+        draggableTabs={!isCompact}
+        draggableTabsets={!isCompact}
+        model={view}
+        renderTab={renderPanel}
+        resizableSplits={!isCompact}
+        rootRef={containerRef}
+      >
         <Layout.DragLayer>
           {maximized ? (
             <RawTabset node={maximized} />
           ) : (
             <Layout.Rows
-              node={store.model.layout}
+              node={view.layout}
               renderTabset={(tabset) => <RawTabset node={tabset} />}
             />
           )}

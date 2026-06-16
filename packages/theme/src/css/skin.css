@@ -367,3 +367,20 @@
     --dashfoo-dock-transition: none;
   }
 }
+
+/* coarse pointers (touch): the responsive lock-on-mobile view disables drag, so
+   tap-to-switch is the only way to change tabs — grow the tab hit target to the
+   2.75rem (44px) touch minimum and add breathing room between tabs. */
+@media (pointer: coarse) {
+  [data-dashfoo="tab"] {
+    min-height: 2.75rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  [data-dashfoo="tab-close"],
+  [data-dashfoo="tabset-maximize"],
+  [data-dashfoo="tab-overflow"] {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}

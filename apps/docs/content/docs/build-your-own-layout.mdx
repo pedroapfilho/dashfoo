@@ -127,6 +127,60 @@ const maximized = store.model.maximizedTabsetId
 {maximized ? <MyTabset node={maximized} /> : <Layout.Rows node={store.model.layout} … />}
 ```
 
+## Responsive
+
+`DashfooLayout`'s [`responsive` prop](/responsive) isn't available here, but the
+mechanism behind it is just two exported pieces. Measure the container with
+`useContainerWidth`, render a `stackModel` projection below the breakpoint, and
+pass the lock flags to `Layout.Root`. The projection is view-only — `dispatch`
+still targets `store.model`, so nothing maps back and widening up is lossless. No
+remount: the store, history, and mounted panels survive the breakpoint cross.
+
+```tsx
+import { stackModel } from "@dashfoo/core";
+import { Layout, useContainerWidth, useDashfooStore } from "@dashfoo/react";
+import { useMemo, useRef } from "react";
+
+const App = () => {
+  const store = useDashfooStore({ defaultModel });
+  const [containerRef, width] = useContainerWidth();
+  const isCompact = width <= 720;
+  const view = useMemo(
+    () => (isCompact ? stackModel(store.model) : store.model),
+    [isCompact, store.model],
+  );
+
+  // View-only: drop the adjustSplit rrp auto-fires while it re-measures the
+  // stacked structure, so it never writes to the canonical model. The ref
+  // (written during render so it is current before rrp's onLayoutChanged) gates
+  // even the closure rrp captured before the swap.
+  const isCompactRef = useRef(isCompact);
+  isCompactRef.current = isCompact;
+  const dispatch = (action) =>
+    isCompactRef.current && action.type === "adjustSplit" ? undefined : store.dispatch(action);
+
+  return (
+    <Layout.Root
+      dispatch={dispatch}
+      draggableTabs={!isCompact}
+      draggableTabsets={!isCompact}
+      model={view}
+      renderTab={renderTab}
+      resizableSplits={!isCompact}
+      rootRef={containerRef}
+    >
+      <Layout.DragLayer>
+        <Layout.Rows node={view.layout} renderTabset={(node) => <MyTabset node={node} />} />
+      </Layout.DragLayer>
+    </Layout.Root>
+  );
+};
+```
+
+`rootRef` is forwarded onto the layout's root element so `useContainerWidth` can
+measure it. Maximize and the projection compose — branch on `view`, not
+`store.model`, so a maximized tabset resolves against the stacked tree too.
+
 ## Guard rails
 
 Misuse is never silent. A part rendered outside its provider throws
