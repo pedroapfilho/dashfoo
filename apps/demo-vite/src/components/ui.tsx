@@ -35,16 +35,18 @@ const DemoStage = ({
   title: string;
 }): ReactNode => (
   <div className="flex h-full min-h-0 flex-col">
-    <header className="flex items-start justify-between gap-4 px-6 py-4">
+    <header className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-6">
       <div>
-        <h1 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</h1>
-        <p className="mt-1 max-w-2xl text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
+        <h1 className="text-base font-semibold text-neutral-900 sm:text-sm dark:text-neutral-100">
+          {title}
+        </h1>
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-neutral-500 sm:text-xs dark:text-neutral-400">
           {description}
         </p>
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </header>
-    <div className="min-h-0 flex-1 px-6 pb-6">{children}</div>
+    <div className="min-h-0 flex-1 px-4 pb-4 sm:px-6 sm:pb-6">{children}</div>
   </div>
 );
 

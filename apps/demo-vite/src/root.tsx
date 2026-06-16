@@ -49,6 +49,8 @@ const ThemeToggle = (): ReactNode => {
     } else {
       delete document.documentElement.dataset.dashfooTheme;
     }
+    // Keep the browser chrome color matched to the layout background.
+    document.querySelector("#theme-color")?.setAttribute("content", next ? "#0a0a0a" : "#ffffff");
     try {
       localStorage.setItem(THEME_KEY, next ? "dark" : "light");
     } catch {
@@ -73,17 +75,30 @@ const ThemeToggle = (): ReactNode => {
 // viewport width on small screens.
 const RootLayout = (): ReactNode => (
   <div className="flex h-dvh w-full flex-col overflow-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
-    <header className="flex shrink-0 items-center gap-3 border-b border-neutral-200 bg-white px-4 py-1.5 dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="shrink-0 pr-1">
-        <span className="text-sm font-semibold tracking-tight text-neutral-950 dark:text-neutral-50">
-          dashfoo
-        </span>
-      </div>
+    <header className="flex shrink-0 items-center gap-3 border-b border-neutral-200 bg-white px-3 py-1.5 sm:px-4 dark:border-neutral-800 dark:bg-neutral-900">
+      <Link aria-label="Homepage" className="shrink-0 pr-1" to="/">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt="dashfoo"
+          className="block h-5 w-auto dark:hidden"
+          height={20}
+          src="/dashfoo-logo-light.svg"
+          width={105}
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt="dashfoo"
+          className="hidden h-5 w-auto dark:block"
+          height={20}
+          src="/dashfoo-logo-dark.svg"
+          width={105}
+        />
+      </Link>
       <nav aria-label="Demos" className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
         {NAV.map((item) => (
           <Link
             activeOptions={{ exact: item.exact }}
-            className="flex shrink-0 items-center gap-2 rounded-md px-2.5 py-2 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 [&.active]:bg-neutral-100 [&.active]:text-neutral-950 dark:[&.active]:bg-neutral-800 dark:[&.active]:text-neutral-50"
+            className="flex shrink-0 items-center gap-2 rounded-md px-2.5 py-2.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 sm:py-2 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 [&.active]:bg-neutral-100 [&.active]:text-neutral-950 dark:[&.active]:bg-neutral-800 dark:[&.active]:text-neutral-50"
             key={item.to}
             to={item.to}
           >
@@ -95,14 +110,15 @@ const RootLayout = (): ReactNode => (
       <div className="flex shrink-0 items-center gap-1">
         {EXTERNAL.map((item) => (
           <a
-            className="flex shrink-0 items-center gap-2 rounded-md px-2.5 py-2 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+            aria-label={item.label}
+            className="flex shrink-0 items-center gap-2 rounded-md px-2.5 py-2.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 sm:py-2 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
             href={item.href}
             key={item.href}
             rel="noopener noreferrer"
             target="_blank"
           >
             <item.icon size={15} strokeWidth={1.75} />
-            {item.label}
+            <span className="hidden sm:inline">{item.label}</span>
           </a>
         ))}
       </div>
