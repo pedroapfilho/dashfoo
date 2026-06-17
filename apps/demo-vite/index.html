@@ -41,7 +41,9 @@
         // Match the browser chrome to the resolved theme's background. The
         // toggle in root.tsx keeps this in sync, so it tracks the manual
         // choice rather than only prefers-color-scheme.
-        document.getElementById("theme-color")?.setAttribute("content", dark ? "#0a0a0a" : "#ffffff");
+        document
+          .getElementById("theme-color")
+          ?.setAttribute("content", dark ? "#0a0a0a" : "#ffffff");
       })();
     </script>
     <style>

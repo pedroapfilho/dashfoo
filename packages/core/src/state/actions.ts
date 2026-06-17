@@ -4,6 +4,7 @@ import {
   dimensionSchema,
   globalAttributesSchema,
   orientationSchema,
+  snapSchema,
   tabNodeSchema,
   tabsetNodeSchema,
 } from "../model/schema";
@@ -34,6 +35,7 @@ const mutableRowAttrsSchema = z
     max: dimensionSchema.optional(),
     min: dimensionSchema.optional(),
     orientation: orientationSchema,
+    snap: snapSchema.optional(),
     weight: z.number(),
   })
   .partial();

@@ -321,6 +321,26 @@ A 16px grab target around a 2px grip keeps resize easy to hit while the visible
 line stays quiet. The hover rule raises contrast on the grip, not the whole
 handle.
 
+### Magnetic snapping
+
+When [snapping](/the-model#global-attributes) is on and a drag locks the boundary
+to the grid, the adapter writes two transient attributes that the theme styles —
+no inline color:
+
+| Selector                                             | Matches                                                                                                          |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `[data-separator][data-dashfoo-snapped="true"]`      | The splitter while its boundary is locked to a grid line. The grab pill takes `--dashfoo-snap` and grows.        |
+| `[data-dashfoo="row"][data-dashfoo-snapping="true"]` | The group during a snap. Its direct `[data-panel]` children glide onto the line via `--dashfoo-snap-transition`. |
+
+| Variable                    | Default fallback                               | Controls                                                                    |
+| --------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------- |
+| `--dashfoo-snap`            | `var(--dashfoo-primary)`                       | Grab-pill color while a snap is engaged.                                    |
+| `--dashfoo-snap-transition` | `flex-grow 140ms cubic-bezier(0.4, 0, 0.2, 1)` | Panel glide onto the snap line; the theme sets `none` under reduced motion. |
+
+The transition is scoped to the snapping group only, so free-drag tracking stays
+1:1 with the pointer — the boundary glides onto the line and snaps off it
+instantly.
+
 ## Dock indicators and the `--dashfoo-dock-*` vars
 
 The drag overlay is the one place dashfoo writes color inline, and only as a

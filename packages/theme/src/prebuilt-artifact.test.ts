@@ -32,6 +32,24 @@ describe("dist/dashfoo.css", () => {
     expect(horizontal).toContain("height: var(--dashfoo-splitter-size)");
   });
 
+  test("ships the magnetic-snap highlight token and rule", () => {
+    expect(artifact).toContain("--dashfoo-snap:");
+    const snapped = artifact.match(
+      /\[data-separator\]\[data-dashfoo-snapped="true"\]::before\s*\{[^\}]*\}/v,
+    )?.[0];
+    expect(snapped).toContain("background: var(--dashfoo-snap)");
+  });
+
+  test("ships the snap glide transition gated on the snapping group", () => {
+    const glide = artifact.match(
+      /\[data-dashfoo="row"\]\[data-dashfoo-snapping="true"\] > \[data-panel\]\s*\{[^\}]*\}/v,
+    )?.[0];
+    expect(glide).toContain("transition: var(--dashfoo-snap-transition");
+    // Disabled under reduced motion alongside the dock indicator.
+    const reduced = artifact.match(/prefers-reduced-motion: reduce[^@]*/v)?.[0];
+    expect(reduced).toContain("--dashfoo-snap-transition: none");
+  });
+
   test("keeps disabled separators sized but drops their resize cues", () => {
     // Static layouts disable the separator; it must keep the gutter rules above
     // while the doubled-attribute cursor override survives the build.

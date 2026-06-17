@@ -204,6 +204,29 @@ matching inner corner. The two functions share the band default, so a map
 painted from the polygons always agrees with the live hit-test — use it to
 visualize drop zones or to build custom drop indicators.
 
+## Snapping
+
+Pure math for magnetic split-resize snapping, over ordered percentage arrays so
+it stays framework-free; the React adapter maps rrp's id-keyed layout to/from
+these arrays and supplies the dragged boundary index.
+
+```ts
+resolveSnapTargets(config: SnapConfig, panelCount: number): number[]; // grid positions inside 0..100
+snapSizes(sizes: number[], boundaryIndex: number, config: SnapConfig): { sizes: number[]; snapped: boolean };
+snapEnabled(config: SnapConfig | null): boolean;
+```
+
+`resolveSnapTargets` builds the grid for a row from its config and panel count: the
+union of the `step` grid (multiples of a fixed percent) and the `divisions` grid
+(even splits — multiples of `100/d`, where `d` is the number or, for `"panels"`,
+the panel count). `snapSizes` snaps the boundary between panel `boundaryIndex` and
+the next onto the nearest target within `threshold` (default `4`), moving only that
+pair so siblings keep their size. It is a no-op when the grid is empty, the index
+is out of range, or the correction would drive a panel negative. `snapEnabled`
+reports whether a config produces any grid. `SnapConfig` is the
+`{ step?, divisions?, threshold? }` shape carried by `global.snap` and
+`RowNode.snap`.
+
 ## History (undo / redo)
 
 A small `past` / `present` / `future` structure that wraps the reducer. `present`
@@ -285,10 +308,10 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 ## Public exports
 
 `schema` — `dashfooSchema`, `rowNodeSchema`, `tabsetNodeSchema`, `tabNodeSchema`,
-`dimensionSchema`, `edgeSchema`, `unitSchema`,
+`dimensionSchema`, `snapSchema`, `edgeSchema`, `unitSchema`,
 `orientationSchema`, `globalAttributesSchema`,
 `jsonValueSchema`; types `Dashfoo`, `RowNode`, `TabsetNode`, `TabNode`,
-`Dimension`, `Edge`, `Unit`, `Orientation`,
+`Dimension`, `SnapConfig`, `Edge`, `Unit`, `Orientation`,
 `GlobalAttributes`, `Node`, `Json`.
 
 `builders` — `model`, `row`, `tabset`, `tab`; option types `ModelOptions`,
@@ -307,6 +330,9 @@ types `AttributedNode`, `TabContainer`, `TabLocation`.
 
 `geometry` — `resolveDockTarget`, `dockZonePolygons`, `zoneRect`; types
 `DockTarget`, `DockZone`, `BandOptions`, `Point`, `Rect`.
+
+`snap` — `resolveSnapTargets`, `snapSizes`, `snapEnabled`, `DEFAULT_SNAP_THRESHOLD`;
+type `SnapResult`.
 
 `history` — `createHistory`, `dispatch`, `undo`, `redo`, `canUndo`, `canRedo`;
 type `History`.

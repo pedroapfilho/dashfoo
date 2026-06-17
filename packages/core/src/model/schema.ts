@@ -24,6 +24,19 @@ const dimensionSchema = z.object({
   value: z.number(),
 });
 
+// Magnetic snap config for split resize. The grid the dragged boundary snaps to is
+// the union of two optional sources: `step` (multiples of a fixed percent) and
+// `divisions` (even splits — multiples of 100/d, where d is the number or, for
+// "panels", the row's own child count, so a 3-panel row snaps to thirds and a
+// 4-panel row to quarters). `threshold` is the magnetic grab distance in percent.
+// An empty config (or a `step` of 0 with no `divisions`) disables snapping — used
+// to opt a single row out of an inherited global default.
+const snapSchema = z.object({
+  divisions: z.union([z.number().positive(), z.literal("panels")]).optional(),
+  step: z.number().min(0).optional(),
+  threshold: z.number().positive().optional(),
+});
+
 const tabNodeSchema = z.object({
   component: z.string(),
   config: jsonValueSchema.optional(),
@@ -56,6 +69,7 @@ type RowNode = {
   max?: z.infer<typeof dimensionSchema>;
   min?: z.infer<typeof dimensionSchema>;
   orientation: z.infer<typeof orientationSchema>;
+  snap?: z.infer<typeof snapSchema>;
   type: "row";
   weight?: number;
 };
@@ -67,6 +81,7 @@ const rowNodeSchema: z.ZodType<RowNode> = z.lazy(() =>
     max: dimensionSchema.optional(),
     min: dimensionSchema.optional(),
     orientation: orientationSchema,
+    snap: snapSchema.optional(),
     type: z.literal("row"),
     weight: z.number().optional(),
   }),
@@ -75,6 +90,7 @@ const rowNodeSchema: z.ZodType<RowNode> = z.lazy(() =>
 const globalAttributesSchema = z.object({
   enableSplitDock: z.boolean().optional(),
   enableSplitResize: z.boolean().optional(),
+  snap: snapSchema.optional(),
   splitterSize: z.number().optional(),
   tabEnableClose: z.boolean().optional(),
   tabEnableDrag: z.boolean().optional(),
@@ -100,6 +116,7 @@ type Edge = z.infer<typeof edgeSchema>;
 type Unit = z.infer<typeof unitSchema>;
 type Orientation = z.infer<typeof orientationSchema>;
 type Dimension = z.infer<typeof dimensionSchema>;
+type SnapConfig = z.infer<typeof snapSchema>;
 type TabNode = z.infer<typeof tabNodeSchema>;
 type TabsetNode = z.infer<typeof tabsetNodeSchema>;
 type GlobalAttributes = z.infer<typeof globalAttributesSchema>;
@@ -114,6 +131,7 @@ export {
   jsonValueSchema,
   orientationSchema,
   rowNodeSchema,
+  snapSchema,
   tabNodeSchema,
   tabsetNodeSchema,
   unitSchema,
@@ -128,6 +146,7 @@ export type {
   Node,
   Orientation,
   RowNode,
+  SnapConfig,
   TabNode,
   TabsetNode,
   Unit,
