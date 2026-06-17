@@ -5,6 +5,7 @@
 export * from "./state/actions";
 export * from "./model/builders";
 export * from "./geometry/geometry";
+export * from "./geometry/snap";
 export * from "./state/history";
 export * from "./model/ids";
 export { normalize } from "./model/invariants";

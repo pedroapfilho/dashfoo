@@ -1,6 +1,6 @@
 "use client";
 
-import type { Action, Dashfoo, TabNode, TabsetNode } from "@dashfoo/core";
+import type { Action, Dashfoo, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
 import type { ComponentProps, CSSProperties, ReactNode, Ref } from "react";
 import { useLayoutEffect, useState } from "react";
 
@@ -32,6 +32,9 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
   // Forwarded onto the root element so a width observer can measure the actual
   // container — the hook behind responsive lock-on-mobile.
   rootRef?: Ref<HTMLDivElement>;
+  // Magnetic snap default for split resize; the prop replaces (not merges with)
+  // model.global.snap when both are present.
+  snap?: SnapConfig;
 };
 
 // The frame of a hand-built layout: creates the scoped layout store every part
@@ -54,6 +57,7 @@ const LayoutRoot = ({
   renderTabsetToolbar,
   resizableSplits = true,
   rootRef,
+  snap,
   style,
   ...props
 }: LayoutRootProps): ReactNode => {
@@ -77,6 +81,7 @@ const LayoutRoot = ({
     renderTabLabel,
     renderTabsetToolbar,
     resizableSplits: editable && resizableSplits && global.enableSplitResize !== false,
+    snap: snap ?? global.snap ?? null,
     splitDock: global.enableSplitDock !== false,
     tabLocation: global.tabLocation ?? "top",
     tabsetMinSize: global.tabSetMinSize ?? DEFAULT_TABSET_MIN_SIZE,

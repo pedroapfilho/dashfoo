@@ -5,6 +5,7 @@ import type {
   Dashfoo,
   DockLocation,
   Orientation,
+  SnapConfig,
   TabNode,
   TabsetNode,
 } from "@dashfoo/core";
@@ -97,6 +98,10 @@ type DashfooLayoutProps = {
   // `orientation` defaults to "column".
   resizableSplits?: boolean;
   responsive?: { maxWidth: number; orientation?: Orientation };
+  // Magnetic snap for split resize: the dragged boundary pulls to multiples of
+  // `step` (percent of the group) within `threshold`. A row may override this via
+  // its own `snap` attribute. Off when omitted; locked off in compact mode.
+  snap?: SnapConfig;
 };
 
 // The batteries-included component: owns the store (controlled or uncontrolled),
@@ -125,6 +130,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     renderTabsetToolbar,
     resizableSplits = true,
     responsive,
+    snap,
   } = props;
 
   const persistConfig = useMemo(
@@ -252,6 +258,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       renderTabsetToolbar={renderTabsetToolbar}
       resizableSplits={isCompact ? false : resizableSplits}
       rootRef={containerRef}
+      snap={snap}
     >
       <Layout.DragLayer>
         {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={view.layout} />}

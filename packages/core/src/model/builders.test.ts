@@ -95,6 +95,14 @@ describe("row", () => {
     expect(node.max).toEqual({ unit: "%", value: 90 });
     expect(node.min).toEqual({ unit: "px", value: 240 });
   });
+
+  test("passes a per-split snap config through to the row node", () => {
+    const node = row([tabset([tab("a", "A")]), tabset([tab("b", "B")])], {
+      snap: { step: 25, threshold: 5 },
+    });
+
+    expect(node.snap).toEqual({ step: 25, threshold: 5 });
+  });
 });
 
 describe("model", () => {

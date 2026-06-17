@@ -35,6 +35,8 @@
 
   /* splitters */
   --dashfoo-splitter-size: 1rem;
+  /* the grab pill turns this color while a magnetic snap is engaged */
+  --dashfoo-snap: var(--dashfoo-primary);
 
   /* dock indicators — component-scoped, derived from the semantic tokens
      (also consumed by the drag overlay's inline fallbacks) */
@@ -68,4 +70,5 @@
   /* re-declared so subtree-scoped dark re-resolves the var() references */
   --dashfoo-dock-fill: color-mix(in oklab, var(--dashfoo-primary) 10%, transparent);
   --dashfoo-dock-border: var(--dashfoo-ring);
+  --dashfoo-snap: var(--dashfoo-primary);
 }

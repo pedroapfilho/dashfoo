@@ -127,6 +127,13 @@ row([
 Nest a `row(..., { orientation: "column" })` inside the root to stack tabsets
 vertically in one column.
 
+To make splitters snap to a grid as the user drags, pass `snap` to
+`<DashfooLayout>` — `{ step: 25 }` for a fixed-percent grid, or
+`{ divisions: "panels" }` to snap to even splits by panel count (a 3-panel row
+snaps to thirds). Add `threshold` to widen the magnetic pull. It commits on
+release as one undo step. See [the model](/the-model#global-attributes) for
+per-row overrides.
+
 ## Step 4 — Map components to tabs — `src/panels.tsx`
 
 A tab's `component` string is a key. dashfoo resolves it to React content one of

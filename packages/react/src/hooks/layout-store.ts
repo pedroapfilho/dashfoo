@@ -1,6 +1,6 @@
 "use client";
 
-import type { Action, TabNode, TabsetNode } from "@dashfoo/core";
+import type { Action, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
@@ -24,6 +24,9 @@ type LayoutState = {
   renderTabLabel: ((tab: TabNode) => ReactNode) | undefined;
   renderTabsetToolbar: ((tabset: TabsetNode) => ReactNode) | undefined;
   resizableSplits: boolean;
+  // Magnetic snap defaults for split resize; null = no snapping. A row may still
+  // override this via its own `snap` attribute (read in row-view).
+  snap: SnapConfig | null;
   splitDock: boolean;
   tabLocation: "bottom" | "top";
   tabsetMinSize: number;
