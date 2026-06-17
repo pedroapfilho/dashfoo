@@ -155,7 +155,11 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     if (!group) {
       return;
     }
-    if (layoutsMatch(group.getLayout(), desiredLayout)) {
+    const current = group.getLayout();
+    const samePanelSet =
+      Object.keys(current).length === Object.keys(desiredLayout).length &&
+      Object.keys(desiredLayout).every((id) => id in current);
+    if (!samePanelSet || layoutsMatch(current, desiredLayout)) {
       return;
     }
 
@@ -255,7 +259,7 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
       disabled={!resizableSplits}
       elementRef={groupElement}
       groupRef={groupRef}
-      key={node.children.map((child) => child.id).join("|")}
+      key={node.id}
       onLayoutChange={snapActive ? handleLayoutChange : undefined}
       onLayoutChanged={handleLayoutChanged}
       orientation={orientation}
