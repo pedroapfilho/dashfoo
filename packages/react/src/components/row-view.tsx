@@ -156,8 +156,6 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
       return;
     }
     const current = group.getLayout();
-    // Skip the imperative sync while the panel set is changing: rrp is
-    // mid-reconcile and setLayout for the new count throws; defaultSize covers it.
     const samePanelSet =
       Object.keys(current).length === Object.keys(desiredLayout).length &&
       Object.keys(desiredLayout).every((id) => id in current);
@@ -261,8 +259,6 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
       disabled={!resizableSplits}
       elementRef={groupElement}
       groupRef={groupRef}
-      // Stable row id, not the child-id set: keying on children remounted the
-      // Group on every add/remove, looping rrp's unmount-time force-update.
       key={node.id}
       onLayoutChange={snapActive ? handleLayoutChange : undefined}
       onLayoutChanged={handleLayoutChanged}
