@@ -105,11 +105,8 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
       return;
     }
     const current = group.getLayout();
-    // When the panel SET changed (a tabset was added or removed), react-resizable-panels
-    // is mid-reconcile and an imperative setLayout for the new panel count throws
-    // "Invalid N panel layout". The panels' own defaultSize already encodes the
-    // weights, so skip the imperative sync on a structural change and let
-    // reconciliation settle; only sync when the same panels' weights drifted.
+    // Skip the imperative sync while the panel set is changing: rrp is
+    // mid-reconcile and setLayout for the new count throws; defaultSize covers it.
     const samePanelSet =
       Object.keys(current).length === Object.keys(desiredLayout).length &&
       Object.keys(desiredLayout).every((id) => id in current);
@@ -162,14 +159,8 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
       data-dashfoo="row"
       disabled={!resizableSplits}
       groupRef={groupRef}
-      // Key on the stable row id, NOT the child-id set. Keying on the children
-      // remounted the whole resize Group whenever a panel was added/removed (e.g.
-      // a tab moved out, collapsing a tabset) — and react-resizable-panels
-      // force-updates inside its own unmount cleanup, which loops ("Maximum
-      // update depth exceeded"). With a stable key the Group reconciles its
-      // panels in place (each child Panel is keyed by id below); weight changes
-      // are applied imperatively via the setLayout effect, so no remount is
-      // needed to resize.
+      // Stable row id, not the child-id set: keying on children remounted the
+      // Group on every add/remove, looping rrp's unmount-time force-update.
       key={node.id}
       onLayoutChanged={handleLayoutChanged}
       orientation={orientation}
