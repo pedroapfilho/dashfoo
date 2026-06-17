@@ -1,5 +1,37 @@
 # @dashfoo/react
 
+## 0.4.0
+
+### Minor Changes
+
+- bd4dbda: Configurable magnetic snap points for split resize. Set `snap` on `DashfooLayout` (or `global.snap` in the model, or per-row via a `RowNode`'s `snap`) and the dragged boundary pulls onto a grid while the pointer is within `threshold` percent (default `4`), sticking until it leaves the threshold and committing as a single undo step on release. The grid is the union of `step` (multiples of a fixed percent) and `divisions` (even splits — multiples of `100/d`, where `d` is the number, or `"panels"` to divide by the row's panel count, so a 3-panel row snaps to thirds and a 4-panel row to quarters). The panels glide smoothly onto the snap line (`--dashfoo-snap-transition`, scoped to the snapping group so free-drag tracking stays 1:1 with the pointer) and the active splitter highlights (`data-dashfoo-snapped`, themed by `--dashfoo-snap`) while a snap is engaged — both honor `prefers-reduced-motion`. `{ step: 0 }` on a row opts it out of an inherited default; snapping is locked off in compact mode.
+
+  The engine adds the pure `snapSizes` / `resolveSnapTargets` / `snapEnabled` helpers and a `SnapConfig` (`snapSchema`) on `globalAttributesSchema` and `rowNodeSchema`; built on rrp's continuous `onLayoutChange` + `setLayout`, with `onLayoutChanged` committing the snapped weights.
+
+- 6516f6c: Responsive lock-on-mobile. `DashfooLayout` gains a `responsive={{ maxWidth, orientation? }}` prop: at or below `maxWidth` (measured on the layout's own container) it renders a stacked column and locks tab/tabset drag and split resize, leaving tap-to-switch and maximize. The stacked view is a derived projection of the model — the canonical model is never mutated, so the layout is never remounted and widening back restores the desktop arrangement exactly (undo history, persistence, selection, and mounted panels all survive the breakpoint cross).
+
+  A new `useContainerWidth()` hook (`[ref, width]` via `ResizeObserver`) exposes the same building block for hand-built `Layout.*` layouts, and `Layout.Root` now accepts a `rootRef` to measure its root element.
+
+  Breaking: `useResponsiveModel` no longer returns `defaultModel`/`key` (the old remount-based contract). It now returns `{ breakpoint, containerRef, model, isCompact, draggableTabs, draggableTabsets, resizableSplits }` and `Breakpoint` gains an optional `compact` flag — feed the model and lock flags as reactive props (no `key`, no remount). The pre-existing `key`-remount pattern destroyed store, history, and tab state on every breakpoint cross; this replaces it.
+
+### Patch Changes
+
+- 87206a1: Bump the bundled `@dnd-kit/dom` from `0.4.0` to `^0.5.0`. No API or drag-behavior changes — the drag adapter and the full Playwright drag/dock e2e suite pass unchanged.
+- bb86e9a: Fix "Maximum update depth exceeded" crash when a tab move adds or removes a panel.
+
+  The resize `Group` was keyed on the concatenation of its children's ids, so it
+  remounted whenever a row's child set changed (e.g. dragging a tab out of a
+  tabset, collapsing it). react-resizable-panels force-updates inside its own
+  unmount cleanup, and remounting the Group during that commit looped. The Group
+  is now keyed on the stable row id and reconciles its panels in place. The
+  imperative layout sync also now skips when the panel set changed (the panels'
+  `defaultSize` already encodes the weights), avoiding an "Invalid N panel layout"
+  error that the in-place reconciliation otherwise surfaced.
+
+- Updated dependencies [c42802b]
+- Updated dependencies [bd4dbda]
+  - @dashfoo/core@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes
