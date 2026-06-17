@@ -120,6 +120,26 @@ describe("reducer", () => {
     expect(next.global.tabLocation).toBe("top");
   });
 
+  test("updateGlobalAttributes sets a global snap config", () => {
+    const next = reducer(baseModel(), {
+      attrs: { snap: { step: 25, threshold: 5 } },
+      type: "updateGlobalAttributes",
+    });
+
+    expect(next.global.snap).toEqual({ step: 25, threshold: 5 });
+  });
+
+  test("updateNodeAttributes sets a per-row snap config that survives normalize", () => {
+    const next = reducer(baseModel(), {
+      attrs: { snap: { step: 50 } },
+      nodeId: "root",
+      type: "updateNodeAttributes",
+    });
+
+    expect(next.layout.snap).toEqual({ step: 50 });
+    expect(next.layout.children).toHaveLength(2);
+  });
+
   test("does not mutate the input model", () => {
     const input = baseModel();
     reducer(input, { name: "X", tabId: "t1", type: "renameTab" });

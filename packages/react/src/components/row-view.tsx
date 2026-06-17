@@ -1,8 +1,9 @@
 "use client";
 
-import type { Dimension, RowNode, TabsetNode } from "@dashfoo/core";
+import type { Dimension, RowNode, SnapConfig, TabsetNode } from "@dashfoo/core";
+import { snapEnabled, snapSizes } from "@dashfoo/core";
 import type { CSSProperties, ReactNode } from "react";
-import { Fragment, useLayoutEffect, useMemo, useRef } from "react";
+import { Fragment, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { GroupImperativeHandle, Layout, Orientation } from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
@@ -14,6 +15,10 @@ import { TabsetView } from "./tabset/tabset-view";
 // react-resizable-panels. It maps the model's responsive weights to rrp's
 // percentage layout and unit-typed min/max constraints to rrp sizes, and commits
 // a drag (on release) back to the document as an adjustSplit action.
+//
+// Magnetic snapping is layered on top: rrp's continuous onLayoutChange pulls the
+// dragged boundary onto a grid (groupRef.setLayout), and onLayoutChanged commits
+// the already-snapped weights as a single undo step on release.
 
 const dimensionToSize = (dimension: Dimension): string => `${dimension.value}${dimension.unit}`;
 const dimensionToPixels = (dimension: Dimension | undefined): number | undefined =>
@@ -27,6 +32,16 @@ type LayoutChild = RowNode["children"][number];
 const layoutFromWeights = (children: RowNode["children"], total: number): Layout =>
   children.reduce<Layout>((layout, child) => {
     layout[child.id] = ((child.weight ?? 1) / total) * 100;
+    return layout;
+  }, {});
+
+// rrp's id-keyed Layout <-> the ordered percentage array the pure snap math wants.
+const orderedFromLayout = (layout: Layout, children: RowNode["children"]): Array<number> =>
+  children.map((child) => layout[child.id] ?? 0);
+
+const layoutFromOrdered = (sizes: Array<number>, children: RowNode["children"]): Layout =>
+  children.reduce<Layout>((layout, child, index) => {
+    layout[child.id] = sizes[index] ?? 0;
     return layout;
   }, {});
 
@@ -85,6 +100,11 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
   const dispatch = useLayout((state) => state.dispatch);
   const resizableSplits = useLayout((state) => state.resizableSplits);
   const tabsetMinSize = useLayout((state) => state.tabsetMinSize);
+  const globalSnap = useLayout((state) => state.snap);
+  // A row's own snap attribute overrides the layout-wide default; an empty config
+  // (or step 0 with no divisions) means this row does not snap.
+  const effectiveSnap: SnapConfig | null = node.snap ?? globalSnap;
+  const snapActive = snapEnabled(effectiveSnap);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
   const total = node.children.reduce((sum, child) => sum + (child.weight ?? 1), 0);
   const desiredLayout = useMemo(
@@ -97,7 +117,38 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
   // spurious undo entry — so the first call (per mount) is ignored.
   const measured = useRef(false);
   const groupRef = useRef<GroupImperativeHandle | null>(null);
+  const groupElement = useRef<HTMLDivElement | null>(null);
   const syncing = useRef(false);
+  // Which boundary the pointer grabbed (captured on the separator's pointerdown),
+  // a re-entrancy guard for our own setLayout, and the snapped boundary mirrored
+  // into state only on engage/disengage so the highlight re-renders ~twice a drag.
+  const activeBoundary = useRef<number | null>(null);
+  const snapping = useRef(false);
+  const snappedBoundaryRef = useRef<number | null>(null);
+  const [snappedBoundary, setSnappedBoundary] = useState<number | null>(null);
+
+  const setHighlight = (boundary: number | null): void => {
+    if (boundary !== snappedBoundaryRef.current) {
+      snappedBoundaryRef.current = boundary;
+      setSnappedBoundary(boundary);
+    }
+  };
+
+  // Toggle the flex transition on the group imperatively (not via React state):
+  // it must be live in the DOM before the snapping setLayout writes flex this same
+  // frame, so the panels glide onto the grid line. Cleared on free-tracking frames
+  // so dragging stays 1:1 with the pointer (snap-out is instant).
+  const setSnapTransition = (active: boolean): void => {
+    const element = groupElement.current;
+    if (!element) {
+      return;
+    }
+    if (active) {
+      element.dataset.dashfooSnapping = "true";
+    } else {
+      delete element.dataset.dashfooSnapping;
+    }
+  };
 
   useLayoutEffect(() => {
     const group = groupRef.current;
@@ -125,6 +176,47 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     };
   }, [desiredLayout]);
 
+  // Fires on every pointer move during a drag. Pull the grabbed boundary onto the
+  // nearest grid target and push it back into rrp so the panel visibly sticks. The
+  // `snapping` guard plus the idempotence check keep our own setLayout from
+  // re-triggering this and prevent jitter at the threshold edge, whatever rrp's
+  // re-fire timing.
+  const handleLayoutChange = (layout: Layout): void => {
+    if (snapping.current || syncing.current || !resizableSplits) {
+      return;
+    }
+    if (effectiveSnap === null || !snapActive) {
+      return;
+    }
+    const boundary = activeBoundary.current;
+    if (boundary === null) {
+      return;
+    }
+
+    const { sizes, snapped } = snapSizes(
+      orderedFromLayout(layout, node.children),
+      boundary,
+      effectiveSnap,
+    );
+    setHighlight(snapped ? boundary : null);
+    if (!snapped) {
+      // Pointer tracking resumes 1:1 — drop the transition so it never lags.
+      setSnapTransition(false);
+      return;
+    }
+
+    // Arm the glide before writing the snapped layout this frame.
+    setSnapTransition(true);
+    const group = groupRef.current;
+    const target = layoutFromOrdered(sizes, node.children);
+    if (!group || layoutsMatch(layout, target)) {
+      return;
+    }
+    snapping.current = true;
+    group.setLayout(target);
+    snapping.current = false;
+  };
+
   const handleLayoutChanged = (layout: Layout): void => {
     if (!measured.current) {
       measured.current = true;
@@ -133,12 +225,21 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     if (syncing.current) {
       return;
     }
+    const boundary = activeBoundary.current;
+    activeBoundary.current = null;
+    setHighlight(null);
+    setSnapTransition(false);
     // Belt over the disabled Group/Separator: a non-resizable row never commits
     // an adjustSplit, even if rrp reports a layout change for another reason.
     if (!resizableSplits) {
       return;
     }
-    const weights = node.children.map((child) => layout[child.id] ?? child.weight ?? 1);
+    let weights = node.children.map((child) => layout[child.id] ?? child.weight ?? 1);
+    // Re-snap the committed value so the model lands exactly on the grid (one undo
+    // step), regardless of where the final frame left rrp.
+    if (boundary !== null && effectiveSnap !== null && snapActive) {
+      weights = snapSizes(weights, boundary, effectiveSnap).sizes;
+    }
     const weightsChanged = weights.some(
       (weight, index) => Math.abs(weight - (node.children[index]?.weight ?? 1)) > WEIGHT_EPSILON,
     );
@@ -158,10 +259,12 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     <Group
       data-dashfoo="row"
       disabled={!resizableSplits}
+      elementRef={groupElement}
       groupRef={groupRef}
       // Stable row id, not the child-id set: keying on children remounted the
       // Group on every add/remove, looping rrp's unmount-time force-update.
       key={node.id}
+      onLayoutChange={snapActive ? handleLayoutChange : undefined}
       onLayoutChanged={handleLayoutChanged}
       orientation={orientation}
       style={groupStyle}
@@ -179,7 +282,20 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
           <Fragment key={child.id}>
             {/* The separator stays mounted when resizing is off — removing it
                 would collapse the theme-sized gutter and reflow every panel. */}
-            {index > 0 ? <Separator data-dashfoo="splitter" disabled={!resizableSplits} /> : null}
+            {index > 0 ? (
+              <Separator
+                data-dashfoo="splitter"
+                data-dashfoo-snapped={snappedBoundary === index - 1 ? "true" : undefined}
+                disabled={!resizableSplits}
+                onPointerDown={
+                  snapActive && resizableSplits
+                    ? () => {
+                        activeBoundary.current = index - 1;
+                      }
+                    : undefined
+                }
+              />
+            ) : null}
             <Panel defaultSize={`${percent}%`} id={child.id} maxSize={max} minSize={min}>
               {child.type === "row" ? (
                 <RowView node={child} renderTabset={renderTabset} />

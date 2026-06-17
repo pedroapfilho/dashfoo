@@ -28,6 +28,7 @@ const OverviewPage = (): ReactNode => {
         factory={renderPanel}
         persist="dashfoo:demo:overview"
         ref={layout}
+        responsive={{ maxWidth: 720 }}
       />
     </DemoStage>
   );

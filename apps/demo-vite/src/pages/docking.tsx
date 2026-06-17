@@ -1,7 +1,8 @@
+import type { SnapConfig } from "@dashfoo/core";
 import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooDragProvider, DashfooLayout, useExternalTabSource } from "@dashfoo/react";
 import { Grid2x2, GripVertical, Plus, RotateCcw } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import { useRef, useState } from "react";
 
 import { DropZoneOverlay } from "../components/drop-zone-overlay";
@@ -47,13 +48,29 @@ const WidgetCard = ({
   );
 };
 
+// "Even" tracks the panel count (a 3-panel row snaps to thirds, 4 to quarters);
+// "Thirds" forces a 1/3 grid regardless of count; the rest are fixed-percent grids.
+const SNAP_CONFIGS: Record<string, SnapConfig | undefined> = {
+  "25%": { step: 25 },
+  "50%": { step: 50 },
+  Even: { divisions: "panels" },
+  Off: undefined,
+  Thirds: { divisions: 3 },
+};
+const SNAP_KEYS = ["Off", "Even", "Thirds", "25%", "50%"] as const;
+
 const DockingPage = (): ReactNode => {
   const layout = useRef<DashfooHandle>(null);
   const layoutContainer = useRef<HTMLDivElement>(null);
   const [showDropZones, setShowDropZones] = useState(true);
+  const [snapKey, setSnapKey] = useState<string>("25%");
 
   const handleReset = (): void => {
     layout.current?.resetLayout();
+  };
+
+  const handleSnapChange = (event: ChangeEvent<HTMLSelectElement>): void => {
+    setSnapKey(event.target.value);
   };
 
   const handleToggleDropZones = (): void => {
@@ -75,6 +92,20 @@ const DockingPage = (): ReactNode => {
     <DemoStage
       actions={
         <>
+          <label className="inline-flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+            Snap
+            <select
+              className="rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-xs text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
+              onChange={handleSnapChange}
+              value={snapKey}
+            >
+              {SNAP_KEYS.map((key) => (
+                <option key={key} value={key}>
+                  {key}
+                </option>
+              ))}
+            </select>
+          </label>
           <Button icon={<Grid2x2 size={14} />} onClick={handleToggleDropZones}>
             {showDropZones ? "Hide drop zones" : "Show drop zones"}
           </Button>
@@ -97,7 +128,13 @@ const DockingPage = (): ReactNode => {
             ))}
           </aside>
           <div className="min-h-0 min-w-0 flex-1" ref={layoutContainer}>
-            <DashfooLayout defaultModel={dockingModel()} factory={renderPanel} ref={layout} />
+            <DashfooLayout
+              defaultModel={dockingModel()}
+              factory={renderPanel}
+              ref={layout}
+              responsive={{ maxWidth: 720 }}
+              snap={SNAP_CONFIGS[snapKey]}
+            />
           </div>
         </div>
         <DropZoneOverlay containerRef={layoutContainer} enabled={showDropZones} />

@@ -351,6 +351,27 @@
   outline: 2px solid var(--dashfoo-ring);
   outline-offset: 2px;
 }
+/* magnetic snap engaged: the grab pill takes the snap color and grows, so a
+   locked-on boundary reads as a distinct state from plain hover. Placed after the
+   hover rule so it wins at equal specificity while both are active mid-drag. */
+[data-separator][data-dashfoo-snapped="true"]::before {
+  background: var(--dashfoo-snap);
+}
+[data-separator][data-dashfoo-snapped="true"][aria-orientation="vertical"]::before {
+  width: 3px;
+  height: 3rem;
+}
+[data-separator][data-dashfoo-snapped="true"][aria-orientation="horizontal"]::before {
+  width: 3rem;
+  height: 3px;
+}
+/* magnetic snap glide: while a boundary is locked to the grid, ease the group's
+   own panels onto the line instead of jumping — the same morph the drop indicator
+   uses. The adapter sets data-dashfoo-snapping only for the snap frames and only
+   on the snapping group, so free-drag tracking stays 1:1 with the pointer. */
+[data-dashfoo="row"][data-dashfoo-snapping="true"] > [data-panel] {
+  transition: var(--dashfoo-snap-transition, flex-grow 140ms cubic-bezier(0.4, 0, 0.2, 1));
+}
 /* a disabled separator (static layout) keeps its gutter size but loses every
    resize cue: no grab pill, no resize cursor. Doubled attribute selector to
    outweigh the per-orientation cursor rules above. */
@@ -361,9 +382,28 @@
   display: none;
 }
 
-/* respect reduced-motion: stop the dock indicator gliding between positions */
+/* respect reduced-motion: stop the dock indicator gliding between positions and
+   the panels gliding onto a snap line */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --dashfoo-dock-transition: none;
+    --dashfoo-snap-transition: none;
+  }
+}
+
+/* coarse pointers (touch): the responsive lock-on-mobile view disables drag, so
+   tap-to-switch is the only way to change tabs — grow the tab hit target to the
+   2.75rem (44px) touch minimum and add breathing room between tabs. */
+@media (pointer: coarse) {
+  [data-dashfoo="tab"] {
+    min-height: 2.75rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  [data-dashfoo="tab-close"],
+  [data-dashfoo="tabset-maximize"],
+  [data-dashfoo="tab-overflow"] {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
   }
 }

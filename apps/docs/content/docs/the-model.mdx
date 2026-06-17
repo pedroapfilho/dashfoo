@@ -98,6 +98,7 @@ type RowNode = {
   max?: Dimension;
   min?: Dimension;
   orientation: "row" | "column";
+  snap?: { step?: number; divisions?: number | "panels"; threshold?: number };
   type: "row";
   weight?: number;
 };
@@ -110,7 +111,9 @@ inside a row, and the resizable splitters between them). `weight` is the child's
 share of its parent's space relative to its siblings; the root row's own
 `weight` is ignored. `min` and `max` are optional `Dimension` constraints on the
 row as a whole — useful for clamping a nested column without constraining each
-tabset inside it. See [Dimensions](#dimensions) below.
+tabset inside it. See [Dimensions](#dimensions) below. `snap` overrides the
+layout-wide `global.snap` for this row's splitters; an empty `{}` opts a single
+row out of an inherited snap default.
 
 ### `TabsetNode` — a tabbed pane
 
@@ -207,6 +210,7 @@ built-in defaults."
 type GlobalAttributes = {
   enableSplitDock?: boolean;
   enableSplitResize?: boolean;
+  snap?: { step?: number; divisions?: number | "panels"; threshold?: number };
   splitterSize?: number;
   tabEnableClose?: boolean;
   tabEnableDrag?: boolean;
@@ -231,6 +235,16 @@ their themed size, so nothing reflows).
 `splitterSize` sets the resize-handle gutter in pixels, and `tabSetMinSize`
 sets the default tabset minimum size in pixels. The React adapter uses `320`
 when `tabSetMinSize` is omitted.
+`snap` turns on magnetic snapping for splitter drags: the dragged boundary pulls
+onto a grid while within `threshold` percent (default `4`), then commits on
+release as one undo step. The grid is the union of two optional sources — `step`
+(multiples of a fixed percent) and `divisions` (even splits: multiples of
+`100/d`, where `d` is the number, or `"panels"` to divide by the row's own panel
+count, so a 3-panel row snaps to thirds and a 4-panel row to quarters). Any
+`RowNode` can override the layout-wide `snap` with its own; an empty `{}` (or
+`{ step: 0 }` with no `divisions`) opts that row out. The `DashfooLayout` `snap`
+prop replaces this global when both are set, and compact mode locks it off with
+the rest of resize.
 
 These globals travel with the serialized document. The renderer-level "make the
 whole dashboard static" switch is deliberately not a global — it is the

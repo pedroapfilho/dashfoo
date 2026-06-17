@@ -3,7 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dashfoo · Vite demo</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>dashfoo · docking-layout demos</title>
+    <meta
+      name="description"
+      content="Live demos of dashfoo, a headless React docking-layout library — tabs, tabsets, splits, and drag-dock for VS-Code-style dashboards."
+    />
+    <meta name="theme-color" id="theme-color" content="#ffffff" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="dashfoo · docking-layout demos" />
+    <meta
+      property="og:description"
+      content="Live demos of dashfoo, a headless React docking-layout library — tabs, tabsets, splits, and drag-dock for VS-Code-style dashboards."
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="dashfoo · docking-layout demos" />
+    <meta
+      name="twitter:description"
+      content="Live demos of dashfoo, a headless React docking-layout library — tabs, tabsets, splits, and drag-dock for VS-Code-style dashboards."
+    />
     <script>
       // Apply the theme before first paint so a dark preference never flashes
       // light. The React toggle in root.tsx owns it from there.
@@ -20,6 +38,12 @@
         if (dark) {
           document.documentElement.dataset.dashfooTheme = "dark";
         }
+        // Match the browser chrome to the resolved theme's background. The
+        // toggle in root.tsx keeps this in sync, so it tracks the manual
+        // choice rather than only prefers-color-scheme.
+        document
+          .getElementById("theme-color")
+          ?.setAttribute("content", dark ? "#0a0a0a" : "#ffffff");
       })();
     </script>
     <style>

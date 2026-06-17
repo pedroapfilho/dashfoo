@@ -1,7 +1,7 @@
 "use client";
 
-import type { Action, Dashfoo, TabNode, TabsetNode } from "@dashfoo/core";
-import type { ComponentProps, CSSProperties, ReactNode } from "react";
+import type { Action, Dashfoo, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
+import type { ComponentProps, CSSProperties, ReactNode, Ref } from "react";
 import { useLayoutEffect, useState } from "react";
 
 import type { LayoutState } from "../hooks/layout-store";
@@ -29,6 +29,12 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
   renderTabLabel?: (tab: TabNode) => ReactNode;
   renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
   resizableSplits?: boolean;
+  // Forwarded onto the root element so a width observer can measure the actual
+  // container — the hook behind responsive lock-on-mobile.
+  rootRef?: Ref<HTMLDivElement>;
+  // Magnetic snap default for split resize; the prop replaces (not merges with)
+  // model.global.snap when both are present.
+  snap?: SnapConfig;
 };
 
 // The frame of a hand-built layout: creates the scoped layout store every part
@@ -50,6 +56,8 @@ const LayoutRoot = ({
   renderTabLabel,
   renderTabsetToolbar,
   resizableSplits = true,
+  rootRef,
+  snap,
   style,
   ...props
 }: LayoutRootProps): ReactNode => {
@@ -73,6 +81,7 @@ const LayoutRoot = ({
     renderTabLabel,
     renderTabsetToolbar,
     resizableSplits: editable && resizableSplits && global.enableSplitResize !== false,
+    snap: snap ?? global.snap ?? null,
     splitDock: global.enableSplitDock !== false,
     tabLocation: global.tabLocation ?? "top",
     tabsetMinSize: global.tabSetMinSize ?? DEFAULT_TABSET_MIN_SIZE,
@@ -98,7 +107,7 @@ const LayoutRoot = ({
 
   return (
     <LayoutStoreContext.Provider value={store}>
-      <div {...props} data-dashfoo="layout" style={layoutStyle}>
+      <div {...props} data-dashfoo="layout" ref={rootRef} style={layoutStyle}>
         {children}
       </div>
     </LayoutStoreContext.Provider>

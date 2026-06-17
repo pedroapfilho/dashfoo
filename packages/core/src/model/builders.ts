@@ -13,6 +13,7 @@ import type {
   GlobalAttributes,
   Json,
   RowNode,
+  SnapConfig,
   TabNode,
   TabsetNode,
 } from "./schema";
@@ -68,6 +69,7 @@ type RowOptions = {
   max?: number | Dimension;
   min?: number | Dimension;
   orientation?: RowNode["orientation"];
+  snap?: SnapConfig;
   weight?: number;
 };
 

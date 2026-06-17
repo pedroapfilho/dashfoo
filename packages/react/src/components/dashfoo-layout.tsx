@@ -1,12 +1,21 @@
 "use client";
 
-import type { Action, Dashfoo, DockLocation, TabNode, TabsetNode } from "@dashfoo/core";
-import { findTabset } from "@dashfoo/core";
+import type {
+  Action,
+  Dashfoo,
+  DockLocation,
+  Orientation,
+  SnapConfig,
+  TabNode,
+  TabsetNode,
+} from "@dashfoo/core";
+import { findTabset, stackModel } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
-import { forwardRef, useCallback, useImperativeHandle, useMemo } from "react";
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from "react";
 
 import type { PersistConfig, StorageAdapter } from "../hooks/persistence";
 import { localStorageAdapter, usePersistence } from "../hooks/persistence";
+import { useContainerWidth } from "../hooks/responsive";
 import { useDashfooStore } from "../hooks/store";
 
 import { Layout } from "./layout";
@@ -83,7 +92,16 @@ type DashfooLayoutProps = {
   renamableTabs?: boolean;
   renderTabLabel?: (tab: TabNode) => ReactNode;
   renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
+  // At or below `maxWidth` (the layout's own container width, not the viewport)
+  // the layout renders one stacked column and locks drag and resize. The stack is
+  // a view-only projection, so widening back is lossless and never remounts.
+  // `orientation` defaults to "column".
   resizableSplits?: boolean;
+  responsive?: { maxWidth: number; orientation?: Orientation };
+  // Magnetic snap for split resize: the dragged boundary pulls to multiples of
+  // `step` (percent of the group) within `threshold`. A row may override this via
+  // its own `snap` attribute. Off when omitted; locked off in compact mode.
+  snap?: SnapConfig;
 };
 
 // The batteries-included component: owns the store (controlled or uncontrolled),
@@ -111,6 +129,8 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     renderTabLabel,
     renderTabsetToolbar,
     resizableSplits = true,
+    responsive,
+    snap,
   } = props;
 
   const persistConfig = useMemo(
@@ -190,29 +210,58 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     [components, factory],
   );
 
+  // While compact, render a stacked projection; the canonical store.model is
+  // untouched (ids survive stackModel, so tap-to-select still routes), so widening
+  // back is lossless.
+  const [containerRef, width] = useContainerWidth();
+  const isCompact = responsive !== undefined && width <= responsive.maxWidth;
+  const view = useMemo(
+    () => (isCompact ? stackModel(store.model, responsive?.orientation) : store.model),
+    [isCompact, responsive?.orientation, store.model],
+  );
+
+  // rrp auto-fires onLayoutChanged as it re-measures the stacked structure, which
+  // would commit an adjustSplit and corrupt the canonical model. The lock flags
+  // can't gate it — they reach the resize adapter via the layout store one commit
+  // late, so resizableSplits is stale-true during the swap. Gate at the dispatch
+  // boundary instead: a stable dispatch reads isCompact from a ref written during
+  // render (current before rrp's onLayoutChanged, which can fire in a child effect
+  // ahead of this component's effects).
+  const isCompactRef = useRef(isCompact);
+  isCompactRef.current = isCompact;
+  const dispatch = useCallback(
+    (action: Action): void => {
+      if (isCompactRef.current && action.type === "adjustSplit") {
+        return;
+      }
+      store.dispatch(action);
+    },
+    [store],
+  );
+
   // A maximized tabset fills the frame on its own; otherwise the row tree renders.
-  const maximized = store.model.maximizedTabsetId
-    ? findTabset(store.model, store.model.maximizedTabsetId)
-    : undefined;
+  const maximized = view.maximizedTabsetId ? findTabset(view, view.maximizedTabsetId) : undefined;
 
   return (
     <Layout.Root
       closableTabs={closableTabs}
-      dispatch={store.dispatch}
-      draggableTabs={draggableTabs}
-      draggableTabsets={draggableTabsets}
+      dispatch={dispatch}
+      draggableTabs={isCompact ? false : draggableTabs}
+      draggableTabsets={isCompact ? false : draggableTabsets}
       editable={editable}
       keepMounted={keepMounted}
       maximizable={maximizable}
-      model={store.model}
+      model={view}
       renamableTabs={renamableTabs}
       renderTab={renderTab}
       renderTabLabel={renderTabLabel}
       renderTabsetToolbar={renderTabsetToolbar}
-      resizableSplits={resizableSplits}
+      resizableSplits={isCompact ? false : resizableSplits}
+      rootRef={containerRef}
+      snap={snap}
     >
       <Layout.DragLayer>
-        {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={store.model.layout} />}
+        {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={view.layout} />}
       </Layout.DragLayer>
     </Layout.Root>
   );
