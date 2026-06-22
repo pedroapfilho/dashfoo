@@ -42,12 +42,12 @@ const TabsetContent = ({ children, style, ...props }: TabsetContentProps): React
   if (keepMounted && node.children.length > 0) {
     return node.children.map((tab, index) => (
       <div
+        key={tab.id}
         {...props}
         aria-labelledby={tabDomId(node.id, tab.id)}
         data-dashfoo="tabcontent"
         hidden={index !== visualSelected || undefined}
         id={index === visualSelected ? panelDomId(node.id) : undefined}
-        key={tab.id}
         role={index === visualSelected ? "tabpanel" : undefined}
         style={mergedStyle}
         tabIndex={index === visualSelected ? 0 : undefined}

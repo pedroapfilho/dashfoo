@@ -3,7 +3,7 @@
    primitive in three parts; splitting trigger/content into separate files
    would be a worse abstraction than the standard single-file pattern. */
 import type { ComponentPropsWithRef, ReactNode } from "react";
-import { createContext, use, useId } from "react";
+import { createContext, use, useId, useMemo } from "react";
 
 import { cn } from "../../lib/cn";
 
@@ -17,7 +17,8 @@ const Popover = ({ children }: { children: ReactNode }) => {
   const rawId = useId();
   // useId returns ":r0:" style strings — strip colons for a valid HTML id
   const popoverId = `fd-popover-${rawId.replaceAll(":", "")}`;
-  return <PopoverContext value={{ popoverId }}>{children}</PopoverContext>;
+  const contextValue = useMemo<PopoverContextValue>(() => ({ popoverId }), [popoverId]);
+  return <PopoverContext value={contextValue}>{children}</PopoverContext>;
 };
 
 type PopoverTriggerProps = ComponentPropsWithRef<"button">;
