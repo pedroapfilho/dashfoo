@@ -24,6 +24,9 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
   keepMounted?: boolean;
   maximizable?: boolean;
   model: Dashfoo;
+  // Tabsets show a pop-out control that detaches the panel into its own window.
+  // Off by default — opt in, since it changes the model's window structure.
+  poppable?: boolean;
   renamableTabs?: boolean;
   renderTab: (tab: TabNode) => ReactNode;
   renderTabLabel?: (tab: TabNode) => ReactNode;
@@ -51,6 +54,7 @@ const LayoutRoot = ({
   keepMounted = false,
   maximizable = true,
   model,
+  poppable = false,
   renamableTabs = true,
   renderTab,
   renderTabLabel,
@@ -76,6 +80,8 @@ const LayoutRoot = ({
     keepMounted,
     maximizable: maximizable && global.tabSetEnableMaximize !== false,
     maximizedTabsetId: model.maximizedTabsetId,
+    // Detaching is a structural edit, so it rides the editable AND-term.
+    poppable: editable && poppable,
     renamableTabs: editable && renamableTabs && global.tabEnableRename !== false,
     renderTab,
     renderTabLabel,

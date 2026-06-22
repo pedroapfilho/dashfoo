@@ -1,9 +1,22 @@
 import { createNodeId } from "../model/ids";
 import { normalize } from "../model/invariants";
-import type { Dashfoo, RowNode, TabNode, TabsetNode } from "../model/schema";
-import { findAttributedNode, findRow, findTab, findTabset, findTabsetParent } from "../model/tree";
+import type { Dashfoo, Geometry, RowNode, TabNode, TabsetNode, WindowNode } from "../model/schema";
+import {
+  findAttributedNode,
+  findRootContaining,
+  findRow,
+  findTab,
+  findTabset,
+  findTabsetParent,
+  findWindow,
+} from "../model/tree";
 
 import type { Action, DockLocation } from "./actions";
+
+// Default popup rect when the caller doesn't measure the source (e.g. a
+// programmatic detach). The React adapter normally supplies the tab's on-screen
+// rect so the window opens where the panel was.
+const DEFAULT_WINDOW_GEOMETRY: Geometry = { height: 600, left: 120, top: 120, width: 800 };
 
 const assertNever = (value: never): never => {
   throw new Error(`Unhandled action: ${JSON.stringify(value)}`);
@@ -58,7 +71,10 @@ const placeBesideTarget = (
   location: DockLocation,
 ): void => {
   const targetTabset = findTabset(draft, targetId);
-  const found = findTabsetParent(draft.layout, targetId);
+  // Operate within whichever root holds the target (main layout or a window),
+  // so a split docked inside a popped-out window stays in that window.
+  const targetRoot = findRootContaining(draft, targetId) ?? draft.layout;
+  const found = findTabsetParent(targetRoot, targetId);
   if (!targetTabset || !found) {
     return;
   }
@@ -118,6 +134,148 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
   placeBesideTarget(draft, newTabset, targetId, location);
 };
 
+const tabsetsInRow = (row: RowNode, acc: Array<TabsetNode>): void => {
+  for (const child of row.children) {
+    if (child.type === "tabset") {
+      acc.push(child);
+    } else {
+      tabsetsInRow(child, acc);
+    }
+  }
+};
+
+// Wrap a detached node in the row → tabset scaffolding a window's layout needs.
+const wrapTabInLayout = (tab: TabNode): RowNode => ({
+  children: [{ children: [tab], id: createNodeId("tabset"), selected: 0, type: "tabset" }],
+  id: createNodeId("row"),
+  orientation: "row",
+  type: "row",
+});
+
+const wrapTabsetInLayout = (tabset: TabsetNode): RowNode => ({
+  children: [tabset],
+  id: createNodeId("row"),
+  orientation: "row",
+  type: "row",
+});
+
+// Append a new detached window holding `layout`, and move focus to its first
+// tabset so active-tabset/keyboard logic tracks the popped-out panel. `windowId`
+// is supplied when the React adapter pre-opened the browser window in the click
+// gesture, so the model node and the live window agree on one id.
+const pushWindow = (
+  draft: Dashfoo,
+  layout: RowNode,
+  geometry: Geometry | undefined,
+  windowId: string | undefined,
+): void => {
+  const window: WindowNode = {
+    geometry: geometry ?? DEFAULT_WINDOW_GEOMETRY,
+    id: windowId ?? createNodeId("window"),
+    layout,
+    type: "window",
+  };
+  draft.windows = [...(draft.windows ?? []), window];
+
+  const tabsets: Array<TabsetNode> = [];
+  tabsetsInRow(layout, tabsets);
+  const first = tabsets[0];
+  if (first) {
+    draft.activeTabsetId = first.id;
+  }
+};
+
+const detachTabsetById = (
+  draft: Dashfoo,
+  tabsetId: string,
+  geometry: Geometry | undefined,
+  windowId: string | undefined,
+): void => {
+  const root = findRootContaining(draft, tabsetId);
+  if (!root) {
+    return;
+  }
+  const detached = removeTabsetReturning(root, tabsetId);
+  if (detached) {
+    pushWindow(draft, wrapTabsetInLayout(detached), geometry, windowId);
+  }
+};
+
+// Reattach docks back into the MAIN layout only (never another window): prefer
+// an explicit target, then the active tabset, then the first main tabset.
+const resolveMainTarget = (
+  draft: Dashfoo,
+  targetId: string | undefined,
+): TabsetNode | undefined => {
+  const mainTabsets: Array<TabsetNode> = [];
+  tabsetsInRow(draft.layout, mainTabsets);
+  if (targetId) {
+    const explicit = mainTabsets.find((tabset) => tabset.id === targetId);
+    if (explicit) {
+      return explicit;
+    }
+  }
+  if (draft.activeTabsetId !== undefined) {
+    const active = mainTabsets.find((tabset) => tabset.id === draft.activeTabsetId);
+    if (active) {
+      return active;
+    }
+  }
+  return mainTabsets[0];
+};
+
+const reattachWindow = (
+  draft: Dashfoo,
+  windowId: string,
+  targetId: string | undefined,
+  location: DockLocation | undefined,
+): void => {
+  const windows = draft.windows ?? [];
+  const index = windows.findIndex((window) => window.id === windowId);
+  if (index === -1) {
+    return;
+  }
+  const [window] = windows.splice(index, 1);
+  draft.windows = windows;
+  if (!window) {
+    return;
+  }
+
+  const tabsets: Array<TabsetNode> = [];
+  tabsetsInRow(window.layout, tabsets);
+  const tabs = tabsets.flatMap((tabset) => tabset.children);
+  if (tabs.length === 0) {
+    return;
+  }
+
+  const target = resolveMainTarget(draft, targetId);
+  if (!target) {
+    // Nothing left in the main layout to dock into — promote the window's own
+    // layout to be the main layout so its tabs aren't lost.
+    draft.layout = window.layout;
+    draft.activeTabsetId = tabsets[0]?.id;
+    return;
+  }
+
+  const where = location ?? "center";
+  if (where === "center") {
+    const mergeStart = target.children.length;
+    target.children.push(...tabs);
+    target.selected = mergeStart;
+    draft.activeTabsetId = target.id;
+    return;
+  }
+
+  const placed: TabsetNode = {
+    children: tabs,
+    id: createNodeId("tabset"),
+    selected: 0,
+    type: "tabset",
+    weight: 50,
+  };
+  placeBesideTarget(draft, placed, target.id, where);
+};
+
 const applyAction = (draft: Dashfoo, action: Action): void => {
   switch (action.type) {
     case "addNode": {
@@ -129,7 +287,8 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       return;
     }
     case "adjustSplit": {
-      const row = findRow(draft.layout, action.rowId);
+      const root = findRootContaining(draft, action.rowId) ?? draft.layout;
+      const row = findRow(root, action.rowId);
       if (!row) {
         return;
       }
@@ -151,7 +310,25 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       return;
     }
     case "deleteTabset": {
-      removeTabset(draft.layout, action.tabsetId);
+      const root = findRootContaining(draft, action.tabsetId);
+      if (root) {
+        removeTabset(root, action.tabsetId);
+      }
+      return;
+    }
+    case "detachTab": {
+      const location = findTab(draft, action.tabId);
+      if (!location) {
+        return;
+      }
+      const [removed] = location.container.children.splice(location.index, 1);
+      if (removed) {
+        pushWindow(draft, wrapTabInLayout(removed), action.geometry, action.windowId);
+      }
+      return;
+    }
+    case "detachTabset": {
+      detachTabsetById(draft, action.tabsetId, action.geometry, action.windowId);
       return;
     }
     case "moveNode": {
@@ -194,17 +371,27 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
           const sourceSelected = Math.min(Math.max(source.selected, 0), source.children.length - 1);
           target.children.push(...source.children);
           target.selected = mergeStart + sourceSelected;
-          removeTabset(draft.layout, action.sourceId);
+          const sourceRoot = findRootContaining(draft, action.sourceId);
+          if (sourceRoot) {
+            removeTabset(sourceRoot, action.sourceId);
+          }
         }
         return;
       }
       // split-* moves the whole tabset beside the target.
       if (action.location.startsWith("split-")) {
-        const detached = removeTabsetReturning(draft.layout, action.sourceId);
+        const sourceRoot = findRootContaining(draft, action.sourceId);
+        const detached = sourceRoot
+          ? removeTabsetReturning(sourceRoot, action.sourceId)
+          : undefined;
         if (detached) {
           placeBesideTarget(draft, detached, action.targetId, action.location);
         }
       }
+      return;
+    }
+    case "reattachWindow": {
+      reattachWindow(draft, action.windowId, action.targetId, action.location);
       return;
     }
     case "renameTab": {
@@ -239,6 +426,13 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       const node = findAttributedNode(draft, action.nodeId);
       if (node) {
         Object.assign(node, action.attrs);
+      }
+      return;
+    }
+    case "updateWindowGeometry": {
+      const window = findWindow(draft, action.windowId);
+      if (window) {
+        window.geometry = action.geometry;
       }
       return;
     }

@@ -1,0 +1,110 @@
+---
+title: Detached windows
+description: Pop a panel out into its own browser window and dock it back, VS Code style — windows are first-class model nodes.
+---
+
+A panel can leave the layout entirely and live in its own browser window — the
+"move into a new window" move from VS Code. A detached window is not a visual
+trick: it is a first-class node in the model (`Dashfoo.windows`), owning its own
+layout subtree, so it serializes, validates, and self-heals exactly like a docked
+panel.
+
+## The `poppable` prop
+
+Pass `poppable` to add a pop-out control to each tabset toolbar and render any
+detached windows:
+
+```tsx
+import type { Dashfoo, TabNode } from "@dashfoo/core";
+import { model, row, tab, tabset } from "@dashfoo/core";
+import { DashfooLayout } from "@dashfoo/react";
+import type { ReactNode } from "react";
+import { useMemo } from "react";
+
+const dashboard = (): Dashfoo =>
+  model(
+    row([
+      tabset([tab("chart", "Chart"), tab("trades", "Trades")], { id: "left", weight: 2 }),
+      tabset([tab("book", "Order Book")], { id: "right", weight: 1 }),
+    ]),
+  );
+
+const renderPanel = (node: TabNode): ReactNode => <div>{node.name}</div>;
+
+const Dashboard = (): ReactNode => {
+  const defaultModel = useMemo(() => dashboard(), []);
+  return <DashfooLayout defaultModel={defaultModel} factory={renderPanel} poppable />;
+};
+
+export { Dashboard };
+```
+
+Clicking the `[data-dashfoo="tabset-popout"]` control detaches the whole tabset
+into a new window. The window shows the panel with a `[data-dashfoo="window-dock"]`
+"Dock back" control that returns it. Closing the window (the browser's own close
+button) docks the panel back too, so a panel is never lost.
+
+## Windows are model nodes
+
+Detaching dispatches an action; the result is a normalized model with a `windows`
+entry. Everything you can do to the main tree works on a window's tree:
+
+```ts
+import { reducer } from "@dashfoo/core";
+
+const detached = reducer(model, { type: "detachTabset", tabsetId: "left" });
+detached.windows;
+// [{ type: "window", id, layout: RowNode, geometry: { left, top, width, height } }]
+
+// Dock it back into the active main tabset and drop the window.
+reducer(detached, { type: "reattachWindow", windowId: detached.windows![0].id });
+```
+
+The reducer actions are `detachTab`, `detachTabset`, `reattachWindow`, and
+`updateWindowGeometry`. `normalize` heals each window's own layout and drops a
+window the moment its last panel leaves, the same way it removes an empty tabset.
+Because a window owns a full `RowNode`, a popped-out panel is a real container: it
+can hold one tab or several.
+
+## How it works, and what it doesn't do
+
+Popping out has a few hard constraints, handled deliberately:
+
+- **Each popup is its own React root.** dashfoo renders into the new window with a
+  separate `createRoot`, not a cross-document portal — a portal would leave click
+  and keyboard event delegation rooted in the opener, so controls in the popup
+  would be dead. The trade-off: React context provided _above_ `DashfooLayout` (a
+  theme provider, a query client) does not reach popup content. Resolve panels
+  through `components`/`factory` (captured by the layout itself), not ambient
+  context.
+- **Styles are copied across.** dashfoo is headless, so the host document's
+  `<style>` and `<link rel="stylesheet">` are cloned into the popup and kept in
+  sync as new ones are injected (dev-server HMR, lazy CSS).
+- **Pop-out is gesture-driven.** The control calls `window.open` inside the click
+  so the popup blocker allows it. The imperative `ref.current?.detachTab(tabId)`
+  must also be called from a user gesture.
+- **No drag-dock inside a popup yet.** A panel in a window is select / close /
+  rename plus "Dock back"; cross-window dragging needs its own interaction model.
+- **No auto-reopen on reload.** A persisted layout that contained windows collapses
+  them back into the main layout on load rather than fighting the popup blocker for
+  a window the user never re-requested.
+
+## Hand-built layouts
+
+If you compose the `Layout.*` primitives yourself, opt in with `Layout.PopoutLayer`
+(wrap the tree so pop-out controls can open popups) and `Layout.Windows` (render it
+alongside the rows to portal each detached panel into its window), and add
+`Tabset.PopoutButton` to your tabset toolbar.
+
+```tsx
+<Layout.Root dispatch={store.dispatch} model={store.model} poppable renderTab={renderPanel}>
+  <Layout.PopoutLayer>
+    <Layout.DragLayer>
+      <Layout.Rows node={store.model.layout} />
+    </Layout.DragLayer>
+    <Layout.Windows global={store.model.global} windows={store.model.windows ?? []} />
+  </Layout.PopoutLayer>
+</Layout.Root>
+```
+
+See also: [The layout model](/the-model) · [Persisting layouts](/persistence).

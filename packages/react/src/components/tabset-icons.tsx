@@ -60,4 +60,22 @@ const MaximizeIcon = ({ maximized }: { maximized: boolean }): ReactNode =>
     </Icon>
   );
 
-export { CloseIcon, GripIcon, MaximizeIcon };
+// "Open in new window" — a panel lifting out to a separate frame.
+const PopoutIcon = (): ReactNode => (
+  <Icon>
+    <path d="M15 3h6v6" />
+    <path d="M10 14 21 3" />
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+  </Icon>
+);
+
+// "Dock back" — an arrow returning into a frame.
+const DockIcon = (): ReactNode => (
+  <Icon>
+    <path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2" />
+    <path d="M11 8 7 12l4 4" />
+    <path d="M7 12h10" />
+  </Icon>
+);
+
+export { CloseIcon, DockIcon, GripIcon, MaximizeIcon, PopoutIcon };

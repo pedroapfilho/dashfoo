@@ -76,6 +76,7 @@ a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-att
 | `closableTabs`            | `boolean`                                                               | `true`  | Show the per-tab close control.                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `renamableTabs`           | `boolean`                                                               | `true`  | Allow double-click inline rename.                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `maximizable`             | `boolean`                                                               | `true`  | Show the tabset maximize/restore control.                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `poppable`                | `boolean`                                                               | `false` | Show a per-tabset pop-out control that detaches the panel into its own browser window, and render any detached windows. See below.                                                                                                                                                                                                                                                                                                           |
 | `draggableTabs`           | `boolean`                                                               | `true`  | Allow individual tabs to be dragged between tabsets.                                                                                                                                                                                                                                                                                                                                                                                         |
 | `draggableTabsets`        | `boolean`                                                               | `true`  | Show the grip that drags a whole tabset.                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `resizableSplits`         | `boolean`                                                               | `true`  | Allow dragging the splitters; `false` disables them in place (gutters keep their size).                                                                                                                                                                                                                                                                                                                                                      |
@@ -86,9 +87,11 @@ a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-att
 You must pass either `model` or `defaultModel`. Passing neither throws.
 
 A `ref` exposes a `DashfooHandle` for imperative control:
-`addTab`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `dispatch`,
-`getModel`, `undo` / `redo` / `canUndo` / `canRedo`, and `resetLayout()` (reset to
-the original `defaultModel`, clearing undo history and any persisted copy).
+`addTab`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `detachTab`,
+`reattachWindow`, `dispatch`, `getModel`, `undo` / `redo` / `canUndo` / `canRedo`,
+and `resetLayout()` (reset to the original `defaultModel`, clearing undo history and
+any persisted copy). Call `detachTab` from a user gesture so the browser allows the
+popup.
 
 ```tsx
 const ref = useRef<DashfooHandle>(null);
@@ -175,6 +178,7 @@ with the right role and ARIA wiring, ready for you to style.
 - **Close** — a `[data-dashfoo="tab-close"]` button next to each tab label, shown when closing is enabled. Dispatches `deleteTab`.
 - **Rename** — double-click a tab to swap its label for a `[data-dashfoo="tab-rename"]` input. Enter commits, Escape cancels, blur commits. A trimmed, changed value dispatches `renameTab`; focus returns to the tab afterward.
 - **Maximize** — a `[data-dashfoo="tabset-maximize"]` toggle in the tabset toolbar. Dispatches `setMaximizedTabset`; one maximized tabset fills the frame and `aria-pressed` reflects state.
+- **Pop out** — a `[data-dashfoo="tabset-popout"]` button in the tabset toolbar, shown when `poppable`. Detaches the tabset into its own window (`detachTabset`); the window's `[data-dashfoo="window-dock"]` control docks it back (`reattachWindow`). See "Detached windows" below.
 - **Tabs** — roving-tabindex keyboard model (WAI-ARIA APG): Arrow keys move and select, Home/End jump to the ends, focus follows selection.
 - **Drag-to-dock** — drag a tab to restack it or split a tabset (when split-dock is on). A `[data-dashfoo="dock-indicator"]` previews where it lands.
 
@@ -276,6 +280,42 @@ to 44px under `@media (pointer: coarse)` so tap-to-switch stays usable.
 Hand-built layouts (the `Layout.*` primitives) get the same behavior with
 `useContainerWidth` + `stackModel`; for _distinct_ per-breakpoint models, use
 `useResponsiveModel`. Both feed reactive props with no `key`/remount.
+
+## Detached windows
+
+Pass `poppable` to let a panel pop out into its own browser window, VS Code style:
+
+```tsx
+<DashfooLayout defaultModel={model} factory={renderPanel} poppable />
+```
+
+Each tabset toolbar gains a `[data-dashfoo="tabset-popout"]` control that detaches
+the whole tabset into a separate window (dispatching `detachTabset`); the window
+shows the panel with a `[data-dashfoo="window-dock"]` "Dock back" control that
+returns it (`reattachWindow`). Detached windows are first-class model nodes
+(`Dashfoo.windows` in `@dashfoo/core`), so they serialize and round-trip like
+docked panels.
+
+How it works and its limits:
+
+- **Own React root, not a portal.** Each popup renders through its own
+  `createRoot` so clicks and keyboard work inside it (a cross-document portal
+  leaves event delegation rooted in the opener). The trade-off: React context
+  from _above_ `DashfooLayout` (a theme provider, a query client) does not reach
+  popup content. Resolve panel content through `components`/`factory` (captured by
+  the layout) rather than ambient context.
+- **Headless, styles copied.** dashfoo ships no CSS, so the host document's
+  `<style>`/`<link rel="stylesheet">` are copied into the popup and kept in sync.
+- **Gesture-driven.** The pop-out control opens `window.open` inside the click so
+  the popup blocker allows it; the imperative `detachTab(tabId)` must likewise run
+  from a gesture.
+- **No drag inside a popup (yet).** A panel in a window is select/close/rename plus
+  "Dock back"; drag-dock there needs its own per-window plumbing.
+- **No auto-reopen on reload.** Persisted windows collapse back into the main
+  layout on load rather than fighting the popup blocker.
+
+Hand-built layouts opt in with `Layout.PopoutLayer` (wrap the tree) +
+`Layout.Windows` (render alongside the rows) and `Tabset.PopoutButton`.
 
 ## Persistence
 
@@ -454,24 +494,27 @@ and overlays outside the layout observe the same drag).
 same parts yourself when you need custom chrome. Two compound namespaces, same
 pattern as `Panel`:
 
-| Part                    | Element                                  | Role                                                                                                            |
-| ----------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `Layout.Root`           | `div[data-dashfoo="layout"]`             | Creates the layout store. Takes `model`, `dispatch`, `renderTab`, and the chrome flags `DashfooLayout` accepts. |
-| `Layout.DragLayer`      | none (overlays)                          | Opts the tree into drag-dock. Omit it and everything else still works, just without dragging.                   |
-| `Layout.Rows`           | rrp split tree                           | Renders a `RowNode` recursively. `renderTabset` swaps in a custom tabset composition at every leaf.             |
-| `Layout.Tabset`         | —                                        | The stock tabset composition, for leaves that don't need custom chrome.                                         |
-| `Tabset.Root`           | `div[data-dashfoo="tabset"]`             | Creates the per-tabset store; owns drop registration, overflow measurement, and focus restore after close.      |
-| `Tabset.TabStrip`       | `div[data-dashfoo="tabstrip"]`           | The strip row (drag hit-testing targets this attribute).                                                        |
-| `Tabset.Tablist`        | `div[data-dashfoo="tablist"]`            | `role="tablist"` + roving-tabindex arrow/Home/End navigation.                                                   |
-| `Tabset.Tab`            | `span[data-dashfoo="tab-item"]`          | Per-tab wrapper; provides identity to the parts inside.                                                         |
-| `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: select on click, rename on double-click, draggable. Children override the label.                |
-| `Tabset.RenameInput`    | `input[data-dashfoo="tab-rename"]`       | Inline rename editor; renders only while its tab is being renamed.                                              |
-| `Tabset.CloseButton`    | `button[data-dashfoo="tab-close"]`       | Closes the tab with focus restore; hides when the tab isn't closable.                                           |
-| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted`. Children render-prop overrides `renderTab`.                |
-| `Tabset.Toolbar`        | `div[data-dashfoo="tabset-toolbar"]`     | Trailing toolbar container.                                                                                     |
-| `Tabset.OverflowMenu`   | menu button                              | Lists clipped tabs; hides when nothing overflows.                                                               |
-| `Tabset.Grip`           | `button[data-dashfoo="tabset-grip"]`     | Drag handle for the whole tabset; hides when tabset dragging is off.                                            |
-| `Tabset.MaximizeButton` | `button[data-dashfoo="tabset-maximize"]` | Maximize/restore toggle; hides when maximize is off.                                                            |
+| Part                    | Element                                  | Role                                                                                                             |
+| ----------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `Layout.Root`           | `div[data-dashfoo="layout"]`             | Creates the layout store. Takes `model`, `dispatch`, `renderTab`, and the chrome flags `DashfooLayout` accepts.  |
+| `Layout.DragLayer`      | none (overlays)                          | Opts the tree into drag-dock. Omit it and everything else still works, just without dragging.                    |
+| `Layout.Rows`           | rrp split tree                           | Renders a `RowNode` recursively. `renderTabset` swaps in a custom tabset composition at every leaf.              |
+| `Layout.Tabset`         | —                                        | The stock tabset composition, for leaves that don't need custom chrome.                                          |
+| `Layout.PopoutLayer`    | none                                     | Wrap the tree to enable detached windows (opens popups for pop-out controls). Pair with `Layout.Windows`.        |
+| `Layout.Windows`        | popup roots                              | Renders `model.windows` into detached browser windows. Takes `windows` + `global`; render it alongside the rows. |
+| `Tabset.Root`           | `div[data-dashfoo="tabset"]`             | Creates the per-tabset store; owns drop registration, overflow measurement, and focus restore after close.       |
+| `Tabset.TabStrip`       | `div[data-dashfoo="tabstrip"]`           | The strip row (drag hit-testing targets this attribute).                                                         |
+| `Tabset.Tablist`        | `div[data-dashfoo="tablist"]`            | `role="tablist"` + roving-tabindex arrow/Home/End navigation.                                                    |
+| `Tabset.Tab`            | `span[data-dashfoo="tab-item"]`          | Per-tab wrapper; provides identity to the parts inside.                                                          |
+| `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: select on click, rename on double-click, draggable. Children override the label.                 |
+| `Tabset.RenameInput`    | `input[data-dashfoo="tab-rename"]`       | Inline rename editor; renders only while its tab is being renamed.                                               |
+| `Tabset.CloseButton`    | `button[data-dashfoo="tab-close"]`       | Closes the tab with focus restore; hides when the tab isn't closable.                                            |
+| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted`. Children render-prop overrides `renderTab`.                 |
+| `Tabset.Toolbar`        | `div[data-dashfoo="tabset-toolbar"]`     | Trailing toolbar container.                                                                                      |
+| `Tabset.OverflowMenu`   | menu button                              | Lists clipped tabs; hides when nothing overflows.                                                                |
+| `Tabset.Grip`           | `button[data-dashfoo="tabset-grip"]`     | Drag handle for the whole tabset; hides when tabset dragging is off.                                             |
+| `Tabset.MaximizeButton` | `button[data-dashfoo="tabset-maximize"]` | Maximize/restore toggle; hides when maximize is off.                                                             |
+| `Tabset.PopoutButton`   | `button[data-dashfoo="tabset-popout"]`   | Detaches the tabset into its own window; hides when `poppable` is off or the tabset is maximized.                |
 
 All parts spread native props (`className`, `style`, handlers) like `Panel`;
 the structural attributes (`role`, ids, `data-dashfoo`) are applied after the

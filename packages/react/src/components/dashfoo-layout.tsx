@@ -9,7 +9,7 @@ import type {
   TabNode,
   TabsetNode,
 } from "@dashfoo/core";
-import { findTabset, stackModel } from "@dashfoo/core";
+import { createNodeId, findTabset, stackModel } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from "react";
 
@@ -19,8 +19,13 @@ import { useContainerWidth } from "../hooks/responsive";
 import { useDashfooStore } from "../hooks/store";
 
 import { Layout } from "./layout";
+import { usePopoutManager } from "./popout-adapter";
 
 const DEFAULT_PERSIST_DEBOUNCE_MS = 300;
+
+// Fallback rect for a programmatic detach (the imperative API has no source
+// element to measure); the toolbar control measures the panel instead.
+const DEFAULT_DETACH_GEOMETRY = { height: 600, left: 120, top: 120, width: 800 } as const;
 
 // `persist` accepts a bare localStorage key or a full target (custom storage,
 // debounce). Controlled mode (a `model` prop, no `defaultModel`) skips it —
@@ -59,9 +64,14 @@ type DashfooHandle = {
   canRedo: () => boolean;
   canUndo: () => boolean;
   closeTab: (tabId: string) => void;
+  // Pop a tab into a detached window. Invoke from a user gesture (e.g. a button
+  // click) so the browser allows the popup; otherwise it collapses straight back.
+  detachTab: (tabId: string) => void;
   dispatch: (action: Action) => void;
   getModel: () => Dashfoo;
   maximizeTabset: (tabsetId: string | null) => void;
+  // Dock a detached window's panel back into the main layout.
+  reattachWindow: (windowId: string) => void;
   redo: () => void;
   renameTab: (tabId: string, name: string) => void;
   // Reset to the original defaultModel, clearing undo history and any persisted
@@ -89,6 +99,10 @@ type DashfooLayoutProps = {
   onMaximizedTabsetChange?: (tabsetId: string | undefined) => void;
   onModelChange?: (model: Dashfoo, action?: Action) => void;
   persist?: PersistInput;
+  // Show a per-tabset "pop out into a new window" control and render detached
+  // windows. Off by default — opt in. Detaching adds the panel to the model's
+  // `windows`; on reload, persisted windows collapse back into the main layout.
+  poppable?: boolean;
   renamableTabs?: boolean;
   renderTabLabel?: (tab: TabNode) => ReactNode;
   renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
@@ -125,6 +139,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     onMaximizedTabsetChange,
     onModelChange,
     persist,
+    poppable = false,
     renamableTabs = true,
     renderTabLabel,
     renderTabsetToolbar,
@@ -158,6 +173,11 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     onModelChange: handleModelChange,
   });
 
+  // Hoisted here (not inside PopoutProvider) so the imperative detach below can
+  // open the popup synchronously inside the host's click — the reliable way past
+  // popup blockers — while the toolbar control and the windows host share it.
+  const popout = usePopoutManager(store.dispatch);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -172,9 +192,17 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       canRedo: store.canRedo,
       canUndo: store.canUndo,
       closeTab: (tabId) => store.dispatch({ tabId, type: "deleteTab" }),
+      detachTab: (tabId) => {
+        const windowId = createNodeId("window");
+        // Open in-gesture; only detach when the popup actually opened.
+        if (popout.open(windowId, DEFAULT_DETACH_GEOMETRY)) {
+          store.dispatch({ geometry: DEFAULT_DETACH_GEOMETRY, tabId, type: "detachTab", windowId });
+        }
+      },
       dispatch: store.dispatch,
       getModel: () => store.model,
       maximizeTabset: (tabsetId) => store.dispatch({ tabsetId, type: "setMaximizedTabset" }),
+      reattachWindow: (windowId) => store.dispatch({ type: "reattachWindow", windowId }),
       redo: store.redo,
       renameTab: (tabId, name) => store.dispatch({ name, tabId, type: "renameTab" }),
       resetLayout: () => {
@@ -186,7 +214,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       selectTab: (tabsetId, index) => store.dispatch({ index, tabsetId, type: "selectTab" }),
       undo: store.undo,
     }),
-    [defaultModel, persistence, store],
+    [defaultModel, persistence, popout, store],
   );
 
   const renderTab = useCallback(
@@ -252,6 +280,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       keepMounted={keepMounted}
       maximizable={maximizable}
       model={view}
+      poppable={isCompact ? false : poppable}
       renamableTabs={renamableTabs}
       renderTab={renderTab}
       renderTabLabel={renderTabLabel}
@@ -260,9 +289,14 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       rootRef={containerRef}
       snap={snap}
     >
-      <Layout.DragLayer>
-        {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={view.layout} />}
-      </Layout.DragLayer>
+      <Layout.PopoutLayer manager={popout}>
+        <Layout.DragLayer>
+          {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={view.layout} />}
+        </Layout.DragLayer>
+        {/* Detached windows are independent top-level frames, so they render from
+            the canonical model rather than the (possibly stacked) compact view. */}
+        <Layout.Windows global={store.model.global} windows={store.model.windows ?? []} />
+      </Layout.PopoutLayer>
     </Layout.Root>
   );
 });

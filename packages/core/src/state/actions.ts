@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import {
   dimensionSchema,
+  geometrySchema,
   globalAttributesSchema,
   orientationSchema,
   snapSchema,
@@ -96,6 +97,37 @@ const actionSchema = z.discriminatedUnion("type", [
     type: z.literal("updateNodeAttributes"),
   }),
   z.object({ attrs: globalAttributesSchema.partial(), type: z.literal("updateGlobalAttributes") }),
+  // Pop a single tab out of its tabset into a new detached window. `geometry` is
+  // the popup's initial on-screen rect; `windowId` lets the React adapter open the
+  // browser window inside the click gesture (dodging popup blockers) and pin the
+  // resulting node to that already-open window.
+  z.object({
+    geometry: geometrySchema.optional(),
+    tabId: z.string(),
+    type: z.literal("detachTab"),
+    windowId: z.string().optional(),
+  }),
+  // Pop a whole tabset (with all its tabs) into a new detached window.
+  z.object({
+    geometry: geometrySchema.optional(),
+    tabsetId: z.string(),
+    type: z.literal("detachTabset"),
+    windowId: z.string().optional(),
+  }),
+  // Dock a detached window's tabs back into the main layout, then drop the
+  // window. `targetId`/`location` default to the active main tabset, center.
+  z.object({
+    location: dockLocationSchema.optional(),
+    targetId: z.string().optional(),
+    type: z.literal("reattachWindow"),
+    windowId: z.string(),
+  }),
+  // Persist a window's on-screen rect as the user moves/resizes the popup.
+  z.object({
+    geometry: geometrySchema,
+    type: z.literal("updateWindowGeometry"),
+    windowId: z.string(),
+  }),
 ]);
 
 type DockLocation = z.infer<typeof dockLocationSchema>;

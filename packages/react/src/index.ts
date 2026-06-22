@@ -15,6 +15,7 @@ export type {
   TabsetContentProps,
   TabsetGripProps,
   TabsetMaximizeButtonProps,
+  TabsetPopoutButtonProps,
   TabsetRenameInputProps,
   TabsetRootProps,
   TabsetTablistProps,

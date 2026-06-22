@@ -1,12 +1,15 @@
 "use client";
 
+import { createNodeId } from "@dashfoo/core";
 import type { ComponentProps, CSSProperties, MouseEvent, ReactNode } from "react";
 import { useMemo } from "react";
 
 import { useLayout } from "../../hooks/layout-store";
+import { usePopout } from "../../hooks/popout-store";
 import { mergeRefs } from "../../lib/merge-refs";
+import { measureGeometry } from "../../lib/popout-window";
 import { useTabsetDraggable } from "../drag-adapter";
-import { GripIcon, MaximizeIcon } from "../tabset-icons";
+import { GripIcon, MaximizeIcon, PopoutIcon } from "../tabset-icons";
 
 import { useTabset } from "./tabset-store";
 
@@ -88,5 +91,57 @@ const TabsetMaximizeButton = ({
   );
 };
 
-export { TabsetGrip, TabsetMaximizeButton, TabsetToolbar };
-export type { TabsetGripProps, TabsetMaximizeButtonProps, TabsetToolbarProps };
+type TabsetPopoutButtonProps = ComponentProps<"button">;
+
+// Pops the whole tabset out into a detached window. window.open runs inside this
+// click (so the popup blocker allows it) and pre-registers the proxy under a
+// fresh id; the matching detachTabset carries that id so the model node binds to
+// the window just opened. Self-hides when popping is off or the tabset is
+// maximized (a maximized panel already owns the frame).
+const TabsetPopoutButton = ({
+  children,
+  onClick,
+  ...props
+}: TabsetPopoutButtonProps): ReactNode => {
+  const poppable = useLayout((state) => state.poppable);
+  const dispatch = useLayout((state) => state.dispatch);
+  const isMaximized = useTabset((state) => state.isMaximized);
+  const node = useTabset((state) => state.node);
+  const popout = usePopout();
+
+  if (!poppable || isMaximized) {
+    return null;
+  }
+
+  const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
+    onClick?.(event);
+    const tabsetElement = event.currentTarget.closest<HTMLElement>('[data-dashfoo="tabset"]');
+    const geometry = measureGeometry(tabsetElement);
+    const windowId = createNodeId("window");
+    // Open synchronously inside the gesture, then detach to the same id — but only
+    // when the window actually opened, so a blocked popup leaves the panel docked.
+    if (popout?.open(windowId, geometry)) {
+      dispatch({ geometry, tabsetId: node.id, type: "detachTabset", windowId });
+    }
+  };
+
+  return (
+    <button
+      aria-label="Open panel in a new window"
+      {...props}
+      data-dashfoo="tabset-popout"
+      onClick={handleClick}
+      type="button"
+    >
+      {children ?? <PopoutIcon />}
+    </button>
+  );
+};
+
+export { TabsetGrip, TabsetMaximizeButton, TabsetPopoutButton, TabsetToolbar };
+export type {
+  TabsetGripProps,
+  TabsetMaximizeButtonProps,
+  TabsetPopoutButtonProps,
+  TabsetToolbarProps,
+};

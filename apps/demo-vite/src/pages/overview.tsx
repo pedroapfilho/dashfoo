@@ -20,13 +20,14 @@ const OverviewPage = (): ReactNode => {
           Clear saved layout
         </Button>
       }
-      description="A composite layout. Drag tabs to restack or split, drag splitters to resize, double-click to rename, maximize to focus. Every change is saved to localStorage — reload and your arrangement survives. Clear it to return to the default."
+      description="A composite layout. Drag tabs to restack or split, drag splitters to resize, double-click to rename, maximize to focus, or pop a panel out into its own window. Every change is saved to localStorage — reload and your arrangement survives (detached windows collapse back). Clear it to return to the default."
       title="Overview"
     >
       <DashfooLayout
         defaultModel={defaultModel}
         factory={renderPanel}
         persist="dashfoo:demo:overview"
+        poppable
         ref={layout}
         responsive={{ maxWidth: 720 }}
       />

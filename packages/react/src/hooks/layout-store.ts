@@ -19,6 +19,8 @@ type LayoutState = {
   keepMounted: boolean;
   maximizable: boolean;
   maximizedTabsetId: string | undefined;
+  // Whether tabsets show a "pop out into a new window" control.
+  poppable: boolean;
   renamableTabs: boolean;
   renderTab: (tab: TabNode) => ReactNode;
   renderTabLabel: ((tab: TabNode) => ReactNode) | undefined;

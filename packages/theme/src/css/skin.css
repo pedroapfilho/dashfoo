@@ -171,6 +171,7 @@
   padding-left: 0.25rem;
 }
 [data-dashfoo="tabset-maximize"],
+[data-dashfoo="tabset-popout"],
 [data-dashfoo="tabset-grip"],
 [data-dashfoo="tab-overflow"] {
   display: flex;
@@ -184,6 +185,7 @@
   color: var(--dashfoo-muted-foreground);
 }
 [data-dashfoo="tabset-maximize"],
+[data-dashfoo="tabset-popout"],
 [data-dashfoo="tab-overflow"] {
   cursor: pointer;
 }
@@ -195,15 +197,60 @@
   display: none;
 }
 [data-dashfoo="tabset-maximize"]:hover,
+[data-dashfoo="tabset-popout"]:hover,
 [data-dashfoo="tabset-grip"]:hover,
 [data-dashfoo="tab-overflow"]:hover {
   background: var(--dashfoo-accent);
   color: var(--dashfoo-accent-foreground);
 }
 [data-dashfoo="tabset-maximize"]:focus-visible,
+[data-dashfoo="tabset-popout"]:focus-visible,
 [data-dashfoo="tabset-grip"]:focus-visible,
 [data-dashfoo="tab-overflow"]:focus-visible {
   outline: 2px solid var(--dashfoo-ring);
+}
+
+/* detached-window chrome: the frame, its toolbar, and the dock-back control */
+[data-dashfoo="window"] {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--dashfoo-background);
+  color: var(--dashfoo-foreground);
+}
+[data-dashfoo="window-toolbar"] {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--dashfoo-border);
+}
+[data-dashfoo="window-dock"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--dashfoo-muted-foreground);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+[data-dashfoo="window-dock"]:hover {
+  background: var(--dashfoo-accent);
+  color: var(--dashfoo-accent-foreground);
+}
+[data-dashfoo="window-dock"]:focus-visible {
+  outline: 2px solid var(--dashfoo-ring);
+}
+[data-dashfoo="window-body"] {
+  flex: 1;
+  min-height: 0;
+  position: relative;
 }
 
 /* tab overflow menu */
@@ -402,6 +449,7 @@
   }
   [data-dashfoo="tab-close"],
   [data-dashfoo="tabset-maximize"],
+  [data-dashfoo="tabset-popout"],
   [data-dashfoo="tab-overflow"] {
     min-width: 2.75rem;
     min-height: 2.75rem;

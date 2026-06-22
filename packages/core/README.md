@@ -29,19 +29,24 @@ type Dashfoo = {
   layout: RowNode; // the root is always a row
   activeTabsetId?: string;
   maximizedTabsetId?: string;
+  windows?: WindowNode[]; // detached windows, each its own layout subtree
 };
 ```
 
-The tree has three node kinds, each discriminated by `type`:
+The tree has three node kinds, each discriminated by `type`, plus an optional
+detached-window node:
 
-| Node         | `type`     | Holds                                                                   |
-| ------------ | ---------- | ----------------------------------------------------------------------- |
-| `RowNode`    | `"row"`    | `children` (rows or tabsets), `orientation` (`row`/`column`), `weight?` |
-| `TabsetNode` | `"tabset"` | `children` (tabs), `selected` index, optional `min`/`max`/`weight`      |
-| `TabNode`    | `"tab"`    | `component`, `name`, `id`, optional `config` + `enable*` flags          |
+| Node         | `type`     | Holds                                                                        |
+| ------------ | ---------- | ---------------------------------------------------------------------------- |
+| `RowNode`    | `"row"`    | `children` (rows or tabsets), `orientation` (`row`/`column`), `weight?`      |
+| `TabsetNode` | `"tabset"` | `children` (tabs), `selected` index, optional `min`/`max`/`weight`           |
+| `TabNode`    | `"tab"`    | `component`, `name`, `id`, optional `config` + `enable*` flags               |
+| `WindowNode` | `"window"` | a detached window: its own `layout` (`RowNode`), `geometry`, optional `name` |
 
 Rows nest (a row's child can be another row), which is how arbitrary tiled splits
-are represented. `min`/`max` are `Dimension` values (`{ unit, value }`) where
+are represented. `windows` carry popped-out panels (see "Detached windows" below):
+each owns a full `RowNode` layout, so traversals and actions treat a window as a
+second root alongside `layout`. `min`/`max` are `Dimension` values (`{ unit, value }`) where
 `unit` is one of `px`, `%`, `em`, `rem`, `vh`, `vw`. `global.tabSetMinSize` is
 the default tabset minimum size in pixels for renderers that honor it; the React
 adapter falls back to `320px` when it is omitted.
@@ -101,6 +106,10 @@ untrusted payloads against `actionSchema` before dispatch.
 | `deleteTab`              | Remove a tab                                                     |
 | `deleteTabset`           | Remove a whole tabset                                            |
 | `adjustSplit`            | Set the `weights` of a row's children (splitter drag)            |
+| `detachTab`              | Pop a tab out into a new detached window                         |
+| `detachTabset`           | Pop a whole tabset (with its tabs) into a new detached window    |
+| `reattachWindow`         | Dock a detached window's panel back into the main layout         |
+| `updateWindowGeometry`   | Update a detached window's stored on-screen rect                 |
 | `updateNodeAttributes`   | Patch mutable attrs on a tab / tabset / row                      |
 | `updateGlobalAttributes` | Patch the `global` block                                         |
 
@@ -156,6 +165,7 @@ tree canonical so downstream code never has to defend against degenerate shapes:
 - clamps every `selected` index into range
 - forces `activeTabsetId` / `maximizedTabsetId` to point at a tabset that exists
   (falling back to the first tabset, or clearing)
+- heals each detached window's own layout and drops a window once it empties
 
 `normalize` is exported on its own if you build a model by hand and want it
 canonicalized without dispatching an action.
@@ -165,18 +175,45 @@ canonicalized without dispatching an action.
 Read-only lookups over a model, all exported:
 
 ```ts
-collectTabsets(model): Array<TabsetNode>;       // depth-first, layout only
+collectRoots(model): Array<RowNode>;            // main layout + each window's layout
+collectTabsets(model): Array<TabsetNode>;       // depth-first, across all roots
 getFirstTabset(model): TabsetNode | undefined;
 findTabset(model, tabsetId): TabsetNode | undefined;
 findTab(model, tabId): TabLocation | undefined; // searches tabsets
-findRow(row, rowId): RowNode | undefined;       // pass model.layout as the root
+findWindow(model, windowId): WindowNode | undefined;
+findRow(row, rowId): RowNode | undefined;       // pass a root (model.layout or a window's layout)
+findRootContaining(model, nodeId): RowNode | undefined; // which root holds a node
 findAttributedNode(model, id): AttributedNode | undefined; // row, tabset, or tab
 findTabsetParent(row, tabsetId): { index: number; parent: RowNode } | undefined;
 findDuplicateIds(model): Array<string>;         // ids used more than once
 ```
 
 `findTab` returns `{ container, index, tab }` so a caller knows where the tab
-lives (a tabset in the layout).
+lives (a tabset in some root). Lookups span every root, so a popped-out tab is as
+reachable as a docked one; `findRootContaining` tells you which root (main layout
+or a window) a node lives in.
+
+## Detached windows
+
+A panel can pop out into a standalone window. Windows are first-class model nodes
+(`Dashfoo.windows`), each owning a full `RowNode` layout, so they serialize and
+self-heal like the main tree:
+
+```ts
+import { reducer } from "@dashfoo/core";
+
+// Pop the whole tabset "left" into a new window (the React adapter supplies the
+// on-screen geometry; omit it for a default rect).
+const detached = reducer(model, { type: "detachTabset", tabsetId: "left" });
+detached.windows; // [{ type: "window", id, layout: RowNode, geometry }]
+
+// Dock it back into the active main tabset (center) and drop the window.
+const docked = reducer(detached, { type: "reattachWindow", windowId: detached.windows![0].id });
+```
+
+`normalize` runs over each window's layout too and drops a window once its last
+panel leaves. The `windowNode(layout, geometry, opts?)` builder constructs one,
+and `model(layout, { windows })` seeds them.
 
 ## Geometry
 
@@ -308,14 +345,14 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 ## Public exports
 
 `schema` — `dashfooSchema`, `rowNodeSchema`, `tabsetNodeSchema`, `tabNodeSchema`,
-`dimensionSchema`, `snapSchema`, `edgeSchema`, `unitSchema`,
-`orientationSchema`, `globalAttributesSchema`,
+`windowNodeSchema`, `geometrySchema`, `dimensionSchema`, `snapSchema`, `edgeSchema`,
+`unitSchema`, `orientationSchema`, `globalAttributesSchema`,
 `jsonValueSchema`; types `Dashfoo`, `RowNode`, `TabsetNode`, `TabNode`,
-`Dimension`, `SnapConfig`, `Edge`, `Unit`, `Orientation`,
+`WindowNode`, `Geometry`, `Dimension`, `SnapConfig`, `Edge`, `Unit`, `Orientation`,
 `GlobalAttributes`, `Node`, `Json`.
 
-`builders` — `model`, `row`, `tabset`, `tab`; option types `ModelOptions`,
-`RowOptions`, `TabsetOptions`, `TabOptions`.
+`builders` — `model`, `row`, `tabset`, `tab`, `windowNode`; option types
+`ModelOptions`, `RowOptions`, `TabsetOptions`, `TabOptions`, `WindowOptions`.
 
 `ids` — `createNodeId`, `createTabId`.
 
@@ -324,8 +361,9 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 
 `reducer` — `reducer`. `invariants` — `normalize`.
 
-`tree` — `collectTabsets`, `getFirstTabset`, `findTabset`, `findTab`, `findRow`,
-`findAttributedNode`, `findTabsetParent`, `findDuplicateIds`;
+`tree` — `collectRoots`, `collectTabsets`, `getFirstTabset`, `findTabset`,
+`findTab`, `findWindow`, `findRow`, `findRootContaining`, `findAttributedNode`,
+`findTabsetParent`, `findDuplicateIds`;
 types `AttributedNode`, `TabContainer`, `TabLocation`.
 
 `geometry` — `resolveDockTarget`, `dockZonePolygons`, `zoneRect`; types

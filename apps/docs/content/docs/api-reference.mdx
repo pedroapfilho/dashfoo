@@ -18,7 +18,7 @@ Source: [`packages/react/src`](https://github.com/pedroapfilho/dashfoo/tree/main
 
 ### `DashfooLayout` props
 
-All 17 props. Pass either `model` or `defaultModel`; passing neither throws.
+All 18 props. Pass either `model` or `defaultModel`; passing neither throws.
 
 | Prop                      | Type                                                                       | Default | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------------- | -------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -37,6 +37,7 @@ All 17 props. Pass either `model` or `defaultModel`; passing neither throws.
 | `closableTabs`            | `boolean`                                                                  | `true`  | Show the per-tab close control.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `renamableTabs`           | `boolean`                                                                  | `true`  | Allow double-click inline rename.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `maximizable`             | `boolean`                                                                  | `true`  | Show the tabset maximize/restore control.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `poppable`                | `boolean`                                                                  | `false` | Show a per-tabset pop-out control that detaches the panel into its own browser window, and render any detached windows (`Dashfoo.windows`). Opt-in. See [detached windows](/detached-windows).                                                                                                                                                                                                                                                                                                                            |
 | `draggableTabs`           | `boolean`                                                                  | `true`  | Allow individual tabs to be dragged between tabsets.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `draggableTabsets`        | `boolean`                                                                  | `true`  | Show the grip that drags a whole tabset.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `resizableSplits`         | `boolean`                                                                  | `true`  | Allow dragging the splitters between panels. `false` disables them but keeps them mounted, so the gutters hold their size.                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -65,7 +66,7 @@ mode" toggle — no remount needed.
 
 ### `DashfooHandle`
 
-A `ref` on `DashfooLayout` exposes 12 imperative methods.
+A `ref` on `DashfooLayout` exposes 14 imperative methods.
 
 | Method           | Signature                                                                                       | Effect                                                                                                         |
 | ---------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -74,7 +75,9 @@ A `ref` on `DashfooLayout` exposes 12 imperative methods.
 | `selectTab`      | `(tabsetId: string, index: number) => void`                                                     | Dispatches `selectTab`.                                                                                        |
 | `renameTab`      | `(tabId: string, name: string) => void`                                                         | Dispatches `renameTab`.                                                                                        |
 | `maximizeTabset` | `(tabsetId: string \| null) => void`                                                            | Dispatches `setMaximizedTabset`; `null` restores.                                                              |
-| `dispatch`       | `(action: Action) => void`                                                                      | Raw escape hatch for any of the 12 actions.                                                                    |
+| `detachTab`      | `(tabId: string) => void`                                                                       | Pops a tab into a detached window. Call from a user gesture so the browser allows the popup.                   |
+| `reattachWindow` | `(windowId: string) => void`                                                                    | Docks a detached window's panel back into the main layout.                                                     |
+| `dispatch`       | `(action: Action) => void`                                                                      | Raw escape hatch for any of the 16 actions.                                                                    |
 | `getModel`       | `() => Dashfoo`                                                                                 | The current model.                                                                                             |
 | `undo`           | `() => void`                                                                                    | Step back one action. No-op in controlled mode.                                                                |
 | `redo`           | `() => void`                                                                                    | Step forward. No-op in controlled mode.                                                                        |
@@ -143,11 +146,14 @@ Prop types are exported as `PanelRootProps`, `PanelHeaderProps`,
 The primitives `DashfooLayout` itself is built from, exported for hand-built
 layouts. `Layout.Root` (the frame + layout store), `Layout.DragLayer`
 (drag-dock, optional), `Layout.Rows` (the split tree, with a `renderTabset`
-render prop), and `Layout.Tabset` (the stock tabset composition) — plus the
-full tabset decomposition under `Tabset.*`: `Root`, `TabStrip`, `Tablist`,
-`Tab`, `Trigger`, `RenameInput`, `CloseButton`, `Content`, `Toolbar`,
-`OverflowMenu`, `Grip`, and `MaximizeButton`. Each part spreads native props
-and is unstyled beyond minimal structural flex. See
+render prop), `Layout.Tabset` (the stock tabset composition), and — for
+[detached windows](/detached-windows) — `Layout.PopoutLayer` (wrap the tree so
+pop-out controls can open popups) and `Layout.Windows` (renders `model.windows`
+into detached browser windows; takes `windows` + `global`). Plus the full tabset
+decomposition under `Tabset.*`: `Root`, `TabStrip`, `Tablist`, `Tab`, `Trigger`,
+`RenameInput`, `CloseButton`, `Content`, `Toolbar`, `OverflowMenu`, `Grip`,
+`MaximizeButton`, and `PopoutButton`. Each part spreads native props and is
+unstyled beyond minimal structural flex. See
 [Build your own layout](/docs/build-your-own-layout) for the part table and a
 complete example.
 
@@ -292,24 +298,28 @@ Source: [`packages/core/src`](https://github.com/pedroapfilho/dashfoo/tree/main/
 
 ### Actions
 
-Every document mutation is one of 12 immutable, discriminated actions. The
+Every document mutation is one of 16 immutable, discriminated actions. The
 reducer is exhaustive over the union; validate untrusted payloads with
 `actionSchema` before dispatch.
 
-| `action.type`            | Payload                                    | Effect                                                   |
-| ------------------------ | ------------------------------------------ | -------------------------------------------------------- |
-| `addNode`                | `{ tab, targetId, location, index? }`      | Insert a new tab at a dock location.                     |
-| `moveNode`               | `{ sourceId, targetId, location, index? }` | Move an existing tab to a dock target.                   |
-| `moveTabset`             | `{ sourceId, targetId, location, index? }` | Move a whole tabset to a dock target (the grip drag).    |
-| `selectTab`              | `{ tabsetId, index }`                      | Set a tabset's `selected` index.                         |
-| `setActiveTabset`        | `{ tabsetId }`                             | Mark the focused tabset.                                 |
-| `setMaximizedTabset`     | `{ tabsetId: string \| null }`             | Maximize one tabset, or restore with `null`.             |
-| `renameTab`              | `{ tabId, name }`                          | Change a tab's `name`.                                   |
-| `deleteTab`              | `{ tabId }`                                | Remove a tab.                                            |
-| `deleteTabset`           | `{ tabsetId }`                             | Remove a whole tabset.                                   |
-| `adjustSplit`            | `{ rowId, weights }`                       | Set the weights of a row's children (the splitter drag). |
-| `updateNodeAttributes`   | `{ nodeId, attrs }`                        | Patch mutable attributes on a tab, tabset, or row.       |
-| `updateGlobalAttributes` | `{ attrs }`                                | Patch the model's `global` block.                        |
+| `action.type`            | Payload                                    | Effect                                                    |
+| ------------------------ | ------------------------------------------ | --------------------------------------------------------- |
+| `addNode`                | `{ tab, targetId, location, index? }`      | Insert a new tab at a dock location.                      |
+| `moveNode`               | `{ sourceId, targetId, location, index? }` | Move an existing tab to a dock target.                    |
+| `moveTabset`             | `{ sourceId, targetId, location, index? }` | Move a whole tabset to a dock target (the grip drag).     |
+| `selectTab`              | `{ tabsetId, index }`                      | Set a tabset's `selected` index.                          |
+| `setActiveTabset`        | `{ tabsetId }`                             | Mark the focused tabset.                                  |
+| `setMaximizedTabset`     | `{ tabsetId: string \| null }`             | Maximize one tabset, or restore with `null`.              |
+| `renameTab`              | `{ tabId, name }`                          | Change a tab's `name`.                                    |
+| `deleteTab`              | `{ tabId }`                                | Remove a tab.                                             |
+| `deleteTabset`           | `{ tabsetId }`                             | Remove a whole tabset.                                    |
+| `adjustSplit`            | `{ rowId, weights }`                       | Set the weights of a row's children (the splitter drag).  |
+| `detachTab`              | `{ tabId, geometry?, windowId? }`          | Pop a tab into a new detached window.                     |
+| `detachTabset`           | `{ tabsetId, geometry?, windowId? }`       | Pop a whole tabset (with its tabs) into a new window.     |
+| `reattachWindow`         | `{ windowId, targetId?, location? }`       | Dock a detached window's panel back into the main layout. |
+| `updateWindowGeometry`   | `{ windowId, geometry }`                   | Update a detached window's stored on-screen rect.         |
+| `updateNodeAttributes`   | `{ nodeId, attrs }`                        | Patch mutable attributes on a tab, tabset, or row.        |
+| `updateGlobalAttributes` | `{ attrs }`                                | Patch the model's `global` block.                         |
 
 Related exports: `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`,
 and the types `Action`, `MutableNodeAttrs`,
@@ -322,19 +332,20 @@ See [drag & dock](/drag-and-dock) for how drops become actions.
 Constructors that fill the mechanical fields (`type`, `version`, `selected`) so
 seed models stay short.
 
-| Builder  | Signature                                                            | Notes                                                                          |
-| -------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `tab`    | `(component: string, name: string, options?: TabOptions) => TabNode` | `id` defaults to `component` — pass an explicit `id` when reusing a component. |
-| `tabset` | `(children: Array<TabNode>, options?: TabsetOptions) => TabsetNode`  | `selected` defaults to `0`; `id` is auto-generated when omitted.               |
-| `row`    | `(children: RowNode["children"], options?: RowOptions) => RowNode`   | `orientation` defaults to `"row"`; `id` is auto-generated when omitted.        |
-| `model`  | `(layout: RowNode, options?: ModelOptions) => Dashfoo`               | Fills `version: 1` and `global: {}`; warns once on duplicate node ids.         |
+| Builder      | Signature                                                                      | Notes                                                                          |
+| ------------ | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `tab`        | `(component: string, name: string, options?: TabOptions) => TabNode`           | `id` defaults to `component` — pass an explicit `id` when reusing a component. |
+| `tabset`     | `(children: Array<TabNode>, options?: TabsetOptions) => TabsetNode`            | `selected` defaults to `0`; `id` is auto-generated when omitted.               |
+| `row`        | `(children: RowNode["children"], options?: RowOptions) => RowNode`             | `orientation` defaults to `"row"`; `id` is auto-generated when omitted.        |
+| `model`      | `(layout: RowNode, options?: ModelOptions) => Dashfoo`                         | Fills `version: 1` and `global: {}`; warns once on duplicate node ids.         |
+| `windowNode` | `(layout: RowNode, geometry: Geometry, options?: WindowOptions) => WindowNode` | A detached window wrapping a layout subtree at an on-screen rect.              |
 
 Option types: `TabOptions` (`config`, `enableClose`, `enableDrag`,
 `enableRename`, `id`), `TabsetOptions` (`enableClose`, `enableMaximize`, `id`,
 `max`, `min`, `name`, `selected`, `weight`), `RowOptions` (`id`, `max`, `min`,
 `orientation`, `weight`), `ModelOptions` (`activeTabsetId`, `global`,
-`maximizedTabsetId`). `min`/`max` accept a bare number (treated as px) or a
-`Dimension`.
+`maximizedTabsetId`, `windows`), `WindowOptions` (`id`, `name`). `min`/`max`
+accept a bare number (treated as px) or a `Dimension`.
 
 ### Schema
 
@@ -347,6 +358,8 @@ Zod schemas and their inferred types. Field-by-field tables live in
 | `rowNodeSchema`          | `RowNode`          |
 | `tabsetNodeSchema`       | `TabsetNode`       |
 | `tabNodeSchema`          | `TabNode`          |
+| `windowNodeSchema`       | `WindowNode`       |
+| `geometrySchema`         | `Geometry`         |
 | `globalAttributesSchema` | `GlobalAttributes` |
 | `dimensionSchema`        | `Dimension`        |
 | `edgeSchema`             | `Edge`             |
@@ -354,29 +367,36 @@ Zod schemas and their inferred types. Field-by-field tables live in
 | `unitSchema`             | `Unit`             |
 | `jsonValueSchema`        | `Json`             |
 
-`Node` (`RowNode | TabsetNode | TabNode`) is exported as a type only. The
-model's `version` is the pinned literal `1`; payloads with any other version
-fail validation.
+`Node` (`RowNode | TabsetNode | TabNode`) is exported as a type only.
+`WindowNode` (`{ type: "window"; id; layout: RowNode; geometry: Geometry; name? }`)
+holds a detached window; see [detached windows](/detached-windows). The model's
+`version` is the pinned literal `1`; payloads with any other version fail
+validation.
 
 ### Reducer and normalize
 
-| Export      | Signature                                     | Description                                                                                                                     |
-| ----------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `reducer`   | `(model: Dashfoo, action: Action) => Dashfoo` | The pure engine: deep-copies via `structuredClone` (input never mutated), applies one action, runs `normalize`.                 |
-| `normalize` | `(model: Dashfoo) => Dashfoo`                 | The self-healing canonical pass: clamps `selected`, removes empty tabsets, keeps `maximizedTabsetId` pointing at a live tabset. |
+| Export      | Signature                                     | Description                                                                                                                                                                             |
+| ----------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reducer`   | `(model: Dashfoo, action: Action) => Dashfoo` | The pure engine: deep-copies via `structuredClone` (input never mutated), applies one action, runs `normalize`.                                                                         |
+| `normalize` | `(model: Dashfoo) => Dashfoo`                 | The self-healing canonical pass: clamps `selected`, removes empty tabsets, heals each window's layout and drops an emptied window, keeps `maximizedTabsetId` pointing at a live tabset. |
 
 ### Tree helpers
 
 Read-only queries over a model. `findRow` and `findTabsetParent` take a
-`RowNode` — start them at `model.layout`.
+`RowNode` — start them at a root from `collectRoots` (`model.layout` or a
+window's layout). Lookups that take the whole `model` span every root, so a
+popped-out node is as reachable as a docked one.
 
 | Function             | Signature                                                                             | Description                                                   |
 | -------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `collectTabsets`     | `(model: Dashfoo) => Array<TabsetNode>`                                               | Every tabset, depth-first.                                    |
+| `collectRoots`       | `(model: Dashfoo) => Array<RowNode>`                                                  | The main layout plus each detached window's layout.           |
+| `collectTabsets`     | `(model: Dashfoo) => Array<TabsetNode>`                                               | Every tabset across all roots, depth-first.                   |
 | `getFirstTabset`     | `(model: Dashfoo) => TabsetNode \| undefined`                                         | The first tabset in document order.                           |
 | `findTabset`         | `(model: Dashfoo, tabsetId: string) => TabsetNode \| undefined`                       | A tabset by id.                                               |
 | `findTab`            | `(model: Dashfoo, tabId: string) => TabLocation \| undefined`                         | A tab anywhere in the model: `{ tab, container, index }`.     |
-| `findRow`            | `(row: RowNode, id: string) => RowNode \| undefined`                                  | A row by id.                                                  |
+| `findWindow`         | `(model: Dashfoo, windowId: string) => WindowNode \| undefined`                       | A detached window by id.                                      |
+| `findRow`            | `(row: RowNode, id: string) => RowNode \| undefined`                                  | A row by id, within one root.                                 |
+| `findRootContaining` | `(model: Dashfoo, nodeId: string) => RowNode \| undefined`                            | Which root (main layout or a window) holds a node.            |
 | `findAttributedNode` | `(model: Dashfoo, id: string) => AttributedNode \| undefined`                         | Any row, tabset, or tab by id — backs `updateNodeAttributes`. |
 | `findTabsetParent`   | `(row: RowNode, tabsetId: string) => { index: number; parent: RowNode } \| undefined` | The row holding a tabset and its index within it.             |
 | `findDuplicateIds`   | `(model: Dashfoo) => Array<string>`                                                   | Ids appearing more than once across the whole model.          |

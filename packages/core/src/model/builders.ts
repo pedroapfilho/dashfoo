@@ -10,12 +10,14 @@ import { createNodeId } from "./ids";
 import type {
   Dashfoo,
   Dimension,
+  Geometry,
   GlobalAttributes,
   Json,
   RowNode,
   SnapConfig,
   TabNode,
   TabsetNode,
+  WindowNode,
 } from "./schema";
 import { findDuplicateIds } from "./tree";
 
@@ -86,10 +88,29 @@ const row = (children: RowNode["children"], options: RowOptions = {}): RowNode =
   };
 };
 
+type WindowOptions = {
+  id?: string;
+  name?: string;
+};
+
+// A detached window wrapping a layout subtree at a given on-screen rect.
+const windowNode = (
+  layout: RowNode,
+  geometry: Geometry,
+  options: WindowOptions = {},
+): WindowNode => ({
+  geometry,
+  layout,
+  type: "window",
+  ...options,
+  id: options.id ?? createNodeId("window"),
+});
+
 type ModelOptions = {
   activeTabsetId?: string;
   global?: GlobalAttributes;
   maximizedTabsetId?: string;
+  windows?: Array<WindowNode>;
 };
 
 const model = (layout: RowNode, options: ModelOptions = {}): Dashfoo => {
@@ -109,5 +130,5 @@ const model = (layout: RowNode, options: ModelOptions = {}): Dashfoo => {
   return built;
 };
 
-export { model, row, tab, tabset };
-export type { ModelOptions, RowOptions, TabOptions, TabsetOptions };
+export { model, row, tab, tabset, windowNode };
+export type { ModelOptions, RowOptions, TabOptions, TabsetOptions, WindowOptions };

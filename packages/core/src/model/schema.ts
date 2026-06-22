@@ -87,6 +87,28 @@ const rowNodeSchema: z.ZodType<RowNode> = z.lazy(() =>
   }),
 );
 
+// A detached window's on-screen rectangle, in CSS pixels relative to the screen.
+// Captured at detach time and refreshed as the user moves/resizes the popup, so
+// the model round-trips a window's position even though v1 does not reopen
+// windows on reload.
+const geometrySchema = z.object({
+  height: z.number(),
+  left: z.number(),
+  top: z.number(),
+  width: z.number(),
+});
+
+// A popped-out window. It owns a full RowNode layout (the same shape as the main
+// root), so a window can hold a single tab, several tabs, or nested splits and
+// reuses the exact same rendering and dock surgery as the main layout.
+const windowNodeSchema = z.object({
+  geometry: geometrySchema,
+  id: z.string(),
+  layout: rowNodeSchema,
+  name: z.string().optional(),
+  type: z.literal("window"),
+});
+
 const globalAttributesSchema = z.object({
   enableSplitDock: z.boolean().optional(),
   enableSplitResize: z.boolean().optional(),
@@ -109,6 +131,9 @@ const dashfooSchema = z.object({
   // The persisted-payload format version, pinned by the schema itself: any
   // future format change bumps the literal, so foreign payloads fail validation.
   version: z.literal(1),
+  // Detached windows, each owning its own layout subtree. Optional so existing
+  // payloads (and hand-built models) stay valid; absent means "no popouts".
+  windows: z.array(windowNodeSchema).optional(),
 });
 
 type Json = JsonValue;
@@ -119,6 +144,8 @@ type Dimension = z.infer<typeof dimensionSchema>;
 type SnapConfig = z.infer<typeof snapSchema>;
 type TabNode = z.infer<typeof tabNodeSchema>;
 type TabsetNode = z.infer<typeof tabsetNodeSchema>;
+type Geometry = z.infer<typeof geometrySchema>;
+type WindowNode = z.infer<typeof windowNodeSchema>;
 type GlobalAttributes = z.infer<typeof globalAttributesSchema>;
 type Dashfoo = z.infer<typeof dashfooSchema>;
 type Node = RowNode | TabsetNode | TabNode;
@@ -127,6 +154,7 @@ export {
   dashfooSchema,
   dimensionSchema,
   edgeSchema,
+  geometrySchema,
   globalAttributesSchema,
   jsonValueSchema,
   orientationSchema,
@@ -135,12 +163,14 @@ export {
   tabNodeSchema,
   tabsetNodeSchema,
   unitSchema,
+  windowNodeSchema,
 };
 
 export type {
   Dashfoo,
   Dimension,
   Edge,
+  Geometry,
   GlobalAttributes,
   Json,
   Node,
@@ -150,4 +180,5 @@ export type {
   TabNode,
   TabsetNode,
   Unit,
+  WindowNode,
 };
