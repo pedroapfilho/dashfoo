@@ -75,17 +75,17 @@ describe("stackModel", () => {
     expect(tabset.type === "tabset" && tabset.selected).toBe(1);
   });
 
-  // Detached windows are independent frames rendered through their own popups, so
-  // stacking the main layout must not pull their tabsets in — otherwise a popped
-  // panel would appear in both the compact main view and its window (duplicate ids).
-  test("leaves detached-window tabsets out of the stacked main layout", () => {
-    const detached = reducer(nested(), { tabsetId: "ts-a", type: "detachTabset" });
-    expect(detached.windows).toHaveLength(1);
+  // Floating panels are independent overlays, so stacking the main layout must not
+  // pull their tabsets in — otherwise a floated panel would appear in both the
+  // compact main view and its float (duplicate ids).
+  test("leaves floating-panel tabsets out of the stacked main layout", () => {
+    const floated = reducer(nested(), { tabsetId: "ts-a", type: "floatTabset" });
+    expect(floated.floats).toHaveLength(1);
 
-    const stacked = stackModel(detached);
+    const stacked = stackModel(floated);
     expect(stacked.layout.children.map((child) => child.id)).toEqual(["ts-b", "ts-c"]);
-    // The window passes through untouched.
-    expect(stacked.windows).toHaveLength(1);
-    expect(stacked.windows?.[0]?.id).toBe(detached.windows?.[0]?.id);
+    // The float passes through untouched.
+    expect(stacked.floats).toHaveLength(1);
+    expect(stacked.floats?.[0]?.id).toBe(floated.floats?.[0]?.id);
   });
 });

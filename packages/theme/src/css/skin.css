@@ -171,7 +171,7 @@
   padding-left: 0.25rem;
 }
 [data-dashfoo="tabset-maximize"],
-[data-dashfoo="tabset-popout"],
+[data-dashfoo="tabset-float"],
 [data-dashfoo="tabset-grip"],
 [data-dashfoo="tab-overflow"] {
   display: flex;
@@ -185,7 +185,7 @@
   color: var(--dashfoo-muted-foreground);
 }
 [data-dashfoo="tabset-maximize"],
-[data-dashfoo="tabset-popout"],
+[data-dashfoo="tabset-float"],
 [data-dashfoo="tab-overflow"] {
   cursor: pointer;
 }
@@ -197,57 +197,67 @@
   display: none;
 }
 [data-dashfoo="tabset-maximize"]:hover,
-[data-dashfoo="tabset-popout"]:hover,
+[data-dashfoo="tabset-float"]:hover,
 [data-dashfoo="tabset-grip"]:hover,
 [data-dashfoo="tab-overflow"]:hover {
   background: var(--dashfoo-accent);
   color: var(--dashfoo-accent-foreground);
 }
 [data-dashfoo="tabset-maximize"]:focus-visible,
-[data-dashfoo="tabset-popout"]:focus-visible,
+[data-dashfoo="tabset-float"]:focus-visible,
 [data-dashfoo="tabset-grip"]:focus-visible,
 [data-dashfoo="tab-overflow"]:focus-visible {
   outline: 2px solid var(--dashfoo-ring);
 }
 
-/* detached-window chrome: the frame, its toolbar, and the dock-back control */
-[data-dashfoo="window"] {
+/* floating-panel chrome: the elevated frame, its drag title bar, and dock-back */
+[data-dashfoo="float"] {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  width: 100%;
+  overflow: hidden;
   background: var(--dashfoo-background);
   color: var(--dashfoo-foreground);
+  border: 1px solid var(--dashfoo-border);
+  border-radius: var(--dashfoo-radius);
+  box-shadow:
+    0 10px 15px -3px oklch(0 0 0 / 0.18),
+    0 4px 6px -4px oklch(0 0 0 / 0.18);
 }
-[data-dashfoo="window-toolbar"] {
+[data-dashfoo="float-titlebar"] {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  gap: 0.5rem;
   flex-shrink: 0;
-  padding: 0.25rem 0.5rem;
+  min-height: 1.75rem;
+  padding: 0.125rem 0.25rem 0.125rem 0.5rem;
+  background: var(--dashfoo-muted);
   border-bottom: 1px solid var(--dashfoo-border);
+  user-select: none;
 }
-[data-dashfoo="window-dock"] {
+[data-dashfoo="float-title"] {
+  font-size: 12px;
+  color: var(--dashfoo-muted-foreground);
+}
+[data-dashfoo="float-dock"] {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.5rem;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
   background: transparent;
   border: 0;
   border-radius: 4px;
   color: var(--dashfoo-muted-foreground);
-  font: inherit;
-  font-size: 12px;
   cursor: pointer;
 }
-[data-dashfoo="window-dock"]:hover {
+[data-dashfoo="float-dock"]:hover {
   background: var(--dashfoo-accent);
   color: var(--dashfoo-accent-foreground);
 }
-[data-dashfoo="window-dock"]:focus-visible {
+[data-dashfoo="float-dock"]:focus-visible {
   outline: 2px solid var(--dashfoo-ring);
 }
-[data-dashfoo="window-body"] {
+[data-dashfoo="float-body"] {
   flex: 1;
   min-height: 0;
   position: relative;
@@ -449,7 +459,7 @@
   }
   [data-dashfoo="tab-close"],
   [data-dashfoo="tabset-maximize"],
-  [data-dashfoo="tabset-popout"],
+  [data-dashfoo="tabset-float"],
   [data-dashfoo="tab-overflow"] {
     min-width: 2.75rem;
     min-height: 2.75rem;

@@ -65,20 +65,20 @@ type Dashfoo = {
   activeTabsetId?: string;
   global: GlobalAttributes;
   layout: RowNode;
+  floats?: FloatNode[];
   maximizedTabsetId?: string;
   version: 1;
-  windows?: WindowNode[];
 };
 ```
 
-| Field               | Type               | What it holds                                                                             |
-| ------------------- | ------------------ | ----------------------------------------------------------------------------------------- |
-| `layout`            | `RowNode`          | The tiled center area. Always a row at the root.                                          |
-| `global`            | `GlobalAttributes` | Defaults that apply tree-wide unless a node overrides them.                               |
-| `version`           | `1`                | The payload format version, pinned by the schema itself.                                  |
-| `activeTabsetId`    | `string?`          | Id of the tabset that currently has focus.                                                |
-| `maximizedTabsetId` | `string?`          | Id of the tabset rendered full-area, hiding its siblings.                                 |
-| `windows`           | `WindowNode[]?`    | Detached windows, each its own layout subtree. See [Detached windows](/detached-windows). |
+| Field               | Type               | What it holds                                                                          |
+| ------------------- | ------------------ | -------------------------------------------------------------------------------------- |
+| `layout`            | `RowNode`          | The tiled center area. Always a row at the root.                                       |
+| `global`            | `GlobalAttributes` | Defaults that apply tree-wide unless a node overrides them.                            |
+| `version`           | `1`                | The payload format version, pinned by the schema itself.                               |
+| `activeTabsetId`    | `string?`          | Id of the tabset that currently has focus.                                             |
+| `maximizedTabsetId` | `string?`          | Id of the tabset rendered full-area, hiding its siblings.                              |
+| `floats`            | `FloatNode[]?`     | Floating panels, each its own layout subtree. See [Floating panels](/floating-panels). |
 
 `layout` is the part most people picture: a recursive grid of rows and tabsets.
 Both `activeTabsetId` and `maximizedTabsetId` are id references, not nested

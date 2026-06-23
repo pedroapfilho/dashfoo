@@ -1,22 +1,21 @@
 import { createNodeId } from "../model/ids";
 import { normalize } from "../model/invariants";
-import type { Dashfoo, Geometry, RowNode, TabNode, TabsetNode, WindowNode } from "../model/schema";
+import type { Dashfoo, FloatNode, Geometry, RowNode, TabNode, TabsetNode } from "../model/schema";
 import {
   findAttributedNode,
+  findFloat,
   findRootContaining,
   findRow,
   findTab,
   findTabset,
   findTabsetParent,
-  findWindow,
 } from "../model/tree";
 
 import type { Action, DockLocation } from "./actions";
 
-// Default popup rect when the caller doesn't measure the source (e.g. a
-// programmatic detach). The React adapter normally supplies the tab's on-screen
-// rect so the window opens where the panel was.
-const DEFAULT_WINDOW_GEOMETRY: Geometry = { height: 600, left: 120, top: 120, width: 800 };
+// Default float rect when the caller doesn't measure the source (e.g. a
+// programmatic float). The React layer normally supplies a rect over the panel.
+const DEFAULT_FLOAT_GEOMETRY: Geometry = { height: 360, left: 80, top: 80, width: 480 };
 
 const assertNever = (value: never): never => {
   throw new Error(`Unhandled action: ${JSON.stringify(value)}`);
@@ -159,23 +158,23 @@ const wrapTabsetInLayout = (tabset: TabsetNode): RowNode => ({
   type: "row",
 });
 
-// Append a new detached window holding `layout`, and move focus to its first
-// tabset so active-tabset/keyboard logic tracks the popped-out panel. `windowId`
-// is supplied when the React adapter pre-opened the browser window in the click
-// gesture, so the model node and the live window agree on one id.
-const pushWindow = (
+// Append a new floating panel holding `layout`, and move focus to its first
+// tabset so active-tabset/keyboard logic tracks the floated panel. `floatId` is
+// supplied when the caller minted the id up front, so the model node and any UI
+// tracking it agree.
+const pushFloat = (
   draft: Dashfoo,
   layout: RowNode,
   geometry: Geometry | undefined,
-  windowId: string | undefined,
+  floatId: string | undefined,
 ): void => {
-  const window: WindowNode = {
-    geometry: geometry ?? DEFAULT_WINDOW_GEOMETRY,
-    id: windowId ?? createNodeId("window"),
+  const float: FloatNode = {
+    geometry: geometry ?? DEFAULT_FLOAT_GEOMETRY,
+    id: floatId ?? createNodeId("float"),
     layout,
-    type: "window",
+    type: "float",
   };
-  draft.windows = [...(draft.windows ?? []), window];
+  draft.floats = [...(draft.floats ?? []), float];
 
   const tabsets: Array<TabsetNode> = [];
   tabsetsInRow(layout, tabsets);
@@ -185,11 +184,11 @@ const pushWindow = (
   }
 };
 
-const detachTabsetById = (
+const floatTabsetById = (
   draft: Dashfoo,
   tabsetId: string,
   geometry: Geometry | undefined,
-  windowId: string | undefined,
+  floatId: string | undefined,
 ): void => {
   const root = findRootContaining(draft, tabsetId);
   if (!root) {
@@ -197,12 +196,12 @@ const detachTabsetById = (
   }
   const detached = removeTabsetReturning(root, tabsetId);
   if (detached) {
-    pushWindow(draft, wrapTabsetInLayout(detached), geometry, windowId);
+    pushFloat(draft, wrapTabsetInLayout(detached), geometry, floatId);
   }
 };
 
-// Reattach docks back into the MAIN layout only (never another window): prefer
-// an explicit target, then the active tabset, then the first main tabset.
+// Dock-back targets the MAIN layout only (never another float): prefer an
+// explicit target, then the active tabset, then the first main tabset.
 const resolveMainTarget = (
   draft: Dashfoo,
   targetId: string | undefined,
@@ -224,32 +223,32 @@ const resolveMainTarget = (
   return mainTabsets[0];
 };
 
-const reattachWindow = (
+const dockFloat = (
   draft: Dashfoo,
-  windowId: string,
+  floatId: string,
   targetId: string | undefined,
   location: DockLocation | undefined,
 ): void => {
-  const windows = draft.windows ?? [];
-  const index = windows.findIndex((window) => window.id === windowId);
+  const floats = draft.floats ?? [];
+  const index = floats.findIndex((float) => float.id === floatId);
   if (index === -1) {
     return;
   }
-  const [window] = windows.splice(index, 1);
-  draft.windows = windows;
-  if (!window) {
+  const [float] = floats.splice(index, 1);
+  draft.floats = floats;
+  if (!float) {
     return;
   }
 
   const tabsets: Array<TabsetNode> = [];
-  tabsetsInRow(window.layout, tabsets);
+  tabsetsInRow(float.layout, tabsets);
   const tabs = tabsets.flatMap((tabset) => tabset.children);
   if (tabs.length === 0) {
     return;
   }
 
-  // Carry over which tab the user had selected in the window. The window's first
-  // tabset leads the flattened list (the common single-tabset popout), so its
+  // Carry over which tab the user had selected in the float. The float's first
+  // tabset leads the flattened list (the common single-tabset float), so its
   // clamped `selected` is the offset of the focused tab — clamp against the
   // tabset's own length, like the moveTabset center merge, so a stale index can't
   // resolve to the wrong tab.
@@ -260,9 +259,9 @@ const reattachWindow = (
 
   const target = resolveMainTarget(draft, targetId);
   if (!target) {
-    // Nothing left in the main layout to dock into — promote the window's own
+    // Nothing left in the main layout to dock into — promote the float's own
     // layout to be the main layout so its tabs aren't lost.
-    draft.layout = window.layout;
+    draft.layout = float.layout;
     draft.activeTabsetId = leadTabset?.id;
     return;
   }
@@ -326,19 +325,19 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       }
       return;
     }
-    case "detachTab": {
+    case "floatTab": {
       const location = findTab(draft, action.tabId);
       if (!location) {
         return;
       }
       const [removed] = location.container.children.splice(location.index, 1);
       if (removed) {
-        pushWindow(draft, wrapTabInLayout(removed), action.geometry, action.windowId);
+        pushFloat(draft, wrapTabInLayout(removed), action.geometry, action.floatId);
       }
       return;
     }
-    case "detachTabset": {
-      detachTabsetById(draft, action.tabsetId, action.geometry, action.windowId);
+    case "floatTabset": {
+      floatTabsetById(draft, action.tabsetId, action.geometry, action.floatId);
       return;
     }
     case "moveNode": {
@@ -400,8 +399,8 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       }
       return;
     }
-    case "reattachWindow": {
-      reattachWindow(draft, action.windowId, action.targetId, action.location);
+    case "dockFloat": {
+      dockFloat(draft, action.floatId, action.targetId, action.location);
       return;
     }
     case "renameTab": {
@@ -439,10 +438,10 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       }
       return;
     }
-    case "updateWindowGeometry": {
-      const window = findWindow(draft, action.windowId);
-      if (window) {
-        window.geometry = action.geometry;
+    case "moveFloat": {
+      const float = findFloat(draft, action.floatId);
+      if (float) {
+        float.geometry = action.geometry;
       }
       return;
     }

@@ -13,9 +13,9 @@ import { TabsetTab, TabsetTrigger } from "./tabset-tab";
 import { TabsetCloseButton, TabsetRenameInput } from "./tabset-tab-controls";
 import { TabsetTablist, TabsetTabStrip } from "./tabset-tablist";
 import {
+  TabsetFloatButton,
   TabsetGrip,
   TabsetMaximizeButton,
-  TabsetPopoutButton,
   TabsetToolbar,
 } from "./tabset-toolbar";
 
@@ -30,7 +30,7 @@ const tabsetContent = <TabsetContent />;
 // condition needs the store's overflow count.
 const DefaultTabsetLayout = (): ReactNode => {
   const draggableTabsets = useLayout((state) => state.draggableTabsets);
-  const poppable = useLayout((state) => state.poppable);
+  const floatable = useLayout((state) => state.floatable);
   const renderTabsetToolbar = useLayout((state) => state.renderTabsetToolbar);
   const tabLocation = useLayout((state) => state.tabLocation);
   const tabStripEnabled = useLayout((state) => state.tabStripEnabled);
@@ -45,7 +45,7 @@ const DefaultTabsetLayout = (): ReactNode => {
     showMaximize ||
     renderTabsetToolbar !== undefined ||
     overflowCount > 0 ||
-    (poppable && !isMaximized) ||
+    (floatable && !isMaximized) ||
     (draggableTabsets && !isMaximized);
 
   const strip = tabStripEnabled ? (
@@ -64,7 +64,7 @@ const DefaultTabsetLayout = (): ReactNode => {
           <TabsetOverflowMenu />
           <TabsetGrip />
           {renderTabsetToolbar?.(node)}
-          <TabsetPopoutButton />
+          <TabsetFloatButton />
           <TabsetMaximizeButton />
         </TabsetToolbar>
       ) : null}

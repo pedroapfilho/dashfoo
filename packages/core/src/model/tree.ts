@@ -1,19 +1,19 @@
-import type { Dashfoo, RowNode, TabNode, TabsetNode, WindowNode } from "./schema";
+import type { Dashfoo, FloatNode, RowNode, TabNode, TabsetNode } from "./schema";
 
 // A tab lives inside a tabset.
 type TabContainer = TabsetNode;
 type TabLocation = { container: TabContainer; index: number; tab: TabNode };
 
-// Every layout root: the main layout first, then each detached window's layout.
-// Traversals fan out over this so a popped-out tabset is as reachable as a docked
+// Every layout root: the main layout first, then each floating panel's layout.
+// Traversals fan out over this so a floated tabset is as reachable as a docked
 // one; "first" semantics (active tabset fallbacks) prefer the main layout.
 const collectRoots = (model: Dashfoo): Array<RowNode> => [
   model.layout,
-  ...(model.windows ?? []).map((window) => window.layout),
+  ...(model.floats ?? []).map((float) => float.layout),
 ];
 
-const findWindow = (model: Dashfoo, windowId: string): WindowNode | undefined =>
-  (model.windows ?? []).find((window) => window.id === windowId);
+const findFloat = (model: Dashfoo, floatId: string): FloatNode | undefined =>
+  (model.floats ?? []).find((float) => float.id === floatId);
 
 const collectTabsetsInRow = (row: RowNode, acc: Array<TabsetNode>): void => {
   for (const child of row.children) {
@@ -121,7 +121,7 @@ const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefi
   return undefined;
 };
 
-// The root row (main layout or a window's layout) whose subtree contains the
+// The root row (main layout or a float's layout) whose subtree contains the
 // node. Lets the reducer run root-relative surgery (findRow, findTabsetParent,
 // removeTabset) against the correct tree instead of assuming the main layout.
 const findRootContaining = (model: Dashfoo, nodeId: string): RowNode | undefined => {
@@ -172,8 +172,8 @@ const collectIdsInRow = (row: RowNode, acc: Array<string>): void => {
 // plumbing, so this backs a load-time diagnostic.
 const findDuplicateIds = (model: Dashfoo): Array<string> => {
   const ids: Array<string> = [];
-  for (const window of model.windows ?? []) {
-    ids.push(window.id);
+  for (const float of model.floats ?? []) {
+    ids.push(float.id);
   }
   for (const root of collectRoots(model)) {
     collectIdsInRow(root, ids);
@@ -195,12 +195,12 @@ export {
   collectTabsetsInRow,
   findAttributedNode,
   findDuplicateIds,
+  findFloat,
   findRootContaining,
   findRow,
   findTab,
   findTabset,
   findTabsetParent,
-  findWindow,
   getFirstTabset,
 };
 export type { AttributedNode, TabContainer, TabLocation };

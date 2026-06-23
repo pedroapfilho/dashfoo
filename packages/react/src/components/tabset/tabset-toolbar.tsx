@@ -1,16 +1,15 @@
 "use client";
 
-import { createNodeId } from "@dashfoo/core";
 import type { ComponentProps, CSSProperties, MouseEvent, ReactNode } from "react";
 import { useMemo } from "react";
 
 import { useLayout } from "../../hooks/layout-store";
-import { usePopout } from "../../hooks/popout-store";
+import { measureFloatRect } from "../../lib/float-geometry";
 import { mergeRefs } from "../../lib/merge-refs";
-import { measureGeometry } from "../../lib/popout-window";
 import { warnOnce } from "../../lib/warn-once";
 import { useTabsetDraggable } from "../drag-adapter";
-import { GripIcon, MaximizeIcon, PopoutIcon } from "../tabset-icons";
+import { useHasFloatLayer } from "../float-context";
+import { FloatIcon, GripIcon, MaximizeIcon } from "../tabset-icons";
 
 import { useTabset } from "./tabset-store";
 
@@ -92,68 +91,57 @@ const TabsetMaximizeButton = ({
   );
 };
 
-type TabsetPopoutButtonProps = ComponentProps<"button">;
+type TabsetFloatButtonProps = ComponentProps<"button">;
 
-// Pops the whole tabset out into a detached window. window.open runs inside this
-// click (so the popup blocker allows it) and pre-registers the proxy under a
-// fresh id; the matching detachTabset carries that id so the model node binds to
-// the window just opened. Self-hides when popping is off or the tabset is
-// maximized (a maximized panel already owns the frame).
-const TabsetPopoutButton = ({
-  children,
-  onClick,
-  ...props
-}: TabsetPopoutButtonProps): ReactNode => {
-  const poppable = useLayout((state) => state.poppable);
+// Floats the whole tabset out into a draggable, resizable overlay (dispatches
+// `floatTabset` with a rect measured over the panel). Self-hides when floating is
+// off or the tabset is maximized (a maximized panel already owns the frame).
+const TabsetFloatButton = ({ children, onClick, ...props }: TabsetFloatButtonProps): ReactNode => {
+  const floatable = useLayout((state) => state.floatable);
   const dispatch = useLayout((state) => state.dispatch);
   const isMaximized = useTabset((state) => state.isMaximized);
   const node = useTabset((state) => state.node);
-  const popout = usePopout();
+  const hasFloatLayer = useHasFloatLayer();
 
-  if (!poppable || isMaximized) {
+  if (!floatable || isMaximized) {
     return null;
   }
 
-  // `poppable` is on but there is no <Layout.PopoutLayer> above to open windows
-  // (a hand-built layout that forgot it — DashfooLayout always adds one). Hide the
-  // control and warn rather than render a button whose click silently does nothing.
-  if (!popout) {
+  // `floatable` is on but there is no <Layout.FloatLayer> to render the float (a
+  // hand-built layout that forgot it — DashfooLayout always adds one). Hide the
+  // control and warn rather than render a button that would float a panel into
+  // nowhere.
+  if (!hasFloatLayer) {
     warnOnce(
-      "popout-no-layer",
-      "Tabset.PopoutButton needs a <Layout.PopoutLayer> above it (DashfooLayout adds one); the pop-out control is hidden",
+      "float-no-layer",
+      "Tabset.FloatButton needs a <Layout.FloatLayer> around the layout (DashfooLayout adds one); the float control is hidden",
     );
     return null;
   }
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
     onClick?.(event);
-    const tabsetElement = event.currentTarget.closest<HTMLElement>('[data-dashfoo="tabset"]');
-    const geometry = measureGeometry(tabsetElement);
-    const windowId = createNodeId("window");
-    // Open synchronously inside the gesture, then detach to the same id — but only
-    // when the window actually opened, so a blocked popup leaves the panel docked.
-    if (popout.open(windowId, geometry)) {
-      dispatch({ geometry, tabsetId: node.id, type: "detachTabset", windowId });
-    }
+    const geometry = measureFloatRect(event.currentTarget);
+    dispatch({ geometry, tabsetId: node.id, type: "floatTabset" });
   };
 
   return (
     <button
-      aria-label="Open panel in a new window"
+      aria-label="Float panel"
       {...props}
-      data-dashfoo="tabset-popout"
+      data-dashfoo="tabset-float"
       onClick={handleClick}
       type="button"
     >
-      {children ?? <PopoutIcon />}
+      {children ?? <FloatIcon />}
     </button>
   );
 };
 
-export { TabsetGrip, TabsetMaximizeButton, TabsetPopoutButton, TabsetToolbar };
+export { TabsetFloatButton, TabsetGrip, TabsetMaximizeButton, TabsetToolbar };
 export type {
+  TabsetFloatButtonProps,
   TabsetGripProps,
   TabsetMaximizeButtonProps,
-  TabsetPopoutButtonProps,
   TabsetToolbarProps,
 };

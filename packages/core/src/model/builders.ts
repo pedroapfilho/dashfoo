@@ -10,6 +10,7 @@ import { createNodeId } from "./ids";
 import type {
   Dashfoo,
   Dimension,
+  FloatNode,
   Geometry,
   GlobalAttributes,
   Json,
@@ -17,7 +18,6 @@ import type {
   SnapConfig,
   TabNode,
   TabsetNode,
-  WindowNode,
 } from "./schema";
 import { findDuplicateIds } from "./tree";
 
@@ -88,29 +88,25 @@ const row = (children: RowNode["children"], options: RowOptions = {}): RowNode =
   };
 };
 
-type WindowOptions = {
+type FloatOptions = {
   id?: string;
   name?: string;
 };
 
-// A detached window wrapping a layout subtree at a given on-screen rect.
-const windowNode = (
-  layout: RowNode,
-  geometry: Geometry,
-  options: WindowOptions = {},
-): WindowNode => ({
+// A floating panel wrapping a layout subtree at a given in-app rect.
+const floatNode = (layout: RowNode, geometry: Geometry, options: FloatOptions = {}): FloatNode => ({
   geometry,
   layout,
-  type: "window",
+  type: "float",
   ...options,
-  id: options.id ?? createNodeId("window"),
+  id: options.id ?? createNodeId("float"),
 });
 
 type ModelOptions = {
   activeTabsetId?: string;
+  floats?: Array<FloatNode>;
   global?: GlobalAttributes;
   maximizedTabsetId?: string;
-  windows?: Array<WindowNode>;
 };
 
 const model = (layout: RowNode, options: ModelOptions = {}): Dashfoo => {
@@ -130,5 +126,5 @@ const model = (layout: RowNode, options: ModelOptions = {}): Dashfoo => {
   return built;
 };
 
-export { model, row, tab, tabset, windowNode };
-export type { ModelOptions, RowOptions, TabOptions, TabsetOptions, WindowOptions };
+export { floatNode, model, row, tab, tabset };
+export type { FloatOptions, ModelOptions, RowOptions, TabOptions, TabsetOptions };

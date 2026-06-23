@@ -16,11 +16,11 @@ type LayoutState = {
   draggableTabs: boolean;
   draggableTabsets: boolean;
   editable: boolean;
+  // Whether tabsets show a "float into a movable panel" control.
+  floatable: boolean;
   keepMounted: boolean;
   maximizable: boolean;
   maximizedTabsetId: string | undefined;
-  // Whether tabsets show a "pop out into a new window" control.
-  poppable: boolean;
   renamableTabs: boolean;
   renderTab: (tab: TabNode) => ReactNode;
   renderTabLabel: ((tab: TabNode) => ReactNode) | undefined;

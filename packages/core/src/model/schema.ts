@@ -87,10 +87,9 @@ const rowNodeSchema: z.ZodType<RowNode> = z.lazy(() =>
   }),
 );
 
-// A detached window's on-screen rectangle, in CSS pixels relative to the screen.
-// Captured at detach time and refreshed as the user moves/resizes the popup, so
-// the model round-trips a window's position even though v1 does not reopen
-// windows on reload.
+// A floating panel's rectangle, in CSS pixels relative to the layout container.
+// Captured when the panel is floated and refreshed as the user drags or resizes
+// it, so the model round-trips the float's position.
 const geometrySchema = z.object({
   height: z.number(),
   left: z.number(),
@@ -98,15 +97,16 @@ const geometrySchema = z.object({
   width: z.number(),
 });
 
-// A popped-out window. It owns a full RowNode layout (the same shape as the main
-// root), so a window can hold a single tab, several tabs, or nested splits and
-// reuses the exact same rendering and dock surgery as the main layout.
-const windowNodeSchema = z.object({
+// A floating panel: a tabset (or split) lifted out of the docked layout into a
+// draggable, resizable overlay that still lives in the same app. It owns a full
+// RowNode layout (the same shape as the main root), so a float can hold a single
+// tab, several tabs, or nested splits and reuses the exact same rendering.
+const floatNodeSchema = z.object({
   geometry: geometrySchema,
   id: z.string(),
   layout: rowNodeSchema,
   name: z.string().optional(),
-  type: z.literal("window"),
+  type: z.literal("float"),
 });
 
 const globalAttributesSchema = z.object({
@@ -131,9 +131,9 @@ const dashfooSchema = z.object({
   // The persisted-payload format version, pinned by the schema itself: any
   // future format change bumps the literal, so foreign payloads fail validation.
   version: z.literal(1),
-  // Detached windows, each owning its own layout subtree. Optional so existing
-  // payloads (and hand-built models) stay valid; absent means "no popouts".
-  windows: z.array(windowNodeSchema).optional(),
+  // Floating panels, each owning its own layout subtree. Optional so existing
+  // payloads (and hand-built models) stay valid; absent means "nothing floating".
+  floats: z.array(floatNodeSchema).optional(),
 });
 
 type Json = JsonValue;
@@ -145,7 +145,7 @@ type SnapConfig = z.infer<typeof snapSchema>;
 type TabNode = z.infer<typeof tabNodeSchema>;
 type TabsetNode = z.infer<typeof tabsetNodeSchema>;
 type Geometry = z.infer<typeof geometrySchema>;
-type WindowNode = z.infer<typeof windowNodeSchema>;
+type FloatNode = z.infer<typeof floatNodeSchema>;
 type GlobalAttributes = z.infer<typeof globalAttributesSchema>;
 type Dashfoo = z.infer<typeof dashfooSchema>;
 type Node = RowNode | TabsetNode | TabNode;
@@ -154,6 +154,7 @@ export {
   dashfooSchema,
   dimensionSchema,
   edgeSchema,
+  floatNodeSchema,
   geometrySchema,
   globalAttributesSchema,
   jsonValueSchema,
@@ -163,13 +164,13 @@ export {
   tabNodeSchema,
   tabsetNodeSchema,
   unitSchema,
-  windowNodeSchema,
 };
 
 export type {
   Dashfoo,
   Dimension,
   Edge,
+  FloatNode,
   Geometry,
   GlobalAttributes,
   Json,
@@ -180,5 +181,4 @@ export type {
   TabNode,
   TabsetNode,
   Unit,
-  WindowNode,
 };

@@ -60,12 +60,11 @@ const MaximizeIcon = ({ maximized }: { maximized: boolean }): ReactNode =>
     </Icon>
   );
 
-// "Open in new window" — a panel lifting out to a separate frame.
-const PopoutIcon = (): ReactNode => (
+// "Float" — a small panel lifted off the surface (a framed rect with a header).
+const FloatIcon = (): ReactNode => (
   <Icon>
-    <path d="M15 3h6v6" />
-    <path d="M10 14 21 3" />
-    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <rect height="14" rx="2" width="18" x="3" y="6" />
+    <path d="M3 10h18" />
   </Icon>
 );
 
@@ -78,4 +77,4 @@ const DockIcon = (): ReactNode => (
   </Icon>
 );
 
-export { CloseIcon, DockIcon, GripIcon, MaximizeIcon, PopoutIcon };
+export { CloseIcon, DockIcon, FloatIcon, GripIcon, MaximizeIcon };

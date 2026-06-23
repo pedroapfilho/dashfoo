@@ -1,4 +1,4 @@
-import type { Dashfoo, RowNode, TabsetNode, WindowNode } from "./schema";
+import type { Dashfoo, FloatNode, RowNode, TabsetNode } from "./schema";
 import { collectTabsets } from "./tree";
 
 const clampSelected = (length: number, selected: number): number => {
@@ -79,18 +79,18 @@ const normalizeLayout = (root: RowNode): RowNode => {
 const normalize = (model: Dashfoo): Dashfoo => {
   const layout = normalizeLayout(model.layout);
 
-  // Heal each window's own layout, then drop any window that emptied out (its
-  // last tab closed/moved away) — the window equivalent of empty-tabset cleanup.
-  const healedWindows: Array<WindowNode> = [];
-  for (const window of model.windows ?? []) {
-    const windowLayout = normalizeLayout(window.layout);
-    if (rowContainsTabset(windowLayout)) {
-      healedWindows.push({ ...window, layout: windowLayout });
+  // Heal each float's own layout, then drop any float that emptied out (its last
+  // tab closed/moved away) — the float equivalent of empty-tabset cleanup.
+  const healedFloats: Array<FloatNode> = [];
+  for (const float of model.floats ?? []) {
+    const floatLayout = normalizeLayout(float.layout);
+    if (rowContainsTabset(floatLayout)) {
+      healedFloats.push({ ...float, layout: floatLayout });
     }
   }
-  const windows = healedWindows.length > 0 ? healedWindows : undefined;
+  const floats = healedFloats.length > 0 ? healedFloats : undefined;
 
-  const withRoots: Dashfoo = { ...model, layout, windows };
+  const withRoots: Dashfoo = { ...model, floats, layout };
 
   const tabsetIds = new Set(collectTabsets(withRoots).map((tabset) => tabset.id));
   const firstTabsetId = collectTabsets(withRoots)[0]?.id;

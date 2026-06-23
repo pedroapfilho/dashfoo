@@ -1,0 +1,106 @@
+---
+title: Floating panels
+description: Float a panel out of the docked layout into a draggable, resizable overlay — first-class, serializable nodes that stay in the same app.
+---
+
+A panel can lift out of the tiled layout into a **floating panel**: a draggable,
+resizable overlay that sits above the docked rows but stays in the same app — the
+"float" move from FlexLayout. A floating panel is not a separate browser window; it
+renders in the same React tree, so context, events, and styling just work. And it
+is a first-class node in the model (`Dashfoo.floats`), so it serializes, validates,
+and self-heals exactly like a docked panel.
+
+## The `floatable` prop
+
+Pass `floatable` to add a float control to each tabset toolbar and render any
+floating panels:
+
+```tsx
+import type { Dashfoo, TabNode } from "@dashfoo/core";
+import { model, row, tab, tabset } from "@dashfoo/core";
+import { DashfooLayout } from "@dashfoo/react";
+import type { ReactNode } from "react";
+import { useMemo } from "react";
+
+const dashboard = (): Dashfoo =>
+  model(
+    row([
+      tabset([tab("chart", "Chart"), tab("trades", "Trades")], { id: "left", weight: 2 }),
+      tabset([tab("book", "Order Book")], { id: "right", weight: 1 }),
+    ]),
+  );
+
+const renderPanel = (node: TabNode): ReactNode => <div>{node.name}</div>;
+
+const Dashboard = (): ReactNode => {
+  const defaultModel = useMemo(() => dashboard(), []);
+  return <DashfooLayout defaultModel={defaultModel} factory={renderPanel} floatable />;
+};
+
+export { Dashboard };
+```
+
+Clicking the `[data-dashfoo="tabset-float"]` control floats the whole tabset into an
+overlay positioned over where it was docked. Drag the **title bar** to move it,
+drag the **edge/corner handles** to resize, and click **Dock back**
+(`[data-dashfoo="float-dock"]`) in the title bar to return it to the layout.
+
+## Floats are model nodes
+
+Floating dispatches an action; the result is a normalized model with a `floats`
+entry. Everything you can do to the main tree works on a float's tree:
+
+```ts
+import { reducer } from "@dashfoo/core";
+
+const floated = reducer(model, { type: "floatTabset", tabsetId: "left" });
+floated.floats;
+// [{ type: "float", id, layout: RowNode, geometry: { left, top, width, height } }]
+
+// Dock it back into the active main tabset and drop the float.
+reducer(floated, { type: "dockFloat", floatId: floated.floats![0].id });
+```
+
+The reducer actions are `floatTab`, `floatTabset`, `dockFloat`, and `moveFloat`
+(the last persists a float's rect as you drag or resize it — one undo step per
+gesture). `geometry` is in CSS pixels relative to the layout container, so the
+overlay positions a float with plain absolute `left`/`top`. `normalize` heals each
+float's own layout and drops a float the moment its last panel leaves, the same way
+it removes an empty tabset. Because a float owns a full `RowNode`, a floated panel
+is a real container: it can hold one tab or several.
+
+## What's in scope
+
+- **Same React tree.** Floats render through the normal `Layout.Rows` in the same
+  tree, so app context (a theme provider, a query client), event handling, and your
+  stylesheet all apply with nothing extra.
+- **Drag + resize.** The title bar moves the float; eight handles resize it. Both
+  update the DOM imperatively during the gesture and commit one `moveFloat` on
+  release, so a drag is a single undo step.
+- **Dock back.** A floating panel is select / close / rename plus a "Dock back"
+  control — dragging a tab out of a float to re-dock it is not wired yet.
+- **Bring to front.** Clicking a float raises it above the others.
+
+The overlay is `pointer-events: none`, so empty space stays click-through to the
+docked layout underneath; each float opts pointer events back in.
+
+## Hand-built layouts
+
+If you compose the `Layout.*` primitives yourself, wrap the layout's content with
+`Layout.FloatLayer` (passing `floats` + `global`) — it renders each floated panel as
+an overlay over the rows — and add `Tabset.FloatButton` to your tabset toolbar.
+
+```tsx
+<Layout.Root dispatch={store.dispatch} floatable model={store.model} renderTab={renderPanel}>
+  <Layout.FloatLayer floats={store.model.floats ?? []} global={store.model.global}>
+    <Layout.DragLayer>
+      <Layout.Rows node={store.model.layout} />
+    </Layout.DragLayer>
+  </Layout.FloatLayer>
+</Layout.Root>
+```
+
+`Tabset.FloatButton` hides itself (and warns) if no `Layout.FloatLayer` is present,
+so a floated panel can never end up with nowhere to render.
+
+See also: [The layout model](/the-model) · [Persisting layouts](/persistence).

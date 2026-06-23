@@ -7,9 +7,9 @@ import { TabsetTab, TabsetTrigger } from "./tabset-tab";
 import { TabsetCloseButton, TabsetRenameInput } from "./tabset-tab-controls";
 import { TabsetTablist, TabsetTabStrip } from "./tabset-tablist";
 import {
+  TabsetFloatButton,
   TabsetGrip,
   TabsetMaximizeButton,
-  TabsetPopoutButton,
   TabsetToolbar,
 } from "./tabset-toolbar";
 
@@ -18,10 +18,10 @@ import {
 const Tabset = {
   CloseButton: TabsetCloseButton,
   Content: TabsetContent,
+  FloatButton: TabsetFloatButton,
   Grip: TabsetGrip,
   MaximizeButton: TabsetMaximizeButton,
   OverflowMenu: TabsetOverflowMenu,
-  PopoutButton: TabsetPopoutButton,
   RenameInput: TabsetRenameInput,
   Root: TabsetRoot,
   Tab: TabsetTab,
@@ -38,8 +38,8 @@ export type { TabsetTabProps, TabsetTriggerProps } from "./tabset-tab";
 export type { TabsetCloseButtonProps, TabsetRenameInputProps } from "./tabset-tab-controls";
 export type { TabsetTablistProps, TabsetTabStripProps } from "./tabset-tablist";
 export type {
+  TabsetFloatButtonProps,
   TabsetGripProps,
   TabsetMaximizeButtonProps,
-  TabsetPopoutButtonProps,
   TabsetToolbarProps,
 } from "./tabset-toolbar";
