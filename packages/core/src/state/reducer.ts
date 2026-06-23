@@ -266,8 +266,11 @@ const dockFloat = (
     return;
   }
 
-  const where = location ?? "center";
-  if (where === "center") {
+  // An explicit `center` (e.g. a drag dropped onto a tab strip) merges the float's
+  // tabs into the target. The default dock-back, though, restores the float as its
+  // OWN panel beside the target — bringing all its tabs back as a group rather than
+  // flattening them into another tabset.
+  if (location === "center") {
     const mergeStart = target.children.length;
     target.children.push(...tabs);
     target.selected = mergeStart + selectedOffset;
@@ -275,13 +278,14 @@ const dockFloat = (
     return;
   }
 
-  const placed: TabsetNode = {
-    children: tabs,
-    id: createNodeId("tabset"),
-    selected: selectedOffset,
-    type: "tabset",
-    weight: 50,
-  };
+  const where = location ?? "split-right";
+  // A single-tabset float (the common case) re-docks that exact tabset, preserving
+  // its id, tabs, and selected index; a split float collapses to one new tabset.
+  const placed: TabsetNode =
+    tabsets.length === 1 && leadTabset
+      ? leadTabset
+      : { children: tabs, id: createNodeId("tabset"), selected: selectedOffset, type: "tabset" };
+  placed.weight = 50;
   placeBesideTarget(draft, placed, target.id, where);
 };
 
@@ -442,6 +446,13 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       const float = findFloat(draft, action.floatId);
       if (float) {
         float.geometry = action.geometry;
+      }
+      return;
+    }
+    case "setFloatMinimized": {
+      const float = findFloat(draft, action.floatId);
+      if (float) {
+        float.minimized = action.minimized;
       }
       return;
     }

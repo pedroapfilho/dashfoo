@@ -127,6 +127,12 @@ const actionSchema = z.discriminatedUnion("type", [
     geometry: geometrySchema,
     type: z.literal("moveFloat"),
   }),
+  // Collapse a float to a chip (minimized: true) or restore it (false).
+  z.object({
+    floatId: z.string(),
+    minimized: z.boolean(),
+    type: z.literal("setFloatMinimized"),
+  }),
 ]);
 
 type DockLocation = z.infer<typeof dockLocationSchema>;

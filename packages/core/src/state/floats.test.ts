@@ -87,45 +87,47 @@ describe("floatTabset", () => {
 });
 
 describe("dockFloat", () => {
-  test("docks the float's tabs back into the target tabset (center) and drops the float", () => {
+  test("dock-back restores the float as its own panel (all tabs grouped), not merged", () => {
+    const floated = reducer(baseModel(), { tabsetId: "ts2", type: "floatTabset" });
+    const float = onlyFloat(floated);
+
+    const next = reducer(floated, { floatId: float.id, type: "dockFloat" });
+
+    expect(next.floats ?? []).toHaveLength(0);
+    // ts1 is untouched; the float's ts2 comes back as its own tabset with its tab,
+    // rather than its tabs being flattened into ts1.
+    const restored = collectTabsets(next).find((ts) => ts.id === "ts2");
+    expect(restored?.children.map((t) => t.id)).toEqual(["t3"]);
+    const ts1 = collectTabsets(next).find((ts) => ts.id === "ts1");
+    expect(ts1?.children.map((t) => t.id)).toEqual(["t1", "t2"]);
+  });
+
+  test("an explicit center location merges the float's tabs into the target", () => {
     const floated = reducer(baseModel(), { tabId: "t1", type: "floatTab" });
     const float = onlyFloat(floated);
 
-    const next = reducer(floated, { floatId: float.id, targetId: "ts1", type: "dockFloat" });
+    const next = reducer(floated, {
+      floatId: float.id,
+      location: "center",
+      targetId: "ts1",
+      type: "dockFloat",
+    });
 
-    expect(next.floats ?? []).toHaveLength(0);
     const target = next.layout.children.find((c) => c.id === "ts1") as TabsetNode;
     expect(target.children.map((t) => t.id)).toEqual(["t2", "t1"]);
   });
 
-  test("preserves the tab selected inside the float when docking back (center)", () => {
+  test("preserves the tab selected inside the float when restoring as a panel", () => {
     const floated = reducer(baseModel(), { tabsetId: "ts1", type: "floatTabset" });
     const float = onlyFloat(floated);
     // ts1 (t1, t2) is now in the float; select its second tab there.
     const selected = reducer(floated, { index: 1, tabsetId: "ts1", type: "selectTab" });
 
-    const next = reducer(selected, { floatId: float.id, targetId: "ts2", type: "dockFloat" });
+    const next = reducer(selected, { floatId: float.id, type: "dockFloat" });
 
-    const target = next.layout.children.find((c) => c.id === "ts2") as TabsetNode;
-    // ts2 had [t3]; the float's [t1, t2] merge after it, focus on t2 (the float pick).
-    expect(target.children.map((t) => t.id)).toEqual(["t3", "t1", "t2"]);
-    expect(target.children[target.selected]?.id).toBe("t2");
-  });
-
-  test("preserves the selected tab when docking back as a split", () => {
-    const floated = reducer(baseModel(), { tabsetId: "ts1", type: "floatTabset" });
-    const float = onlyFloat(floated);
-    const selected = reducer(floated, { index: 1, tabsetId: "ts1", type: "selectTab" });
-
-    const next = reducer(selected, {
-      floatId: float.id,
-      location: "split-right",
-      targetId: "ts2",
-      type: "dockFloat",
-    });
-
-    const placed = collectTabsets(next).find((ts) => ts.children.some((t) => t.id === "t1"));
-    expect(placed?.children[placed.selected]?.id).toBe("t2");
+    const restored = collectTabsets(next).find((ts) => ts.id === "ts1");
+    expect(restored?.children.map((t) => t.id)).toEqual(["t1", "t2"]);
+    expect(restored?.children[restored.selected]?.id).toBe("t2");
   });
 
   test("split location docks the float's tabs beside the target", () => {
@@ -161,6 +163,27 @@ describe("moveFloat", () => {
     const next = reducer(floated, { floatId: float.id, geometry, type: "moveFloat" });
 
     expect(onlyFloat(next).geometry).toEqual(geometry);
+  });
+});
+
+describe("setFloatMinimized", () => {
+  test("toggles a float's minimized flag", () => {
+    const floated = reducer(baseModel(), { tabId: "t1", type: "floatTab" });
+    const float = onlyFloat(floated);
+
+    const minimized = reducer(floated, {
+      floatId: float.id,
+      minimized: true,
+      type: "setFloatMinimized",
+    });
+    expect(onlyFloat(minimized).minimized).toBe(true);
+
+    const restored = reducer(minimized, {
+      floatId: float.id,
+      minimized: false,
+      type: "setFloatMinimized",
+    });
+    expect(onlyFloat(restored).minimized).toBe(false);
   });
 });
 

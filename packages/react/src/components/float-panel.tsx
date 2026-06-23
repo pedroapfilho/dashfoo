@@ -10,7 +10,7 @@ import { clampToBounds, resizeRect } from "../lib/float-geometry";
 
 import { LayoutRoot } from "./layout-root";
 import { RowView } from "./row-view";
-import { DockIcon, GripIcon } from "./tabset-icons";
+import { DockIcon, FloatIcon, GripIcon, MinimizeIcon } from "./tabset-icons";
 
 // One floating panel: an absolutely-positioned overlay over the layout, dragged by
 // its title bar and resized by edge/corner handles, with the panel itself rendered
@@ -107,8 +107,14 @@ const RESIZE_HANDLES: ReadonlyArray<{ edges: ResizeEdges; key: string; style: CS
 ];
 
 // Resolve a resize handle's data-edge back to its edges; a missing key (the title
-// bar) means a move, not a resize.
+// bar or the minimized chip) means a move, not a resize.
 const EDGE_BY_KEY = new Map<string, ResizeEdges>(RESIZE_HANDLES.map((h) => [h.key, h.edges]));
+
+// Approximate footprint of the minimized chip, used to keep it on screen while it
+// is dragged (its window rect is preserved in geometry for restore).
+const CHIP_SIZE: Size = { height: 34, width: 168 };
+// Pointer travel (px) past which a press counts as a drag, not a tap.
+const TAP_SLOP = 4;
 
 type Gesture = {
   bounds: Size;
@@ -138,21 +144,30 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
   const renderTabsetToolbar = useLayout((state) => state.renderTabsetToolbar);
   const snap = useLayout((state) => state.snap);
 
-  const panelRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLElement | null>(null);
   const gestureRef = useRef<Gesture | null>(null);
   const latestRef = useRef<Geometry>(node.geometry);
+  const movedRef = useRef(false);
+  const setPanel = (element: HTMLElement | null): void => {
+    panelRef.current = element;
+  };
 
-  // One pointerdown handler for the title bar (move) and the resize handles; the
-  // moving edges ride the target's data-edge, so it can be assigned directly to
+  const restore = (): void =>
+    dispatch({ floatId: node.id, minimized: false, type: "setFloatMinimized" });
+
+  // One pointerdown handler for the title bar / chip (move) and the resize handles;
+  // the moving edges ride the target's data-edge, so it can be assigned directly to
   // onPointerDown (no per-render closure that reads refs).
-  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>): void => {
+  const handlePointerDown = (event: ReactPointerEvent<HTMLElement>): void => {
     const panel = panelRef.current;
     if (!panel) {
       return;
     }
     onFocus();
+    movedRef.current = false;
     const edgeKey = event.currentTarget.dataset.edge;
-    // The overlay (positioned ancestor) is the bounds for clamping a move.
+    // While minimized the chip keeps its small footprint on screen; otherwise the
+    // whole window rect is clamped against the viewport (the overlay).
     const parent = panel.offsetParent as HTMLElement | null;
     gestureRef.current = {
       bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
@@ -175,17 +190,26 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     }
     const dx = event.clientX - gesture.startX;
     const dy = event.clientY - gesture.startY;
+    if (Math.hypot(dx, dy) > TAP_SLOP) {
+      movedRef.current = true;
+    }
     const next = gesture.edges
       ? resizeRect(gesture.start, gesture.edges, dx, dy)
       : clampToBounds(
           { ...gesture.start, left: gesture.start.left + dx, top: gesture.start.top + dy },
           gesture.bounds,
+          node.minimized ? CHIP_SIZE : undefined,
         );
+    // next always carries the window's own width/height (the chip's footprint is
+    // only used to clamp position), so restore reopens at the saved size.
     latestRef.current = next;
     panel.style.left = `${next.left}px`;
     panel.style.top = `${next.top}px`;
-    panel.style.width = `${next.width}px`;
-    panel.style.height = `${next.height}px`;
+    // The chip's size is CSS-driven; only the window writes its own dimensions.
+    if (!node.minimized) {
+      panel.style.width = `${next.width}px`;
+      panel.style.height = `${next.height}px`;
+    }
   };
 
   const handlePointerUp = (event: ReactPointerEvent): void => {
@@ -195,8 +219,44 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     }
     gestureRef.current = null;
     panelRef.current?.releasePointerCapture(event.pointerId);
+    // A tap on the minimized chip restores it; a drag repositions it.
+    if (node.minimized && !movedRef.current) {
+      restore();
+      return;
+    }
     dispatch({ floatId: node.id, geometry: latestRef.current, type: "moveFloat" });
   };
+
+  if (node.minimized) {
+    return (
+      <button
+        aria-label={`Restore ${floatTitle(node)} panel`}
+        data-dashfoo="float-chip"
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            restore();
+          }
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        ref={setPanel}
+        style={{
+          left: node.geometry.left,
+          pointerEvents: "auto",
+          position: "absolute",
+          top: node.geometry.top,
+          zIndex,
+        }}
+        title={floatTitle(node)}
+        type="button"
+      >
+        <FloatIcon />
+        <span data-dashfoo="float-chip-label">{floatTitle(node)}</span>
+      </button>
+    );
+  }
 
   const floatModel: Dashfoo = { global, layout: node.layout, version: 1 };
 
@@ -205,7 +265,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
       data-dashfoo="float"
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      ref={panelRef}
+      ref={setPanel}
       style={{
         height: node.geometry.height,
         left: node.geometry.left,
@@ -225,6 +285,16 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
         <span data-dashfoo="float-title" style={titleStyle}>
           {floatTitle(node)}
         </span>
+        <button
+          aria-label="Minimize panel"
+          data-dashfoo="float-minimize"
+          onClick={() => dispatch({ floatId: node.id, minimized: true, type: "setFloatMinimized" })}
+          onPointerDown={(event) => event.stopPropagation()}
+          style={dockButtonStyle}
+          type="button"
+        >
+          <MinimizeIcon />
+        </button>
         <button
           aria-label="Dock panel back into the main layout"
           data-dashfoo="float-dock"

@@ -263,7 +263,8 @@
   font-weight: 500;
   color: var(--dashfoo-foreground);
 }
-[data-dashfoo="float-dock"] {
+[data-dashfoo="float-dock"],
+[data-dashfoo="float-minimize"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -275,11 +276,13 @@
   color: var(--dashfoo-muted-foreground);
   cursor: pointer;
 }
-[data-dashfoo="float-dock"]:hover {
+[data-dashfoo="float-dock"]:hover,
+[data-dashfoo="float-minimize"]:hover {
   background: var(--dashfoo-accent);
   color: var(--dashfoo-accent-foreground);
 }
-[data-dashfoo="float-dock"]:focus-visible {
+[data-dashfoo="float-dock"]:focus-visible,
+[data-dashfoo="float-minimize"]:focus-visible {
   outline: 2px solid var(--dashfoo-ring);
   outline-offset: -1px;
 }
@@ -309,6 +312,46 @@
 }
 [data-dashfoo="float"]:hover [data-dashfoo="float-resize"][data-edge="se"]::after {
   opacity: 0.7;
+}
+/* minimized chip: the window collapsed to a small rounded button you click to
+   restore (and can drag to reposition). */
+[data-dashfoo="float-chip"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  max-width: 11rem;
+  height: 2rem;
+  padding-inline: 0.5rem 0.625rem;
+  background: var(--dashfoo-card);
+  color: var(--dashfoo-foreground);
+  border: 0;
+  border-radius: var(--dashfoo-radius);
+  box-shadow:
+    0 0 0 1px var(--dashfoo-border),
+    0 8px 18px -8px oklch(0 0 0 / 0.4);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  animation: dashfoo-float-in 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-dashfoo="float-chip"]:active {
+  cursor: grabbing;
+}
+[data-dashfoo="float-chip"]:hover {
+  background: var(--dashfoo-accent);
+  color: var(--dashfoo-accent-foreground);
+}
+[data-dashfoo="float-chip"]:focus-visible {
+  outline: 2px solid var(--dashfoo-ring);
+  outline-offset: 1px;
+}
+[data-dashfoo="float-chip-label"] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* tab overflow menu */
@@ -494,8 +537,9 @@
     --dashfoo-dock-transition: none;
     --dashfoo-snap-transition: none;
   }
-  /* the float appears instantly rather than lifting in */
-  [data-dashfoo="float"] {
+  /* the float / chip appears instantly rather than lifting in */
+  [data-dashfoo="float"],
+  [data-dashfoo="float-chip"] {
     animation: none;
   }
 }

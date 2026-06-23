@@ -68,6 +68,13 @@ const FloatIcon = (): ReactNode => (
   </Icon>
 );
 
+// "Minimize" — collapse to a chip.
+const MinimizeIcon = (): ReactNode => (
+  <Icon>
+    <path d="M5 12h14" />
+  </Icon>
+);
+
 // "Dock back" — an arrow returning into a frame.
 const DockIcon = (): ReactNode => (
   <Icon>
@@ -77,4 +84,4 @@ const DockIcon = (): ReactNode => (
   </Icon>
 );
 
-export { CloseIcon, DockIcon, FloatIcon, GripIcon, MaximizeIcon };
+export { CloseIcon, DockIcon, FloatIcon, GripIcon, MaximizeIcon, MinimizeIcon };

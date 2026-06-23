@@ -16,9 +16,10 @@ import { FloatPanel } from "./float-panel";
 const overlayStyle: CSSProperties = {
   inset: 0,
   // Never block the docked layout underneath; each float opts pointer events back
-  // in, so empty overlay space stays click-through.
+  // in, so empty overlay space stays click-through. Fixed to the viewport so a
+  // float can be dragged anywhere on the page, not just within the layout box.
   pointerEvents: "none",
-  position: "absolute",
+  position: "fixed",
 };
 
 const FloatOverlay = ({

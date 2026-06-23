@@ -105,6 +105,9 @@ const floatNodeSchema = z.object({
   geometry: geometrySchema,
   id: z.string(),
   layout: rowNodeSchema,
+  // Collapsed to a small chip (the window minimized); geometry is preserved so
+  // restoring reopens it at its previous rect.
+  minimized: z.boolean().optional(),
   name: z.string().optional(),
   type: z.literal("float"),
 });
