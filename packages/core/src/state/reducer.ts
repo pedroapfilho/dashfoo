@@ -248,12 +248,22 @@ const reattachWindow = (
     return;
   }
 
+  // Carry over which tab the user had selected in the window. The window's first
+  // tabset leads the flattened list (the common single-tabset popout), so its
+  // clamped `selected` is the offset of the focused tab — clamp against the
+  // tabset's own length, like the moveTabset center merge, so a stale index can't
+  // resolve to the wrong tab.
+  const leadTabset = tabsets[0];
+  const selectedOffset = leadTabset
+    ? Math.min(Math.max(leadTabset.selected, 0), leadTabset.children.length - 1)
+    : 0;
+
   const target = resolveMainTarget(draft, targetId);
   if (!target) {
     // Nothing left in the main layout to dock into — promote the window's own
     // layout to be the main layout so its tabs aren't lost.
     draft.layout = window.layout;
-    draft.activeTabsetId = tabsets[0]?.id;
+    draft.activeTabsetId = leadTabset?.id;
     return;
   }
 
@@ -261,7 +271,7 @@ const reattachWindow = (
   if (where === "center") {
     const mergeStart = target.children.length;
     target.children.push(...tabs);
-    target.selected = mergeStart;
+    target.selected = mergeStart + selectedOffset;
     draft.activeTabsetId = target.id;
     return;
   }
@@ -269,7 +279,7 @@ const reattachWindow = (
   const placed: TabsetNode = {
     children: tabs,
     id: createNodeId("tabset"),
-    selected: 0,
+    selected: selectedOffset,
     type: "tabset",
     weight: 50,
   };

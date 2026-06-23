@@ -8,6 +8,7 @@ import { useLayout } from "../../hooks/layout-store";
 import { usePopout } from "../../hooks/popout-store";
 import { mergeRefs } from "../../lib/merge-refs";
 import { measureGeometry } from "../../lib/popout-window";
+import { warnOnce } from "../../lib/warn-once";
 import { useTabsetDraggable } from "../drag-adapter";
 import { GripIcon, MaximizeIcon, PopoutIcon } from "../tabset-icons";
 
@@ -113,6 +114,17 @@ const TabsetPopoutButton = ({
     return null;
   }
 
+  // `poppable` is on but there is no <Layout.PopoutLayer> above to open windows
+  // (a hand-built layout that forgot it — DashfooLayout always adds one). Hide the
+  // control and warn rather than render a button whose click silently does nothing.
+  if (!popout) {
+    warnOnce(
+      "popout-no-layer",
+      "Tabset.PopoutButton needs a <Layout.PopoutLayer> above it (DashfooLayout adds one); the pop-out control is hidden",
+    );
+    return null;
+  }
+
   const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
     onClick?.(event);
     const tabsetElement = event.currentTarget.closest<HTMLElement>('[data-dashfoo="tabset"]');
@@ -120,7 +132,7 @@ const TabsetPopoutButton = ({
     const windowId = createNodeId("window");
     // Open synchronously inside the gesture, then detach to the same id — but only
     // when the window actually opened, so a blocked popup leaves the panel docked.
-    if (popout?.open(windowId, geometry)) {
+    if (popout.open(windowId, geometry)) {
       dispatch({ geometry, tabsetId: node.id, type: "detachTabset", windowId });
     }
   };

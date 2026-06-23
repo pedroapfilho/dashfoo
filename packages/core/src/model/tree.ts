@@ -192,6 +192,7 @@ const findDuplicateIds = (model: Dashfoo): Array<string> => {
 export {
   collectRoots,
   collectTabsets,
+  collectTabsetsInRow,
   findAttributedNode,
   findDuplicateIds,
   findRootContaining,

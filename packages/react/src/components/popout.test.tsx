@@ -5,6 +5,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type { DashfooHandle } from "./dashfoo-layout";
 import { DashfooLayout } from "./dashfoo-layout";
+import { Layout } from "./layout";
 
 // A stand-in for a real popup: createRoot renders into `container` (a node in the
 // test document, so React has a real window context and events fire), while the
@@ -173,5 +174,24 @@ describe("detached windows", () => {
     await settle(() => popups[0]!.fireClose());
 
     expect(screen.getByRole("tab", { name: "Chart" })).toBeInTheDocument();
+  });
+
+  // A hand-built layout that turns on `poppable` but forgets <Layout.PopoutLayer>
+  // has no manager to open windows. The control must not render as a dead button —
+  // it hides and warns (DashfooLayout always supplies the layer, so this is a
+  // hand-built-misuse guard).
+  test("hides the pop-out control and warns when no PopoutLayer is present", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const m = model();
+
+    render(
+      <Layout.Root dispatch={() => {}} model={m} poppable renderTab={() => <div>X</div>}>
+        <Layout.Rows node={m.layout} />
+      </Layout.Root>,
+    );
+
+    expect(screen.queryByLabelText("Open panel in a new window")).not.toBeInTheDocument();
+    expect(warn.mock.calls.some((call) => String(call[0]).includes("PopoutLayer"))).toBe(true);
+    warn.mockRestore();
   });
 });

@@ -107,6 +107,40 @@ describe("reattachWindow", () => {
     expect(target.children.map((t) => t.id)).toEqual(["t2", "t1"]);
   });
 
+  test("preserves the tab selected inside the window when docking back (center)", () => {
+    const detached = reducer(baseModel(), { tabsetId: "ts1", type: "detachTabset" });
+    const window = onlyWindow(detached);
+    // ts1 (t1, t2) is now in the window; select its second tab there.
+    const selected = reducer(detached, { index: 1, tabsetId: "ts1", type: "selectTab" });
+
+    const next = reducer(selected, {
+      targetId: "ts2",
+      type: "reattachWindow",
+      windowId: window.id,
+    });
+
+    const target = next.layout.children.find((c) => c.id === "ts2") as TabsetNode;
+    // ts2 had [t3]; the window's [t1, t2] merge after it, focus on t2 (the popup pick).
+    expect(target.children.map((t) => t.id)).toEqual(["t3", "t1", "t2"]);
+    expect(target.children[target.selected]?.id).toBe("t2");
+  });
+
+  test("preserves the selected tab when docking back as a split", () => {
+    const detached = reducer(baseModel(), { tabsetId: "ts1", type: "detachTabset" });
+    const window = onlyWindow(detached);
+    const selected = reducer(detached, { index: 1, tabsetId: "ts1", type: "selectTab" });
+
+    const next = reducer(selected, {
+      location: "split-right",
+      targetId: "ts2",
+      type: "reattachWindow",
+      windowId: window.id,
+    });
+
+    const placed = collectTabsets(next).find((ts) => ts.children.some((t) => t.id === "t1"));
+    expect(placed?.children[placed.selected]?.id).toBe("t2");
+  });
+
   test("split location docks the window's tabs beside the target", () => {
     const detached = reducer(baseModel(), { tabsetId: "ts2", type: "detachTabset" });
     const window = onlyWindow(detached);
