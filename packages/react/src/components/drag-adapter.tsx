@@ -250,12 +250,19 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
   // effect" guidance) so the monitor listeners attach once per manager instead
   // of re-subscribing whenever a render rebuilds a callback.
   useEffect(() => {
-    // Which registered tabset sits under the pointer. Tabsets tile (never
-    // overlap), so the first rect that contains the point is the unambiguous
-    // target — no dnd-kit collision detection needed.
+    // Which registered tabset sits under the pointer. Docked tabsets tile, but a
+    // float overlays them, so a tabset's rect can contain a point that is actually
+    // over a float (or a tabset) on top of it. Resolve only the tabset that is
+    // TOPMOST at the point: elementFromPoint returns the occluding element, so an
+    // occluded tabset is skipped and never shows a stale indicator. The drag
+    // overlays (preview, indicator) are pointer-events:none, so they're ignored.
     const tabsetAt = (point: Point): { element: HTMLElement; id: string } | undefined => {
+      const top = document.elementFromPoint(point.x, point.y);
+      if (!top) {
+        return undefined;
+      }
       for (const [id, element] of tabsets) {
-        if (pointInRect(point, element.getBoundingClientRect())) {
+        if (element.contains(top)) {
           return { element, id };
         }
       }

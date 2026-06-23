@@ -86,6 +86,42 @@ test("a tab can be dragged out of a float and docked into the main layout", asyn
   await expect(page.getByRole("tab", { name: "Detail" })).toBeVisible();
 });
 
+test("dragging into a float over a docked tabset shows only the float's indicator", async ({
+  page,
+}) => {
+  // Float the bottom-right panel, then move it over the body of the main
+  // (Canvas/Detail) tabset so it overlaps a docked tabset.
+  await page.getByLabel("Float panel").last().click();
+  const float = page.locator('[data-dashfoo="float"]');
+  await expect(float).toBeVisible();
+
+  const mainCenter = await page.getByRole("tab", { name: "Canvas" }).evaluate((el) => {
+    const r = el.closest('[data-dashfoo="tabset"]')!.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  });
+  const grip = (await float.locator('[data-dashfoo="float-titlebar"]').boundingBox())!;
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(mainCenter.x, mainCenter.y, { steps: 10 });
+  await page.mouse.up();
+
+  // Drag the docked "Detail" tab into the float, which now sits over the Canvas
+  // tabset. Hold the pointer over the float body and assert exactly one dock
+  // indicator: the occluded tabset behind the float must not leave a stale one.
+  const floatBox = (await float.boundingBox())!;
+  const target = { x: floatBox.x + floatBox.width / 2, y: floatBox.y + floatBox.height / 2 };
+  const detail = (await page.getByRole("tab", { name: "Detail" }).boundingBox())!;
+  await page.mouse.move(detail.x + detail.width / 2, detail.y + detail.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(detail.x + detail.width / 2 + 8, detail.y + detail.height / 2 + 8);
+  await page.mouse.move(target.x, target.y, { steps: 16 });
+  await page.mouse.move(target.x, target.y, { steps: 4 });
+
+  await expect.poll(() => page.locator('[data-dashfoo="dock-indicator"]').count()).toBe(1);
+
+  await page.mouse.up();
+});
+
 test("a floated panel can be resized by its handles", async ({ page }) => {
   await page.getByLabel("Float panel").last().click();
   const float = page.locator('[data-dashfoo="float"]');
