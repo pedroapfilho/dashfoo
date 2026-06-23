@@ -154,15 +154,17 @@
 [data-dashfoo="tab-close"]:focus-visible {
   outline: 2px solid var(--dashfoo-ring);
 }
+/* Seamless inline edit — the label becomes editable in place (like the float
+   title), not a boxed form input. Matches the tab's type + padding so the strip
+   doesn't shift when editing starts. */
 [data-dashfoo="tab-rename"] {
   width: 6rem;
-  padding: 0.25rem 0.5rem;
-  background: var(--dashfoo-background);
-  border: 1px solid var(--dashfoo-ring);
-  border-radius: 2px;
+  padding: 0.5rem 0.375rem 0.5rem 0.75rem;
+  background: transparent;
+  border: 0;
   color: var(--dashfoo-foreground);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 12.5px;
   outline: none;
 }
 [data-dashfoo="tabset-toolbar"] {
