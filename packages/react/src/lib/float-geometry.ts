@@ -19,8 +19,6 @@ const LIFT_OFFSET = 16;
 
 type Size = { height: number; width: number };
 
-const MIN_SIZE: Size = { height: MIN_HEIGHT, width: MIN_WIDTH };
-
 // Keep a rect's origin inside the container. `size` is the footprint kept on
 // screen (defaults to the rect's own size; the minimized chip passes its smaller
 // footprint while the rect still carries the window dimensions). A footprint
@@ -70,5 +68,5 @@ const resizeRect = (start: Geometry, edges: ResizeEdges, dx: number, dy: number)
   return { height, left, top, width };
 };
 
-export { clampToBounds, measureFloatRect, MIN_SIZE, resizeRect };
+export { clampToBounds, measureFloatRect, resizeRect };
 export type { ResizeEdges, Size };
