@@ -32,12 +32,13 @@ const measureTabsets = (container: HTMLElement, draggedTabId?: string): Array<Ta
   [...container.querySelectorAll<HTMLElement>('[data-dashfoo="tabset"]')].map((tabset) => {
     const strip = tabset.querySelector<HTMLElement>('[data-dashfoo="tabstrip"]');
     const tabMidpoints = strip
-      ? [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')]
-          .filter((tab) => tab.dataset.tabId !== draggedTabId)
-          .map((tab) => {
-            const rect = tab.getBoundingClientRect();
-            return rect.x + rect.width / 2;
-          })
+      ? [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].flatMap((tab) => {
+          if (tab.dataset.tabId === draggedTabId) {
+            return [];
+          }
+          const rect = tab.getBoundingClientRect();
+          return [rect.x + rect.width / 2];
+        })
       : [];
     return {
       rect: toRect(tabset.getBoundingClientRect()),
