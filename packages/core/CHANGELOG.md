@@ -1,5 +1,11 @@
 # @dashfoo/core
 
+## 0.5.1
+
+### Patch Changes
+
+- aaeaf21: Ship unminified ESM so downstream bundlers (Vite/esbuild dep pre-bundling) process the package correctly; fixes a `ReferenceError: hasSharedManager is not defined` in consumer dev servers. The consuming app minifies once at its own build.
+
 ## 0.5.0
 
 ### Minor Changes

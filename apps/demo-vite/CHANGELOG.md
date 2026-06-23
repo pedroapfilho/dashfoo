@@ -1,5 +1,14 @@
 # demo-vite
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [aaeaf21]
+  - @dashfoo/core@0.5.1
+  - @dashfoo/react@0.5.1
+  - @dashfoo/theme@0.2.2
+
 ## 0.0.5
 
 ### Patch Changes
