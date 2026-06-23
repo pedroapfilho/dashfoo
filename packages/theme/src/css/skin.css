@@ -288,6 +288,13 @@
   min-height: 0;
   position: relative;
 }
+/* the float frame already supplies the edge, rounding, and clip — strip the inner
+   tabset's own border/radius so its rounded corners don't cut the float background
+   under the title bar. */
+[data-dashfoo="float"] [data-dashfoo="tabset"] {
+  border: 0;
+  border-radius: 0;
+}
 /* a discoverable resize affordance: a faint corner grip that firms up on hover */
 [data-dashfoo="float-resize"][data-edge="se"]::after {
   content: "";
