@@ -86,6 +86,25 @@ describe("floating panels", () => {
     expect(screen.getByText("CHART")).toBeInTheDocument();
   });
 
+  test("the title is the float's own name (not the active tab), renamable by double-click", () => {
+    render(<DashfooLayout components={components} defaultModel={model()} floatable />);
+    fireEvent.click(screen.getByLabelText("Float panel"));
+
+    const title = floatPanel()!.querySelector('[data-dashfoo="float-title"]')!;
+    // The active tab is "Chart"; the window title is its own name instead.
+    expect(title).toHaveTextContent("Panel");
+
+    fireEvent.doubleClick(title);
+    const input = floatPanel()!.querySelector('[data-dashfoo="float-rename"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    fireEvent.change(input, { target: { value: "Inspector" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(floatPanel()!.querySelector('[data-dashfoo="float-title"]')).toHaveTextContent(
+      "Inspector",
+    );
+  });
+
   test("minimize collapses the float to a chip, and the chip restores it", () => {
     render(<DashfooLayout components={components} defaultModel={model()} floatable />);
     fireEvent.click(screen.getByLabelText("Float panel"));

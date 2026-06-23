@@ -308,6 +308,9 @@ How it works:
 - **Drag anywhere + resize commit one step.** The overlay is viewport-fixed, so a
   float drags across the whole page. Drag and resize update the DOM imperatively and
   dispatch a single `moveFloat` on release, so a drag is one undo step.
+- **Named, renamable title.** Each float carries its own name ("Panel", "Panel 1",
+  …), shown as the window title — never the active tab's. Double-click the title to
+  rename it (`renameFloat`).
 - **Minimize.** The minimize control collapses a float to a chip
   (`setFloatMinimized`); tapping the chip restores it to its saved rect.
 - **Dock back as a panel.** "Dock back" returns the float as its own panel — all its
@@ -424,7 +427,8 @@ you.
 | `float`              | `div`           | A floating panel's elevated frame. `display: flex; flex-direction: column`, positioned absolutely.                                 |
 | `float-titlebar`     | `div`           | The float's drag handle / title bar (grip + title + dock control).                                                                 |
 | `float-grip`         | `span`          | Drag-affordance dots in the title bar (decorative, `aria-hidden`).                                                                 |
-| `float-title`        | `span`          | The float's title text (its name, else the active tab's name).                                                                     |
+| `float-title`        | `span`          | The float's window title (its own name); double-click to rename. `aria-hidden` grip precedes it.                                   |
+| `float-rename`       | `input`         | The inline title editor, shown while renaming. `aria-label="Rename <name>"`.                                                       |
 | `float-minimize`     | `button`        | Collapses the float to a chip. `aria-label="Minimize panel"`.                                                                      |
 | `float-dock`         | `button`        | Docks the panel back into the main layout. `aria-label="Dock panel back into the main layout"`.                                    |
 | `float-body`         | `div`           | The float's content area; holds the panel's layout.                                                                                |

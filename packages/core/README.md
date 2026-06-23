@@ -111,6 +111,7 @@ untrusted payloads against `actionSchema` before dispatch.
 | `dockFloat`              | Dock a float back as its own panel (or `center`-merge its tabs)  |
 | `moveFloat`              | Update a floating panel's stored rect (drag/resize)              |
 | `setFloatMinimized`      | Collapse a float to a chip, or restore it                        |
+| `renameFloat`            | Rename a floating panel's window title                           |
 | `updateNodeAttributes`   | Patch mutable attrs on a tab / tabset / row                      |
 | `updateGlobalAttributes` | Patch the `global` block                                         |
 

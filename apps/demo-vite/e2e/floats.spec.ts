@@ -52,6 +52,21 @@ test("dragging the title bar moves the float", async ({ page }) => {
   expect(after!.y).toBeLessThan(before!.y);
 });
 
+test("the float is titled by its own name and can be renamed", async ({ page }) => {
+  await page.getByLabel("Float panel").first().click();
+  const float = page.locator('[data-dashfoo="float"]');
+  const title = float.locator('[data-dashfoo="float-title"]');
+  // Its own name, not the active tab ("Canvas").
+  await expect(title).toHaveText("Panel");
+
+  await title.dblclick();
+  const input = float.locator('[data-dashfoo="float-rename"]');
+  await input.fill("Inspector");
+  await input.press("Enter");
+
+  await expect(float.locator('[data-dashfoo="float-title"]')).toHaveText("Inspector");
+});
+
 test("a tab can be dragged out of a float and docked into the main layout", async ({ page }) => {
   // Float the main Canvas tabset (Canvas + Detail).
   await page.getByLabel("Float panel").first().click();

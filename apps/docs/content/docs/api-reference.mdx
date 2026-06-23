@@ -297,7 +297,7 @@ Source: [`packages/core/src`](https://github.com/pedroapfilho/dashfoo/tree/main/
 
 ### Actions
 
-Every document mutation is one of 17 immutable, discriminated actions. The
+Every document mutation is one of 18 immutable, discriminated actions. The
 reducer is exhaustive over the union; validate untrusted payloads with
 `actionSchema` before dispatch.
 
@@ -318,6 +318,7 @@ reducer is exhaustive over the union; validate untrusted payloads with
 | `dockFloat`              | `{ floatId, targetId?, location? }`        | Dock a float back as its own panel (or `center`-merge).  |
 | `moveFloat`              | `{ floatId, geometry }`                    | Update a floating panel's stored rect (drag/resize).     |
 | `setFloatMinimized`      | `{ floatId, minimized }`                   | Collapse a float to a chip, or restore it.               |
+| `renameFloat`            | `{ floatId, name }`                        | Rename a float's title (deduped to stay unique).         |
 | `updateNodeAttributes`   | `{ nodeId, attrs }`                        | Patch mutable attributes on a tab, tabset, or row.       |
 | `updateGlobalAttributes` | `{ attrs }`                                | Patch the model's `global` block.                        |
 

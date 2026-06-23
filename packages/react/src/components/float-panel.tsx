@@ -1,8 +1,14 @@
 "use client";
 
-import type { Dashfoo, FloatNode, Geometry, GlobalAttributes, RowNode } from "@dashfoo/core";
-import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
-import { useRef } from "react";
+import type { Action, Dashfoo, FloatNode, Geometry, GlobalAttributes } from "@dashfoo/core";
+import type {
+  CSSProperties,
+  FocusEvent as ReactFocusEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  PointerEvent as ReactPointerEvent,
+  ReactNode,
+} from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useLayout } from "../hooks/layout-store";
 import type { ResizeEdges, Size } from "../lib/float-geometry";
@@ -20,23 +26,9 @@ import { DockIcon, FloatIcon, GripIcon, MinimizeIcon } from "./tabset-icons";
 // resize update the DOM imperatively during the gesture and commit one `moveFloat`
 // on release, so a drag is a single undo step and never re-renders per pointer move.
 
-const firstTabsetTitle = (row: RowNode): string | undefined => {
-  for (const child of row.children) {
-    if (child.type === "tabset") {
-      return (child.children[child.selected] ?? child.children[0])?.name;
-    }
-    const nested = firstTabsetTitle(child);
-    if (nested) {
-      return nested;
-    }
-  }
-  return undefined;
-};
-
-// A readable window title: the float's own name, else the active tab of its first
-// tabset (a float is usually one tabset), else a generic label.
-const floatTitle = (node: FloatNode): string =>
-  node.name ?? firstTabsetTitle(node.layout) ?? "Panel";
+// The window title is the float's own name ("Panel", "Panel 1", …), set when it is
+// floated and editable via the title bar — never the active tab's name.
+const floatTitle = (node: FloatNode): string => node.name ?? "Panel";
 
 const titleBarStyle: CSSProperties = {
   alignItems: "center",
@@ -126,6 +118,82 @@ type Gesture = {
   startY: number;
 };
 
+type TitleProps = { dispatch: (action: Action) => void; node: FloatNode };
+
+// Inline title editor — mirrors the tab-rename pattern: focus + select on mount,
+// a `done` ref so the unmount blur doesn't re-commit after a deliberate
+// Enter/Escape, and stopPropagation so clicking into it doesn't start a drag.
+const FloatTitleEditor = ({
+  dispatch,
+  node,
+  onDone,
+}: TitleProps & { onDone: () => void }): ReactNode => {
+  const ref = useRef<HTMLInputElement | null>(null);
+  const done = useRef(false);
+  useEffect(() => {
+    ref.current?.focus();
+    ref.current?.select();
+  }, []);
+
+  const commit = (value: string): void => {
+    const trimmed = value.trim();
+    if (trimmed && trimmed !== floatTitle(node)) {
+      dispatch({ floatId: node.id, name: trimmed, type: "renameFloat" });
+    }
+    onDone();
+  };
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>): void => {
+    if (event.key === "Enter") {
+      done.current = true;
+      commit(event.currentTarget.value);
+    } else if (event.key === "Escape") {
+      done.current = true;
+      onDone();
+    }
+  };
+
+  const handleBlur = (event: ReactFocusEvent<HTMLInputElement>): void => {
+    if (done.current) {
+      return;
+    }
+    done.current = true;
+    commit(event.currentTarget.value);
+  };
+
+  return (
+    <input
+      aria-label={`Rename ${floatTitle(node)}`}
+      data-dashfoo="float-rename"
+      defaultValue={floatTitle(node)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      onPointerDown={(event) => event.stopPropagation()}
+      ref={ref}
+      style={titleStyle}
+      type="text"
+    />
+  );
+};
+
+// The window title: the float's name, double-click to rename.
+const FloatTitle = ({ dispatch, node }: TitleProps): ReactNode => {
+  const [editing, setEditing] = useState(false);
+  if (editing) {
+    return <FloatTitleEditor dispatch={dispatch} node={node} onDone={() => setEditing(false)} />;
+  }
+  return (
+    <span
+      data-dashfoo="float-title"
+      onDoubleClick={() => setEditing(true)}
+      style={titleStyle}
+      title="Double-click to rename"
+    >
+      {floatTitle(node)}
+    </span>
+  );
+};
+
 type FloatPanelProps = {
   global: GlobalAttributes;
   node: FloatNode;
@@ -180,8 +248,9 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
       startY: event.clientY,
     };
     latestRef.current = node.geometry;
-    panel.setPointerCapture(event.pointerId);
-    event.preventDefault();
+    // Capture is deferred to the first real move (see handlePointerMove) so a tap or
+    // double-click on the title bar isn't swallowed by the capture and can reach the
+    // rename handler.
   };
 
   const handlePointerMove = (event: ReactPointerEvent): void => {
@@ -192,8 +261,13 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     }
     const dx = event.clientX - gesture.startX;
     const dy = event.clientY - gesture.startY;
-    if (Math.hypot(dx, dy) > TAP_SLOP) {
+    if (!movedRef.current) {
+      // Below the slop it is still a (possible) tap — don't move or capture yet.
+      if (Math.hypot(dx, dy) <= TAP_SLOP) {
+        return;
+      }
       movedRef.current = true;
+      panel.setPointerCapture(gesture.pointerId);
     }
     const next = gesture.edges
       ? resizeRect(gesture.start, gesture.edges, dx, dy)
@@ -220,12 +294,16 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
       return;
     }
     gestureRef.current = null;
-    panelRef.current?.releasePointerCapture(event.pointerId);
-    // A tap on the minimized chip restores it; a drag repositions it.
-    if (node.minimized && !movedRef.current) {
-      restore();
+    // A tap (no movement, so capture was never taken) restores the chip, or is a
+    // no-op on the title bar — leaving the click/double-click to reach the title.
+    // Only a real drag captured the pointer and commits the new rect.
+    if (!movedRef.current) {
+      if (node.minimized) {
+        restore();
+      }
       return;
     }
+    panelRef.current?.releasePointerCapture(event.pointerId);
     dispatch({ floatId: node.id, geometry: latestRef.current, type: "moveFloat" });
   };
 
@@ -284,9 +362,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
         <span aria-hidden="true" data-dashfoo="float-grip">
           <GripIcon />
         </span>
-        <span data-dashfoo="float-title" style={titleStyle}>
-          {floatTitle(node)}
-        </span>
+        <FloatTitle dispatch={dispatch} node={node} />
         <button
           aria-label="Minimize panel"
           data-dashfoo="float-minimize"

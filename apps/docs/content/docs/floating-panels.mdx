@@ -64,9 +64,11 @@ reducer(floated, { type: "dockFloat", floatId: floated.floats![0].id });
 ```
 
 The reducer actions are `floatTab`, `floatTabset`, `dockFloat`, `moveFloat` (persists
-a float's rect as you drag or resize it — one undo step per gesture), and
-`setFloatMinimized`. `geometry` is in viewport CSS pixels (the overlay is fixed), so
-a float can be dragged anywhere on the page. `normalize` heals each float's own
+a float's rect as you drag or resize it — one undo step per gesture),
+`setFloatMinimized`, and `renameFloat`. `geometry` is in viewport CSS pixels (the
+overlay is fixed), so a float can be dragged anywhere on the page. A float carries
+its own `name` ("Panel", "Panel 1", … assigned when it is floated), shown as the
+window title — never the active tab's name. `normalize` heals each float's own
 layout and drops a float the moment its last panel leaves, the same way it removes an
 empty tabset. Because a float owns a full `RowNode`, a floated panel is a real
 container: it can hold one tab or several.
@@ -80,6 +82,9 @@ container: it can hold one tab or several.
 - **Drag anywhere + resize.** The title bar moves the float across the viewport;
   eight handles resize it. Both update the DOM imperatively during the gesture and
   commit one `moveFloat` on release, so a drag is a single undo step.
+- **Named, renamable title.** Each float is titled with its own unique name
+  ("Panel", "Panel 1", …); double-click the title to rename it (`renameFloat`),
+  which dedupes the new name against the other floats so two never collide.
 - **Minimize.** A title-bar control collapses the float to a small chip
   (`setFloatMinimized`); tapping the chip (draggable itself) restores it to its
   saved rect.

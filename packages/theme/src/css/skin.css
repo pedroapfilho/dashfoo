@@ -263,6 +263,16 @@
   font-weight: 500;
   color: var(--dashfoo-foreground);
 }
+[data-dashfoo="float-rename"] {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--dashfoo-foreground);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+}
 [data-dashfoo="float-dock"],
 [data-dashfoo="float-minimize"] {
   display: inline-flex;

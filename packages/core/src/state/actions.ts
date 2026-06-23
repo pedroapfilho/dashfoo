@@ -133,6 +133,12 @@ const actionSchema = z.discriminatedUnion("type", [
     minimized: z.boolean(),
     type: z.literal("setFloatMinimized"),
   }),
+  // Rename a floating panel (its window title).
+  z.object({
+    floatId: z.string(),
+    name: z.string(),
+    type: z.literal("renameFloat"),
+  }),
 ]);
 
 type DockLocation = z.infer<typeof dockLocationSchema>;

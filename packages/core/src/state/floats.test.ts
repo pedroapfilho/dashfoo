@@ -166,6 +166,36 @@ describe("moveFloat", () => {
   });
 });
 
+describe("float naming", () => {
+  test("floats get their own incrementing name (Panel, Panel 1, …)", () => {
+    const one = reducer(baseModel(), { tabsetId: "ts2", type: "floatTabset" });
+    expect(onlyFloat(one).name).toBe("Panel");
+
+    const two = reducer(one, { tabId: "t1", type: "floatTab" });
+    expect((two.floats ?? []).map((f) => f.name)).toEqual(["Panel", "Panel 1"]);
+  });
+
+  test("renameFloat sets the window title", () => {
+    const floated = reducer(baseModel(), { tabsetId: "ts2", type: "floatTabset" });
+    const float = onlyFloat(floated);
+
+    const next = reducer(floated, { floatId: float.id, name: "Inspector", type: "renameFloat" });
+
+    expect(onlyFloat(next).name).toBe("Inspector");
+  });
+
+  test("renameFloat keeps names unique by appending a number", () => {
+    const a = reducer(baseModel(), { tabsetId: "ts2", type: "floatTabset" });
+    const b = reducer(a, { tabId: "t1", type: "floatTab" });
+    const [first, second] = b.floats ?? [];
+
+    const r1 = reducer(b, { floatId: first!.id, name: "Foo", type: "renameFloat" });
+    const r2 = reducer(r1, { floatId: second!.id, name: "Foo", type: "renameFloat" });
+
+    expect((r2.floats ?? []).map((f) => f.name)).toEqual(["Foo", "Foo 1"]);
+  });
+});
+
 describe("setFloatMinimized", () => {
   test("toggles a float's minimized flag", () => {
     const floated = reducer(baseModel(), { tabId: "t1", type: "floatTab" });
