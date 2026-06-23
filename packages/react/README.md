@@ -410,14 +410,19 @@ you.
 | `tab`                | `button`        | `role="tab"`. Carries `aria-selected` and `data-tab-id`.                                                                           |
 | `tab-close`          | `button`        | Per-tab close. `aria-label="Close <name>"`.                                                                                        |
 | `tab-rename`         | `input`         | Inline rename editor, shown during a rename.                                                                                       |
-| `tabset-toolbar`     | `div`           | Trailing controls in the strip: overflow menu, grip, custom toolbar slot, maximize.                                                |
+| `tabset-toolbar`     | `div`           | Trailing controls in the strip: overflow menu, grip, custom toolbar slot, pop-out, maximize.                                       |
 | `tab-overflow-root`  | `div`           | Wraps the overflow trigger and its menu; rendered when tabs don't fit the strip.                                                   |
 | `tab-overflow`       | `button`        | Overflow menu trigger. `aria-label="More tabs"`.                                                                                   |
 | `tab-overflow-menu`  | `div`           | `role="menu"`, lists the hidden tabs while open.                                                                                   |
 | `tab-overflow-item`  | `button`        | `role="menuitem"`, one hidden tab; selecting it activates the tab.                                                                 |
 | `tabset-grip`        | `button`        | Drags the whole tabset. `aria-label="Move tabset"`; shown when `draggableTabsets` is on and the tabset is not maximized.           |
+| `tabset-popout`      | `button`        | Pops the tabset into its own window. `aria-label="Open panel in a new window"`; shown when `poppable` is on and not maximized.     |
 | `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                                                                            |
 | `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                  |
+| `window`             | `div`           | A detached window's frame (rendered in the popup's own document). `display: flex; flex-direction: column`.                         |
+| `window-toolbar`     | `div`           | The detached window's top bar, holding the dock-back control.                                                                      |
+| `window-dock`        | `button`        | Docks the panel back into the main layout. `aria-label="Dock panel back into the main window"`.                                    |
+| `window-body`        | `div`           | The detached window's content area; holds the panel's layout.                                                                      |
 | `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone pane). `pointer-events: none`.                                                    |
 | `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label.                                                        |
 | `separator`          | rrp `Separator` | rrp emits `data-separator` with `aria-orientation`; style splitters here.                                                          |
