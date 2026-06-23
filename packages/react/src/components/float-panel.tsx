@@ -15,6 +15,7 @@ import type { ResizeEdges, Size } from "../lib/float-geometry";
 import { clampToBounds, resizeRect } from "../lib/float-geometry";
 
 import { DragProvider } from "./drag-adapter";
+import { EDGE_BY_KEY, RESIZE_HANDLES } from "./float-resize-handles";
 import { LayoutRoot } from "./layout-root";
 import { RowView } from "./row-view";
 import { DockIcon, FloatIcon, GripIcon, MinimizeIcon } from "./tabset-icons";
@@ -54,54 +55,6 @@ const dockButtonStyle: CSSProperties = {
 };
 
 const bodyStyle: CSSProperties = { flex: 1, minHeight: 0, position: "relative" };
-
-// data-edge encodes which edges the handle moves; style positions it on the frame.
-const RESIZE_HANDLES: ReadonlyArray<{ edges: ResizeEdges; key: string; style: CSSProperties }> = [
-  {
-    edges: { x: 0, y: -1 },
-    key: "n",
-    style: { cursor: "ns-resize", height: 6, insetInline: 10, top: -3 },
-  },
-  {
-    edges: { x: 0, y: 1 },
-    key: "s",
-    style: { bottom: -3, cursor: "ns-resize", height: 6, insetInline: 10 },
-  },
-  {
-    edges: { x: 1, y: 0 },
-    key: "e",
-    style: { cursor: "ew-resize", insetBlock: 10, right: -3, width: 6 },
-  },
-  {
-    edges: { x: -1, y: 0 },
-    key: "w",
-    style: { cursor: "ew-resize", insetBlock: 10, left: -3, width: 6 },
-  },
-  {
-    edges: { x: 1, y: -1 },
-    key: "ne",
-    style: { cursor: "nesw-resize", height: 14, right: -4, top: -4, width: 14 },
-  },
-  {
-    edges: { x: -1, y: -1 },
-    key: "nw",
-    style: { cursor: "nwse-resize", height: 14, left: -4, top: -4, width: 14 },
-  },
-  {
-    edges: { x: 1, y: 1 },
-    key: "se",
-    style: { bottom: -4, cursor: "nwse-resize", height: 14, right: -4, width: 14 },
-  },
-  {
-    edges: { x: -1, y: 1 },
-    key: "sw",
-    style: { bottom: -4, cursor: "nesw-resize", height: 14, left: -4, width: 14 },
-  },
-];
-
-// Resolve a resize handle's data-edge back to its edges; a missing key (the title
-// bar or the minimized chip) means a move, not a resize.
-const EDGE_BY_KEY = new Map<string, ResizeEdges>(RESIZE_HANDLES.map((h) => [h.key, h.edges]));
 
 // Approximate footprint of the minimized chip, used to keep it on screen while it
 // is dragged (its window rect is preserved in geometry for restore).
