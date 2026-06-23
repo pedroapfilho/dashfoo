@@ -84,4 +84,14 @@ const DockIcon = (): ReactNode => (
   </Icon>
 );
 
-export { CloseIcon, DockIcon, FloatIcon, GripIcon, MaximizeIcon, MinimizeIcon };
+// "Resize grip" — diagonal hatch marks clustered at the bottom-right corner,
+// the conventional cue that a corner is draggable to resize. Mirror with
+// scaleX(-1) for the bottom-left corner.
+const ResizeGripIcon = (): ReactNode => (
+  <Icon>
+    <path d="M21 9 9 21" />
+    <path d="M21 15 15 21" />
+  </Icon>
+);
+
+export { CloseIcon, DockIcon, FloatIcon, GripIcon, MaximizeIcon, MinimizeIcon, ResizeGripIcon };

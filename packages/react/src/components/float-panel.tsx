@@ -18,7 +18,7 @@ import { DragProvider } from "./drag-adapter";
 import { EDGE_BY_KEY, RESIZE_HANDLES } from "./float-resize-handles";
 import { LayoutRoot } from "./layout-root";
 import { RowView } from "./row-view";
-import { DockIcon, FloatIcon, GripIcon, MinimizeIcon } from "./tabset-icons";
+import { DockIcon, FloatIcon, GripIcon, MinimizeIcon, ResizeGripIcon } from "./tabset-icons";
 
 // One floating panel: an absolutely-positioned overlay over the layout, dragged by
 // its title bar and resized by edge/corner handles, with the panel itself rendered
@@ -55,6 +55,17 @@ const dockButtonStyle: CSSProperties = {
 };
 
 const bodyStyle: CSSProperties = { flex: 1, minHeight: 0, position: "relative" };
+
+// Decorative cue marking a bottom corner as a resize grip. pointerEvents:none so
+// it never steals the gesture from the handle beneath it; the grip glyph sits a
+// couple of px inside the frame, dimmed so it reads as a hint, not chrome.
+const resizeGripStyle: CSSProperties = {
+  bottom: 2,
+  opacity: 0.4,
+  pointerEvents: "none",
+  position: "absolute",
+  zIndex: 1,
+};
 
 // Approximate footprint of the minimized chip, used to keep it on screen while it
 // is dragged (its window rect is preserved in geometry for restore).
@@ -400,6 +411,24 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
             style={{ position: "absolute", touchAction: "none", zIndex: 1, ...handle.style }}
           />
         ))}
+      {editable && (
+        <>
+          <span
+            aria-hidden="true"
+            data-dashfoo="float-resize-cue"
+            style={{ ...resizeGripStyle, right: 2 }}
+          >
+            <ResizeGripIcon />
+          </span>
+          <span
+            aria-hidden="true"
+            data-dashfoo="float-resize-cue"
+            style={{ ...resizeGripStyle, left: 2, transform: "scaleX(-1)" }}
+          >
+            <ResizeGripIcon />
+          </span>
+        </>
+      )}
     </div>
   );
 };
