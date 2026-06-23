@@ -5,7 +5,7 @@ export default defineConfig({
   dts: true,
   entry: ["src/index.ts"],
   format: "esm",
-  minify: true,
+  minify: false,
   platform: "neutral",
   sourcemap: true,
   target: "es2022",
