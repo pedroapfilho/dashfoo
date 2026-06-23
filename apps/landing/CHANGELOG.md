@@ -1,5 +1,13 @@
 # landing
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [6ab3d24]
+  - @dashfoo/core@0.5.0
+  - @dashfoo/react@0.5.0
+
 ## 0.0.1
 
 ### Patch Changes
