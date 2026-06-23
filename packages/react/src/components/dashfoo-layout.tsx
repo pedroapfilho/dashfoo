@@ -11,13 +11,15 @@ import type {
 } from "@dashfoo/core";
 import { findTabset, stackModel } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from "react";
+import { forwardRef, useCallback, useContext, useImperativeHandle, useMemo, useRef } from "react";
 
+import { SharedDragManagerContext } from "../hooks/drag-hooks";
 import type { PersistConfig, StorageAdapter } from "../hooks/persistence";
 import { localStorageAdapter, usePersistence } from "../hooks/persistence";
 import { useContainerWidth } from "../hooks/responsive";
 import { useDashfooStore } from "../hooks/store";
 
+import { DashfooDragProvider } from "./drag-root";
 import { Layout } from "./layout";
 
 const DEFAULT_PERSIST_DEBOUNCE_MS = 300;
@@ -167,6 +169,10 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     onModelChange: handleModelChange,
   });
 
+  // A host can wrap the layout in DashfooDragProvider to share a manager with
+  // external sources; if so, reuse it (the floats join that shared manager too).
+  const hasSharedManager = useContext(SharedDragManagerContext) !== null;
+
   useImperativeHandle(
     ref,
     () => ({
@@ -253,6 +259,16 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
   // A maximized tabset fills the frame on its own; otherwise the row tree renders.
   const maximized = view.maximizedTabsetId ? findTabset(view, view.maximizedTabsetId) : undefined;
 
+  // Floating panels overlay the layout and render from the canonical model rather
+  // than the (possibly stacked) compact view.
+  const tree = (
+    <Layout.FloatLayer floats={store.model.floats ?? []} global={store.model.global}>
+      <Layout.DragLayer>
+        {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={view.layout} />}
+      </Layout.DragLayer>
+    </Layout.FloatLayer>
+  );
+
   return (
     <Layout.Root
       closableTabs={closableTabs}
@@ -272,13 +288,10 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       rootRef={containerRef}
       snap={snap}
     >
-      {/* Floating panels overlay the layout and render from the canonical model
-          rather than the (possibly stacked) compact view. */}
-      <Layout.FloatLayer floats={store.model.floats ?? []} global={store.model.global}>
-        <Layout.DragLayer>
-          {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={view.layout} />}
-        </Layout.DragLayer>
-      </Layout.FloatLayer>
+      {/* Share one drag manager across the main layout and every float, so a tab
+          can be dragged between them — unless a host DashfooDragProvider already
+          provides one (which also lets external sources participate). */}
+      {hasSharedManager ? tree : <DashfooDragProvider>{tree}</DashfooDragProvider>}
     </Layout.Root>
   );
 });

@@ -291,22 +291,27 @@ FlexLayout style:
 
 Each tabset toolbar gains a `[data-dashfoo="tabset-float"]` control that floats the
 whole tabset into an overlay (dispatching `floatTabset`). Drag its
-`[data-dashfoo="float-titlebar"]` to move it, the edge/corner handles to resize, and
-its `[data-dashfoo="float-dock"]` "Dock back" control to return it (`dockFloat`).
-Floating panels are first-class model nodes (`Dashfoo.floats` in `@dashfoo/core`),
-so they serialize and round-trip like docked panels.
+`[data-dashfoo="float-titlebar"]` to move it anywhere on the page, the edge/corner
+handles to resize, the `[data-dashfoo="float-minimize"]` control to collapse it to a
+chip, and the `[data-dashfoo="float-dock"]` "Dock back" control to return it
+(`dockFloat`). Floating panels are first-class model nodes (`Dashfoo.floats` in
+`@dashfoo/core`), so they serialize and round-trip like docked panels.
 
-How it works and its limits:
+How it works:
 
-- **Same React tree, not a window.** A float renders through the normal
-  `Layout.Rows` in the same tree, so app context (a theme provider, a query
-  client), event handling, and your stylesheet all apply with nothing extra. The
+- **Same React tree, full drag-dock.** A float renders through the normal
+  `Layout.Rows` in the same tree, sharing one drag manager with the docked layout —
+  so app context (a theme provider, a query client), event handling, your
+  stylesheet, and **dragging tabs into and out of a float** all just work. The
   overlay is `pointer-events: none`, so empty space stays click-through to the
   docked layout underneath.
-- **Drag + resize commit one step.** Both update the DOM imperatively during the
-  gesture and dispatch a single `moveFloat` on release, so a drag is one undo step.
-- **Dock back, not drag-out (yet).** A float is select / close / rename plus "Dock
-  back"; dragging a tab out of a float to re-dock it is not wired yet.
+- **Drag anywhere + resize commit one step.** The overlay is viewport-fixed, so a
+  float drags across the whole page. Drag and resize update the DOM imperatively and
+  dispatch a single `moveFloat` on release, so a drag is one undo step.
+- **Minimize.** The minimize control collapses a float to a chip
+  (`setFloatMinimized`); tapping the chip restores it to its saved rect.
+- **Dock back as a panel.** "Dock back" returns the float as its own panel — all its
+  tabs, grouped — instead of flattening them into another tabset.
 - **Bring to front.** Clicking a float raises it above the others.
 
 Hand-built layouts opt in by wrapping the tree's content with `Layout.FloatLayer`
@@ -420,9 +425,12 @@ you.
 | `float-titlebar`     | `div`           | The float's drag handle / title bar (grip + title + dock control).                                                                 |
 | `float-grip`         | `span`          | Drag-affordance dots in the title bar (decorative, `aria-hidden`).                                                                 |
 | `float-title`        | `span`          | The float's title text (its name, else the active tab's name).                                                                     |
+| `float-minimize`     | `button`        | Collapses the float to a chip. `aria-label="Minimize panel"`.                                                                      |
 | `float-dock`         | `button`        | Docks the panel back into the main layout. `aria-label="Dock panel back into the main layout"`.                                    |
 | `float-body`         | `div`           | The float's content area; holds the panel's layout.                                                                                |
 | `float-resize`       | `div`           | An edge/corner resize handle (eight in total); `data-edge` is the direction.                                                       |
+| `float-chip`         | `button`        | A minimized float: a rounded chip you click (or drag) to restore.                                                                  |
+| `float-chip-label`   | `span`          | The chip's panel title.                                                                                                            |
 | `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone pane). `pointer-events: none`.                                                    |
 | `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label.                                                        |
 | `separator`          | rrp `Separator` | rrp emits `data-separator` with `aria-orientation`; style splitters here.                                                          |

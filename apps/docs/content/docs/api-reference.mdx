@@ -297,7 +297,7 @@ Source: [`packages/core/src`](https://github.com/pedroapfilho/dashfoo/tree/main/
 
 ### Actions
 
-Every document mutation is one of 16 immutable, discriminated actions. The
+Every document mutation is one of 17 immutable, discriminated actions. The
 reducer is exhaustive over the union; validate untrusted payloads with
 `actionSchema` before dispatch.
 
@@ -315,8 +315,9 @@ reducer is exhaustive over the union; validate untrusted payloads with
 | `adjustSplit`            | `{ rowId, weights }`                       | Set the weights of a row's children (the splitter drag). |
 | `floatTab`               | `{ tabId, geometry?, floatId? }`           | Float a tab out into a new floating panel.               |
 | `floatTabset`            | `{ tabsetId, geometry?, floatId? }`        | Float a whole tabset (with its tabs) into a panel.       |
-| `dockFloat`              | `{ floatId, targetId?, location? }`        | Dock a floating panel back into the main layout.         |
+| `dockFloat`              | `{ floatId, targetId?, location? }`        | Dock a float back as its own panel (or `center`-merge).  |
 | `moveFloat`              | `{ floatId, geometry }`                    | Update a floating panel's stored rect (drag/resize).     |
+| `setFloatMinimized`      | `{ floatId, minimized }`                   | Collapse a float to a chip, or restore it.               |
 | `updateNodeAttributes`   | `{ nodeId, attrs }`                        | Patch mutable attributes on a tab, tabset, or row.       |
 | `updateGlobalAttributes` | `{ attrs }`                                | Patch the model's `global` block.                        |
 
@@ -367,7 +368,7 @@ Zod schemas and their inferred types. Field-by-field tables live in
 | `jsonValueSchema`        | `Json`             |
 
 `Node` (`RowNode | TabsetNode | TabNode`) is exported as a type only.
-`FloatNode` (`{ type: "float"; id; layout: RowNode; geometry: Geometry; name? }`)
+`FloatNode` (`{ type: "float"; id; layout: RowNode; geometry: Geometry; name?; minimized? }`)
 holds a floating panel; see [floating panels](/floating-panels). The model's
 `version` is the pinned literal `1`; payloads with any other version fail
 validation.

@@ -41,9 +41,11 @@ export { Dashboard };
 ```
 
 Clicking the `[data-dashfoo="tabset-float"]` control floats the whole tabset into an
-overlay positioned over where it was docked. Drag the **title bar** to move it,
-drag the **edge/corner handles** to resize, and click **Dock back**
-(`[data-dashfoo="float-dock"]`) in the title bar to return it to the layout.
+overlay positioned over where it was docked. Drag the **title bar** to move it
+anywhere on the page, drag the **edge/corner handles** to resize, **minimize** it to
+a small chip (and click the chip to restore), and **Dock back** to return it to the
+layout. You can also drag tabs **into and out of** a float — it is a full
+participant in drag-dock.
 
 ## Floats are model nodes
 
@@ -61,24 +63,28 @@ floated.floats;
 reducer(floated, { type: "dockFloat", floatId: floated.floats![0].id });
 ```
 
-The reducer actions are `floatTab`, `floatTabset`, `dockFloat`, and `moveFloat`
-(the last persists a float's rect as you drag or resize it — one undo step per
-gesture). `geometry` is in CSS pixels relative to the layout container, so the
-overlay positions a float with plain absolute `left`/`top`. `normalize` heals each
-float's own layout and drops a float the moment its last panel leaves, the same way
-it removes an empty tabset. Because a float owns a full `RowNode`, a floated panel
-is a real container: it can hold one tab or several.
+The reducer actions are `floatTab`, `floatTabset`, `dockFloat`, `moveFloat` (persists
+a float's rect as you drag or resize it — one undo step per gesture), and
+`setFloatMinimized`. `geometry` is in viewport CSS pixels (the overlay is fixed), so
+a float can be dragged anywhere on the page. `normalize` heals each float's own
+layout and drops a float the moment its last panel leaves, the same way it removes an
+empty tabset. Because a float owns a full `RowNode`, a floated panel is a real
+container: it can hold one tab or several.
 
 ## What's in scope
 
-- **Same React tree.** Floats render through the normal `Layout.Rows` in the same
-  tree, so app context (a theme provider, a query client), event handling, and your
-  stylesheet all apply with nothing extra.
-- **Drag + resize.** The title bar moves the float; eight handles resize it. Both
-  update the DOM imperatively during the gesture and commit one `moveFloat` on
-  release, so a drag is a single undo step.
-- **Dock back.** A floating panel is select / close / rename plus a "Dock back"
-  control — dragging a tab out of a float to re-dock it is not wired yet.
+- **Same React tree, full drag-dock.** Floats render through the normal `Layout.Rows`
+  in the same tree, sharing one drag manager with the docked layout — so app context
+  (a theme provider, a query client), event handling, your stylesheet, and **dragging
+  tabs into and out of a float** all just work.
+- **Drag anywhere + resize.** The title bar moves the float across the viewport;
+  eight handles resize it. Both update the DOM imperatively during the gesture and
+  commit one `moveFloat` on release, so a drag is a single undo step.
+- **Minimize.** A title-bar control collapses the float to a small chip
+  (`setFloatMinimized`); tapping the chip (draggable itself) restores it to its
+  saved rect.
+- **Dock back as a panel.** The "Dock back" control returns the float as its own
+  panel — all its tabs, grouped — rather than flattening them into another tabset.
 - **Bring to front.** Clicking a float raises it above the others.
 
 The overlay is `pointer-events: none`, so empty space stays click-through to the

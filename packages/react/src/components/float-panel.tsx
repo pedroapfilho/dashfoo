@@ -8,6 +8,7 @@ import { useLayout } from "../hooks/layout-store";
 import type { ResizeEdges, Size } from "../lib/float-geometry";
 import { clampToBounds, resizeRect } from "../lib/float-geometry";
 
+import { DragProvider } from "./drag-adapter";
 import { LayoutRoot } from "./layout-root";
 import { RowView } from "./row-view";
 import { DockIcon, FloatIcon, GripIcon, MinimizeIcon } from "./tabset-icons";
@@ -135,6 +136,7 @@ type FloatPanelProps = {
 const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
   const dispatch = useLayout((state) => state.dispatch);
   const closableTabs = useLayout((state) => state.closableTabs);
+  const draggableTabs = useLayout((state) => state.draggableTabs);
   const editable = useLayout((state) => state.editable);
   const renamableTabs = useLayout((state) => state.renamableTabs);
   const resizableSplits = useLayout((state) => state.resizableSplits);
@@ -310,7 +312,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
         <LayoutRoot
           closableTabs={closableTabs}
           dispatch={dispatch}
-          draggableTabs={false}
+          draggableTabs={draggableTabs}
           draggableTabsets={false}
           editable={editable}
           floatable={false}
@@ -324,7 +326,11 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
           resizableSplits={resizableSplits}
           snap={snap ?? undefined}
         >
-          <RowView node={node.layout} />
+          {/* Its own drag layer, joined to the shared manager above, so tabs drag
+              between this float and the main layout (and other floats). */}
+          <DragProvider>
+            <RowView node={node.layout} />
+          </DragProvider>
         </LayoutRoot>
       </div>
       {RESIZE_HANDLES.map((handle) => (

@@ -86,6 +86,22 @@ describe("floating panels", () => {
     expect(screen.getByText("CHART")).toBeInTheDocument();
   });
 
+  test("minimize collapses the float to a chip, and the chip restores it", () => {
+    render(<DashfooLayout components={components} defaultModel={model()} floatable />);
+    fireEvent.click(screen.getByLabelText("Float panel"));
+
+    fireEvent.click(within(floatPanel()!).getByLabelText("Minimize panel"));
+
+    // The window is gone; a chip stands in its place.
+    expect(floatPanel()).toBeNull();
+    const chip = document.querySelector('[data-dashfoo="float-chip"]');
+    expect(chip).not.toBeNull();
+
+    // Activating the chip restores the window.
+    fireEvent.keyDown(chip!, { key: "Enter" });
+    expect(floatPanel()).not.toBeNull();
+  });
+
   // A hand-built layout that turns on `floatable` but forgets <Layout.FloatLayer>
   // has nowhere to render the float. The control must not float a panel into
   // nowhere — it hides and warns (DashfooLayout always supplies the layer).

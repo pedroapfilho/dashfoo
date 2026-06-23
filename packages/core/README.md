@@ -36,12 +36,12 @@ type Dashfoo = {
 The tree has three node kinds, each discriminated by `type`, plus an optional
 floating-panel node:
 
-| Node         | `type`     | Holds                                                                       |
-| ------------ | ---------- | --------------------------------------------------------------------------- |
-| `RowNode`    | `"row"`    | `children` (rows or tabsets), `orientation` (`row`/`column`), `weight?`     |
-| `TabsetNode` | `"tabset"` | `children` (tabs), `selected` index, optional `min`/`max`/`weight`          |
-| `TabNode`    | `"tab"`    | `component`, `name`, `id`, optional `config` + `enable*` flags              |
-| `FloatNode`  | `"float"`  | a floating panel: its own `layout` (`RowNode`), `geometry`, optional `name` |
+| Node         | `type`     | Holds                                                                                    |
+| ------------ | ---------- | ---------------------------------------------------------------------------------------- |
+| `RowNode`    | `"row"`    | `children` (rows or tabsets), `orientation` (`row`/`column`), `weight?`                  |
+| `TabsetNode` | `"tabset"` | `children` (tabs), `selected` index, optional `min`/`max`/`weight`                       |
+| `TabNode`    | `"tab"`    | `component`, `name`, `id`, optional `config` + `enable*` flags                           |
+| `FloatNode`  | `"float"`  | a floating panel: its own `layout` (`RowNode`), `geometry`, optional `name`, `minimized` |
 
 Rows nest (a row's child can be another row), which is how arbitrary tiled splits
 are represented. `floats` carry floating panels (see "Floating panels" below): each
@@ -108,8 +108,9 @@ untrusted payloads against `actionSchema` before dispatch.
 | `adjustSplit`            | Set the `weights` of a row's children (splitter drag)            |
 | `floatTab`               | Float a tab out into a new floating panel                        |
 | `floatTabset`            | Float a whole tabset (with its tabs) into a new floating panel   |
-| `dockFloat`              | Dock a floating panel back into the main layout                  |
+| `dockFloat`              | Dock a float back as its own panel (or `center`-merge its tabs)  |
 | `moveFloat`              | Update a floating panel's stored rect (drag/resize)              |
+| `setFloatMinimized`      | Collapse a float to a chip, or restore it                        |
 | `updateNodeAttributes`   | Patch mutable attrs on a tab / tabset / row                      |
 | `updateGlobalAttributes` | Patch the `global` block                                         |
 
