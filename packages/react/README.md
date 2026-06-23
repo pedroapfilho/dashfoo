@@ -417,8 +417,9 @@ you.
 | `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                  |
 | `float-overlay`      | `div`           | The `pointer-events: none` overlay covering the layout; holds the floats.                                                          |
 | `float`              | `div`           | A floating panel's elevated frame. `display: flex; flex-direction: column`, positioned absolutely.                                 |
-| `float-titlebar`     | `div`           | The float's drag handle / title bar.                                                                                               |
-| `float-title`        | `span`          | The float's title text (`node.name`).                                                                                              |
+| `float-titlebar`     | `div`           | The float's drag handle / title bar (grip + title + dock control).                                                                 |
+| `float-grip`         | `span`          | Drag-affordance dots in the title bar (decorative, `aria-hidden`).                                                                 |
+| `float-title`        | `span`          | The float's title text (its name, else the active tab's name).                                                                     |
 | `float-dock`         | `button`        | Docks the panel back into the main layout. `aria-label="Dock panel back into the main layout"`.                                    |
 | `float-body`         | `div`           | The float's content area; holds the panel's layout.                                                                                |
 | `float-resize`       | `div`           | An edge/corner resize handle (eight in total); `data-edge` is the direction.                                                       |

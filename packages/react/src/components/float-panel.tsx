@@ -1,6 +1,6 @@
 "use client";
 
-import type { Dashfoo, FloatNode, Geometry, GlobalAttributes } from "@dashfoo/core";
+import type { Dashfoo, FloatNode, Geometry, GlobalAttributes, RowNode } from "@dashfoo/core";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useRef } from "react";
 
@@ -10,7 +10,7 @@ import { clampToBounds, resizeRect } from "../lib/float-geometry";
 
 import { LayoutRoot } from "./layout-root";
 import { RowView } from "./row-view";
-import { DockIcon } from "./tabset-icons";
+import { DockIcon, GripIcon } from "./tabset-icons";
 
 // One floating panel: an absolutely-positioned overlay over the layout, dragged by
 // its title bar and resized by edge/corner handles, with the panel itself rendered
@@ -19,12 +19,29 @@ import { DockIcon } from "./tabset-icons";
 // resize update the DOM imperatively during the gesture and commit one `moveFloat`
 // on release, so a drag is a single undo step and never re-renders per pointer move.
 
+const firstTabsetTitle = (row: RowNode): string | undefined => {
+  for (const child of row.children) {
+    if (child.type === "tabset") {
+      return (child.children[child.selected] ?? child.children[0])?.name;
+    }
+    const nested = firstTabsetTitle(child);
+    if (nested) {
+      return nested;
+    }
+  }
+  return undefined;
+};
+
+// A readable window title: the float's own name, else the active tab of its first
+// tabset (a float is usually one tabset), else a generic label.
+const floatTitle = (node: FloatNode): string =>
+  node.name ?? firstTabsetTitle(node.layout) ?? "Panel";
+
 const titleBarStyle: CSSProperties = {
   alignItems: "center",
-  cursor: "move",
   display: "flex",
   flexShrink: 0,
-  gap: "0.5rem",
+  gap: "0.375rem",
   touchAction: "none",
 };
 
@@ -202,8 +219,11 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
       }}
     >
       <div data-dashfoo="float-titlebar" onPointerDown={handlePointerDown} style={titleBarStyle}>
+        <span aria-hidden="true" data-dashfoo="float-grip">
+          <GripIcon />
+        </span>
         <span data-dashfoo="float-title" style={titleStyle}>
-          {node.name ?? ""}
+          {floatTitle(node)}
         </span>
         <button
           aria-label="Dock panel back into the main layout"
