@@ -16,6 +16,8 @@ type LayoutState = {
   draggableTabs: boolean;
   draggableTabsets: boolean;
   editable: boolean;
+  // Whether tabsets show a "float into a movable panel" control.
+  floatable: boolean;
   keepMounted: boolean;
   maximizable: boolean;
   maximizedTabsetId: string | undefined;

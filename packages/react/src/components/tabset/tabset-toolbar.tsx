@@ -4,9 +4,12 @@ import type { ComponentProps, CSSProperties, MouseEvent, ReactNode } from "react
 import { useMemo } from "react";
 
 import { useLayout } from "../../hooks/layout-store";
+import { measureFloatRect } from "../../lib/float-geometry";
 import { mergeRefs } from "../../lib/merge-refs";
+import { warnOnce } from "../../lib/warn-once";
 import { useTabsetDraggable } from "../drag-adapter";
-import { GripIcon, MaximizeIcon } from "../tabset-icons";
+import { useHasFloatLayer } from "../float-context";
+import { FloatIcon, GripIcon, MaximizeIcon } from "../tabset-icons";
 
 import { useTabset } from "./tabset-store";
 
@@ -88,5 +91,57 @@ const TabsetMaximizeButton = ({
   );
 };
 
-export { TabsetGrip, TabsetMaximizeButton, TabsetToolbar };
-export type { TabsetGripProps, TabsetMaximizeButtonProps, TabsetToolbarProps };
+type TabsetFloatButtonProps = ComponentProps<"button">;
+
+// Floats the whole tabset out into a draggable, resizable overlay (dispatches
+// `floatTabset` with a rect measured over the panel). Self-hides when floating is
+// off or the tabset is maximized (a maximized panel already owns the frame).
+const TabsetFloatButton = ({ children, onClick, ...props }: TabsetFloatButtonProps): ReactNode => {
+  const floatable = useLayout((state) => state.floatable);
+  const dispatch = useLayout((state) => state.dispatch);
+  const isMaximized = useTabset((state) => state.isMaximized);
+  const node = useTabset((state) => state.node);
+  const hasFloatLayer = useHasFloatLayer();
+
+  if (!floatable || isMaximized) {
+    return null;
+  }
+
+  // `floatable` is on but there is no <Layout.FloatLayer> to render the float (a
+  // hand-built layout that forgot it — DashfooLayout always adds one). Hide the
+  // control and warn rather than render a button that would float a panel into
+  // nowhere.
+  if (!hasFloatLayer) {
+    warnOnce(
+      "float-no-layer",
+      "Tabset.FloatButton needs a <Layout.FloatLayer> around the layout (DashfooLayout adds one); the float control is hidden",
+    );
+    return null;
+  }
+
+  const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
+    onClick?.(event);
+    const geometry = measureFloatRect(event.currentTarget);
+    dispatch({ geometry, tabsetId: node.id, type: "floatTabset" });
+  };
+
+  return (
+    <button
+      aria-label="Float panel"
+      {...props}
+      data-dashfoo="tabset-float"
+      onClick={handleClick}
+      type="button"
+    >
+      {children ?? <FloatIcon />}
+    </button>
+  );
+};
+
+export { TabsetFloatButton, TabsetGrip, TabsetMaximizeButton, TabsetToolbar };
+export type {
+  TabsetFloatButtonProps,
+  TabsetGripProps,
+  TabsetMaximizeButtonProps,
+  TabsetToolbarProps,
+};

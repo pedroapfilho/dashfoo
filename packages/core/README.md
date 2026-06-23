@@ -29,19 +29,24 @@ type Dashfoo = {
   layout: RowNode; // the root is always a row
   activeTabsetId?: string;
   maximizedTabsetId?: string;
+  floats?: FloatNode[]; // floating panels, each its own layout subtree
 };
 ```
 
-The tree has three node kinds, each discriminated by `type`:
+The tree has three node kinds, each discriminated by `type`, plus an optional
+floating-panel node:
 
-| Node         | `type`     | Holds                                                                   |
-| ------------ | ---------- | ----------------------------------------------------------------------- |
-| `RowNode`    | `"row"`    | `children` (rows or tabsets), `orientation` (`row`/`column`), `weight?` |
-| `TabsetNode` | `"tabset"` | `children` (tabs), `selected` index, optional `min`/`max`/`weight`      |
-| `TabNode`    | `"tab"`    | `component`, `name`, `id`, optional `config` + `enable*` flags          |
+| Node         | `type`     | Holds                                                                                    |
+| ------------ | ---------- | ---------------------------------------------------------------------------------------- |
+| `RowNode`    | `"row"`    | `children` (rows or tabsets), `orientation` (`row`/`column`), `weight?`                  |
+| `TabsetNode` | `"tabset"` | `children` (tabs), `selected` index, optional `min`/`max`/`weight`                       |
+| `TabNode`    | `"tab"`    | `component`, `name`, `id`, optional `config` + `enable*` flags                           |
+| `FloatNode`  | `"float"`  | a floating panel: its own `layout` (`RowNode`), `geometry`, optional `name`, `minimized` |
 
 Rows nest (a row's child can be another row), which is how arbitrary tiled splits
-are represented. `min`/`max` are `Dimension` values (`{ unit, value }`) where
+are represented. `floats` carry floating panels (see "Floating panels" below): each
+owns a full `RowNode` layout, so traversals and actions treat a float as a second
+root alongside `layout`. `min`/`max` are `Dimension` values (`{ unit, value }`) where
 `unit` is one of `px`, `%`, `em`, `rem`, `vh`, `vw`. `global.tabSetMinSize` is
 the default tabset minimum size in pixels for renderers that honor it; the React
 adapter falls back to `320px` when it is omitted.
@@ -101,6 +106,12 @@ untrusted payloads against `actionSchema` before dispatch.
 | `deleteTab`              | Remove a tab                                                     |
 | `deleteTabset`           | Remove a whole tabset                                            |
 | `adjustSplit`            | Set the `weights` of a row's children (splitter drag)            |
+| `floatTab`               | Float a tab out into a new floating panel                        |
+| `floatTabset`            | Float a whole tabset (with its tabs) into a new floating panel   |
+| `dockFloat`              | Dock a float back as its own panel (or `center`-merge its tabs)  |
+| `moveFloat`              | Update a floating panel's stored rect (drag/resize)              |
+| `setFloatMinimized`      | Collapse a float to a chip, or restore it                        |
+| `renameFloat`            | Rename a floating panel's window title                           |
 | `updateNodeAttributes`   | Patch mutable attrs on a tab / tabset / row                      |
 | `updateGlobalAttributes` | Patch the `global` block                                         |
 
@@ -156,6 +167,7 @@ tree canonical so downstream code never has to defend against degenerate shapes:
 - clamps every `selected` index into range
 - forces `activeTabsetId` / `maximizedTabsetId` to point at a tabset that exists
   (falling back to the first tabset, or clearing)
+- heals each floating panel's own layout and drops a float once it empties
 
 `normalize` is exported on its own if you build a model by hand and want it
 canonicalized without dispatching an action.
@@ -165,18 +177,46 @@ canonicalized without dispatching an action.
 Read-only lookups over a model, all exported:
 
 ```ts
-collectTabsets(model): Array<TabsetNode>;       // depth-first, layout only
+collectRoots(model): Array<RowNode>;            // main layout + each float's layout
+collectTabsets(model): Array<TabsetNode>;       // depth-first, across all roots
 getFirstTabset(model): TabsetNode | undefined;
 findTabset(model, tabsetId): TabsetNode | undefined;
 findTab(model, tabId): TabLocation | undefined; // searches tabsets
-findRow(row, rowId): RowNode | undefined;       // pass model.layout as the root
+findFloat(model, floatId): FloatNode | undefined;
+findRow(row, rowId): RowNode | undefined;       // pass a root (model.layout or a float's layout)
+findRootContaining(model, nodeId): RowNode | undefined; // which root holds a node
 findAttributedNode(model, id): AttributedNode | undefined; // row, tabset, or tab
 findTabsetParent(row, tabsetId): { index: number; parent: RowNode } | undefined;
 findDuplicateIds(model): Array<string>;         // ids used more than once
 ```
 
 `findTab` returns `{ container, index, tab }` so a caller knows where the tab
-lives (a tabset in the layout).
+lives (a tabset in some root). Lookups span every root, so a floated tab is as
+reachable as a docked one; `findRootContaining` tells you which root (main layout
+or a float) a node lives in.
+
+## Floating panels
+
+A panel can float out into a movable, resizable overlay (the React layer renders
+it in-app — see `@dashfoo/react`). Floats are first-class model nodes
+(`Dashfoo.floats`), each owning a full `RowNode` layout, so they serialize and
+self-heal like the main tree:
+
+```ts
+import { reducer } from "@dashfoo/core";
+
+// Float the whole tabset "left" (the React layer supplies the in-app geometry;
+// omit it for a default rect).
+const floated = reducer(model, { type: "floatTabset", tabsetId: "left" });
+floated.floats; // [{ type: "float", id, layout: RowNode, geometry }]
+
+// Dock it back into the active main tabset (center) and drop the float.
+const docked = reducer(floated, { type: "dockFloat", floatId: floated.floats![0].id });
+```
+
+`normalize` runs over each float's layout too and drops a float once its last
+panel leaves. The `floatNode(layout, geometry, opts?)` builder constructs one,
+and `model(layout, { floats })` seeds them.
 
 ## Geometry
 
@@ -308,14 +348,14 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 ## Public exports
 
 `schema` — `dashfooSchema`, `rowNodeSchema`, `tabsetNodeSchema`, `tabNodeSchema`,
-`dimensionSchema`, `snapSchema`, `edgeSchema`, `unitSchema`,
-`orientationSchema`, `globalAttributesSchema`,
+`floatNodeSchema`, `geometrySchema`, `dimensionSchema`, `snapSchema`, `edgeSchema`,
+`unitSchema`, `orientationSchema`, `globalAttributesSchema`,
 `jsonValueSchema`; types `Dashfoo`, `RowNode`, `TabsetNode`, `TabNode`,
-`Dimension`, `SnapConfig`, `Edge`, `Unit`, `Orientation`,
+`FloatNode`, `Geometry`, `Dimension`, `SnapConfig`, `Edge`, `Unit`, `Orientation`,
 `GlobalAttributes`, `Node`, `Json`.
 
-`builders` — `model`, `row`, `tabset`, `tab`; option types `ModelOptions`,
-`RowOptions`, `TabsetOptions`, `TabOptions`.
+`builders` — `model`, `row`, `tabset`, `tab`, `floatNode`; option types
+`ModelOptions`, `RowOptions`, `TabsetOptions`, `TabOptions`, `FloatOptions`.
 
 `ids` — `createNodeId`, `createTabId`.
 
@@ -324,8 +364,9 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 
 `reducer` — `reducer`. `invariants` — `normalize`.
 
-`tree` — `collectTabsets`, `getFirstTabset`, `findTabset`, `findTab`, `findRow`,
-`findAttributedNode`, `findTabsetParent`, `findDuplicateIds`;
+`tree` — `collectRoots`, `collectTabsets`, `collectTabsetsInRow`, `getFirstTabset`,
+`findTabset`, `findTab`, `findFloat`, `findRow`, `findRootContaining`, `findAttributedNode`,
+`findTabsetParent`, `findDuplicateIds`;
 types `AttributedNode`, `TabContainer`, `TabLocation`.
 
 `geometry` — `resolveDockTarget`, `dockZonePolygons`, `zoneRect`; types

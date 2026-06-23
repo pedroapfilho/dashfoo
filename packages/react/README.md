@@ -76,6 +76,7 @@ a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-att
 | `closableTabs`            | `boolean`                                                               | `true`  | Show the per-tab close control.                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `renamableTabs`           | `boolean`                                                               | `true`  | Allow double-click inline rename.                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `maximizable`             | `boolean`                                                               | `true`  | Show the tabset maximize/restore control.                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `floatable`               | `boolean`                                                               | `false` | Show a per-tabset control that floats the panel into a movable, resizable overlay, and render any floating panels. See below.                                                                                                                                                                                                                                                                                                                |
 | `draggableTabs`           | `boolean`                                                               | `true`  | Allow individual tabs to be dragged between tabsets.                                                                                                                                                                                                                                                                                                                                                                                         |
 | `draggableTabsets`        | `boolean`                                                               | `true`  | Show the grip that drags a whole tabset.                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `resizableSplits`         | `boolean`                                                               | `true`  | Allow dragging the splitters; `false` disables them in place (gutters keep their size).                                                                                                                                                                                                                                                                                                                                                      |
@@ -86,9 +87,10 @@ a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-att
 You must pass either `model` or `defaultModel`. Passing neither throws.
 
 A `ref` exposes a `DashfooHandle` for imperative control:
-`addTab`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `dispatch`,
-`getModel`, `undo` / `redo` / `canUndo` / `canRedo`, and `resetLayout()` (reset to
-the original `defaultModel`, clearing undo history and any persisted copy).
+`addTab`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `floatTab`,
+`dockFloat`, `dispatch`, `getModel`, `undo` / `redo` / `canUndo` / `canRedo`,
+and `resetLayout()` (reset to the original `defaultModel`, clearing undo history and
+any persisted copy).
 
 ```tsx
 const ref = useRef<DashfooHandle>(null);
@@ -175,6 +177,7 @@ with the right role and ARIA wiring, ready for you to style.
 - **Close** — a `[data-dashfoo="tab-close"]` button next to each tab label, shown when closing is enabled. Dispatches `deleteTab`.
 - **Rename** — double-click a tab to swap its label for a `[data-dashfoo="tab-rename"]` input. Enter commits, Escape cancels, blur commits. A trimmed, changed value dispatches `renameTab`; focus returns to the tab afterward.
 - **Maximize** — a `[data-dashfoo="tabset-maximize"]` toggle in the tabset toolbar. Dispatches `setMaximizedTabset`; one maximized tabset fills the frame and `aria-pressed` reflects state.
+- **Float** — a `[data-dashfoo="tabset-float"]` button in the tabset toolbar, shown when `floatable`. Floats the tabset into a movable, resizable overlay (`floatTabset`); the float's `[data-dashfoo="float-dock"]` control docks it back (`dockFloat`). See "Floating panels" below.
 - **Tabs** — roving-tabindex keyboard model (WAI-ARIA APG): Arrow keys move and select, Home/End jump to the ends, focus follows selection.
 - **Drag-to-dock** — drag a tab to restack it or split a tabset (when split-dock is on). A `[data-dashfoo="dock-indicator"]` previews where it lands.
 
@@ -277,6 +280,52 @@ Hand-built layouts (the `Layout.*` primitives) get the same behavior with
 `useContainerWidth` + `stackModel`; for _distinct_ per-breakpoint models, use
 `useResponsiveModel`. Both feed reactive props with no `key`/remount.
 
+## Floating panels
+
+Pass `floatable` to let a panel float out into a movable, resizable overlay,
+FlexLayout style:
+
+```tsx
+<DashfooLayout defaultModel={model} factory={renderPanel} floatable />
+```
+
+Each tabset toolbar gains a `[data-dashfoo="tabset-float"]` control that floats the
+whole tabset into an overlay (dispatching `floatTabset`). Drag its
+`[data-dashfoo="float-titlebar"]` to move it anywhere on the page, the edge/corner
+handles to resize, the `[data-dashfoo="float-minimize"]` control to collapse it to a
+chip, and the `[data-dashfoo="float-dock"]` "Dock back" control to return it
+(`dockFloat`). Floating panels are first-class model nodes (`Dashfoo.floats` in
+`@dashfoo/core`), so they serialize and round-trip like docked panels.
+
+How it works:
+
+- **Same React tree, full drag-dock.** A float renders through the normal
+  `Layout.Rows` in the same tree, sharing one drag manager with the docked layout —
+  so app context (a theme provider, a query client), event handling, your
+  stylesheet, and **dragging tabs into and out of a float** all just work. The
+  overlay is `pointer-events: none`, so empty space stays click-through to the
+  docked layout underneath.
+- **Drag anywhere + resize commit one step.** The overlay is viewport-fixed, so a
+  float drags across the whole page. Drag and resize update the DOM imperatively and
+  dispatch a single `moveFloat` on release, so a drag is one undo step.
+- **Named, renamable title.** Each float carries its own name ("Panel", "Panel 1",
+  …), shown as the window title — never the active tab's. Double-click the title to
+  rename it (`renameFloat`).
+- **Minimize.** The minimize control collapses a float to a chip
+  (`setFloatMinimized`); tapping the chip restores it to its saved rect.
+- **Dock back as a panel.** "Dock back" returns the float as its own panel — all its
+  tabs, grouped — instead of flattening them into another tabset.
+- **Bring to front.** Clicking anywhere in a float — body, a tab, or chrome —
+  raises it above the others.
+- **Honors `editable`.** Under `editable={false}` a float is static: its content
+  stays selectable and it still raises to the front, but move, resize, rename,
+  minimize, and dock-back are switched off (no `moveFloat` / `renameFloat` /
+  `setFloatMinimized` / `dockFloat`).
+
+Hand-built layouts opt in by wrapping the tree's content with `Layout.FloatLayer`
+(passing `floats` + `global`) and adding `Tabset.FloatButton`. `Tabset.FloatButton`
+hides itself (and warns) if no `Layout.FloatLayer` is present.
+
 ## Persistence
 
 The `persist` prop saves an uncontrolled layout and restores it on load. It loads
@@ -370,14 +419,27 @@ you.
 | `tab`                | `button`        | `role="tab"`. Carries `aria-selected` and `data-tab-id`.                                                                           |
 | `tab-close`          | `button`        | Per-tab close. `aria-label="Close <name>"`.                                                                                        |
 | `tab-rename`         | `input`         | Inline rename editor, shown during a rename.                                                                                       |
-| `tabset-toolbar`     | `div`           | Trailing controls in the strip: overflow menu, grip, custom toolbar slot, maximize.                                                |
+| `tabset-toolbar`     | `div`           | Trailing controls in the strip: overflow menu, grip, custom toolbar slot, pop-out, maximize.                                       |
 | `tab-overflow-root`  | `div`           | Wraps the overflow trigger and its menu; rendered when tabs don't fit the strip.                                                   |
 | `tab-overflow`       | `button`        | Overflow menu trigger. `aria-label="More tabs"`.                                                                                   |
 | `tab-overflow-menu`  | `div`           | `role="menu"`, lists the hidden tabs while open.                                                                                   |
 | `tab-overflow-item`  | `button`        | `role="menuitem"`, one hidden tab; selecting it activates the tab.                                                                 |
 | `tabset-grip`        | `button`        | Drags the whole tabset. `aria-label="Move tabset"`; shown when `draggableTabsets` is on and the tabset is not maximized.           |
+| `tabset-float`       | `button`        | Floats the tabset into a movable overlay. `aria-label="Float panel"`; shown when `floatable` is on and not maximized.              |
 | `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                                                                            |
 | `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                  |
+| `float-overlay`      | `div`           | The `pointer-events: none` overlay covering the layout; holds the floats.                                                          |
+| `float`              | `div`           | A floating panel's elevated frame. `display: flex; flex-direction: column`, positioned absolutely.                                 |
+| `float-titlebar`     | `div`           | The float's drag handle / title bar (grip + title + dock control).                                                                 |
+| `float-grip`         | `span`          | Drag-affordance dots in the title bar (decorative, `aria-hidden`).                                                                 |
+| `float-title`        | `span`          | The float's window title (its own name); double-click to rename. `aria-hidden` grip precedes it.                                   |
+| `float-rename`       | `input`         | The inline title editor, shown while renaming. `aria-label="Rename <name>"`.                                                       |
+| `float-minimize`     | `button`        | Collapses the float to a chip. `aria-label="Minimize panel"`.                                                                      |
+| `float-dock`         | `button`        | Docks the panel back into the main layout. `aria-label="Dock panel back into the main layout"`.                                    |
+| `float-body`         | `div`           | The float's content area; holds the panel's layout.                                                                                |
+| `float-resize`       | `div`           | An edge/corner resize handle (eight in total); `data-edge` is the direction.                                                       |
+| `float-chip`         | `button`        | A minimized float: a rounded chip you click (or drag) to restore.                                                                  |
+| `float-chip-label`   | `span`          | The chip's panel title.                                                                                                            |
 | `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone pane). `pointer-events: none`.                                                    |
 | `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label.                                                        |
 | `separator`          | rrp `Separator` | rrp emits `data-separator` with `aria-orientation`; style splitters here.                                                          |
@@ -454,24 +516,26 @@ and overlays outside the layout observe the same drag).
 same parts yourself when you need custom chrome. Two compound namespaces, same
 pattern as `Panel`:
 
-| Part                    | Element                                  | Role                                                                                                            |
-| ----------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `Layout.Root`           | `div[data-dashfoo="layout"]`             | Creates the layout store. Takes `model`, `dispatch`, `renderTab`, and the chrome flags `DashfooLayout` accepts. |
-| `Layout.DragLayer`      | none (overlays)                          | Opts the tree into drag-dock. Omit it and everything else still works, just without dragging.                   |
-| `Layout.Rows`           | rrp split tree                           | Renders a `RowNode` recursively. `renderTabset` swaps in a custom tabset composition at every leaf.             |
-| `Layout.Tabset`         | —                                        | The stock tabset composition, for leaves that don't need custom chrome.                                         |
-| `Tabset.Root`           | `div[data-dashfoo="tabset"]`             | Creates the per-tabset store; owns drop registration, overflow measurement, and focus restore after close.      |
-| `Tabset.TabStrip`       | `div[data-dashfoo="tabstrip"]`           | The strip row (drag hit-testing targets this attribute).                                                        |
-| `Tabset.Tablist`        | `div[data-dashfoo="tablist"]`            | `role="tablist"` + roving-tabindex arrow/Home/End navigation.                                                   |
-| `Tabset.Tab`            | `span[data-dashfoo="tab-item"]`          | Per-tab wrapper; provides identity to the parts inside.                                                         |
-| `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: select on click, rename on double-click, draggable. Children override the label.                |
-| `Tabset.RenameInput`    | `input[data-dashfoo="tab-rename"]`       | Inline rename editor; renders only while its tab is being renamed.                                              |
-| `Tabset.CloseButton`    | `button[data-dashfoo="tab-close"]`       | Closes the tab with focus restore; hides when the tab isn't closable.                                           |
-| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted`. Children render-prop overrides `renderTab`.                |
-| `Tabset.Toolbar`        | `div[data-dashfoo="tabset-toolbar"]`     | Trailing toolbar container.                                                                                     |
-| `Tabset.OverflowMenu`   | menu button                              | Lists clipped tabs; hides when nothing overflows.                                                               |
-| `Tabset.Grip`           | `button[data-dashfoo="tabset-grip"]`     | Drag handle for the whole tabset; hides when tabset dragging is off.                                            |
-| `Tabset.MaximizeButton` | `button[data-dashfoo="tabset-maximize"]` | Maximize/restore toggle; hides when maximize is off.                                                            |
+| Part                    | Element                                  | Role                                                                                                                        |
+| ----------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `Layout.Root`           | `div[data-dashfoo="layout"]`             | Creates the layout store. Takes `model`, `dispatch`, `renderTab`, and the chrome flags `DashfooLayout` accepts.             |
+| `Layout.DragLayer`      | none (overlays)                          | Opts the tree into drag-dock. Omit it and everything else still works, just without dragging.                               |
+| `Layout.Rows`           | rrp split tree                           | Renders a `RowNode` recursively. `renderTabset` swaps in a custom tabset composition at every leaf.                         |
+| `Layout.Tabset`         | —                                        | The stock tabset composition, for leaves that don't need custom chrome.                                                     |
+| `Layout.FloatLayer`     | overlay                                  | Wrap the tree's content to enable floating panels; renders `model.floats` as draggable overlays. Takes `floats` + `global`. |
+| `Tabset.Root`           | `div[data-dashfoo="tabset"]`             | Creates the per-tabset store; owns drop registration, overflow measurement, and focus restore after close.                  |
+| `Tabset.TabStrip`       | `div[data-dashfoo="tabstrip"]`           | The strip row (drag hit-testing targets this attribute).                                                                    |
+| `Tabset.Tablist`        | `div[data-dashfoo="tablist"]`            | `role="tablist"` + roving-tabindex arrow/Home/End navigation.                                                               |
+| `Tabset.Tab`            | `span[data-dashfoo="tab-item"]`          | Per-tab wrapper; provides identity to the parts inside.                                                                     |
+| `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: select on click, rename on double-click, draggable. Children override the label.                            |
+| `Tabset.RenameInput`    | `input[data-dashfoo="tab-rename"]`       | Inline rename editor; renders only while its tab is being renamed.                                                          |
+| `Tabset.CloseButton`    | `button[data-dashfoo="tab-close"]`       | Closes the tab with focus restore; hides when the tab isn't closable.                                                       |
+| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted`. Children render-prop overrides `renderTab`.                            |
+| `Tabset.Toolbar`        | `div[data-dashfoo="tabset-toolbar"]`     | Trailing toolbar container.                                                                                                 |
+| `Tabset.OverflowMenu`   | menu button                              | Lists clipped tabs; hides when nothing overflows.                                                                           |
+| `Tabset.Grip`           | `button[data-dashfoo="tabset-grip"]`     | Drag handle for the whole tabset; hides when tabset dragging is off.                                                        |
+| `Tabset.MaximizeButton` | `button[data-dashfoo="tabset-maximize"]` | Maximize/restore toggle; hides when maximize is off.                                                                        |
+| `Tabset.FloatButton`    | `button[data-dashfoo="tabset-float"]`    | Floats the tabset into a movable overlay; hides when `floatable` is off or the tabset is maximized.                         |
 
 All parts spread native props (`className`, `style`, handlers) like `Panel`;
 the structural attributes (`role`, ids, `data-dashfoo`) are applied after the

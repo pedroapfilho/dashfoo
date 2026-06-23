@@ -154,15 +154,17 @@
 [data-dashfoo="tab-close"]:focus-visible {
   outline: 2px solid var(--dashfoo-ring);
 }
+/* Seamless inline edit — the label becomes editable in place (like the float
+   title), not a boxed form input. Matches the tab's type + padding so the strip
+   doesn't shift when editing starts. */
 [data-dashfoo="tab-rename"] {
   width: 6rem;
-  padding: 0.25rem 0.5rem;
-  background: var(--dashfoo-background);
-  border: 1px solid var(--dashfoo-ring);
-  border-radius: 2px;
+  padding: 0.5rem 0.375rem 0.5rem 0.75rem;
+  background: transparent;
+  border: 0;
   color: var(--dashfoo-foreground);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 12.5px;
   outline: none;
 }
 [data-dashfoo="tabset-toolbar"] {
@@ -171,6 +173,7 @@
   padding-left: 0.25rem;
 }
 [data-dashfoo="tabset-maximize"],
+[data-dashfoo="tabset-float"],
 [data-dashfoo="tabset-grip"],
 [data-dashfoo="tab-overflow"] {
   display: flex;
@@ -184,6 +187,7 @@
   color: var(--dashfoo-muted-foreground);
 }
 [data-dashfoo="tabset-maximize"],
+[data-dashfoo="tabset-float"],
 [data-dashfoo="tab-overflow"] {
   cursor: pointer;
 }
@@ -195,15 +199,171 @@
   display: none;
 }
 [data-dashfoo="tabset-maximize"]:hover,
+[data-dashfoo="tabset-float"]:hover,
 [data-dashfoo="tabset-grip"]:hover,
 [data-dashfoo="tab-overflow"]:hover {
   background: var(--dashfoo-accent);
   color: var(--dashfoo-accent-foreground);
 }
 [data-dashfoo="tabset-maximize"]:focus-visible,
+[data-dashfoo="tabset-float"]:focus-visible,
 [data-dashfoo="tabset-grip"]:focus-visible,
 [data-dashfoo="tab-overflow"]:focus-visible {
   outline: 2px solid var(--dashfoo-ring);
+}
+
+/* floating-panel chrome: a lifted window — a draggable title bar over the panel.
+   Sits on an elevated surface (card, distinct from the layout background it floats
+   above) with an edge ring + layered drop shadow, so it reads as a window that
+   lifts off the surface in both light and dark themes. */
+[data-dashfoo="float"] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--dashfoo-card);
+  color: var(--dashfoo-foreground);
+  border-radius: var(--dashfoo-radius);
+  /* edge ring carries the border (so it pairs with a real elevation shadow without
+     the ghost-card look); the soft layers do the lifting. */
+  box-shadow:
+    0 0 0 1px var(--dashfoo-border),
+    0 18px 40px -12px oklch(0 0 0 / 0.45),
+    0 6px 14px -6px oklch(0 0 0 / 0.3);
+  animation: dashfoo-float-in 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes dashfoo-float-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+[data-dashfoo="float-titlebar"] {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  min-height: 2rem;
+  padding-inline: 0.5rem 0.375rem;
+  /* a header surface a touch lighter than the body, divided by a hairline */
+  background: var(--dashfoo-muted);
+  border-bottom: 1px solid var(--dashfoo-border);
+  cursor: grab;
+  user-select: none;
+}
+[data-dashfoo="float-titlebar"]:active {
+  cursor: grabbing;
+}
+/* the dots signal "drag handle"; kept quiet so the title leads */
+[data-dashfoo="float-grip"] {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--dashfoo-muted-foreground);
+  opacity: 0.55;
+}
+[data-dashfoo="float-title"] {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dashfoo-foreground);
+}
+[data-dashfoo="float-rename"] {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--dashfoo-foreground);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+}
+[data-dashfoo="float-dock"],
+[data-dashfoo="float-minimize"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: transparent;
+  border: 0;
+  border-radius: var(--dashfoo-radius-sm);
+  color: var(--dashfoo-muted-foreground);
+  cursor: pointer;
+}
+[data-dashfoo="float-dock"]:hover,
+[data-dashfoo="float-minimize"]:hover {
+  background: var(--dashfoo-accent);
+  color: var(--dashfoo-accent-foreground);
+}
+[data-dashfoo="float-dock"]:focus-visible,
+[data-dashfoo="float-minimize"]:focus-visible {
+  outline: 2px solid var(--dashfoo-ring);
+  outline-offset: -1px;
+}
+[data-dashfoo="float-body"] {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+/* the float frame already supplies the edge, rounding, and clip — strip the inner
+   tabset's own border/radius so its rounded corners don't cut the float background
+   under the title bar. */
+[data-dashfoo="float"] [data-dashfoo="tabset"] {
+  border: 0;
+  border-radius: 0;
+}
+/* a discoverable resize affordance: a faint corner grip that firms up on hover */
+[data-dashfoo="float-resize"][data-edge="se"]::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--dashfoo-muted-foreground);
+  border-bottom: 2px solid var(--dashfoo-muted-foreground);
+  opacity: 0.35;
+}
+[data-dashfoo="float"]:hover [data-dashfoo="float-resize"][data-edge="se"]::after {
+  opacity: 0.7;
+}
+/* minimized chip: the window collapsed to a small rounded button you click to
+   restore (and can drag to reposition). */
+[data-dashfoo="float-chip"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  max-width: 11rem;
+  height: 2rem;
+  padding-inline: 0.5rem 0.625rem;
+  background: var(--dashfoo-card);
+  color: var(--dashfoo-foreground);
+  border: 0;
+  border-radius: var(--dashfoo-radius);
+  box-shadow:
+    0 0 0 1px var(--dashfoo-border),
+    0 8px 18px -8px oklch(0 0 0 / 0.4);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  animation: dashfoo-float-in 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-dashfoo="float-chip"]:active {
+  cursor: grabbing;
+}
+[data-dashfoo="float-chip"]:hover {
+  background: var(--dashfoo-accent);
+  color: var(--dashfoo-accent-foreground);
+}
+[data-dashfoo="float-chip"]:focus-visible {
+  outline: 2px solid var(--dashfoo-ring);
+  outline-offset: 1px;
+}
+[data-dashfoo="float-chip-label"] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* tab overflow menu */
@@ -389,6 +549,11 @@
     --dashfoo-dock-transition: none;
     --dashfoo-snap-transition: none;
   }
+  /* the float / chip appears instantly rather than lifting in */
+  [data-dashfoo="float"],
+  [data-dashfoo="float-chip"] {
+    animation: none;
+  }
 }
 
 /* coarse pointers (touch): the responsive lock-on-mobile view disables drag, so
@@ -402,6 +567,7 @@
   }
   [data-dashfoo="tab-close"],
   [data-dashfoo="tabset-maximize"],
+  [data-dashfoo="tabset-float"],
   [data-dashfoo="tab-overflow"] {
     min-width: 2.75rem;
     min-height: 2.75rem;

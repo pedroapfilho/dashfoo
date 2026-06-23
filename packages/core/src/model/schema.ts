@@ -87,6 +87,31 @@ const rowNodeSchema: z.ZodType<RowNode> = z.lazy(() =>
   }),
 );
 
+// A floating panel's rectangle, in CSS pixels relative to the layout container.
+// Captured when the panel is floated and refreshed as the user drags or resizes
+// it, so the model round-trips the float's position.
+const geometrySchema = z.object({
+  height: z.number(),
+  left: z.number(),
+  top: z.number(),
+  width: z.number(),
+});
+
+// A floating panel: a tabset (or split) lifted out of the docked layout into a
+// draggable, resizable overlay that still lives in the same app. It owns a full
+// RowNode layout (the same shape as the main root), so a float can hold a single
+// tab, several tabs, or nested splits and reuses the exact same rendering.
+const floatNodeSchema = z.object({
+  geometry: geometrySchema,
+  id: z.string(),
+  layout: rowNodeSchema,
+  // Collapsed to a small chip (the window minimized); geometry is preserved so
+  // restoring reopens it at its previous rect.
+  minimized: z.boolean().optional(),
+  name: z.string().optional(),
+  type: z.literal("float"),
+});
+
 const globalAttributesSchema = z.object({
   enableSplitDock: z.boolean().optional(),
   enableSplitResize: z.boolean().optional(),
@@ -109,6 +134,9 @@ const dashfooSchema = z.object({
   // The persisted-payload format version, pinned by the schema itself: any
   // future format change bumps the literal, so foreign payloads fail validation.
   version: z.literal(1),
+  // Floating panels, each owning its own layout subtree. Optional so existing
+  // payloads (and hand-built models) stay valid; absent means "nothing floating".
+  floats: z.array(floatNodeSchema).optional(),
 });
 
 type Json = JsonValue;
@@ -119,6 +147,8 @@ type Dimension = z.infer<typeof dimensionSchema>;
 type SnapConfig = z.infer<typeof snapSchema>;
 type TabNode = z.infer<typeof tabNodeSchema>;
 type TabsetNode = z.infer<typeof tabsetNodeSchema>;
+type Geometry = z.infer<typeof geometrySchema>;
+type FloatNode = z.infer<typeof floatNodeSchema>;
 type GlobalAttributes = z.infer<typeof globalAttributesSchema>;
 type Dashfoo = z.infer<typeof dashfooSchema>;
 type Node = RowNode | TabsetNode | TabNode;
@@ -127,6 +157,8 @@ export {
   dashfooSchema,
   dimensionSchema,
   edgeSchema,
+  floatNodeSchema,
+  geometrySchema,
   globalAttributesSchema,
   jsonValueSchema,
   orientationSchema,
@@ -141,6 +173,8 @@ export type {
   Dashfoo,
   Dimension,
   Edge,
+  FloatNode,
+  Geometry,
   GlobalAttributes,
   Json,
   Node,

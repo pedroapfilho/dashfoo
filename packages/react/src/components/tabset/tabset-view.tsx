@@ -12,7 +12,12 @@ import { useTabset } from "./tabset-store";
 import { TabsetTab, TabsetTrigger } from "./tabset-tab";
 import { TabsetCloseButton, TabsetRenameInput } from "./tabset-tab-controls";
 import { TabsetTablist, TabsetTabStrip } from "./tabset-tablist";
-import { TabsetGrip, TabsetMaximizeButton, TabsetToolbar } from "./tabset-toolbar";
+import {
+  TabsetFloatButton,
+  TabsetGrip,
+  TabsetMaximizeButton,
+  TabsetToolbar,
+} from "./tabset-toolbar";
 
 // Static JSX hoisted to module scope (elements are immutable, so one instance
 // is safely shared) — DefaultTabsetLayout re-renders on every selection change
@@ -25,6 +30,7 @@ const tabsetContent = <TabsetContent />;
 // condition needs the store's overflow count.
 const DefaultTabsetLayout = (): ReactNode => {
   const draggableTabsets = useLayout((state) => state.draggableTabsets);
+  const floatable = useLayout((state) => state.floatable);
   const renderTabsetToolbar = useLayout((state) => state.renderTabsetToolbar);
   const tabLocation = useLayout((state) => state.tabLocation);
   const tabStripEnabled = useLayout((state) => state.tabStripEnabled);
@@ -39,6 +45,7 @@ const DefaultTabsetLayout = (): ReactNode => {
     showMaximize ||
     renderTabsetToolbar !== undefined ||
     overflowCount > 0 ||
+    (floatable && !isMaximized) ||
     (draggableTabsets && !isMaximized);
 
   const strip = tabStripEnabled ? (
@@ -57,6 +64,7 @@ const DefaultTabsetLayout = (): ReactNode => {
           <TabsetOverflowMenu />
           <TabsetGrip />
           {renderTabsetToolbar?.(node)}
+          <TabsetFloatButton />
           <TabsetMaximizeButton />
         </TabsetToolbar>
       ) : null}

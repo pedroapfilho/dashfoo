@@ -10,6 +10,8 @@ import { createNodeId } from "./ids";
 import type {
   Dashfoo,
   Dimension,
+  FloatNode,
+  Geometry,
   GlobalAttributes,
   Json,
   RowNode,
@@ -86,8 +88,23 @@ const row = (children: RowNode["children"], options: RowOptions = {}): RowNode =
   };
 };
 
+type FloatOptions = {
+  id?: string;
+  name?: string;
+};
+
+// A floating panel wrapping a layout subtree at a given in-app rect.
+const floatNode = (layout: RowNode, geometry: Geometry, options: FloatOptions = {}): FloatNode => ({
+  geometry,
+  layout,
+  type: "float",
+  ...options,
+  id: options.id ?? createNodeId("float"),
+});
+
 type ModelOptions = {
   activeTabsetId?: string;
+  floats?: Array<FloatNode>;
   global?: GlobalAttributes;
   maximizedTabsetId?: string;
 };
@@ -109,5 +126,5 @@ const model = (layout: RowNode, options: ModelOptions = {}): Dashfoo => {
   return built;
 };
 
-export { model, row, tab, tabset };
-export type { ModelOptions, RowOptions, TabOptions, TabsetOptions };
+export { floatNode, model, row, tab, tabset };
+export type { FloatOptions, ModelOptions, RowOptions, TabOptions, TabsetOptions };

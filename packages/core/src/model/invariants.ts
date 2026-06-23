@@ -1,4 +1,4 @@
-import type { Dashfoo, RowNode, TabsetNode } from "./schema";
+import type { Dashfoo, FloatNode, RowNode, TabsetNode } from "./schema";
 import { collectTabsets } from "./tree";
 
 const clampSelected = (length: number, selected: number): number => {
@@ -53,6 +53,9 @@ const normalizeRowChildren = (children: RowNode["children"]): RowNode["children"
   return out;
 };
 
+const rowContainsTabset = (row: RowNode): boolean =>
+  row.children.some((child) => (child.type === "tabset" ? true : rowContainsTabset(child)));
+
 // The root is always a row; if it reduces to a single child that is itself a
 // row, absorb that row (adopt its children + orientation) to avoid redundant
 // nesting.
@@ -75,10 +78,22 @@ const normalizeLayout = (root: RowNode): RowNode => {
 // and active/maximized ids that always point at an existing tabset.
 const normalize = (model: Dashfoo): Dashfoo => {
   const layout = normalizeLayout(model.layout);
-  const withLayout: Dashfoo = { ...model, layout };
 
-  const tabsetIds = new Set(collectTabsets(withLayout).map((tabset) => tabset.id));
-  const firstTabsetId = collectTabsets(withLayout)[0]?.id;
+  // Heal each float's own layout, then drop any float that emptied out (its last
+  // tab closed/moved away) — the float equivalent of empty-tabset cleanup.
+  const healedFloats: Array<FloatNode> = [];
+  for (const float of model.floats ?? []) {
+    const floatLayout = normalizeLayout(float.layout);
+    if (rowContainsTabset(floatLayout)) {
+      healedFloats.push({ ...float, layout: floatLayout });
+    }
+  }
+  const floats = healedFloats.length > 0 ? healedFloats : undefined;
+
+  const withRoots: Dashfoo = { ...model, floats, layout };
+
+  const tabsetIds = new Set(collectTabsets(withRoots).map((tabset) => tabset.id));
+  const firstTabsetId = collectTabsets(withRoots)[0]?.id;
 
   const activeTabsetId =
     model.activeTabsetId !== undefined && tabsetIds.has(model.activeTabsetId)
@@ -90,7 +105,7 @@ const normalize = (model: Dashfoo): Dashfoo => {
       ? model.maximizedTabsetId
       : undefined;
 
-  return { ...withLayout, activeTabsetId, maximizedTabsetId };
+  return { ...withRoots, activeTabsetId, maximizedTabsetId };
 };
 
 export { normalize };

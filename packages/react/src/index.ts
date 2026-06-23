@@ -13,6 +13,7 @@ export { Tabset } from "./components/tabset/tabset";
 export type {
   TabsetCloseButtonProps,
   TabsetContentProps,
+  TabsetFloatButtonProps,
   TabsetGripProps,
   TabsetMaximizeButtonProps,
   TabsetRenameInputProps,

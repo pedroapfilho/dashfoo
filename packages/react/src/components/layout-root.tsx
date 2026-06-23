@@ -9,7 +9,9 @@ import { createLayoutStore, LayoutStoreContext } from "../hooks/layout-store";
 
 const DEFAULT_TABSET_MIN_SIZE = 320;
 
-const rootStyle = { display: "flex", height: "100%", width: "100%" } as const;
+// position: relative so the floating-panel overlay (absolute, inset 0) anchors to
+// the layout frame and floats are positioned in layout-container coordinates.
+const rootStyle = { display: "flex", height: "100%", position: "relative", width: "100%" } as const;
 
 type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
   children: ReactNode;
@@ -21,6 +23,9 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
   // close, rename, splitter resize, external drops) in one go, leaving view
   // interactions (tab selection, maximize, overflow) and dispatch untouched.
   editable?: boolean;
+  // Tabsets show a control that floats the panel into a movable, resizable overlay.
+  // Off by default — opt in, since it changes the model's `floats`.
+  floatable?: boolean;
   keepMounted?: boolean;
   maximizable?: boolean;
   model: Dashfoo;
@@ -48,6 +53,7 @@ const LayoutRoot = ({
   draggableTabs = true,
   draggableTabsets = true,
   editable = true,
+  floatable = false,
   keepMounted = false,
   maximizable = true,
   model,
@@ -73,6 +79,7 @@ const LayoutRoot = ({
     draggableTabs: editable && draggableTabs && global.tabEnableDrag !== false,
     draggableTabsets: editable && draggableTabsets,
     editable,
+    floatable: editable && floatable,
     keepMounted,
     maximizable: maximizable && global.tabSetEnableMaximize !== false,
     maximizedTabsetId: model.maximizedTabsetId,

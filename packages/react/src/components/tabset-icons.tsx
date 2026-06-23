@@ -60,4 +60,28 @@ const MaximizeIcon = ({ maximized }: { maximized: boolean }): ReactNode =>
     </Icon>
   );
 
-export { CloseIcon, GripIcon, MaximizeIcon };
+// "Float" — a small panel lifted off the surface (a framed rect with a header).
+const FloatIcon = (): ReactNode => (
+  <Icon>
+    <rect height="14" rx="2" width="18" x="3" y="6" />
+    <path d="M3 10h18" />
+  </Icon>
+);
+
+// "Minimize" — collapse to a chip.
+const MinimizeIcon = (): ReactNode => (
+  <Icon>
+    <path d="M5 12h14" />
+  </Icon>
+);
+
+// "Dock back" — an arrow returning into a frame.
+const DockIcon = (): ReactNode => (
+  <Icon>
+    <path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2" />
+    <path d="M11 8 7 12l4 4" />
+    <path d="M7 12h10" />
+  </Icon>
+);
+
+export { CloseIcon, DockIcon, FloatIcon, GripIcon, MaximizeIcon, MinimizeIcon };

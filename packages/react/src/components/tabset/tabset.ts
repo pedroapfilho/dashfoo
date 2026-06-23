@@ -6,13 +6,19 @@ import { TabsetRoot } from "./tabset-root";
 import { TabsetTab, TabsetTrigger } from "./tabset-tab";
 import { TabsetCloseButton, TabsetRenameInput } from "./tabset-tab-controls";
 import { TabsetTablist, TabsetTabStrip } from "./tabset-tablist";
-import { TabsetGrip, TabsetMaximizeButton, TabsetToolbar } from "./tabset-toolbar";
+import {
+  TabsetFloatButton,
+  TabsetGrip,
+  TabsetMaximizeButton,
+  TabsetToolbar,
+} from "./tabset-toolbar";
 
 // Compound namespace, same pattern as Panel: users compose the parts freely and
 // they coordinate through the scoped store Tabset.Root provides.
 const Tabset = {
   CloseButton: TabsetCloseButton,
   Content: TabsetContent,
+  FloatButton: TabsetFloatButton,
   Grip: TabsetGrip,
   MaximizeButton: TabsetMaximizeButton,
   OverflowMenu: TabsetOverflowMenu,
@@ -32,6 +38,7 @@ export type { TabsetTabProps, TabsetTriggerProps } from "./tabset-tab";
 export type { TabsetCloseButtonProps, TabsetRenameInputProps } from "./tabset-tab-controls";
 export type { TabsetTablistProps, TabsetTabStripProps } from "./tabset-tablist";
 export type {
+  TabsetFloatButtonProps,
   TabsetGripProps,
   TabsetMaximizeButtonProps,
   TabsetToolbarProps,
