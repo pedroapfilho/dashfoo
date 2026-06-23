@@ -1,4 +1,4 @@
-import type { Dashfoo } from "@dashfoo/core";
+import type { Dashfoo, FloatNode } from "@dashfoo/core";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
@@ -33,7 +33,33 @@ const model = (): Dashfoo => ({
   version: 1,
 });
 
+// A float node holding one tab, for seeding a model that already has floats (the
+// shape a persisted layout loads with) without going through the float gesture.
+const floatNode = (id: string, tabId: string, component: string, name: string): FloatNode => ({
+  geometry: { height: 300, left: 40, top: 40, width: 400 },
+  id,
+  layout: {
+    children: [
+      {
+        children: [{ component, id: tabId, name, type: "tab" }],
+        id: `${id}-ts`,
+        selected: 0,
+        type: "tabset",
+        weight: 100,
+      },
+    ],
+    id: `${id}-row`,
+    orientation: "row",
+    type: "row",
+  },
+  name: `Panel ${id}`,
+  type: "float",
+});
+
 const floatPanel = (): HTMLElement | null => document.querySelector('[data-dashfoo="float"]');
+const floatPanels = (): Array<HTMLElement> => [
+  ...document.querySelectorAll<HTMLElement>('[data-dashfoo="float"]'),
+];
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -119,6 +145,59 @@ describe("floating panels", () => {
     // Activating the chip restores the window.
     fireEvent.keyDown(chip!, { key: "Enter" });
     expect(floatPanel()).not.toBeNull();
+  });
+
+  test("a static layout (editable=false) renders a float with no structural chrome", () => {
+    const m: Dashfoo = { ...model(), floats: [floatNode("f1", "ft1", "chart", "Chart")] };
+    render(<DashfooLayout components={components} defaultModel={m} editable={false} />);
+
+    const panel = floatPanel()!;
+    expect(panel).not.toBeNull();
+    // Its content still renders and stays selectable — only structural edits go.
+    expect(within(panel).getByText("CHART")).toBeInTheDocument();
+    // No minimize, dock-back, or resize affordances.
+    expect(within(panel).queryByLabelText("Minimize panel")).not.toBeInTheDocument();
+    expect(
+      within(panel).queryByLabelText("Dock panel back into the main layout"),
+    ).not.toBeInTheDocument();
+    expect(panel.querySelector('[data-dashfoo="float-resize"]')).toBeNull();
+  });
+
+  test("a static layout's float cannot be renamed or moved", () => {
+    const m: Dashfoo = { ...model(), floats: [floatNode("f1", "ft1", "chart", "Chart")] };
+    render(<DashfooLayout components={components} defaultModel={m} editable={false} />);
+
+    const panel = floatPanel()!;
+    // Double-clicking the title never opens the inline editor.
+    fireEvent.doubleClick(panel.querySelector('[data-dashfoo="float-title"]')!);
+    expect(panel.querySelector('[data-dashfoo="float-rename"]')).toBeNull();
+
+    // Dragging the title bar is inert — the geometry never moves.
+    panel.setPointerCapture = () => {};
+    panel.releasePointerCapture = () => {};
+    const titleBar = panel.querySelector('[data-dashfoo="float-titlebar"]')!;
+    fireEvent.pointerDown(titleBar, { clientX: 0, clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(panel, { clientX: 60, clientY: 50, pointerId: 1 });
+    fireEvent.pointerUp(panel, { clientX: 60, clientY: 50, pointerId: 1 });
+    expect(panel.style.left).toBe("40px");
+    expect(panel.style.top).toBe("40px");
+  });
+
+  test("clicking a float's body raises it above the others", () => {
+    const m: Dashfoo = {
+      ...model(),
+      floats: [floatNode("f1", "ft1", "chart", "Chart"), floatNode("f2", "ft2", "book", "Book")],
+    };
+    render(<DashfooLayout components={components} defaultModel={m} floatable />);
+
+    const [first, second] = floatPanels();
+    // Both start in the lower stacking band; nothing is raised yet.
+    expect(second.style.zIndex).toBe("1");
+
+    // A pointerdown on the body (a tab/content area, not chrome) brings it forward.
+    fireEvent.pointerDown(within(second).getByText("BOOK"));
+    expect(second.style.zIndex).toBe("2");
+    expect(first.style.zIndex).toBe("1");
   });
 
   // A hand-built layout that turns on `floatable` but forgets <Layout.FloatLayer>

@@ -90,7 +90,12 @@ container: it can hold one tab or several.
   saved rect.
 - **Dock back as a panel.** The "Dock back" control returns the float as its own
   panel — all its tabs, grouped — rather than flattening them into another tabset.
-- **Bring to front.** Clicking a float raises it above the others.
+- **Bring to front.** Clicking anywhere in a float — its body, a tab, or its
+  chrome — raises it above the others.
+- **Honors `editable`.** Under `editable={false}` a float is static: its content
+  stays selectable and it still raises to the front, but move, resize, rename,
+  minimize, and dock-back are all switched off — none of `moveFloat`, `renameFloat`,
+  `setFloatMinimized`, or `dockFloat` can be dispatched from a static layout.
 
 The overlay is `pointer-events: none`, so empty space stays click-through to the
 docked layout underneath; each float opts pointer events back in.

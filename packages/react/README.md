@@ -315,7 +315,12 @@ How it works:
   (`setFloatMinimized`); tapping the chip restores it to its saved rect.
 - **Dock back as a panel.** "Dock back" returns the float as its own panel — all its
   tabs, grouped — instead of flattening them into another tabset.
-- **Bring to front.** Clicking a float raises it above the others.
+- **Bring to front.** Clicking anywhere in a float — body, a tab, or chrome —
+  raises it above the others.
+- **Honors `editable`.** Under `editable={false}` a float is static: its content
+  stays selectable and it still raises to the front, but move, resize, rename,
+  minimize, and dock-back are switched off (no `moveFloat` / `renameFloat` /
+  `setFloatMinimized` / `dockFloat`).
 
 Hand-built layouts opt in by wrapping the tree's content with `Layout.FloatLayer`
 (passing `floats` + `global`) and adding `Tabset.FloatButton`. `Tabset.FloatButton`

@@ -176,18 +176,23 @@ const FloatTitleEditor = ({
   );
 };
 
-// The window title: the float's name, double-click to rename.
-const FloatTitle = ({ dispatch, node }: TitleProps): ReactNode => {
+// The window title: the float's name, double-click to rename. A static layout
+// (renamable=false) shows the name as plain, non-editable text.
+const FloatTitle = ({
+  dispatch,
+  node,
+  renamable,
+}: TitleProps & { renamable: boolean }): ReactNode => {
   const [editing, setEditing] = useState(false);
-  if (editing) {
+  if (renamable && editing) {
     return <FloatTitleEditor dispatch={dispatch} node={node} onDone={() => setEditing(false)} />;
   }
   return (
     <span
       data-dashfoo="float-title"
-      onDoubleClick={() => setEditing(true)}
+      onDoubleClick={renamable ? () => setEditing(true) : undefined}
       style={titleStyle}
-      title="Double-click to rename"
+      title={renamable ? "Double-click to rename" : undefined}
     >
       {floatTitle(node)}
     </span>
@@ -222,18 +227,25 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     panelRef.current = element;
   };
 
-  const restore = (): void =>
+  // Restore (un-minimize) is a structural edit, so a static layout cannot do it.
+  const restore = (): void => {
+    if (!editable) {
+      return;
+    }
     dispatch({ floatId: node.id, minimized: false, type: "setFloatMinimized" });
+  };
 
   // One pointerdown handler for the title bar / chip (move) and the resize handles;
   // the moving edges ride the target's data-edge, so it can be assigned directly to
-  // onPointerDown (no per-render closure that reads refs).
+  // onPointerDown (no per-render closure that reads refs). Raise-to-front is wired
+  // separately (onPointerDownCapture on the frame), so it still works for body and
+  // tab clicks — and even while a static layout has move/resize switched off.
   const handlePointerDown = (event: ReactPointerEvent<HTMLElement>): void => {
     const panel = panelRef.current;
-    if (!panel) {
+    // A static layout never moves or resizes a float — no gesture, no moveFloat.
+    if (!panel || !editable) {
       return;
     }
-    onFocus();
     movedRef.current = false;
     const edgeKey = event.currentTarget.dataset.edge;
     // While minimized the chip keeps its small footprint on screen; otherwise the
@@ -319,6 +331,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
           }
         }}
         onPointerDown={handlePointerDown}
+        onPointerDownCapture={onFocus}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         ref={setPanel}
@@ -343,6 +356,10 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
   return (
     <div
       data-dashfoo="float"
+      // Capture so a click anywhere in the float — body, tab, or chrome — raises it
+      // above the others before any child handler runs, even when a static layout
+      // has move/resize off.
+      onPointerDownCapture={onFocus}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       ref={setPanel}
@@ -358,31 +375,42 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
         zIndex,
       }}
     >
-      <div data-dashfoo="float-titlebar" onPointerDown={handlePointerDown} style={titleBarStyle}>
+      <div
+        data-dashfoo="float-titlebar"
+        onPointerDown={handlePointerDown}
+        // A static layout's title bar doesn't drag, so don't dangle a grab cursor.
+        style={editable ? titleBarStyle : { ...titleBarStyle, cursor: "default" }}
+      >
         <span aria-hidden="true" data-dashfoo="float-grip">
           <GripIcon />
         </span>
-        <FloatTitle dispatch={dispatch} node={node} />
-        <button
-          aria-label="Minimize panel"
-          data-dashfoo="float-minimize"
-          onClick={() => dispatch({ floatId: node.id, minimized: true, type: "setFloatMinimized" })}
-          onPointerDown={(event) => event.stopPropagation()}
-          style={dockButtonStyle}
-          type="button"
-        >
-          <MinimizeIcon />
-        </button>
-        <button
-          aria-label="Dock panel back into the main layout"
-          data-dashfoo="float-dock"
-          onClick={() => dispatch({ floatId: node.id, type: "dockFloat" })}
-          onPointerDown={(event) => event.stopPropagation()}
-          style={dockButtonStyle}
-          type="button"
-        >
-          <DockIcon />
-        </button>
+        <FloatTitle dispatch={dispatch} node={node} renamable={editable} />
+        {editable && (
+          <>
+            <button
+              aria-label="Minimize panel"
+              data-dashfoo="float-minimize"
+              onClick={() =>
+                dispatch({ floatId: node.id, minimized: true, type: "setFloatMinimized" })
+              }
+              onPointerDown={(event) => event.stopPropagation()}
+              style={dockButtonStyle}
+              type="button"
+            >
+              <MinimizeIcon />
+            </button>
+            <button
+              aria-label="Dock panel back into the main layout"
+              data-dashfoo="float-dock"
+              onClick={() => dispatch({ floatId: node.id, type: "dockFloat" })}
+              onPointerDown={(event) => event.stopPropagation()}
+              style={dockButtonStyle}
+              type="button"
+            >
+              <DockIcon />
+            </button>
+          </>
+        )}
       </div>
       <div data-dashfoo="float-body" style={bodyStyle}>
         <LayoutRoot
@@ -409,15 +437,16 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
           </DragProvider>
         </LayoutRoot>
       </div>
-      {RESIZE_HANDLES.map((handle) => (
-        <div
-          data-dashfoo="float-resize"
-          data-edge={handle.key}
-          key={handle.key}
-          onPointerDown={handlePointerDown}
-          style={{ position: "absolute", touchAction: "none", zIndex: 1, ...handle.style }}
-        />
-      ))}
+      {editable &&
+        RESIZE_HANDLES.map((handle) => (
+          <div
+            data-dashfoo="float-resize"
+            data-edge={handle.key}
+            key={handle.key}
+            onPointerDown={handlePointerDown}
+            style={{ position: "absolute", touchAction: "none", zIndex: 1, ...handle.style }}
+          />
+        ))}
     </div>
   );
 };
