@@ -357,7 +357,7 @@
   height: 2.25rem;
   padding-inline: 0.625rem 0.75rem;
   /* a high-contrast pill: a stashed panel should stand out against the layout,
-     not read as just another card. The inverse fill + lifted shadow make it pop. */
+     not read as just another card. The inverse fill + layered shadow make it pop. */
   background: var(--dashfoo-primary);
   color: var(--dashfoo-background);
   border: 0;
@@ -372,14 +372,11 @@
   cursor: grab;
   user-select: none;
   touch-action: none;
-  transition:
-    transform 140ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 140ms ease;
+  transition: box-shadow 140ms ease;
   animation: dashfoo-float-in 140ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 [data-dashfoo="float-chip"]:hover {
-  /* lift and deepen the shadow; the inverse fill already carries the contrast */
-  transform: translateY(-1px);
+  /* deepen the shadow on hover — no movement, just a touch more elevation */
   box-shadow:
     0 1px 0 0 oklch(1 0 0 / 0.1) inset,
     0 16px 32px -8px oklch(0 0 0 / 0.6),
@@ -387,7 +384,6 @@
 }
 [data-dashfoo="float-chip"]:active {
   cursor: grabbing;
-  transform: translateY(0);
 }
 [data-dashfoo="float-chip"]:focus-visible {
   outline: 2px solid var(--dashfoo-ring);
@@ -586,10 +582,6 @@
   [data-dashfoo="float"],
   [data-dashfoo="float-chip"] {
     animation: none;
-  }
-  /* and the chip's hover lift snaps rather than glides */
-  [data-dashfoo="float-chip"] {
-    transition: none;
   }
 }
 
