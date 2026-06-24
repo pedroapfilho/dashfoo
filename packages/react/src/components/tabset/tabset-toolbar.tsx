@@ -47,6 +47,7 @@ const TabsetGrip = ({ children, ref: userRef, ...props }: TabsetGripProps): Reac
   return (
     <button
       aria-label="Move tabset"
+      title="Move tabset"
       {...props}
       data-dashfoo="tabset-grip"
       ref={refCallback}
@@ -80,6 +81,7 @@ const TabsetMaximizeButton = ({
   return (
     <button
       aria-label={isMaximized ? "Restore" : "Maximize"}
+      title={isMaximized ? "Restore tabset" : "Maximize tabset"}
       {...props}
       aria-pressed={isMaximized}
       data-dashfoo="tabset-maximize"
@@ -128,6 +130,7 @@ const TabsetFloatButton = ({ children, onClick, ...props }: TabsetFloatButtonPro
   return (
     <button
       aria-label="Float panel"
+      title="Float panel"
       {...props}
       data-dashfoo="tabset-float"
       onClick={handleClick}

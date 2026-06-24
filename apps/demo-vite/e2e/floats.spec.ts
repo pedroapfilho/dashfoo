@@ -137,3 +137,31 @@ test("a floated panel can be resized by its handles", async ({ page }) => {
   const after = await float.boundingBox();
   expect(after!.width).toBeGreaterThan(before!.width);
 });
+
+test("a drop indicator on a docked tabset renders behind the float layer", async ({ page }) => {
+  // Float a panel so the float overlay layer (z-index) is in play.
+  await page.getByLabel("Float panel").last().click();
+  await expect(page.locator('[data-dashfoo="float"]')).toBeVisible();
+
+  // Drag a still-docked tab over a *docked* tabset. Its indicator must sit at
+  // z:auto (behind the float layer), not on the z:9999 drag overlay where it
+  // would paint over floating panels.
+  const activity = await page.getByRole("tab", { name: "Activity" }).evaluate((el) => {
+    const r = el.closest('[data-dashfoo="tabset"]')!.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  });
+  const detail = (await page.getByRole("tab", { name: "Detail" }).boundingBox())!;
+  await page.mouse.move(detail.x + detail.width / 2, detail.y + detail.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(detail.x + detail.width / 2 + 8, detail.y + detail.height / 2 + 8);
+  await page.mouse.move(activity.x, activity.y, { steps: 16 });
+  await page.mouse.move(activity.x, activity.y, { steps: 4 });
+
+  await expect
+    .poll(() =>
+      page.locator('[data-dashfoo="dock-indicator"]').evaluate((el) => getComputedStyle(el).zIndex),
+    )
+    .toBe("auto");
+
+  await page.mouse.up();
+});

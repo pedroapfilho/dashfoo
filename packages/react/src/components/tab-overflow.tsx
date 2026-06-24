@@ -133,6 +133,7 @@ const TabOverflowMenu = ({
         data-dashfoo="tab-overflow"
         onClick={handleToggle}
         ref={triggerRef}
+        title="More tabs"
         type="button"
       >
         <OverflowIcon />

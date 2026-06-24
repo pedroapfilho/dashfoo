@@ -20,6 +20,10 @@ const overlayStyle: CSSProperties = {
   // float can be dragged anywhere on the page, not just within the layout box.
   pointerEvents: "none",
   position: "fixed",
+  // An explicit layer so a drop indicator aimed at a docked tabset (rendered at
+  // z:auto) stays *behind* the floats that overlap it; a float's own indicator
+  // opts back above this layer. See DockIndicator in drag-overlays.tsx.
+  zIndex: 1,
 };
 
 const FloatOverlay = ({

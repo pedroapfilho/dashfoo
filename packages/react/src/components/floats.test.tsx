@@ -93,12 +93,86 @@ describe("floating panels", () => {
     // jsdom has no real layout, but the gesture math still applies the delta.
     panel.setPointerCapture = () => {};
     panel.releasePointerCapture = () => {};
-    fireEvent.pointerDown(titleBar, { clientX: 0, clientY: 0, pointerId: 1 });
-    fireEvent.pointerMove(panel, { clientX: 40, clientY: 30, pointerId: 1 });
+    // buttons:1 — a real drag keeps the button down (a no-button move ends it).
+    fireEvent.pointerDown(titleBar, { buttons: 1, clientX: 0, clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(panel, { buttons: 1, clientX: 40, clientY: 30, pointerId: 1 });
     fireEvent.pointerUp(panel, { clientX: 40, clientY: 30, pointerId: 1 });
 
     // The float still exists (move, not dock) after the gesture commits.
     expect(floatPanel()).not.toBeNull();
+  });
+
+  test("a resize whose pointerup is lost stops on the next button-up move (no runaway)", () => {
+    render(<DashfooLayout components={components} defaultModel={model()} floatable />);
+    fireEvent.click(screen.getByLabelText("Float panel"));
+
+    const panel = floatPanel()!;
+    panel.setPointerCapture = () => {};
+    panel.releasePointerCapture = () => {};
+    panel.hasPointerCapture = () => true;
+    const handles = [...panel.querySelectorAll<HTMLElement>('[data-dashfoo="float-resize"]')];
+    const se = handles.find((h) => h.dataset.edge === "se")!;
+
+    // Grab the SE corner and drag outward with the button held.
+    fireEvent.pointerDown(se, { buttons: 1, clientX: 100, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(panel, { buttons: 1, clientX: 160, clientY: 140, pointerId: 1 });
+    const draggedWidth = panel.style.width;
+    expect(draggedWidth).not.toBe("");
+
+    // The pointerup never arrived (released off a non-capturing element on a fast
+    // drag). The next move comes back over the panel with no button down — the
+    // gesture must end, not keep chasing the cursor.
+    fireEvent.pointerMove(panel, { buttons: 0, clientX: 300, clientY: 260, pointerId: 1 });
+    fireEvent.pointerMove(panel, { buttons: 0, clientX: 420, clientY: 380, pointerId: 1 });
+
+    expect(panel.style.width).toBe(draggedWidth);
+  });
+
+  test("a cancelled resize (OS took the pointer) reverts to the starting rect", () => {
+    render(<DashfooLayout components={components} defaultModel={model()} floatable />);
+    fireEvent.click(screen.getByLabelText("Float panel"));
+
+    const panel = floatPanel()!;
+    panel.setPointerCapture = () => {};
+    panel.releasePointerCapture = () => {};
+    panel.hasPointerCapture = () => true;
+    const startWidth = panel.style.width;
+    const se = [...panel.querySelectorAll<HTMLElement>('[data-dashfoo="float-resize"]')].find(
+      (h) => h.dataset.edge === "se",
+    )!;
+
+    fireEvent.pointerDown(se, { buttons: 1, clientX: 100, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(panel, { buttons: 1, clientX: 180, clientY: 160, pointerId: 1 });
+    expect(panel.style.width).not.toBe(startWidth);
+
+    // The OS aborts the drag — the rect snaps back, nothing is committed.
+    fireEvent.pointerCancel(panel, { clientX: 180, clientY: 160, pointerId: 1 });
+    expect(panel.style.width).toBe(startWidth);
+  });
+
+  test("a stale gesture from one pointer does not block a drag by another pointer", () => {
+    render(<DashfooLayout components={components} defaultModel={model()} floatable />);
+    fireEvent.click(screen.getByLabelText("Float panel"));
+
+    const panel = floatPanel()!;
+    panel.setPointerCapture = () => {};
+    panel.releasePointerCapture = () => {};
+    panel.hasPointerCapture = () => false;
+    const titleBar = panel.querySelector('[data-dashfoo="float-titlebar"]')!;
+    const se = [...panel.querySelectorAll<HTMLElement>('[data-dashfoo="float-resize"]')].find(
+      (h) => h.dataset.edge === "se",
+    )!;
+
+    // Pointer 1 presses the title bar but its pointerup is never delivered (it
+    // left before crossing the slop on touch) — gestureRef is left stale.
+    fireEvent.pointerDown(titleBar, { buttons: 1, clientX: 0, clientY: 0, pointerId: 1 });
+
+    // Pointer 2 (a different finger) now resizes — it must be accepted, not
+    // blocked by the stale gesture.
+    const startWidth = panel.style.width;
+    fireEvent.pointerDown(se, { buttons: 1, clientX: 100, clientY: 100, pointerId: 2 });
+    fireEvent.pointerMove(panel, { buttons: 1, clientX: 180, clientY: 160, pointerId: 2 });
+    expect(panel.style.width).not.toBe(startWidth);
   });
 
   test("dock-back returns the panel to the main layout", () => {

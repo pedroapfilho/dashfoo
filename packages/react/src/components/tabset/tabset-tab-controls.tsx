@@ -106,6 +106,7 @@ const TabsetCloseButton = ({ children, onClick, ...props }: TabsetCloseButtonPro
   return (
     <button
       aria-label={`Close ${tab.name}`}
+      title={`Close ${tab.name}`}
       {...props}
       data-dashfoo="tab-close"
       onClick={handleClick}

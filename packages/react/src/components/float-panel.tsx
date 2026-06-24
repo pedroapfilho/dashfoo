@@ -15,6 +15,7 @@ import type { ResizeEdges, Size } from "../lib/float-geometry";
 import { clampToBounds, resizeRect } from "../lib/float-geometry";
 
 import { DragProvider } from "./drag-adapter";
+import { EDGE_BY_KEY, RESIZE_HANDLES } from "./float-resize-handles";
 import { LayoutRoot } from "./layout-root";
 import { RowView } from "./row-view";
 import { DockIcon, FloatIcon, GripIcon, MinimizeIcon } from "./tabset-icons";
@@ -54,54 +55,6 @@ const dockButtonStyle: CSSProperties = {
 };
 
 const bodyStyle: CSSProperties = { flex: 1, minHeight: 0, position: "relative" };
-
-// data-edge encodes which edges the handle moves; style positions it on the frame.
-const RESIZE_HANDLES: ReadonlyArray<{ edges: ResizeEdges; key: string; style: CSSProperties }> = [
-  {
-    edges: { x: 0, y: -1 },
-    key: "n",
-    style: { cursor: "ns-resize", height: 6, insetInline: 10, top: -3 },
-  },
-  {
-    edges: { x: 0, y: 1 },
-    key: "s",
-    style: { bottom: -3, cursor: "ns-resize", height: 6, insetInline: 10 },
-  },
-  {
-    edges: { x: 1, y: 0 },
-    key: "e",
-    style: { cursor: "ew-resize", insetBlock: 10, right: -3, width: 6 },
-  },
-  {
-    edges: { x: -1, y: 0 },
-    key: "w",
-    style: { cursor: "ew-resize", insetBlock: 10, left: -3, width: 6 },
-  },
-  {
-    edges: { x: 1, y: -1 },
-    key: "ne",
-    style: { cursor: "nesw-resize", height: 14, right: -4, top: -4, width: 14 },
-  },
-  {
-    edges: { x: -1, y: -1 },
-    key: "nw",
-    style: { cursor: "nwse-resize", height: 14, left: -4, top: -4, width: 14 },
-  },
-  {
-    edges: { x: 1, y: 1 },
-    key: "se",
-    style: { bottom: -4, cursor: "nwse-resize", height: 14, right: -4, width: 14 },
-  },
-  {
-    edges: { x: -1, y: 1 },
-    key: "sw",
-    style: { bottom: -4, cursor: "nesw-resize", height: 14, left: -4, width: 14 },
-  },
-];
-
-// Resolve a resize handle's data-edge back to its edges; a missing key (the title
-// bar or the minimized chip) means a move, not a resize.
-const EDGE_BY_KEY = new Map<string, ResizeEdges>(RESIZE_HANDLES.map((h) => [h.key, h.edges]));
 
 // Approximate footprint of the minimized chip, used to keep it on screen while it
 // is dragged (its window rect is preserved in geometry for restore).
@@ -246,12 +199,21 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     if (!panel || !editable) {
       return;
     }
+    // A new press supersedes any prior gesture. Release a capture the prior one
+    // may still hold (a gesture whose pointerup/cancel was missed) so it neither
+    // strands its pointer nor blocks this press — without this, a stale gesture
+    // from a different pointerId would make the float permanently unmovable
+    // (each touch has its own pointerId; the move handler ignores the mismatch).
+    const prior = gestureRef.current;
+    if (prior && panel.hasPointerCapture?.(prior.pointerId)) {
+      panel.releasePointerCapture(prior.pointerId);
+    }
     movedRef.current = false;
     const edgeKey = event.currentTarget.dataset.edge;
     // While minimized the chip keeps its small footprint on screen; otherwise the
     // whole window rect is clamped against the viewport (the overlay).
     const parent = panel.offsetParent as HTMLElement | null;
-    gestureRef.current = {
+    const gesture: Gesture = {
       bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
       edges: edgeKey ? (EDGE_BY_KEY.get(edgeKey) ?? null) : null,
       pointerId: event.pointerId,
@@ -259,16 +221,54 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
       startX: event.clientX,
       startY: event.clientY,
     };
+    gestureRef.current = gesture;
     latestRef.current = node.geometry;
-    // Capture is deferred to the first real move (see handlePointerMove) so a tap or
-    // double-click on the title bar isn't swallowed by the capture and can reach the
-    // rename handler.
+    // A resize has no tap/double-click meaning, so capture the pointer up front: a
+    // fast drag that outruns the small handle must keep routing move/up events to
+    // this panel. Without capture the first move lands on the layout beneath, its
+    // pointerup never reaches us, and the orphaned gesture resumed when the cursor
+    // came back over the float. The title bar and chip instead defer capture to
+    // the first real move so a tap or double-click can still reach the rename /
+    // restore handlers.
+    if (gesture.edges) {
+      panel.setPointerCapture(event.pointerId);
+    }
+  };
+
+  const handlePointerUp = (event: ReactPointerEvent): void => {
+    const gesture = gestureRef.current;
+    if (!gesture || event.pointerId !== gesture.pointerId) {
+      return;
+    }
+    gestureRef.current = null;
+    // Resize captures eagerly (even a no-move click holds it), so always release.
+    // Optional call: jsdom (and other non-DOM hosts) may not implement the API.
+    const panel = panelRef.current;
+    if (panel?.hasPointerCapture?.(event.pointerId)) {
+      panel.releasePointerCapture(event.pointerId);
+    }
+    // A tap (never moved past the slop) restores the chip, or is a no-op on the
+    // title bar — leaving the click/double-click to reach the title. Only a real
+    // drag commits the new rect.
+    if (!movedRef.current) {
+      if (node.minimized) {
+        restore();
+      }
+      return;
+    }
+    dispatch({ floatId: node.id, geometry: latestRef.current, type: "moveFloat" });
   };
 
   const handlePointerMove = (event: ReactPointerEvent): void => {
     const gesture = gestureRef.current;
     const panel = panelRef.current;
     if (!gesture || !panel || event.pointerId !== gesture.pointerId) {
+      return;
+    }
+    // No button down means the pointerup was missed (it landed on a non-capturing
+    // element mid-drag); end the gesture instead of chasing the released cursor.
+    if (event.buttons === 0) {
+      handlePointerUp(event);
       return;
     }
     const dx = event.clientX - gesture.startX;
@@ -279,7 +279,10 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
         return;
       }
       movedRef.current = true;
-      panel.setPointerCapture(gesture.pointerId);
+      // Resize already captured at pointerdown; the move gesture captures here.
+      if (!gesture.edges) {
+        panel.setPointerCapture(gesture.pointerId);
+      }
     }
     const next = gesture.edges
       ? resizeRect(gesture.start, gesture.edges, dx, dy)
@@ -300,23 +303,29 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     }
   };
 
-  const handlePointerUp = (event: ReactPointerEvent): void => {
+  // pointercancel means the OS took the pointer (a system gesture, a scroll that
+  // won the touch). That is an abort, not a release: revert the imperative DOM to
+  // where the drag started and never commit a half-finished rect. handlePointerUp
+  // (a real release) is what commits.
+  const handlePointerCancel = (event: ReactPointerEvent): void => {
     const gesture = gestureRef.current;
-    if (!gesture || event.pointerId !== gesture.pointerId) {
+    const panel = panelRef.current;
+    if (!gesture || !panel || event.pointerId !== gesture.pointerId) {
       return;
     }
     gestureRef.current = null;
-    // A tap (no movement, so capture was never taken) restores the chip, or is a
-    // no-op on the title bar — leaving the click/double-click to reach the title.
-    // Only a real drag captured the pointer and commits the new rect.
+    if (panel.hasPointerCapture?.(event.pointerId)) {
+      panel.releasePointerCapture(event.pointerId);
+    }
     if (!movedRef.current) {
-      if (node.minimized) {
-        restore();
-      }
       return;
     }
-    panelRef.current?.releasePointerCapture(event.pointerId);
-    dispatch({ floatId: node.id, geometry: latestRef.current, type: "moveFloat" });
+    panel.style.left = `${gesture.start.left}px`;
+    panel.style.top = `${gesture.start.top}px`;
+    if (!node.minimized) {
+      panel.style.width = `${gesture.start.width}px`;
+      panel.style.height = `${gesture.start.height}px`;
+    }
   };
 
   if (node.minimized) {
@@ -330,6 +339,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
             restore();
           }
         }}
+        onPointerCancel={handlePointerCancel}
         onPointerDown={handlePointerDown}
         onPointerDownCapture={onFocus}
         onPointerMove={handlePointerMove}
@@ -359,6 +369,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
       // Capture so a click anywhere in the float — body, tab, or chrome — raises it
       // above the others before any child handler runs, even when a static layout
       // has move/resize off.
+      onPointerCancel={handlePointerCancel}
       onPointerDownCapture={onFocus}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -395,6 +406,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
               }
               onPointerDown={(event) => event.stopPropagation()}
               style={dockButtonStyle}
+              title="Minimize panel"
               type="button"
             >
               <MinimizeIcon />
@@ -405,6 +417,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
               onClick={() => dispatch({ floatId: node.id, type: "dockFloat" })}
               onPointerDown={(event) => event.stopPropagation()}
               style={dockButtonStyle}
+              title="Dock panel back"
               type="button"
             >
               <DockIcon />
