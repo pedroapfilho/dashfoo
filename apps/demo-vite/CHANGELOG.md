@@ -1,5 +1,12 @@
 # demo-vite
 
+## 0.0.7
+
+### Patch Changes
+
+- Updated dependencies [60c6110]
+  - @dashfoo/react@0.5.2
+
 ## 0.0.6
 
 ### Patch Changes
