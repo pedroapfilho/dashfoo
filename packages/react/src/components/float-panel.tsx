@@ -199,10 +199,14 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     if (!panel || !editable) {
       return;
     }
-    // One gesture at a time: a second pointer (e.g. a second finger) must not
-    // hijack an in-flight drag and strand the first pointer's capture.
-    if (gestureRef.current) {
-      return;
+    // A new press supersedes any prior gesture. Release a capture the prior one
+    // may still hold (a gesture whose pointerup/cancel was missed) so it neither
+    // strands its pointer nor blocks this press — without this, a stale gesture
+    // from a different pointerId would make the float permanently unmovable
+    // (each touch has its own pointerId; the move handler ignores the mismatch).
+    const prior = gestureRef.current;
+    if (prior && panel.hasPointerCapture?.(prior.pointerId)) {
+      panel.releasePointerCapture(prior.pointerId);
     }
     movedRef.current = false;
     const edgeKey = event.currentTarget.dataset.edge;

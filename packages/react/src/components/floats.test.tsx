@@ -150,6 +150,31 @@ describe("floating panels", () => {
     expect(panel.style.width).toBe(startWidth);
   });
 
+  test("a stale gesture from one pointer does not block a drag by another pointer", () => {
+    render(<DashfooLayout components={components} defaultModel={model()} floatable />);
+    fireEvent.click(screen.getByLabelText("Float panel"));
+
+    const panel = floatPanel()!;
+    panel.setPointerCapture = () => {};
+    panel.releasePointerCapture = () => {};
+    panel.hasPointerCapture = () => false;
+    const titleBar = panel.querySelector('[data-dashfoo="float-titlebar"]')!;
+    const se = [...panel.querySelectorAll<HTMLElement>('[data-dashfoo="float-resize"]')].find(
+      (h) => h.dataset.edge === "se",
+    )!;
+
+    // Pointer 1 presses the title bar but its pointerup is never delivered (it
+    // left before crossing the slop on touch) — gestureRef is left stale.
+    fireEvent.pointerDown(titleBar, { buttons: 1, clientX: 0, clientY: 0, pointerId: 1 });
+
+    // Pointer 2 (a different finger) now resizes — it must be accepted, not
+    // blocked by the stale gesture.
+    const startWidth = panel.style.width;
+    fireEvent.pointerDown(se, { buttons: 1, clientX: 100, clientY: 100, pointerId: 2 });
+    fireEvent.pointerMove(panel, { buttons: 1, clientX: 180, clientY: 160, pointerId: 2 });
+    expect(panel.style.width).not.toBe(startWidth);
+  });
+
   test("dock-back returns the panel to the main layout", () => {
     render(<DashfooLayout components={components} defaultModel={model()} floatable />);
     fireEvent.click(screen.getByLabelText("Float panel"));
