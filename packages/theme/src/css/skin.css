@@ -310,19 +310,31 @@
   border: 0;
   border-radius: 0;
 }
-/* a discoverable resize affordance: a faint corner grip that firms up on hover */
-[data-dashfoo="float-resize"][data-edge="se"]::after {
+/* a discoverable resize affordance: faint corner grips on both bottom corners
+   that firm up on hover. Anchored to the float frame (not the resize handle) so
+   they stay pinned to the corner whatever the handle's hit-area size, and the
+   frame's overflow:hidden + radius keeps them tucked into the rounded corner. */
+[data-dashfoo="float"]::after,
+[data-dashfoo="float"]::before {
   content: "";
   position: absolute;
-  right: 3px;
   bottom: 3px;
   width: 7px;
   height: 7px;
-  border-right: 2px solid var(--dashfoo-muted-foreground);
   border-bottom: 2px solid var(--dashfoo-muted-foreground);
   opacity: 0.35;
+  pointer-events: none;
 }
-[data-dashfoo="float"]:hover [data-dashfoo="float-resize"][data-edge="se"]::after {
+[data-dashfoo="float"]::after {
+  right: 3px;
+  border-right: 2px solid var(--dashfoo-muted-foreground);
+}
+[data-dashfoo="float"]::before {
+  left: 3px;
+  border-left: 2px solid var(--dashfoo-muted-foreground);
+}
+[data-dashfoo="float"]:hover::after,
+[data-dashfoo="float"]:hover::before {
   opacity: 0.7;
 }
 /* minimized chip: the window collapsed to a small rounded button you click to
