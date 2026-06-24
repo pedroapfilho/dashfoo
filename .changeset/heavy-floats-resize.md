@@ -17,4 +17,5 @@ docked tabset now renders behind the float layer (only a float's own indicator
 sits above it).
 
 Add `title` tooltips to the icon-only chrome buttons (float minimize / dock-back,
-tabset move / maximize / float) so hovering reveals what each icon does.
+tabset move / maximize / float, tab close, and the tab-overflow menu) so hovering
+reveals what each icon does.
