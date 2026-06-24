@@ -406,6 +406,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
               }
               onPointerDown={(event) => event.stopPropagation()}
               style={dockButtonStyle}
+              title="Minimize panel"
               type="button"
             >
               <MinimizeIcon />
@@ -416,6 +417,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
               onClick={() => dispatch({ floatId: node.id, type: "dockFloat" })}
               onPointerDown={(event) => event.stopPropagation()}
               style={dockButtonStyle}
+              title="Dock panel back"
               type="button"
             >
               <DockIcon />
