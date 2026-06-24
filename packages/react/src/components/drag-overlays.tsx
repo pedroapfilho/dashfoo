@@ -76,6 +76,10 @@ const DockIndicator = ({
   if (!element) {
     return null;
   }
+  // A docked target sits beneath the floating-panel layer, so its indicator must
+  // too — otherwise the z:9999 overlay paints over a float that occludes the
+  // target. A target inside a float stays above that float.
+  const zIndex = element.closest('[data-dashfoo="float"]') ? overlayBase.zIndex : "auto";
   if (intent.location === "center") {
     const strip = element.querySelector('[data-dashfoo="tabstrip"]');
     if (strip) {
@@ -84,11 +88,11 @@ const DockIndicator = ({
         tabItemRects(strip, draggedId),
         intent.index ?? 0,
       );
-      return <div data-dashfoo="dock-indicator" style={lineStyle(line)} />;
+      return <div data-dashfoo="dock-indicator" style={{ ...lineStyle(line), zIndex }} />;
     }
   }
   const zone = zoneRect(element.getBoundingClientRect(), intent.location);
-  return <div data-dashfoo="dock-indicator" style={paneStyle(zone)} />;
+  return <div data-dashfoo="dock-indicator" style={{ ...paneStyle(zone), zIndex }} />;
 };
 
 const previewStyle: CSSProperties = { left: 0, position: "fixed", top: 0, zIndex: 9999 };

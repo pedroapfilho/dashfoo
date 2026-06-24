@@ -11,3 +11,7 @@ following the cursor without the button held. A resize now captures the pointer
 up front (so a fast drag never leaks events to the layout beneath), a move with
 no button down ends the gesture, and an OS-cancelled drag reverts instead of
 committing a half-finished rect.
+
+Fix the drop indicator painting on top of floating panels: a drop aimed at a
+docked tabset now renders behind the float layer (only a float's own indicator
+sits above it).
