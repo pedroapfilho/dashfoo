@@ -356,12 +356,13 @@
   max-width: 11rem;
   height: 2.25rem;
   padding-inline: 0.625rem 0.75rem;
-  /* a high-contrast pill: a stashed panel should stand out against the layout,
-     not read as just another card. The inverse fill + layered shadow make it pop. */
+  /* high-contrast inverse fill so a stashed panel stands out against the layout
+     instead of reading as just another card; the rounding matches the rest of
+     the app's surfaces (same radius as the float window it stands in for). */
   background: var(--dashfoo-primary);
   color: var(--dashfoo-background);
   border: 0;
-  border-radius: 9999px;
+  border-radius: var(--dashfoo-radius);
   box-shadow:
     0 1px 0 0 oklch(1 0 0 / 0.08) inset,
     0 10px 24px -8px oklch(0 0 0 / 0.5),
