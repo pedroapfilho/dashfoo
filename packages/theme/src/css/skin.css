@@ -330,6 +330,10 @@
   border-bottom: 2px solid var(--dashfoo-muted-foreground);
   opacity: 0.35;
   pointer-events: none;
+  /* ::before paints before the float body, so without a z-index the body's
+     content buries the bottom-left grip (only ::after, the last child, shows).
+     Lift both onto the resize-handle layer so each corner's grip is visible. */
+  z-index: 1;
 }
 [data-dashfoo="float"]:has([data-dashfoo="float-resize"])::after {
   right: 3px;
