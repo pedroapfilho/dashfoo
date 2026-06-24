@@ -311,11 +311,17 @@
   border-radius: 0;
 }
 /* a discoverable resize affordance: faint corner grips on both bottom corners
-   that firm up on hover. Anchored to the float frame (not the resize handle) so
-   they stay pinned to the corner whatever the handle's hit-area size, and the
-   frame's overflow:hidden + radius keeps them tucked into the rounded corner. */
-[data-dashfoo="float"]::after,
-[data-dashfoo="float"]::before {
+   that firm up on hover. Gated on :has(float-resize) so they appear only when
+   the float is actually resizable (a static layout renders no handles), and
+   anchored to the float frame so they stay pinned to the corner whatever the
+   handle's hit-area size. The two gripped corners drop their radius so the
+   square grip sits flush against a square corner. */
+[data-dashfoo="float"]:has([data-dashfoo="float-resize"]) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+[data-dashfoo="float"]:has([data-dashfoo="float-resize"])::after,
+[data-dashfoo="float"]:has([data-dashfoo="float-resize"])::before {
   content: "";
   position: absolute;
   bottom: 3px;
@@ -325,16 +331,16 @@
   opacity: 0.35;
   pointer-events: none;
 }
-[data-dashfoo="float"]::after {
+[data-dashfoo="float"]:has([data-dashfoo="float-resize"])::after {
   right: 3px;
   border-right: 2px solid var(--dashfoo-muted-foreground);
 }
-[data-dashfoo="float"]::before {
+[data-dashfoo="float"]:has([data-dashfoo="float-resize"])::before {
   left: 3px;
   border-left: 2px solid var(--dashfoo-muted-foreground);
 }
-[data-dashfoo="float"]:hover::after,
-[data-dashfoo="float"]:hover::before {
+[data-dashfoo="float"]:has([data-dashfoo="float-resize"]):hover::after,
+[data-dashfoo="float"]:has([data-dashfoo="float-resize"]):hover::before {
   opacity: 0.7;
 }
 /* minimized chip: the window collapsed to a small rounded button you click to
