@@ -1,5 +1,13 @@
 # landing
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [5fbe904]
+- Updated dependencies [5fbe904]
+  - @dashfoo/react@0.6.0
+
 ## 0.0.4
 
 ### Patch Changes

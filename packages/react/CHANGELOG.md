@@ -1,5 +1,12 @@
 # @dashfoo/react
 
+## 0.6.0
+
+### Minor Changes
+
+- 5fbe904: Tabsets now register as real dnd-kit `Droppable`s with a custom occlusion-aware collision detector (topmost `elementFromPoint` wins), replacing the hand-rolled tabset registry and per-move hit-test scan. The drop target is resolved by dnd-kit's collision pass, globally across every layer sharing one manager; each drag layer claims only its own targets, so cross-layer drops commit exactly once. Behavior is unchanged: floats still occlude docked tabsets, `editable`/self-drop gates still apply at drag time.
+- 5fbe904: Drag-preview chip now rides dnd-kit's Feedback plugin (overlay mode) instead of hand-rolled positioning. The chip element is handed to Feedback's `overlay` accessor at mount, so the source tab is never promoted or placeholder-cloned, per-move positioning happens outside React, and cross-layout drags under one `DashfooDragProvider` show a single chip instead of one per layer. Aborted external drags (invalid `createTab`) now cancel the underlying dnd-kit operation. Drop animation is off — drops settle immediately. The `data-dashfoo="drag-preview"` theme contract is unchanged.
+
 ## 0.5.2
 
 ### Patch Changes
