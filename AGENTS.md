@@ -52,6 +52,7 @@ Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (c
 ## Gotchas
 
 - @dnd-kit DragDropManager must be created in a `useState` initializer and destroyed in a `useInsertionEffect` cleanup (NOT `useEffect`) — StrictMode double-fires effect cleanups and a destroyed manager silently stops emitting drag events. See `packages/react/src/components/drag-adapter.tsx`.
+- The dnd-kit Feedback plugin runs in overlay mode only: the chip element is assigned to `Feedback.overlay` at mount (`DragPreviewOverlay` in `drag-overlays.tsx`), before any drag — Feedback's render effect fires synchronously at drag start, so a placeholder clone or a promoted source tab means the assignment came too late.
 - react-resizable-panels v4 puts `aria-orientation` on the Separator and gives it no intrinsic size — themes must set width/height or the gutter collapses.
 - rrp v4 fires `onLayoutChanged` once on mount with the measured layout; `row-view.tsx` deliberately ignores that first call.
 - Drag is pointer-only by design (keyboard docking needs its own interaction model — see commit 8c9975b).

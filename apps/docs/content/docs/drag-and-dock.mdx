@@ -269,15 +269,19 @@ wire the DOM to the drag system. None of them is exported from
 ### 2. The adapter reads the pointer and hit-tests
 
 `DragProvider` constructs one `@dnd-kit/dom` `DragDropManager` (minus the
-`Feedback` and `Accessibility` plugins and the keyboard sensor) and subscribes to
+`Accessibility` plugin and the keyboard sensor) and subscribes to
 its monitor for three events. On `dragstart` it reads the source's data to
 decide the subject kind — a grip carries `type: "tabset"`, an external source
-carries `type: "external"`, a tab carries its own id — sends `START`, and shows
-its own `data-dashfoo="drag-preview"` chip.
+carries `type: "external"`, a tab carries its own id — and sends `START`.
 On `dragmove` it reads the live pointer, finds the tabset under it, resolves an
-intent, and sends `OVER` (positioning the preview chip imperatively, no
-re-render). On `dragend` it re-resolves from the final pointer, sends a last
-`OVER`, then `DROP`.
+intent, and sends `OVER`. On `dragend` it re-resolves from the final pointer,
+sends a last `OVER`, then `DROP`.
+
+The `data-dashfoo="drag-preview"` chip is positioned by dnd-kit's `Feedback`
+plugin in overlay mode: the chip element is handed to Feedback's `overlay`
+accessor once at mount, so the dragged tab itself is never promoted or
+placeholder-cloned and per-move positioning never re-renders React. The drop
+animation is disabled — drops settle immediately.
 
 The final recompute matters: the drop uses the authoritative final pointer, not
 whatever the last `dragmove` happened to report, so the committed location matches

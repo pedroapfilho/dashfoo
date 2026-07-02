@@ -36,15 +36,21 @@ const preventActivation = (event: PointerEvent, source: Draggable): boolean => {
   return interactive !== null && interactive !== source.element;
 };
 
-// Plugins drop the screen-reader announcer and the visual Feedback plugin (the
-// adapter renders its own preview). Sensors keep only a configured
-// PointerSensor — the KeyboardSensor's nudge model double-binds the arrow keys
-// the tab strip already uses for roving-tabindex navigation, so keyboard
-// docking needs its own interaction design rather than that sensor.
+// Plugins drop the screen-reader announcer (it stamps ARIA that is invalid on
+// role=tab) and reconfigure Feedback: it runs in overlay mode only — the chip
+// element is handed to its public `overlay` accessor (see DragPreviewOverlay),
+// so the source element is never promoted or placeholder-cloned — with the drop
+// animation off, since drops must settle immediately and new drags are ignored
+// while one animates. Sensors keep only a configured PointerSensor — the
+// KeyboardSensor's nudge model double-binds the arrow keys the tab strip
+// already uses for roving-tabindex navigation, so keyboard docking needs its
+// own interaction design rather than that sensor.
 const createDragManager = (): DragDropManager =>
   new DragDropManager({
-    plugins: (defaults) =>
-      defaults.filter((plugin) => plugin !== Accessibility && plugin !== Feedback),
+    plugins: (defaults) => [
+      ...defaults.filter((plugin) => plugin !== Accessibility && plugin !== Feedback),
+      Feedback.configure({ dropAnimation: null }),
+    ],
     sensors: () => [PointerSensor.configure({ preventActivation })],
   });
 

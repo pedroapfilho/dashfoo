@@ -49,6 +49,7 @@
  */
 
 import type { DragDropManager } from "@dnd-kit/dom";
+import { Feedback } from "@dnd-kit/dom";
 import { render } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { StrictMode, useContext } from "react";
@@ -221,5 +222,86 @@ describe("useExternalTabSource lifecycle", () => {
     unmount();
 
     expect(capturedManager!.registry.draggables.has(capturedId)).toBe(false);
+  });
+});
+
+// Step 5: Feedback overlay wiring
+// The chip rides Feedback's `overlay` accessor, and Feedback's render effect
+// runs synchronously at drag start — so the overlay element must already be
+// assigned at mount, and there must be exactly one per manager. A drag that
+// starts before the assignment (or against a second stacked overlay) regresses
+// to Feedback's source-promotion mode: the dragged tab itself gets popover'd
+// and placeholder-cloned, the dc793ba class of bugs.
+describe("Feedback overlay wiring", () => {
+  test("shared provider mounts exactly one overlay and hands it to Feedback; nested layers add none", () => {
+    let sharedManager: DragDropManager | null = null;
+
+    const Probe = (): null => {
+      sharedManager = useContext(SharedDragManagerContext);
+      return null;
+    };
+
+    render(
+      <DashfooDragProvider>
+        <Probe />
+        <DragProvider onCommit={() => {}}>
+          <div />
+        </DragProvider>
+        <DragProvider onCommit={() => {}}>
+          <div />
+        </DragProvider>
+      </DashfooDragProvider>,
+    );
+
+    const wrappers = document.querySelectorAll("[data-dnd-overlay]");
+    expect(wrappers.length).toBe(1);
+
+    const feedback = sharedManager!.registry.plugins.get(Feedback);
+    expect(feedback).toBeDefined();
+    expect(feedback!.overlay).toBe(wrappers[0]);
+  });
+
+  test("standalone DragProvider wires its own manager's Feedback to its own overlay", () => {
+    let ownManager: DragDropManager | null = null;
+
+    const Probe = (): null => {
+      const ctx = useContext(DragContext);
+      ownManager = ctx?.manager ?? null;
+      return null;
+    };
+
+    render(
+      <DragProvider onCommit={() => {}}>
+        <Probe />
+      </DragProvider>,
+    );
+
+    const wrappers = document.querySelectorAll("[data-dnd-overlay]");
+    expect(wrappers.length).toBe(1);
+    expect(ownManager!.registry.plugins.get(Feedback)!.overlay).toBe(wrappers[0]);
+  });
+
+  test("the overlay assignment survives StrictMode double-mount", () => {
+    let sharedManager: DragDropManager | null = null;
+
+    const Probe = (): null => {
+      sharedManager = useContext(SharedDragManagerContext);
+      return null;
+    };
+
+    render(
+      <StrictMode>
+        <DashfooDragProvider>
+          <Probe />
+        </DashfooDragProvider>
+      </StrictMode>,
+    );
+
+    const wrappers = document.querySelectorAll("[data-dnd-overlay]");
+    expect(wrappers.length).toBe(1);
+    // StrictMode's simulated unmount runs the ref cleanup (overlay = undefined)
+    // and the re-attach must restore it — a stale undefined here means the next
+    // drag promotes the source element.
+    expect(sharedManager!.registry.plugins.get(Feedback)!.overlay).toBe(wrappers[0]);
   });
 });

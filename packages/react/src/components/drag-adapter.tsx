@@ -34,17 +34,17 @@ import { LayoutStoreContext } from "../hooks/layout-store";
 import { insertionIndex, pointInRect, shouldAllowDrop } from "../lib/tab-insertion";
 import { warnOnce } from "../lib/warn-once";
 
-import type { DragPreviewState } from "./drag-overlays";
-import { DockIndicator, DragPreview } from "./drag-overlays";
+import { DockIndicator, DragPreviewOverlay } from "./drag-overlays";
 
 // This module is the drag adapter: it (with ./drag-hooks) is where @dnd-kit is
 // touched. It wires the framework-agnostic @dnd-kit/dom core (no React bindings)
 // to the already unit-tested dragDockMachine — the PointerSensor supplies
 // activation + a live pointer, the adapter hit-tests that pointer against the
 // registered tabsets, and the machine owns the lifecycle and emits a moveNode
-// COMMIT forwarded via onCommit. The drag preview is our own overlay, so there is
-// no Feedback plugin, no placeholder clone, and none of the CSS workarounds those
-// required.
+// COMMIT forwarded via onCommit. The drag-preview chip rides the Feedback
+// plugin's `overlay` accessor (see DragPreviewOverlay): the source element is
+// never promoted or placeholder-cloned, and Feedback owns the chip's per-move
+// positioning.
 
 // The dragged tab is excluded so its own slot never counts toward the order —
 // the insertion index and line are measured against the tabs it will land among.
@@ -77,14 +77,6 @@ const intentForTabset = (
     return { index: tabRects(strip, draggedId).length, location, targetId: id };
   }
   return { location, targetId: id };
-};
-
-// The pointer-anchored preview chip follows the cursor at this offset.
-const PREVIEW_OFFSET: Point = { x: 12, y: 8 };
-
-const labelOf = (source: { data?: Record<string, unknown> } | null): string => {
-  const raw = source?.data?.label;
-  return typeof raw === "string" ? raw : "";
 };
 
 const isTabFactory = (value: unknown): value is () => unknown => typeof value === "function";
@@ -144,8 +136,6 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
   // useState (not useRef(new Map())) so the registry is built once instead of
   // allocating a throwaway Map on every render.
   const [tabsets] = useState(() => new Map<string, HTMLElement>());
-  const overlayRef = useRef<HTMLDivElement | null>(null);
-  const [preview, setPreview] = useState<DragPreviewState | null>(null);
 
   // One manager for the whole layout — the shared one when a DashfooDragProvider
   // sits above (so external sources participate in this layout's drags), else
@@ -242,10 +232,6 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
 
   const getTabsetElement = useCallback((id: string) => tabsets.get(id), [tabsets]);
 
-  const attachOverlay = useCallback((element: HTMLDivElement | null): void => {
-    overlayRef.current = element;
-  }, []);
-
   // The helpers live inside the effect (per the React docs' "move it into the
   // effect" guidance) so the monitor listeners attach once per manager instead
   // of re-subscribing whenever a render rebuilds a callback.
@@ -303,15 +289,6 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       return intent;
     };
 
-    // Position the preview imperatively (transform only) so following the
-    // pointer never triggers a React re-render.
-    const positionOverlay = (point: Point): void => {
-      const element = overlayRef.current;
-      if (element) {
-        element.style.transform = `translate(${point.x + PREVIEW_OFFSET.x}px, ${point.y + PREVIEW_OFFSET.y}px)`;
-      }
-    };
-
     const handleStart = (event: DragStartEvent): void => {
       const source = event.operation.source;
       if (!source) {
@@ -319,23 +296,20 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       }
       const subject = subjectFor(source);
       if (!subject) {
+        // Abort the dnd-kit operation too: the machine stays idle either way,
+        // but a live Feedback drag would keep promoting the source element for
+        // a gesture dashfoo will never commit.
+        manager.actions.stop({ canceled: true });
         return;
       }
-      const point = event.operation.position.current;
-      setPreview({
-        label: labelOf(source),
-        x: point.x + PREVIEW_OFFSET.x,
-        y: point.y + PREVIEW_OFFSET.y,
-      });
       actorRef.send({ subject, type: "START" });
     };
 
     // dnd-kit's dragmove gives the live pointer on every move, which drives the
-    // preview position and the indicator's intent.
+    // indicator's intent.
     const handleMove = (event: DragMoveEvent): void => {
       const op = event.operation;
       const point = op.position.current;
-      positionOverlay(point);
       const draggedId = op.source ? String(op.source.id) : undefined;
       const hit = tabsetAt(point);
       actorRef.send({
@@ -347,7 +321,6 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
     // Recompute the dock zone from the final pointer, then set the intent and
     // commit in one synchronous pair.
     const handleEnd = (event: DragEndEvent): void => {
-      setPreview(null);
       if (event.canceled) {
         actorRef.send({ type: "CANCEL" });
         return;
@@ -384,7 +357,9 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       <DragSubjectStoreContext.Provider value={subjectStore}>
         {children}
         <DockIndicator actorRef={actorRef} getTabsetElement={getTabsetElement} />
-        <DragPreview overlayRef={attachOverlay} preview={preview} />
+        {/* One chip per manager: under a DashfooDragProvider the provider owns
+            it, so N layouts sharing that manager don't stack N chips. */}
+        {ownManager === null ? null : <DragPreviewOverlay manager={ownManager} />}
       </DragSubjectStoreContext.Provider>
     </DragContext.Provider>
   );

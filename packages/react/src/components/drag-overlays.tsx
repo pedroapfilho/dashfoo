@@ -1,9 +1,12 @@
 "use client";
 
-import type { dragDockMachine } from "@dashfoo/core";
+import type { dragDockMachine, Point } from "@dashfoo/core";
 import { zoneRect } from "@dashfoo/core";
+import type { DragDropManager } from "@dnd-kit/dom";
+import { Feedback } from "@dnd-kit/dom";
 import { useSelector } from "@xstate/react";
 import type { CSSProperties, ReactNode } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ActorRefFrom } from "xstate";
 
 import type { Zone } from "../lib/tab-insertion";
@@ -95,31 +98,84 @@ const DockIndicator = ({
   return <div data-dashfoo="dock-indicator" style={{ ...paneStyle(zone), zIndex }} />;
 };
 
-const previewStyle: CSSProperties = { left: 0, position: "fixed", top: 0, zIndex: 9999 };
+// The pointer-anchored preview chip keeps the cursor at this offset from its
+// top-left corner, exactly as before the Feedback adoption.
+const PREVIEW_OFFSET: Point = { x: 12, y: 8 };
 
-type DragPreviewState = { label: string; x: number; y: number };
+const labelOf = (source: { data?: Record<string, unknown> } | null): string => {
+  const raw = source?.data?.label;
+  return typeof raw === "string" ? raw : "";
+};
 
-// The pointer-anchored chip that follows the cursor while dragging.
-const DragPreview = ({
-  overlayRef,
-  preview,
-}: {
-  overlayRef: (element: HTMLDivElement | null) => void;
-  preview: DragPreviewState | null;
-}): ReactNode => {
-  if (!preview) {
-    return null;
-  }
+type ChipState = { label: string; x: number; y: number };
+
+// The drag-preview chip, positioned by dnd-kit's Feedback plugin. Feedback
+// anchors the wrapper to the source element's rect and drives it with the drag
+// delta; the one-shot inner offset (grab point within the source, plus
+// PREVIEW_OFFSET) re-anchors the chip to the pointer, preserving the
+// pointer-following feel. The wrapper stays mounted for the manager's lifetime:
+// Feedback's render effect runs synchronously at drag start, so `overlay` must
+// already be assigned — set mid-drag, Feedback would first promote the source
+// element itself, placeholder clone and all.
+const DragPreviewOverlay = ({ manager }: { manager: DragDropManager }): ReactNode => {
+  const [chip, setChip] = useState<ChipState | null>(null);
+
+  useEffect(() => {
+    const offStart = manager.monitor.addEventListener("dragstart", (event) => {
+      const source = event.operation.source;
+      if (!source) {
+        return;
+      }
+      const rect = source.element?.getBoundingClientRect();
+      const point = event.operation.position.current;
+      setChip({
+        label: labelOf(source),
+        x: PREVIEW_OFFSET.x + (rect ? point.x - rect.left : 0),
+        y: PREVIEW_OFFSET.y + (rect ? point.y - rect.top : 0),
+      });
+    });
+    const offEnd = manager.monitor.addEventListener("dragend", () => setChip(null));
+    return () => {
+      offStart();
+      offEnd();
+    };
+  }, [manager]);
+
+  const attachOverlay = useCallback(
+    (element: HTMLDivElement | null): void => {
+      const feedback = manager.registry.plugins.get(Feedback);
+      if (feedback) {
+        feedback.overlay = element ?? undefined;
+      }
+    },
+    [manager],
+  );
+
+  // data-dnd-overlay is ours to stamp (dnd-kit only references it, in the
+  // injected CSS that hides the wrapper while no drag is live). popover and
+  // data-dnd-dragging are Feedback-owned attributes — declaring them here would
+  // fight its cleanup, which strips the attributes it added.
   return (
-    <div
-      data-dashfoo="drag-preview"
-      ref={overlayRef}
-      style={{ ...previewStyle, transform: `translate(${preview.x}px, ${preview.y}px)` }}
-    >
-      {preview.label}
+    <div data-dnd-overlay="" ref={attachOverlay}>
+      {chip === null ? null : (
+        <div
+          data-dashfoo="drag-preview"
+          style={{
+            left: 0,
+            position: "absolute",
+            top: 0,
+            transform: `translate(${chip.x}px, ${chip.y}px)`,
+            // Absolute children shrink to the containing block, and the wrapper
+            // is source-sized (a tabset grip is ~20px) — the chip sizes to its
+            // own label instead.
+            width: "max-content",
+          }}
+        >
+          {chip.label}
+        </div>
+      )}
     </div>
   );
 };
 
-export { DockIndicator, DragPreview };
-export type { DragPreviewState };
+export { DockIndicator, DragPreviewOverlay };
