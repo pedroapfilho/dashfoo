@@ -225,7 +225,45 @@ describe("useExternalTabSource lifecycle", () => {
   });
 });
 
-// Step 5: Feedback overlay wiring
+// Step 5: useTabsetDroppable registration lifecycle
+// Same feasibility notes as Step 4: Droppable registration is deferred via
+// queueMicrotask, and construction touches no DOM until a drag activates.
+describe("useTabsetDroppable lifecycle", () => {
+  test("registers a Droppable carrying the layer id, and removes it on unmount", async () => {
+    const { useTabsetDroppable } = await import("../hooks/drag-hooks");
+
+    let capturedManager: DragDropManager | null = null;
+
+    const Tabset = (): ReactNode => {
+      const ctx = useContext(DragContext);
+      capturedManager = ctx?.manager ?? null;
+      const { ref } = useTabsetDroppable("ts1");
+      return <div ref={ref} />;
+    };
+
+    const { unmount } = render(
+      <DragProvider onCommit={() => {}}>
+        <Tabset />
+      </DragProvider>,
+    );
+
+    await Promise.resolve();
+
+    expect(capturedManager).not.toBeNull();
+    const droppable = capturedManager!.registry.droppables.get("ts1");
+    expect(droppable).toBeDefined();
+    // The layer claim in the adapter's syncIntent keys off this — a droppable
+    // registered without it would make every drop unclaimable.
+    expect((droppable!.data as { layerId?: string }).layerId).toBeTruthy();
+    expect(droppable!.element).toBeInstanceOf(HTMLElement);
+
+    unmount();
+
+    expect(capturedManager!.registry.droppables.has("ts1")).toBe(false);
+  });
+});
+
+// Step 6: Feedback overlay wiring
 // The chip rides Feedback's `overlay` accessor, and Feedback's render effect
 // runs synchronously at drag start — so the overlay element must already be
 // assigned at mount, and there must be exactly one per manager. A drag that

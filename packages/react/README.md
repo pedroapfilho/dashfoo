@@ -15,7 +15,7 @@ paint.
 It builds on three engines:
 
 - **[react-resizable-panels](https://github.com/bvaughn/react-resizable-panels)** for splitter resize (the resize adapter is the only file that imports it).
-- **[@dnd-kit/dom](https://github.com/clauderic/dnd-kit) 0.5** — the framework-agnostic core (no React bindings) — for drag (the drag adapter is the only file that touches it; pointer-only).
+- **[@dnd-kit/dom](https://github.com/clauderic/dnd-kit) 0.5** — the framework-agnostic core (no React bindings) — for drag (touched only by the drag adapter modules: `drag-adapter`/`drag-hooks`/`drag-overlays`; pointer-only). Tabsets are dnd-kit droppables behind a custom occlusion-aware collision detector; the preview chip rides the Feedback plugin's `overlay` accessor.
 - **[@dashfoo/core](https://www.npmjs.com/package/@dashfoo/core)** for the document: a zod schema, a pure reducer, and the XState machines that drive state and the drag lifecycle.
 
 ## Install

@@ -1,11 +1,20 @@
 "use client";
 
 import type { DragSubject, DropIntent, TabNode } from "@dashfoo/core";
-import { Accessibility, Draggable, DragDropManager, Feedback, PointerSensor } from "@dnd-kit/dom";
+import {
+  Accessibility,
+  Draggable,
+  DragDropManager,
+  Droppable,
+  Feedback,
+  PointerSensor,
+} from "@dnd-kit/dom";
 import type { Context } from "react";
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";
 import type { StoreApi } from "zustand";
 import { createStore, useStore } from "zustand";
+
+import { topmostPointerIntersection } from "../lib/topmost-collision";
 
 // Shared drag contexts + the draggable/droppable hooks. Lives apart from
 // drag-adapter.tsx so the contexts can be owned here without a circular import:
@@ -55,8 +64,10 @@ const createDragManager = (): DragDropManager =>
   });
 
 type DragContextValue = {
+  // Identifies the owning DragProvider: droppables carry it in `data` so each
+  // layer can claim only its own targets from the manager-global winner.
+  layerId: string;
   manager: DragDropManager;
-  registerTabset: (id: string, element: HTMLElement | null) => void;
 };
 
 const DragContext = createContext<DragContextValue | null>(null);
@@ -74,9 +85,10 @@ const SharedDragManagerContext: Context<DragDropManager | null> =
 // observe drags) and by the DragLayer otherwise; the dragDockMachine
 // subscription feeds it. Intent updates are value-guarded by the adapter
 // (sameDropIntent) so OVER pulses only notify when the resolved drop changes.
-// intentOwner disambiguates layouts sharing one store: each layer hit-tests only
-// its own tabsets, so a null intent from one layer must not erase the live
-// intent another layer resolved.
+// intentOwner disambiguates layouts sharing one store: each layer claims only
+// its own droppables from the manager-global winner, so a null intent from one
+// layer must not erase the live intent the owning layer resolved — the write
+// order between layers on a winner handoff is unspecified.
 type DragSubjectState = {
   intent: DropIntent | null;
   intentOwner: string | null;
@@ -203,15 +215,44 @@ const useTabsetDraggable = (
   return useDraggableEntity({ data, id: `grip-${tabsetId}` }, disabled, label);
 };
 
-// Registers the tabset element so the adapter can hit-test the pointer against it.
+// Registers the tabset as a dnd-kit Droppable with the occlusion-aware
+// detector, mirroring useDraggableEntity's lifecycle: the effect is keyed on
+// identity, the ref setter keeps `element` current across renders. Droppables
+// register on the manager (shared across layers), so the winning tabset is
+// resolved globally; `data.layerId` lets the owning DragProvider claim it.
 const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | null) => void } => {
   const context = useContext(DragContext);
-  const ref = useCallback(
-    (element: HTMLElement | null): void => {
-      context?.registerTabset(tabsetId, element);
-    },
-    [context, tabsetId],
-  );
+  const elementRef = useRef<HTMLElement | null>(null);
+  const droppableRef = useRef<Droppable | null>(null);
+  const ref = useCallback((element: HTMLElement | null): void => {
+    elementRef.current = element;
+    if (droppableRef.current) {
+      droppableRef.current.element = element ?? undefined;
+    }
+  }, []);
+  const layerId = context?.layerId;
+  const manager = context?.manager;
+
+  useEffect(() => {
+    if (!manager || layerId === undefined) {
+      return undefined;
+    }
+    const droppable = new Droppable(
+      {
+        collisionDetector: topmostPointerIntersection,
+        data: { layerId, type: "tabset" },
+        id: tabsetId,
+      },
+      manager,
+    );
+    droppable.element = elementRef.current ?? undefined;
+    droppableRef.current = droppable;
+    return () => {
+      droppable.destroy();
+      droppableRef.current = null;
+    };
+  }, [layerId, manager, tabsetId]);
+
   return { ref };
 };
 
