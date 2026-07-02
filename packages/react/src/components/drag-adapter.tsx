@@ -196,16 +196,16 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
     splitDockRef.current = splitDock;
   });
 
-  // The DockIndicator's target lookup, now against the manager-global droppable
+  // The DockIndicator's target lookup, against the manager-global droppable
   // registry (tabsets register there via useTabsetDroppable). The machine only
-  // ever holds intents for this layer's own targets, so foreign ids never reach
-  // this.
+  // ever holds intents for this layer's own targets, so reconstructing this
+  // layer's prefixed droppable id from the model tabset id is always right.
   const getTabsetElement = useCallback(
     (id: string): HTMLElement | undefined => {
-      const element = manager.registry.droppables.get(id)?.element;
+      const element = manager.registry.droppables.get(`${ownerId}:${id}`)?.element;
       return element instanceof HTMLElement ? element : undefined;
     },
-    [manager],
+    [manager, ownerId],
   );
 
   useEffect(() => {
@@ -292,15 +292,17 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       const operation = manager.dragOperation;
       const point = operation.position.current;
       const target = operation.target;
-      const ownedElement =
-        target && (target.data as { layerId?: string } | undefined)?.layerId === ownerId
-          ? target.element
-          : undefined;
+      // The droppable id is layer-prefixed (model tabset ids are only unique
+      // per layout); the model id the machine and reducer understand rides in
+      // the droppable's data, alongside the layer claim.
+      const data = target?.data as { layerId?: string; tabsetId?: string } | undefined;
+      const tabsetId = data?.layerId === ownerId ? data.tabsetId : undefined;
+      const element = tabsetId === undefined ? undefined : target?.element;
       const draggedId = operation.source ? String(operation.source.id) : undefined;
       actorRef.send({
         intent:
-          target && ownedElement instanceof HTMLElement
-            ? resolveIntent(String(target.id), ownedElement, point, draggedId)
+          tabsetId !== undefined && element instanceof HTMLElement
+            ? resolveIntent(tabsetId, element, point, draggedId)
             : null,
         type: "OVER",
       });

@@ -237,11 +237,16 @@ const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | nu
     if (!manager || layerId === undefined) {
       return undefined;
     }
+    // Droppable ids must be manager-unique, but model tabset ids are only
+    // unique within one layout — sibling layouts under a shared provider can
+    // both have a "ts1", and dnd-kit's registry replaces the earlier entry on
+    // an id collision. The layer prefix keeps registrations distinct; the
+    // model id the adapter and reducer understand rides in data.
     const droppable = new Droppable(
       {
         collisionDetector: topmostPointerIntersection,
-        data: { layerId, type: "tabset" },
-        id: tabsetId,
+        data: { layerId, tabsetId, type: "tabset" },
+        id: `${layerId}:${tabsetId}`,
       },
       manager,
     );

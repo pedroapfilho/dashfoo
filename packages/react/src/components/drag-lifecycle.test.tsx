@@ -228,8 +228,18 @@ describe("useExternalTabSource lifecycle", () => {
 // Step 5: useTabsetDroppable registration lifecycle
 // Same feasibility notes as Step 4: Droppable registration is deferred via
 // queueMicrotask, and construction touches no DOM until a drag activates.
+// The droppable id is layer-prefixed (model tabset ids are only unique per
+// layout), so registrations are found via the model id in data.
+const droppablesFor = (
+  manager: DragDropManager,
+  tabsetId: string,
+): Array<{ data: unknown; element?: Element; id: string | number }> =>
+  [...manager.registry.droppables].filter(
+    (droppable) => (droppable.data as { tabsetId?: string }).tabsetId === tabsetId,
+  );
+
 describe("useTabsetDroppable lifecycle", () => {
-  test("registers a Droppable carrying the layer id, and removes it on unmount", async () => {
+  test("registers a Droppable carrying the layer + model ids, and removes it on unmount", async () => {
     const { useTabsetDroppable } = await import("../hooks/drag-hooks");
 
     let capturedManager: DragDropManager | null = null;
@@ -250,7 +260,7 @@ describe("useTabsetDroppable lifecycle", () => {
     await Promise.resolve();
 
     expect(capturedManager).not.toBeNull();
-    const droppable = capturedManager!.registry.droppables.get("ts1");
+    const [droppable] = droppablesFor(capturedManager!, "ts1");
     expect(droppable).toBeDefined();
     // The layer claim in the adapter's syncIntent keys off this — a droppable
     // registered without it would make every drop unclaimable.
@@ -259,7 +269,44 @@ describe("useTabsetDroppable lifecycle", () => {
 
     unmount();
 
-    expect(capturedManager!.registry.droppables.has("ts1")).toBe(false);
+    expect(droppablesFor(capturedManager!, "ts1").length).toBe(0);
+  });
+
+  test("sibling layers reusing a model tabset id keep distinct registrations", async () => {
+    const { useTabsetDroppable } = await import("../hooks/drag-hooks");
+
+    let capturedManager: DragDropManager | null = null;
+
+    const Probe = (): null => {
+      capturedManager = useContext(SharedDragManagerContext);
+      return null;
+    };
+
+    const Tabset = (): ReactNode => {
+      const { ref } = useTabsetDroppable("ts1");
+      return <div ref={ref} />;
+    };
+
+    render(
+      <DashfooDragProvider>
+        <Probe />
+        <DragProvider onCommit={() => {}}>
+          <Tabset />
+        </DragProvider>
+        <DragProvider onCommit={() => {}}>
+          <Tabset />
+        </DragProvider>
+      </DashfooDragProvider>,
+    );
+
+    await Promise.resolve();
+
+    // Both layouts register "ts1" on the one shared manager. With raw model
+    // ids, dnd-kit's registry would replace the first entry and external drags
+    // over that layout would silently stop resolving a target.
+    const registered = droppablesFor(capturedManager!, "ts1");
+    expect(registered.length).toBe(2);
+    expect(new Set(registered.map((droppable) => droppable.id)).size).toBe(2);
   });
 });
 
