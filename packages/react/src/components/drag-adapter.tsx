@@ -2,7 +2,7 @@
 
 import type { Action, DockLocation, DragSubject, DropIntent, Point } from "@dashfoo/core";
 import { dragDockMachine, resolveDockTarget, tabNodeSchema } from "@dashfoo/core";
-import type { DragEndEvent, DragMoveEvent, DragStartEvent } from "@dnd-kit/dom";
+import type { DragEndEvent, DragStartEvent } from "@dnd-kit/dom";
 import { useActorRef } from "@xstate/react";
 import type { ReactNode } from "react";
 import {
@@ -34,17 +34,18 @@ import { LayoutStoreContext } from "../hooks/layout-store";
 import { insertionIndex, pointInRect, shouldAllowDrop } from "../lib/tab-insertion";
 import { warnOnce } from "../lib/warn-once";
 
-import type { DragPreviewState } from "./drag-overlays";
-import { DockIndicator, DragPreview } from "./drag-overlays";
+import { DockIndicator, DragPreviewOverlay } from "./drag-overlays";
 
 // This module is the drag adapter: it (with ./drag-hooks) is where @dnd-kit is
 // touched. It wires the framework-agnostic @dnd-kit/dom core (no React bindings)
 // to the already unit-tested dragDockMachine — the PointerSensor supplies
-// activation + a live pointer, the adapter hit-tests that pointer against the
-// registered tabsets, and the machine owns the lifecycle and emits a moveNode
-// COMMIT forwarded via onCommit. The drag preview is our own overlay, so there is
-// no Feedback plugin, no placeholder clone, and none of the CSS workarounds those
-// required.
+// activation + a live pointer, dnd-kit's collision pass resolves the tabset
+// droppable under it (each with dashfoo's occlusion-aware detector, see
+// ../lib/topmost-collision.ts), the adapter turns that target into a DropIntent,
+// and the machine owns the lifecycle and emits a moveNode COMMIT forwarded via
+// onCommit. The drag-preview chip rides the Feedback plugin's `overlay`
+// accessor (see DragPreviewOverlay): the source element is never promoted or
+// placeholder-cloned, and Feedback owns the chip's per-move positioning.
 
 // The dragged tab is excluded so its own slot never counts toward the order —
 // the insertion index and line are measured against the tabs it will land among.
@@ -77,14 +78,6 @@ const intentForTabset = (
     return { index: tabRects(strip, draggedId).length, location, targetId: id };
   }
   return { location, targetId: id };
-};
-
-// The pointer-anchored preview chip follows the cursor at this offset.
-const PREVIEW_OFFSET: Point = { x: 12, y: 8 };
-
-const labelOf = (source: { data?: Record<string, unknown> } | null): string => {
-  const raw = source?.data?.label;
-  return typeof raw === "string" ? raw : "";
 };
 
 const isTabFactory = (value: unknown): value is () => unknown => typeof value === "function";
@@ -141,11 +134,6 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
   // Nullable read on purpose (not the throwing useLayout hook): the drag layer
   // also works standalone with an explicit onCommit, e.g. in tests.
   const layoutStore = useContext(LayoutStoreContext);
-  // useState (not useRef(new Map())) so the registry is built once instead of
-  // allocating a throwaway Map on every render.
-  const [tabsets] = useState(() => new Map<string, HTMLElement>());
-  const overlayRef = useRef<HTMLDivElement | null>(null);
-  const [preview, setPreview] = useState<DragPreviewState | null>(null);
 
   // One manager for the whole layout — the shared one when a DashfooDragProvider
   // sits above (so external sources participate in this layout's drags), else
@@ -171,8 +159,9 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
   // else owned here. Guarded so OVER pulses (every pointer move) don't notify
   // subscribers — only a subject change (drag start/end) or a value-level
   // intent change (the resolved drop moved) does. ownerId scopes intent writes:
-  // layouts sharing a store each hit-test only their own tabsets, so this
-  // layer's null must not erase an intent another layer resolved.
+  // layers sharing a store each claim only their own droppables from the
+  // manager-global winner, so this layer's null must not erase an intent the
+  // owning layer resolved.
   const inheritedStore = useContext(DragSubjectStoreContext);
   const [subjectStore] = useState(() => inheritedStore ?? createDragSubjectStore());
   const ownerId = useId();
@@ -207,6 +196,18 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
     splitDockRef.current = splitDock;
   });
 
+  // The DockIndicator's target lookup, against the manager-global droppable
+  // registry (tabsets register there via useTabsetDroppable). The machine only
+  // ever holds intents for this layer's own targets, so reconstructing this
+  // layer's prefixed droppable id from the model tabset id is always right.
+  const getTabsetElement = useCallback(
+    (id: string): HTMLElement | undefined => {
+      const element = manager.registry.droppables.get(`${ownerId}:${id}`)?.element;
+      return element instanceof HTMLElement ? element : undefined;
+    },
+    [manager, ownerId],
+  );
+
   useEffect(() => {
     const subscription = actorRef.on("COMMIT", (emitted) => {
       // Mirrors the resolveIntent gate: even a drag whose `editable` was
@@ -229,46 +230,10 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
     };
   }, [actorRef, layoutStore]);
 
-  const registerTabset = useCallback(
-    (id: string, element: HTMLElement | null): void => {
-      if (element) {
-        tabsets.set(id, element);
-      } else {
-        tabsets.delete(id);
-      }
-    },
-    [tabsets],
-  );
-
-  const getTabsetElement = useCallback((id: string) => tabsets.get(id), [tabsets]);
-
-  const attachOverlay = useCallback((element: HTMLDivElement | null): void => {
-    overlayRef.current = element;
-  }, []);
-
   // The helpers live inside the effect (per the React docs' "move it into the
   // effect" guidance) so the monitor listeners attach once per manager instead
   // of re-subscribing whenever a render rebuilds a callback.
   useEffect(() => {
-    // Which registered tabset sits under the pointer. Docked tabsets tile, but a
-    // float overlays them, so a tabset's rect can contain a point that is actually
-    // over a float (or a tabset) on top of it. Resolve only the tabset that is
-    // TOPMOST at the point: elementFromPoint returns the occluding element, so an
-    // occluded tabset is skipped and never shows a stale indicator. The drag
-    // overlays (preview, indicator) are pointer-events:none, so they're ignored.
-    const tabsetAt = (point: Point): { element: HTMLElement; id: string } | undefined => {
-      const top = document.elementFromPoint(point.x, point.y);
-      if (!top) {
-        return undefined;
-      }
-      for (const [id, element] of tabsets) {
-        if (element.contains(top)) {
-          return { element, id };
-        }
-      }
-      return undefined;
-    };
-
     // The dock intent for a pointer over a tabset, or null when the drop would
     // be a no-op: a tabset dragged onto itself, or the sole tab of a tabset
     // dropped back onto that same tabset. Otherwise the tabset resolves to
@@ -303,15 +268,6 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       return intent;
     };
 
-    // Position the preview imperatively (transform only) so following the
-    // pointer never triggers a React re-render.
-    const positionOverlay = (point: Point): void => {
-      const element = overlayRef.current;
-      if (element) {
-        element.style.transform = `translate(${point.x + PREVIEW_OFFSET.x}px, ${point.y + PREVIEW_OFFSET.y}px)`;
-      }
-    };
-
     const handleStart = (event: DragStartEvent): void => {
       const source = event.operation.source;
       if (!source) {
@@ -319,64 +275,73 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       }
       const subject = subjectFor(source);
       if (!subject) {
+        // Abort the dnd-kit operation too: the machine stays idle either way,
+        // but a live Feedback drag would keep promoting the source element for
+        // a gesture dashfoo will never commit.
+        manager.actions.stop({ canceled: true });
         return;
       }
-      const point = event.operation.position.current;
-      setPreview({
-        label: labelOf(source),
-        x: point.x + PREVIEW_OFFSET.x,
-        y: point.y + PREVIEW_OFFSET.y,
-      });
       actorRef.send({ subject, type: "START" });
     };
 
-    // dnd-kit's dragmove gives the live pointer on every move, which drives the
-    // preview position and the indicator's intent.
-    const handleMove = (event: DragMoveEvent): void => {
-      const op = event.operation;
-      const point = op.position.current;
-      positionOverlay(point);
-      const draggedId = op.source ? String(op.source.id) : undefined;
-      const hit = tabsetAt(point);
+    // Feeds the machine the drop target dnd-kit's collision pass resolved
+    // (manager-global, across every layer sharing this manager), claiming it
+    // only when this layer owns it — otherwise OVER null, which clears this
+    // layer's indicator while the owning layer shows its own.
+    const syncIntent = (): void => {
+      const operation = manager.dragOperation;
+      const point = operation.position.current;
+      const target = operation.target;
+      // The droppable id is layer-prefixed (model tabset ids are only unique
+      // per layout); the model id the machine and reducer understand rides in
+      // the droppable's data, alongside the layer claim.
+      const data = target?.data as { layerId?: string; tabsetId?: string } | undefined;
+      const tabsetId = data?.layerId === ownerId ? data.tabsetId : undefined;
+      const element = tabsetId === undefined ? undefined : target?.element;
+      const draggedId = operation.source ? String(operation.source.id) : undefined;
       actorRef.send({
-        intent: hit ? resolveIntent(hit.id, hit.element, point, draggedId) : null,
+        intent:
+          tabsetId !== undefined && element instanceof HTMLElement
+            ? resolveIntent(tabsetId, element, point, draggedId)
+            : null,
         type: "OVER",
       });
     };
 
-    // Recompute the dock zone from the final pointer, then set the intent and
-    // commit in one synchronous pair.
+    // Both events on purpose: inside a dragmove listener the target lags one
+    // move behind (collisions recompute in a microtask after the dispatch), so
+    // the collision event keeps target flips fresh — but it can skip pulses
+    // while sliding within one tabset (the detector's value is constant per
+    // tabset), so dragmove keeps the insertion index tracking the pointer.
+    const handleMove = (): void => syncIntent();
+    const handleCollision = (): void => syncIntent();
+
+    // Recompute from the final operation state, then set the intent and commit
+    // in one synchronous pair — the drop uses the authoritative final target,
+    // not whatever the last pulse happened to report.
     const handleEnd = (event: DragEndEvent): void => {
-      setPreview(null);
       if (event.canceled) {
         actorRef.send({ type: "CANCEL" });
         return;
       }
-      const op = event.operation;
-      const point = op.position.current;
-      const draggedId = op.source ? String(op.source.id) : undefined;
-      const hit = tabsetAt(point);
-      if (hit) {
-        actorRef.send({
-          intent: resolveIntent(hit.id, hit.element, point, draggedId),
-          type: "OVER",
-        });
-      }
+      syncIntent();
       actorRef.send({ type: "DROP" });
     };
     const offStart = manager.monitor.addEventListener("dragstart", handleStart);
     const offMove = manager.monitor.addEventListener("dragmove", handleMove);
+    const offCollision = manager.monitor.addEventListener("collision", handleCollision);
     const offEnd = manager.monitor.addEventListener("dragend", handleEnd);
     return () => {
       offStart();
       offMove();
+      offCollision();
       offEnd();
     };
-  }, [actorRef, layoutStore, manager, tabsets]);
+  }, [actorRef, layoutStore, manager, ownerId]);
 
   const contextValue = useMemo<DragContextValue>(
-    () => ({ manager, registerTabset }),
-    [manager, registerTabset],
+    () => ({ layerId: ownerId, manager }),
+    [manager, ownerId],
   );
 
   return (
@@ -384,7 +349,9 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       <DragSubjectStoreContext.Provider value={subjectStore}>
         {children}
         <DockIndicator actorRef={actorRef} getTabsetElement={getTabsetElement} />
-        <DragPreview overlayRef={attachOverlay} preview={preview} />
+        {/* One chip per manager: under a DashfooDragProvider the provider owns
+            it, so N layouts sharing that manager don't stack N chips. */}
+        {ownManager === null ? null : <DragPreviewOverlay manager={ownManager} />}
       </DragSubjectStoreContext.Provider>
     </DragContext.Provider>
   );

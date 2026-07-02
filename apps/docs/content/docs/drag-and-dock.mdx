@@ -262,22 +262,30 @@ wire the DOM to the drag system. None of them is exported from
   rides along as the drag-preview label.
 - `useTabsetDraggable` does the same for the grip, under the dnd-kit id
   `grip-<tabsetId>` with the real tabset id in the draggable's data.
-- `useTabsetDroppable` registers each tabset's DOM element so the adapter can
-  hit-test the pointer against its rect. There are no dnd-kit droppables or
-  collision detectors; targeting is dashfoo's own point-in-rect test.
+- `useTabsetDroppable` registers each tabset as a `@dnd-kit/dom` `Droppable`
+  with a custom occlusion-aware collision detector: the winner is the tabset
+  containing the topmost element under the pointer (`elementFromPoint`), so a
+  tabset covered by a float never becomes a target. dnd-kit's built-in
+  detectors are pure rect geometry and stay unused — they know nothing about
+  paint order.
 
 ### 2. The adapter reads the pointer and hit-tests
 
 `DragProvider` constructs one `@dnd-kit/dom` `DragDropManager` (minus the
-`Feedback` and `Accessibility` plugins and the keyboard sensor) and subscribes to
-its monitor for three events. On `dragstart` it reads the source's data to
+`Accessibility` plugin and the keyboard sensor) and subscribes to
+its monitor. On `dragstart` it reads the source's data to
 decide the subject kind — a grip carries `type: "tabset"`, an external source
-carries `type: "external"`, a tab carries its own id — sends `START`, and shows
-its own `data-dashfoo="drag-preview"` chip.
-On `dragmove` it reads the live pointer, finds the tabset under it, resolves an
-intent, and sends `OVER` (positioning the preview chip imperatively, no
-re-render). On `dragend` it re-resolves from the final pointer, sends a last
-`OVER`, then `DROP`.
+carries `type: "external"`, a tab carries its own id — and sends `START`.
+On `dragmove` and on every `collision` pulse it reads the drop target dnd-kit's
+collision pass resolved, claims it when this layer owns it, resolves an
+intent, and sends `OVER`. On `dragend` it re-resolves from the final operation
+state, sends a last `OVER`, then `DROP`.
+
+The `data-dashfoo="drag-preview"` chip is positioned by dnd-kit's `Feedback`
+plugin in overlay mode: the chip element is handed to Feedback's `overlay`
+accessor once at mount, so the dragged tab itself is never promoted or
+placeholder-cloned and per-move positioning never re-renders React. The drop
+animation is disabled — drops settle immediately.
 
 The final recompute matters: the drop uses the authoritative final pointer, not
 whatever the last `dragmove` happened to report, so the committed location matches

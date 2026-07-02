@@ -10,6 +10,8 @@ import {
   SharedDragManagerContext,
 } from "../hooks/drag-hooks";
 
+import { DragPreviewOverlay } from "./drag-overlays";
+
 // Shares one DragDropManager between a DashfooLayout and external tab sources
 // (useExternalTabSource) rendered outside it, so a drag can start at a widget
 // list and end on the layout. Optional: a standalone DashfooLayout creates its
@@ -30,6 +32,10 @@ const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode =
     <SharedDragManagerContext.Provider value={manager}>
       <DragSubjectStoreContext.Provider value={subjectStore}>
         {children}
+        {/* The manager owner renders the one chip — nested DragProviders
+            sharing this manager render none, so cross-layout drags show a
+            single preview instead of one per layer. */}
+        <DragPreviewOverlay manager={manager} />
       </DragSubjectStoreContext.Provider>
     </SharedDragManagerContext.Provider>
   );
