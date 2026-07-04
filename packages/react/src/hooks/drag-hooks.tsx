@@ -191,7 +191,9 @@ const useDraggableEntity = (
     }
   }, [data, draggableRef, label]);
 
-  return { ref };
+  // Memoized so callers can hold the whole handle in hook deps without their
+  // memoization dissolving on every render.
+  return useMemo(() => ({ ref }), [ref]);
 };
 
 const useTabDraggable = (
@@ -258,7 +260,9 @@ const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | nu
     };
   }, [layerId, manager, tabsetId]);
 
-  return { ref };
+  // Memoized so callers can hold the whole handle in hook deps without their
+  // memoization dissolving on every render.
+  return useMemo(() => ({ ref }), [ref]);
 };
 
 type ExternalTabSourceOptions = {
