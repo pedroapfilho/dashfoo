@@ -25,10 +25,6 @@ import {
   sameDragSubject,
   sameDropIntent,
   SharedDragManagerContext,
-  useDragSubject,
-  useTabDraggable,
-  useTabsetDraggable,
-  useTabsetDroppable,
 } from "../hooks/drag-hooks";
 import { LayoutStoreContext } from "../hooks/layout-store";
 import { insertionIndex, pointInRect, shouldAllowDrop } from "../lib/tab-insertion";
@@ -361,11 +357,10 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
 // keep this module under the size cap and avoid a circular import; re-exported
 // here so consumers still import the whole drag surface from "./drag-adapter".
 export {
-  DragProvider,
-  subjectFor,
   useDragSubject,
   useTabDraggable,
   useTabsetDraggable,
   useTabsetDroppable,
-};
+} from "../hooks/drag-hooks";
+export { DragProvider, subjectFor };
 export type { DragProviderProps };

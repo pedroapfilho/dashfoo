@@ -39,9 +39,9 @@
     "@dashfoo/core": "workspace:*",
     "@dnd-kit/abstract": "^0.5.0",
     "@dnd-kit/dom": "^0.5.0",
-    "@xstate/react": "^5.0.0",
-    "react-resizable-panels": "^4.0.0",
-    "xstate": "^5.0.0",
+    "@xstate/react": "^6.0.0",
+    "react-resizable-panels": "^4.12.0",
+    "xstate": "^5.32.4",
     "zustand": "^5.0.0"
   },
   "devDependencies": {
@@ -49,13 +49,13 @@
     "@repo/typescript-config": "workspace:*",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
-    "@types/react": "^19.2.15",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "jsdom": "^29.1.1",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.0.0",

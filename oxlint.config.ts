@@ -11,6 +11,9 @@ export default defineConfig({
       files: ["**/__tests__/**/*.ts", "**/__tests__/**/*.tsx", "**/*.test.ts", "**/*.test.tsx"],
       rules: {
         "number-literal-case": "off",
+        // Test fixtures declare layout trees with the nested row/tabset/tab
+        // builder DSL — the nesting mirrors the tree and is the readable form.
+        "max-nested-calls": "off",
       },
     },
     // Demo apps are standalone references read top-to-bottom; accept length and
@@ -20,6 +23,9 @@ export default defineConfig({
       rules: {
         "max-lines": "off",
         "no-console": "off",
+        // Demo models declare layout trees with the nested row/tabset/tab
+        // builder DSL — the nesting mirrors the tree and is the readable form.
+        "max-nested-calls": "off",
       },
     },
   ],

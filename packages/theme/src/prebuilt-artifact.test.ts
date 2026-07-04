@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { describe, expect, test } from "vitest";
@@ -8,7 +8,7 @@ import { describe, expect, test } from "vitest";
 // default theme vars, @theme mirrors) may leak into non-Tailwind pages.
 // Requires the package build to have run first (turbo: @dashfoo/theme#test
 // depends on build).
-const artifact = readFileSync(join(import.meta.dirname, "../dist/dashfoo.css"), "utf8");
+const artifact = await readFile(join(import.meta.dirname, "../dist/dashfoo.css"), "utf8");
 
 describe("dist/dashfoo.css", () => {
   test("contains the design tokens and dark remap", () => {
