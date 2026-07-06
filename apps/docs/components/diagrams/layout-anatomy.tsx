@@ -24,10 +24,10 @@ const LayoutAnatomy = () => (
   >
     <div
       aria-hidden
-      className="bg-fd-background relative flex aspect-[16/10] min-w-105 overflow-hidden rounded-md border"
+      className="bg-fd-secondary/50 relative flex aspect-[16/10] min-w-105 overflow-hidden rounded-md border p-1.5"
     >
       {/* tabset ts-main — weight 2 */}
-      <div className="flex grow-[2] basis-0 flex-col">
+      <div className="bg-fd-background flex grow-[2] basis-0 flex-col overflow-hidden rounded-sm border">
         <MockTabStrip tabs={[{ name: "Canvas", selected: true }, { name: "Detail" }]}>
           <Marker className="mb-1 ml-1" n={1} />
           <span className="mb-1 ml-auto flex items-center gap-1 pl-1">
@@ -48,7 +48,7 @@ const LayoutAnatomy = () => (
 
       {/* nested row "right" — orientation: "column" */}
       <div className="flex grow basis-0 flex-col">
-        <div className="flex grow basis-0 flex-col">
+        <div className="bg-fd-background flex grow basis-0 flex-col overflow-hidden rounded-sm border">
           <MockTabStrip tabs={[{ name: "Activity", selected: true }, { name: "Tasks" }]}>
             <span className="mb-1 ml-auto pl-1">
               <IdChip>ts-side-top</IdChip>
@@ -62,7 +62,7 @@ const LayoutAnatomy = () => (
             <IdChip>right</IdChip>
           </span>
         </Gutter>
-        <div className="flex grow basis-0 flex-col">
+        <div className="bg-fd-background flex grow basis-0 flex-col overflow-hidden rounded-sm border">
           <MockTabStrip
             tabs={[{ name: "Metrics", selected: true }, { name: "History" }, { name: "Reports" }]}
           >

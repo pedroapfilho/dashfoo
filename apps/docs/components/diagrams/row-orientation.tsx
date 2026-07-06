@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { DiagramFigure, Gutter } from "./diagram-figure";
 
 const MiniPane = ({ label }: { label: string }) => (
-  <div className="flex grow basis-0 flex-col">
+  <div className="bg-fd-background flex grow basis-0 flex-col overflow-hidden rounded-sm border">
     <div className="bg-fd-muted h-2.5 shrink-0 border-b" />
     <div className="text-fd-muted-foreground flex grow items-center justify-center font-mono text-[11px]">
       {label}
@@ -21,7 +21,7 @@ const Variant = ({ children, detail, orientation }: VariantProps) => (
   <div>
     <div
       aria-hidden
-      className={`bg-fd-background flex aspect-[16/10] overflow-hidden rounded-md border ${
+      className={`bg-fd-secondary/50 flex aspect-[16/10] overflow-hidden rounded-md border p-1 ${
         orientation === "column" ? "flex-col" : ""
       }`}
     >
