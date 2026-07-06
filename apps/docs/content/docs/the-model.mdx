@@ -18,6 +18,9 @@ model in and out of storage.
 Every type and schema referenced here is exported from `@dashfoo/core` and
 defined in
 [`packages/core/src/model/schema.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/schema.ts).
+If the words tabset, pane, splitter, or float are new, start with
+[Concepts & terminology](/concepts) — it introduces them in one annotated
+figure.
 
 ## Building a model: the builders
 
@@ -116,6 +119,8 @@ row as a whole — useful for clamping a nested column without constraining each
 tabset inside it. See [Dimensions](#dimensions) below. `snap` overrides the
 layout-wide `global.snap` for this row's splitters; an empty `{}` opts a single
 row out of an inherited snap default.
+
+<RowOrientation />
 
 ### `TabsetNode` — a tabbed pane
 
