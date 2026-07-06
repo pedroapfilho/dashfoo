@@ -13,23 +13,23 @@
     "clean": "rm -rf .next .source node_modules"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "^4.3.0",
+    "@tailwindcss/postcss": "^4.3.2",
     "class-variance-authority": "^0.7.1",
     "cnfast": "^0.0.8",
-    "fumadocs-core": "^16.9.3",
-    "fumadocs-mdx": "^15.0.10",
-    "fumadocs-ui": "^16.9.3",
-    "lucide-react": "^1.17.0",
-    "next": "^16.0.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "tailwindcss": "^4.3.0"
+    "fumadocs-core": "^16.10.7",
+    "fumadocs-mdx": "^15.0.13",
+    "fumadocs-ui": "^16.10.7",
+    "lucide-react": "^1.23.0",
+    "next": "^16.3.0-preview.5",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
-    "@types/mdx": "^2.0.13",
-    "@types/node": "^25.9.1",
-    "@types/react": "^19.2.15",
+    "@types/mdx": "^2.0.14",
+    "@types/node": "^26.1.0",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "typescript": "^6.0.3"
   }

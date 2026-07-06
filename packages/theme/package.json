@@ -47,9 +47,9 @@
   "devDependencies": {
     "@repo/config-vitest": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@tailwindcss/cli": "^4.3.1",
-    "tailwindcss": "^4.3.1",
+    "@tailwindcss/cli": "^4.3.2",
+    "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.9"
   }
 }

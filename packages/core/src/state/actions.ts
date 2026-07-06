@@ -58,6 +58,8 @@ const dockLocationSchema = z.enum([
   "split-top",
 ]);
 
+const splitWeightsSchema = z.array(z.number());
+
 const actionSchema = z.discriminatedUnion("type", [
   z.object({
     index: z.number().int().optional(),
@@ -89,7 +91,7 @@ const actionSchema = z.discriminatedUnion("type", [
   z.object({
     rowId: z.string(),
     type: z.literal("adjustSplit"),
-    weights: z.array(z.number()),
+    weights: splitWeightsSchema,
   }),
   z.object({
     attrs: mutableNodeAttrsSchema,
