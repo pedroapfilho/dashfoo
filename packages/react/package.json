@@ -1,6 +1,6 @@
 {
   "name": "@dashfoo/react",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Headless React layer for dashfoo: DashfooLayout, hooks, slots, and the react-resizable-panels + dnd-kit adapters.",
   "license": "MIT",
   "author": "Pedro Filho <pedro@filho.me>",

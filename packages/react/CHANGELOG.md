@@ -1,5 +1,12 @@
 # @dashfoo/react
 
+## 0.6.1
+
+### Patch Changes
+
+- bc8a2a5: Stabilize hook identities and fix a key/spread ordering hazard. `useTabDraggable`, `useTabsetDraggable`, `useTabsetDroppable`, and `useResponsiveModel` now return referentially stable objects across re-renders, so consumers can hold the whole result in hook deps without their memoization dissolving. `Tabset.Content` now places the per-tab `key` after the props spread in keepMounted mode, so a spread value can never overwrite React's tab identity.
+- 7a22ce3: Update the @xstate/react dependency to v6. No API surface changes — the hooks dashfoo uses (useActorRef, useSelector) are unchanged, and v6 stays peer-compatible with xstate ^5.28 and React 18/19.
+
 ## 0.6.0
 
 ### Minor Changes
@@ -92,6 +99,7 @@
 
 - 301dcce: The tab-strip drop indicator is a thin insertion line again instead of a tab-shaped ghost, keeping the dock pane's fill and border styling (`--dashfoo-dock-fill` / `--dashfoo-dock-border`). The line is 4px wide, spans the strip height, centers on the slot boundary, and is clamped inside the strip. `--dashfoo-dock-tab-radius` is gone; the new `--dashfoo-dock-line-radius` (default `2px`) rounds the line's ends.
 - 1439a72: Static layouts: editing can now be disabled.
+
   - `@dashfoo/react`: new `editable` prop (default `true`) on `DashfooLayout` and `Layout.Root` — `false` turns off every structural edit at once (tab/tabset drag, close, rename, splitter resize, external drops) while tab selection, maximize, the overflow menu, and the imperative ref API keep working. New granular flags `resizableSplits` and `draggableTabs` (both default `true`); a non-editable layout also rejects drops at the adapter level, so external-source drags under a shared `DashfooDragProvider` can't land in it. Toggleable at runtime without remounting.
   - `@dashfoo/core`: new optional global attributes `enableSplitResize` (backs splitter resizing) and `tabEnableDrag` (tree-wide default behind `tab.enableDrag`).
   - `@dashfoo/theme`: disabled splitters (`[data-separator="disabled"]`) keep their gutter size but lose the grab pill and resize cursor; a tab without a close control gets symmetric padding so the label no longer sits lopsided.
