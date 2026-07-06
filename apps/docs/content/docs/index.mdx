@@ -1,12 +1,12 @@
 ---
 title: Introduction
-description: dashfoo is a headless React docking-layout library — tiled, resizable, tabbed regions with a serializable model and zero imposed styling.
+description: "dashfoo is a headless React docking-layout library: tiled, resizable, tabbed regions with a serializable model and zero imposed styling."
 ---
 
 dashfoo builds VS-Code-style dashboards in React: nested rows and columns of
 resizable panes, each pane a tabset you can restack, split, and reorder by
-dragging, plus rename, close, and maximize. The layout is a single serializable model — a
-plain object validated by zod — that is the one source of truth. The engine
+dragging, plus rename, close, and maximize. The layout is a single serializable
+model (a plain object validated by zod) that is the one source of truth. The engine
 ships structure, not appearance: `@dashfoo/react` renders markup tagged with
 `data-dashfoo="..."` attributes and applies no CSS, so the chrome is yours to
 style (or import the optional `@dashfoo/theme` skin).
@@ -16,7 +16,7 @@ Try the hosted demo at [demo.dashfoo.com](https://demo.dashfoo.com).
 ## At a glance
 
 - **Headless.** `@dashfoo/react` renders `data-dashfoo` markup with zero styling.
-  Target it with your own CSS, or drop in `@dashfoo/theme` — a skin over
+  Target it with your own CSS, or drop in `@dashfoo/theme`, a skin over
   overridable `--dashfoo-*` tokens, light by default with opt-in dark via
   `data-dashfoo-theme="dark"`, consumable as a Tailwind v4 entry or prebuilt
   plain CSS.
@@ -40,17 +40,17 @@ Try the hosted demo at [demo.dashfoo.com](https://demo.dashfoo.com).
 
 ## Where to go next
 
-- [Getting started](/getting-started) — install, build a model with the builders, render `<DashfooLayout>`, and make it visible.
-- [Hosted demo](https://demo.dashfoo.com) — try the demo app before wiring dashfoo into your own UI.
-- [The layout model](/the-model) — the node schema, the builders, and how `normalize()` keeps the tree canonical.
-- [Drag and dock](/drag-and-dock) — how stack/split resolution works (pointer-only).
-- [Controlled mode & undo/redo](/controlled-and-history) — the two modes, history, and the interception hooks.
-- [Persisting layouts](/persistence) — the `persist` prop, storage adapters, and SSR.
-- [Adaptive layouts](/responsive) — stack and lock the layout on narrow screens with the `responsive` prop; no remount, state preserved.
-- [Theming](/theming) — the full `data-dashfoo` + `--dashfoo-*` contract and the dark theme.
-- [API reference](/api-reference) — every exported component, hook, prop, and type in one place.
+- [Getting started](/getting-started): install, build a model with the builders, render `<DashfooLayout>`, and make it visible.
+- [Hosted demo](https://demo.dashfoo.com): try the demo app before wiring dashfoo into your own UI.
+- [The layout model](/the-model): the node schema, the builders, and how `normalize()` keeps the tree canonical.
+- [Drag and dock](/drag-and-dock): how stack/split resolution works (pointer-only).
+- [Controlled mode & undo/redo](/controlled-and-history): the two modes, history, and the interception hooks.
+- [Persisting layouts](/persistence): the `persist` prop, storage adapters, and SSR.
+- [Adaptive layouts](/responsive): stack and lock the layout on narrow screens with the `responsive` prop; the layout keeps its state without a remount.
+- [Theming](/theming): the full `data-dashfoo` + `--dashfoo-*` contract and the dark theme.
+- [API reference](/api-reference): every exported component, hook, prop, and type in one place.
 
 <Callout type="info">
-  Code in these docs comes from the dashfoo repository — the package sources, the demo app, and the
-  test suite — not invented.
+  Code in these docs comes from the dashfoo repository: the package sources, the demo app, and the
+  test suite.
 </Callout>

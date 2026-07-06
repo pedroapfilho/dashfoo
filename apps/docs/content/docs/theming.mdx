@@ -3,7 +3,7 @@ title: Theming the headless chrome
 description: The full data-dashfoo attribute + --dashfoo-* token contract, the dark theme, and how to write your own skin.
 ---
 
-`@dashfoo/react` renders the dock as plain DOM with zero imposed styling. No
+`@dashfoo/react` renders the dock as plain DOM with zero imposed styling: no
 class names, no inline colors, no default border on a tabset. Every structural
 element instead carries a `data-dashfoo="..."` attribute (and the resize
 splitters carry `data-separator` from react-resizable-panels). You style a skin
@@ -13,28 +13,28 @@ You have two paths:
 
 1. **Import the default skin.** `@dashfoo/theme` ships a complete skin over
    overridable `--dashfoo-*` tokens, light by default with an opt-in dark
-   variant. Most apps want this — the full token table is in
+   variant. Most apps want this. The full token table is in
    [Design tokens and the dark theme](#design-tokens-and-the-dark-theme) below.
    Tailwind v4 apps import the source entry into their pipeline; everyone else
    imports the prebuilt CSS (compiled from the same source, no build step):
 
    ```css
-   /* Tailwind v4 apps — also generates bg-dashfoo-* etc. utilities */
+   /* Tailwind v4 apps; also generates bg-dashfoo-* etc. utilities */
    @import "tailwindcss";
    @import "@dashfoo/theme/tailwind.css";
    ```
 
    ```ts
-   // Apps without Tailwind — prebuilt, zero build
+   // Apps without Tailwind; prebuilt, zero build
    import "@dashfoo/theme/dashfoo.css";
    ```
 
 2. **Write your own.** Select on the `data-dashfoo` attributes from a regular CSS
-   file. No theme provider, no style props, no runtime config. This guide is the
-   full attribute + state + token contract you'd target.
+   file. There is no theme provider, no style props, and no runtime config. This
+   guide is the full attribute + state + token contract you'd target.
 
 The examples below are plain CSS. If your app uses Tailwind you can `@apply`
-equivalents — the selectors are the same either way. The canonical worked skin is
+equivalents. The selectors are the same either way. The canonical worked skin is
 [`packages/theme/src/css/skin.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/src/css/skin.css).
 
 ### Using the theme with Tailwind v4
@@ -49,10 +49,10 @@ The `@dashfoo/theme/tailwind.css` entry does three things on top of the skin:
   `dashfoo-*` utilities for your own markup: `bg-`/`text-`/`border-`/`ring-`
   for the 11 color tokens, `rounded-dashfoo` / `rounded-dashfoo-sm`, and
   `font-dashfoo`. Because the utilities inline `var(--dashfoo-*)`, they follow
-  the `[data-dashfoo-theme="dark"]` remap automatically — no `dark:` variant
-  needed.
+  the `[data-dashfoo-theme="dark"]` remap automatically, so no `dark:` variant
+  is needed.
 - Custom CSS should keep reading `var(--dashfoo-*)`, never the
-  `--color-dashfoo-*` mirrors — the mirrors resolve at `:root` and ignore
+  `--color-dashfoo-*` mirrors. The mirrors resolve at `:root` and ignore
   subtree dark remaps.
 
 ## Why attributes instead of class names
@@ -87,7 +87,7 @@ plain CSS, every value resolving through a `--dashfoo-*` token:
 /* ...one rule per attribute... */
 ```
 
-Nothing here is dashfoo-specific machinery — the same selectors work in any CSS
+Nothing here is dashfoo-specific machinery. The same selectors work in any CSS
 dialect.
 
 ## Attribute reference
@@ -214,15 +214,15 @@ the structural attribute with the state attribute.
 | `tabIndex={0 / -1}`    | `[data-dashfoo="tab"]`             | Roving tabindex: the selected tab is the one tab stop           |
 
 The boolean `data-*` attributes (`data-dragging`, `data-dragging-source`) are
-only present when true — set to `undefined` otherwise, so the attribute is absent
-rather than `="false"`. Select on presence:
+only present when true. They are set to `undefined` otherwise, so the attribute
+is absent rather than `="false"`. Select on presence:
 
 ```css
 [data-dashfoo="tab-item"][data-dragging] {
   opacity: 0.35;
 }
 [data-dashfoo="tabset"][data-dragging-source] {
-  /* the tabset being dragged away by its grip — dim/dash it */
+  /* the tabset being dragged away by its grip; dim/dash it */
   border-style: dashed;
 }
 ```
@@ -261,9 +261,9 @@ keeps it legible without hue:
 }
 ```
 
-The `:has()` rule is worth calling out. The active surface and the underline want
-to sit on the `tab-item` wrapper, but the state lives on the inner `tab` button.
-`:has()` lifts the state up one level without any extra attribute on the wrapper.
+The active surface and the underline want to sit on the `tab-item` wrapper, but
+the state lives on the inner `tab` button. `:has()` lifts the state up one level
+without any extra attribute on the wrapper.
 
 ### Pressed maximize toggle
 
@@ -336,8 +336,8 @@ handle.
 ### Magnetic snapping
 
 When [snapping](/the-model#global-attributes) is on and a drag locks the boundary
-to the grid, the adapter writes two transient attributes that the theme styles —
-no inline color:
+to the grid, the adapter writes two transient attributes that the theme styles
+without inline color:
 
 | Selector                                             | Matches                                                                                                          |
 | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -350,7 +350,7 @@ no inline color:
 | `--dashfoo-snap-transition` | `flex-grow 140ms cubic-bezier(0.4, 0, 0.2, 1)` | Panel glide onto the snap line; the theme sets `none` under reduced motion. |
 
 The transition is scoped to the snapping group only, so free-drag tracking stays
-1:1 with the pointer — the boundary glides onto the line and snaps off it
+1:1 with the pointer. The boundary glides onto the line and snaps off it
 instantly.
 
 ## Dock indicators and the `--dashfoo-dock-*` vars

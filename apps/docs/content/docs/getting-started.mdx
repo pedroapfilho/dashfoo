@@ -3,7 +3,7 @@ title: Getting started
 description: Install dashfoo, paste five files into a fresh Vite app, and go from a blank page to a running docking layout.
 ---
 
-dashfoo renders a tiled, resizable, tabbed layout — the kind of docking UI you
+dashfoo renders a tiled, resizable, tabbed layout, the kind of docking UI you
 see in VS Code or a trading terminal. It ships headless: the React layer emits
 markup tagged with `data-dashfoo="…"` attributes and imposes zero styling. You
 own every pixel. This guide is five complete files. Paste them into a fresh
@@ -11,15 +11,15 @@ Vite app in order and the result runs.
 
 Three packages:
 
-- `@dashfoo/core` — the pure-TS engine. Zod schema, the model type `Dashfoo`,
+- `@dashfoo/core`: the pure-TS engine. Zod schema, the model type `Dashfoo`,
   the reducer, geometry, and the XState machines. No React.
-- `@dashfoo/react` — `DashfooLayout`, the hooks, and the
+- `@dashfoo/react`: `DashfooLayout`, the hooks, and the
   react-resizable-panels + dnd-kit adapters. This is what you render.
-- `@dashfoo/theme` — the optional default skin over `--dashfoo-*` tokens; the
+- `@dashfoo/theme`: the optional default skin over `--dashfoo-*` tokens; the
   fast path to a visible layout. Ships a Tailwind v4 entry and a prebuilt CSS
-  file — use either.
+  file; use either.
 
-## Step 1 — Install
+## Step 1: Install
 
 Scaffold and install with pnpm:
 
@@ -50,12 +50,12 @@ cannot load them. TypeScript still finds the types via the top-level `types`
 field, but set `moduleResolution` to `"bundler"` (or `node16`/`nodenext`) so
 TS resolves the same `exports` map your bundler uses.
 
-## Step 2 — Give the page a height — `src/index.css`
+## Step 2: Give the page a height in `src/index.css`
 
 `<DashfooLayout>` fills 100% of its parent in both axes. In a fresh Vite app
 `#root` has no height, so the layout collapses to zero pixels and the page
-stays blank — the single most common first-run failure. Replace the generated
-`src/index.css` with the height chain:
+stays blank. This is the most common first-run failure. Replace the generated
+`src/index.css` with this height chain:
 
 ```css
 /* src/index.css */
@@ -67,15 +67,15 @@ body,
 }
 ```
 
-## Step 3 — Define a model — `src/model.ts`
+## Step 3: Define a model in `src/model.ts`
 
 The model is a plain serializable object typed as `Dashfoo` from
 `@dashfoo/core`. It describes the tree: a root `row`, the `tabset`s inside it,
-and the `tab`s inside those. Nothing here is React — it's data you could load
+and the `tab`s inside those. Nothing here is React; it's data you could load
 from a file or a database.
 
-Start with one row holding a single tabset of three tabs. The **builders** —
-`model` / `row` / `tabset` / `tab` from `@dashfoo/core` — fill the mechanical
+Start with one row holding a single tabset of three tabs. The **builders**
+(`model` / `row` / `tabset` / `tab` from `@dashfoo/core`) fill the mechanical
 fields (`type`, `version`, `selected`) so you write only what matters:
 
 ```ts
@@ -96,12 +96,12 @@ export { startingModel };
 
 A `tab`'s id defaults to its component string, so two `tab("chart", …)` calls
 produce duplicate ids: `model()` warns once in the console (`[dashfoo] builder
-produced duplicate node ids…`) and tab operations — select, close, rename,
-drag — then target the first match. Whenever a layout reuses a component, pass
+produced duplicate node ids…`) and tab operations (select, close, rename,
+drag) then target the first match. Whenever a layout reuses a component, pass
 an explicit id: `tab("chart", "Second chart", { id: "chart-2" })`. `tabset` and
 `row` auto-generate an id when you omit one (pass an explicit `id` for nodes
 you reference, like `activeTabsetId`). The builders return the same plain
-object you could also write by hand — see [the model guide](/the-model) for
+object you could also write by hand; see [the model guide](/the-model) for
 the raw shape.
 
 A few fields to know:
@@ -128,23 +128,23 @@ Nest a `row(..., { orientation: "column" })` inside the root to stack tabsets
 vertically in one column.
 
 To make splitters snap to a grid as the user drags, pass `snap` to
-`<DashfooLayout>` — `{ step: 25 }` for a fixed-percent grid, or
+`<DashfooLayout>`: `{ step: 25 }` for a fixed-percent grid, or
 `{ divisions: "panels" }` to snap to even splits by panel count (a 3-panel row
 snaps to thirds). Add `threshold` to widen the magnetic pull. It commits on
 release as one undo step. See [the model](/the-model#global-attributes) for
 per-row overrides.
 
-## Step 4 — Map components to tabs — `src/panels.tsx`
+## Step 4: Map components to tabs in `src/panels.tsx`
 
 A tab's `component` string is a key. dashfoo resolves it to React content one of
 two ways. Pick whichever fits.
 
-### Registry — a name-to-component map
+### Registry: a name-to-component map
 
 Pass a `components` record. Each value is a component that receives the resolved
 `{ node }` so it can read `node.name`, `node.id`, and so on. A key with no
-entry renders an empty panel and logs one dev warning —
-`[dashfoo] no component registered for "<key>"` — so a typo surfaces in the
+entry renders an empty panel and logs one dev warning
+(`[dashfoo] no component registered for "<key>"`), so a typo surfaces in the
 console.
 
 ```tsx
@@ -154,7 +154,7 @@ import type { ComponentType, ReactNode } from "react";
 
 type PanelProps = { node: TabNode };
 
-const ChartPanel = ({ node }: PanelProps): ReactNode => <div>{node.name} — chart goes here</div>;
+const ChartPanel = ({ node }: PanelProps): ReactNode => <div>{node.name}: chart goes here</div>;
 
 const TextPanel = ({ node }: PanelProps): ReactNode => <div>{node.name}</div>;
 
@@ -168,21 +168,21 @@ export { components };
 export type { PanelProps };
 ```
 
-### Factory — one function, full control
+### Factory: one function, full control
 
 If you'd rather branch yourself (fall back to a generic panel, code-split by
 name, whatever), pass a `factory: (tab: TabNode) => ReactNode` instead. The
 factory takes precedence over `components` when both are set:
 
 ```tsx
-// src/panels.tsx — factory variant
+// src/panels.tsx, factory variant
 import type { TabNode } from "@dashfoo/core";
 import type { ReactNode } from "react";
 
 const renderPanel = (tab: TabNode): ReactNode => {
   switch (tab.component) {
     case "chart":
-      return <div>{tab.name} — chart goes here</div>;
+      return <div>{tab.name}: chart goes here</div>;
     default:
       return <div>{tab.name}</div>;
   }
@@ -195,11 +195,11 @@ The demo uses a factory too: it routes every tab to one placeholder panel
 composed from `Panel.Root`, `Panel.Header`, `Panel.Title`, and `Panel.Body`
 ([`apps/demo-vite/src/components/panels.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/components/panels.tsx)).
 
-## Step 5 — Render `<DashfooLayout>` — `src/App.tsx`
+## Step 5: Render `<DashfooLayout>` in `src/App.tsx`
 
 `DashfooLayout` owns the store. Hand it a model and a way to resolve content.
 For a model that lives entirely inside the component, use `defaultModel`
-(uncontrolled) — dashfoo holds the state and mutates it as the user drags,
+(uncontrolled); dashfoo holds the state and mutates it as the user drags,
 splits, resizes, renames, and maximizes.
 
 ```tsx
@@ -227,47 +227,47 @@ The props you'll reach for first:
 
 | Prop            | Type                                       | Default | Purpose                                                                                       |
 | --------------- | ------------------------------------------ | ------- | --------------------------------------------------------------------------------------------- |
-| `defaultModel`  | `Dashfoo`                                  | —       | Initial model in uncontrolled mode. Read once at mount.                                       |
-| `model`         | `Dashfoo`                                  | —       | Current model in controlled mode.                                                             |
-| `onModelChange` | `(model, action?) => void`                 | —       | Fires on every change. Required for controlled mode.                                          |
-| `components`    | `Record<string, ComponentType<{ node }>>`  | —       | The registry.                                                                                 |
-| `factory`       | `(tab: TabNode) => ReactNode`              | —       | Resolver function; wins over `components`.                                                    |
-| `persist`       | `string \| { key; storage?; debounceMs? }` | —       | Auto-save to storage and restore on mount. Needs no `onModelChange`; requires `defaultModel`. |
+| `defaultModel`  | `Dashfoo`                                  | (none)  | Initial model in uncontrolled mode. Read once at mount.                                       |
+| `model`         | `Dashfoo`                                  | (none)  | Current model in controlled mode.                                                             |
+| `onModelChange` | `(model, action?) => void`                 | (none)  | Fires on every change. Required for controlled mode.                                          |
+| `components`    | `Record<string, ComponentType<{ node }>>`  | (none)  | The registry.                                                                                 |
+| `factory`       | `(tab: TabNode) => ReactNode`              | (none)  | Resolver function; wins over `components`.                                                    |
+| `persist`       | `string \| { key; storage?; debounceMs? }` | (none)  | Auto-save to storage and restore on mount. Needs no `onModelChange`; requires `defaultModel`. |
 | `keepMounted`   | `boolean`                                  | `false` | Keep inactive tab panels mounted instead of unmounting them.                                  |
 | `closableTabs`  | `boolean`                                  | `true`  | Show the per-tab close control.                                                               |
 | `renamableTabs` | `boolean`                                  | `true`  | Double-click a tab to rename it.                                                              |
 | `maximizable`   | `boolean`                                  | `true`  | Show the tabset maximize control.                                                             |
 
-That's 10 of the 16 props — the full table, including `onAction`, the render
+That's 10 of the 16 props. The full table, including `onAction`, the render
 slots, and `draggableTabsets`, is in the [API reference](/api-reference).
 
-Two of those deserve a closer look. By default an inactive tab's panel
+By default an inactive tab's panel
 **unmounts** the moment you switch away: form input, scroll position, and chart
 instances are destroyed, then recreated from scratch when the tab is selected
 again. `keepMounted` renders every panel and hides the inactive ones instead,
 preserving their state at the cost of keeping all panels in memory.
 
-And `defaultModel` is read once at mount — changing the prop later does
+`defaultModel` is read once at mount; changing the prop later does
 nothing. To replace the layout of a mounted component, call `resetLayout()` on
 the ref handle or remount with a React `key`; to own the model yourself, use
 controlled mode (see [controlled & history](/controlled-and-history)).
 
 A `ref` exposes that imperative handle: `addTab(tab, { targetId, location?,
 index? })`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `undo`,
-`redo`, `canUndo`, `canRedo`, `resetLayout`, `getModel`, and `dispatch` — all
+`redo`, `canUndo`, `canRedo`, `resetLayout`, `getModel`, and `dispatch`. All
 twelve are in the [API reference](/api-reference). For common panel chrome
 (titled header + scrollable body), compose `Panel.Root`, `Panel.Header`,
 `Panel.Title`, and `Panel.Body` from `@dashfoo/react`.
 
-## Step 6 — Wire the entry — `src/main.tsx`
+## Step 6: Wire the entry in `src/main.tsx`
 
-The entry file is where the CSS imports go: the height chain from Step 2 and —
-the fast path to a visible layout — the default skin from `@dashfoo/theme`.
+The entry file is where the CSS imports go: the height chain from Step 2 and
+the default skin from `@dashfoo/theme`, the fast path to a visible layout.
 
 ```tsx
 // src/main.tsx
 import "./index.css";
-import "@dashfoo/theme/dashfoo.css"; // optional default skin — see the next section
+import "@dashfoo/theme/dashfoo.css"; // optional default skin; see the next section
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
@@ -286,13 +286,13 @@ createRoot(root).render(
 );
 ```
 
-Delete the generated `src/App.css` and `src/assets/` — nothing references them
+Delete the generated `src/App.css` and `src/assets/`; nothing references them
 now. Run `pnpm dev` and you have a working dashfoo layout: three tabs in a
 tabset you can select, rename, close, maximize, drag, and resize.
 
 The theme is light by default; opt into dark by setting
 `data-dashfoo-theme="dark"` on any ancestor, typically `<html>`. Remap
-`--dashfoo-*` tokens to make it yours — see the [theming guide](/theming).
+`--dashfoo-*` tokens to make it yours; see the [theming guide](/theming).
 
 ## Or write your own skin
 
@@ -315,9 +315,9 @@ style most:
 
 The selected tab carries `aria-selected="true"`; a splitter exposes its axis as
 `[data-separator][aria-orientation="vertical"]` or `"horizontal"`. Style states
-off those, never off a class dashfoo adds — there isn't one.
+off those, never off a class dashfoo adds (there isn't one).
 
-A minimal stylesheet that produces a usable layout. Import it from `main.tsx`
+This minimal stylesheet produces a usable layout; import it from `main.tsx`
 in place of the theme:
 
 ```css
@@ -375,7 +375,7 @@ in place of the theme:
   padding: 12px;
 }
 
-/* Splitters have NO intrinsic size — these rules are not optional. */
+/* Splitters have NO intrinsic size; these rules are not optional. */
 [data-separator] {
   background: transparent;
 }
@@ -389,7 +389,7 @@ in place of the theme:
 }
 ```
 
-The splitter rules deserve emphasis: react-resizable-panels v4 separators ship
+react-resizable-panels v4 separators ship
 with no intrinsic size, so without an explicit `width` (vertical) and `height`
 (horizontal) the gutter collapses to nothing and resizing is unusable. Every
 headless stylesheet must size both orientations.
@@ -398,11 +398,11 @@ The shipped theme
 ([`packages/theme/src/css/skin.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/src/css/skin.css))
 is the same idea written out in full plain CSS over `--dashfoo-*` tokens. It's
 worth reading once you want close controls, the grip, the maximize button, the
-overflow menu, and dock indicators styled — every one of those is a
+overflow menu, and dock indicators styled. Every one of those is a
 `data-dashfoo` selector you target the same way.
 
 Using Tailwind CSS v4? Import `@dashfoo/theme/tailwind.css` after
-`@import "tailwindcss"` in your CSS instead of the prebuilt `dashfoo.css` — same
+`@import "tailwindcss"` in your CSS instead of the prebuilt `dashfoo.css`: same
 skin, plus `dashfoo-*` utilities generated from the tokens. See
 [theming](/theming#using-the-theme-with-tailwind-v4).
 
@@ -410,7 +410,7 @@ skin, plus `dashfoo-*` utilities generated from the tokens. See
 
 `@dashfoo/react` compiles a `"use client"` banner into its build, so it works
 in the App Router without a wrapper directive of your own. It is a client
-component, though — the layout cannot render as a server component, and the
+component, though: the layout cannot render as a server component, and the
 `components` / `factory` props are functions, so define your dashboard in a
 client module and render that from the page:
 
@@ -467,23 +467,23 @@ notes:
   `@dashfoo/theme/dashfoo.css` or write your own skin against the
   `data-dashfoo` attributes.
 - **A tab renders an empty panel.** Its `component` key has no entry in the
-  registry — check the console for the one-time dev warning
+  registry; check the console for the one-time dev warning
   `[dashfoo] no component registered for "<key>"`. If you passed neither
   `components` nor `factory`, every panel renders nothing and no warning
   fires.
 - **Splitters can't be grabbed.** Separators have no intrinsic size. Give
   `[data-separator]` a `width` (vertical orientation) and `height`
-  (horizontal), as in the stylesheet above — or import the theme, which sizes
+  (horizontal), as in the stylesheet above, or import the theme, which sizes
   them via `--dashfoo-splitter-size`.
 
 ## What to read next
 
-- [The model](/the-model) — the full node schema, how `row` / `tabset` / `tab`
+- [The model](/the-model): the full node schema, how `row` / `tabset` / `tab`
   nest, what every field controls, and how the reducer transforms the tree on
   each action.
-- [Theming](/theming) — the complete `data-dashfoo` attribute surface, the
+- [Theming](/theming): the complete `data-dashfoo` attribute surface, the
   dock-indicator custom properties, and the full `@dashfoo/theme` token set.
-- [Persistence](/persistence) — saving and restoring a layout with the
+- [Persistence](/persistence): saving and restoring a layout with the
   `persist` prop, custom storage adapters, and resetting a saved layout.
-- [API reference](/api-reference) — every `DashfooLayout` prop, the twelve
+- [API reference](/api-reference): every `DashfooLayout` prop, the twelve
   handle methods, the action union, and the package exports.

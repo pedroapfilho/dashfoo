@@ -1,6 +1,6 @@
 ---
 title: Drag and dock
-description: How dragging a tab or a whole tabset resolves to a stack or a directional split — the landing zones, the pipeline, and the gates. Pointer-only.
+description: How dragging a tab or a whole tabset resolves to a stack or a directional split. The landing zones, the pipeline, and the gates. Pointer-only.
 ---
 
 Two things can be dragged in dashfoo: a single tab, picked up from its button
@@ -22,8 +22,8 @@ The geometry lives in `@dashfoo/core`
 ([`resolveDockTarget`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/geometry/geometry.ts))
 and `@dashfoo/react`
 (the [drag adapter](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/drag-adapter.tsx)).
-The drag adapter is the only module in the library that touches `@dnd-kit` —
-and it drives the framework-agnostic `@dnd-kit/dom` core imperatively (no
+The drag adapter is the only module in the library that touches `@dnd-kit`.
+It drives the framework-agnostic `@dnd-kit/dom` core imperatively (no
 React bindings). Everything it touches downstream is pure and unit-tested.
 
 > **Pointer-only.** Drag-docking uses a pointer sensor; there is no keyboard
@@ -62,7 +62,7 @@ If the pointer is past every midpoint, the index is the end of the strip.
 
 The dragged tab excludes **itself** from this measurement. Its own slot never
 counts toward the order, so the index is measured against the tabs it will land
-among, not the ones currently rendered. This matters at commit time. See
+among, not the ones currently rendered. The same index is used at commit time; see
 [Why the index needs no adjustment](#why-the-index-needs-no-adjustment).
 
 The resulting intent carries `location: "center"`, the target tabset id, and the
@@ -124,7 +124,7 @@ The indicator for a split highlights the matching half of the tabset:
 (`zoneRect`).
 
 To see or paint the whole partition at once, `dockZonePolygons(rect)` enumerates
-the five hit regions as polygons — the inner center rect and four edge
+the five hit regions as polygons: the inner center rect and four edge
 trapezoids whose seams run diagonally from each rect corner to the matching
 inner corner. It shares the band default with `resolveDockTarget`, so a map
 painted from the polygons always agrees with the live hit-test. The demo's
@@ -133,8 +133,8 @@ paints every candidate region during a drag.
 
 ## Dragging a whole tabset
 
-Each tabset renders a grip button in its toolbar — `data-dashfoo="tabset-grip"`,
-`aria-label="Move tabset"`. Dragging the grip picks up the entire tabset, tabs
+Each tabset renders a grip button in its toolbar (`data-dashfoo="tabset-grip"`,
+`aria-label="Move tabset"`). Dragging the grip picks up the entire tabset, tabs
 and all, and resolves against the same landing zones. The drag-preview chip is
 labeled with the tabset's active tab name.
 
@@ -151,7 +151,7 @@ reducer treats the two locations differently:
   insertion index is ignored.
 - **`split-*`** moves: the whole tabset is detached and placed beside the
   target, reusing the parent row when the orientation already matches,
-  otherwise wrapping both in a new row — the same `placeBesideTarget` path a
+  otherwise wrapping both in a new row, the same `placeBesideTarget` path a
   tab split uses.
 
 Dropping a tabset onto itself is a no-op; the adapter suppresses the intent
@@ -165,8 +165,8 @@ in the draggable's data and becomes the `moveTabset` source.
 ## Dragging in from outside
 
 Both drags above move nodes that already live in the model. External drag
-sources add a third kind: an element outside the layout — a widget list, a
-palette — that inserts a **new** tab when dropped on a tabset.
+sources add a third kind: an element outside the layout (a widget list, a
+palette) that inserts a **new** tab when dropped on a tabset.
 
 Wrap the layout and the sources in `DashfooDragProvider` so they share one drag
 manager, and register each source with `useExternalTabSource`:
@@ -191,8 +191,8 @@ const App = () => (
 );
 ```
 
-An external drag resolves against the same landing zones — stack on a strip or
-body, split on an edge — but the drop commits an `addNode` action carrying the
+An external drag resolves against the same landing zones (stack on a strip or
+body, split on an edge), but the drop commits an `addNode` action carrying the
 `TabNode` that `createTab` returned, instead of a `moveNode`. `createTab` runs
 once per drag (at drag start) and must mint a fresh id each call; the result is
 validated against the tab schema, and an invalid node warns and cancels the
@@ -200,7 +200,7 @@ drag. A drop outside any tabset is a no-op.
 
 The demo's [docking page](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/docking.tsx)
 pairs each draggable card with an "Add" button that calls `addTab` on the
-imperative handle — pointer drag is the only drag input, so the button is the
+imperative handle. Pointer drag is the only drag input, so the button is the
 keyboard path.
 
 ## How resolution layers
@@ -210,7 +210,7 @@ fixed order:
 
 1. **No-op filter.** A tabset dragged onto itself, or the sole tab of a tabset
    dropped back onto that same tabset, resolves to no intent at all
-   (`shouldAllowDrop`) — the drop changes nothing once empties collapse, so the
+   (`shouldAllowDrop`). The drop changes nothing once empties collapse, so the
    indicator never appears.
 2. **Tab strip.** Inside the strip, return a `center` stack at the insertion
    index.
@@ -257,7 +257,7 @@ drag hooks      →  dnd-kit/dom  →  dragDockMachine  →  COMMIT        →  
 Three internal hooks in
 [`drag-hooks.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/hooks/drag-hooks.tsx)
 wire the DOM to the drag system. None of them is exported from
-`@dashfoo/react` — they are described here to explain the flow, not as API.
+`@dashfoo/react`. They are described here to explain the flow, not as API.
 
 - `useTabDraggable` registers each tab button as a `@dnd-kit/dom` `Draggable`,
   created imperatively in an effect and keyed by the tab id. The tab's name
@@ -268,7 +268,7 @@ wire the DOM to the drag system. None of them is exported from
   with a custom occlusion-aware collision detector: the winner is the tabset
   containing the topmost element under the pointer (`elementFromPoint`), so a
   tabset covered by a float never becomes a target. dnd-kit's built-in
-  detectors are pure rect geometry and stay unused — they know nothing about
+  detectors are pure rect geometry and stay unused: they know nothing about
   paint order.
 
 ### 2. The adapter reads the pointer and hit-tests
@@ -276,8 +276,8 @@ wire the DOM to the drag system. None of them is exported from
 `DragProvider` constructs one `@dnd-kit/dom` `DragDropManager` (minus the
 `Accessibility` plugin and the keyboard sensor) and subscribes to
 its monitor. On `dragstart` it reads the source's data to
-decide the subject kind — a grip carries `type: "tabset"`, an external source
-carries `type: "external"`, a tab carries its own id — and sends `START`.
+decide the subject kind (a grip carries `type: "tabset"`, an external source
+carries `type: "external"`, a tab carries its own id) and sends `START`.
 On `dragmove` and on every `collision` pulse it reads the drop target dnd-kit's
 collision pass resolved, claims it when this layer owns it, resolves an
 intent, and sends `OVER`. On `dragend` it re-resolves from the final operation
@@ -287,16 +287,16 @@ The `data-dashfoo="drag-preview"` chip is positioned by dnd-kit's `Feedback`
 plugin in overlay mode: the chip element is handed to Feedback's `overlay`
 accessor once at mount, so the dragged tab itself is never promoted or
 placeholder-cloned and per-move positioning never re-renders React. The drop
-animation is disabled — drops settle immediately.
+animation is disabled: drops settle immediately.
 
-The final recompute matters: the drop uses the authoritative final pointer, not
-whatever the last `dragmove` happened to report, so the committed location matches
-where the user actually released.
+The final recompute means the drop uses the authoritative final pointer, not
+whatever the last `dragmove` happened to report, so the committed location
+matches where the user released.
 
 ### 3. `dragDockMachine` runs the lifecycle
 
 The XState machine has two states, `idle` and `dragging`. `START` stashes the
-subject (its `kind` is `"tab"`, `"tabset"`, or `"external"` — the last carrying
+subject (its `kind` is `"tab"`, `"tabset"`, or `"external"`, the last carrying
 the `TabNode` to insert) and enters `dragging`. Each `OVER` assigns the live
 intent (the indicator reads it). `DROP` checks the `hasValidDrop` guard, which
 requires both a subject and an intent to be present, and when valid emits a
@@ -331,8 +331,8 @@ machine never mutates the model; it only emits the action.
 ### 4. `COMMIT` forwards the action
 
 `DragProvider` subscribes to the machine's `COMMIT` emission and forwards the
-action — `moveNode` for a tab drag, `moveTabset` for a grip drag, `addNode` for
-an external source — to `onCommit`, which `DashfooLayout` wires straight to
+action (`moveNode` for a tab drag, `moveTabset` for a grip drag, `addNode` for
+an external source) to `onCommit`, which `DashfooLayout` wires straight to
 `store.dispatch`.
 
 ### 5. The reducer applies the move
@@ -363,8 +363,8 @@ off-by-one correction is needed when a tab moves within its own strip.
 
 ## Gates
 
-These flags decide what a drag can do — some global, some per tab, some layout
-props.
+These flags decide what a drag can do. Some are global, some per tab, some are
+layout props.
 
 | Gate               | Scope        | Where it lives           | Default | Effect when off                                                  |
 | ------------------ | ------------ | ------------------------ | ------- | ---------------------------------------------------------------- |
@@ -380,9 +380,9 @@ props.
 `editable={false}` makes the layout static. On the source side every internal
 draggable is disabled, so no drag can start from it. On the target side the
 adapter gates at drag time: `resolveIntent` returns `null` for a non-editable
-layout (no dock indicator, no drop target) and the `COMMIT` subscription drops
-the action — so even a drag that started before `editable` flipped off, or an
-external-source drag arriving through a shared `DashfooDragProvider`, cannot
+layout (no dock indicator and no drop target) and the `COMMIT` subscription
+drops the action, so even a drag that started before `editable` flipped off, or
+an external-source drag arriving through a shared `DashfooDragProvider`, cannot
 land a structural change. A sibling editable layout under the same provider
 still accepts those drags.
 
@@ -442,20 +442,20 @@ property is an overridable CSS custom property with a neutral fallback:
 `--dashfoo-dock-transition` controls how the indicator glides between
 positions; set it to `none` to disable the movement, for example under
 `prefers-reduced-motion`. Override these variables on your theme's
-`[data-dashfoo="dock-indicator"]` rule to fully own the look — the
+`[data-dashfoo="dock-indicator"]` rule to control the look. The
 [theming guide](/theming) has worked recipes.
 
 ## Rendering your own indicator
 
 When CSS variables aren't enough, the drag is fully observable from the
-outside. `useDropIntent()` returns the live drop intent — `{ targetId,
+outside. `useDropIntent()` returns the live drop intent: `{ targetId,
 location, index? }`, or `null` when nothing is dragging or the pointer is over
-no valid target — and `useDragSubject()` returns what is being dragged. Both
+no valid target. `useDragSubject()` returns what is being dragged. Both
 work anywhere under a layout, or anywhere under a `DashfooDragProvider` when
 one wraps the tree. Combine them with `dockZonePolygons` from `@dashfoo/core`
 (the exact hit-region partition `resolveDockTarget` uses) and the
 `data-dashfoo="tabset"` / `"tabstrip"` / `"tab"` markup to paint anything from
-a custom highlight to a full drop-zone map — the demo's Docking page renders a
+a custom highlight to a full drop-zone map. The demo's Docking page renders a
 voronoi-style visualization of every candidate region this way.
 
 ## See also

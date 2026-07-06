@@ -40,7 +40,7 @@ const TreeNode = ({ children, field, id, kind, meta }: TreeNodeProps) => (
 
 const ModelTree = () => (
   <DiagramFigure
-    caption="One serializable object — the anatomy figure above, as data. The grey id badges match the figure; floats sit next to the tiled tree, each owning a layout subtree of the same shape."
+    caption="One serializable object: the anatomy figure above, as data. The grey id badges match the figure; floats sit next to the tiled tree, each owning a layout subtree of the same shape."
     label="The anatomy figure as its Dashfoo model tree"
   >
     <ul className="min-w-80 text-sm">

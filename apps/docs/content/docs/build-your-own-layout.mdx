@@ -1,28 +1,27 @@
 ---
 title: Build your own layout
-description: Compose the Layout and Tabset primitives into a custom layout — the same parts DashfooLayout is built from, with your own chrome, labels, and toolbars.
+description: Compose the Layout and Tabset primitives into a custom layout from the same parts DashfooLayout is built from, with your own chrome, labels, and toolbars.
 ---
 
 `DashfooLayout` is a thin assembly of exported primitives. When its chrome
-doesn't fit — you want custom tab labels, a different toolbar order, extra
-controls in the strip — compose the same parts yourself. Nothing is lost:
-selection, close-with-focus-restore, inline rename, keyboard navigation,
-overflow, maximize, and drag-dock all live in the parts, not in
-`DashfooLayout`.
+doesn't fit (custom tab labels, a different toolbar order, extra controls in
+the strip), compose the same parts yourself. The parts keep selection,
+close-with-focus-restore, inline rename, keyboard navigation, overflow,
+maximize, and drag-dock outside `DashfooLayout`.
 
 ## The three layers
 
 A hand-built layout wires three things:
 
 1. **A store.** `useDashfooStore({ defaultModel })` owns the model, dispatch,
-   and undo/redo — exactly what `DashfooLayout` uses internally.
+   and undo/redo, the same state `DashfooLayout` uses internally.
 2. **The `Layout` frame.** `Layout.Root` takes `model`, `dispatch`, and
    `renderTab`, and provides the layout store every part below reads through
-   selectors. `Layout.DragLayer` opts the tree into drag-dock (omit it and
-   everything still works without dragging). `Layout.Rows` renders the split
+   selectors. `Layout.DragLayer` opts the tree into drag-dock (omit it and the
+   layout still works without dragging). `Layout.Rows` renders the split
    tree on the resize adapter.
 3. **A tabset composition.** Pass `renderTabset` to `Layout.Rows` to substitute
-   your own arrangement of `Tabset.*` parts at every leaf — or use
+   your own arrangement of `Tabset.*` parts at every leaf, or use
    `Layout.Tabset`, the stock composition, where custom chrome isn't needed.
 
 ```tsx
@@ -44,7 +43,7 @@ const App = () => {
 ## Composing a tabset
 
 `Tabset.Root` creates a per-tabset store; the parts inside coordinate through
-it, so they can be reordered, wrapped, or omitted freely:
+it, so they can be reordered, wrapped, or omitted without changing behavior:
 
 ```tsx
 const MyTabset = ({ node }: { node: TabsetNode }) => (
@@ -110,12 +109,12 @@ strip.
 | `Tabset.OverflowMenu` / `Grip` / `MaximizeButton` | Self-hide when their feature is off, so compositions never need the visibility conditions by hand.                                |
 
 A11y wiring (`aria-controls`, `aria-labelledby`, `aria-selected`, roving
-`tabIndex`) flows through the stores — it stays correct in any part order.
+`tabIndex`) flows through the stores, so it stays correct in any part order.
 
 ## Maximize
 
-In a hand-built layout, maximize is the host's branch — exactly what
-`DashfooLayout` does internally:
+In a hand-built layout, maximize is the host's branch. `DashfooLayout` uses the
+same branch internally:
 
 ```tsx
 import { findTabset } from "@dashfoo/core";
@@ -130,11 +129,11 @@ const maximized = store.model.maximizedTabsetId
 ## Responsive
 
 `DashfooLayout`'s [`responsive` prop](/responsive) isn't available here, but the
-mechanism behind it is just two exported pieces. Measure the container with
+mechanism behind it is two exported pieces. Measure the container with
 `useContainerWidth`, render a `stackModel` projection below the breakpoint, and
-pass the lock flags to `Layout.Root`. The projection is view-only — `dispatch`
-still targets `store.model`, so nothing maps back and widening up is lossless. No
-remount: the store, history, and mounted panels survive the breakpoint cross.
+pass the lock flags to `Layout.Root`. The projection is view-only: `dispatch`
+still targets `store.model`, so nothing maps back and widening up is lossless.
+The store, history, and mounted panels survive the breakpoint cross.
 
 ```tsx
 import { stackModel } from "@dashfoo/core";
@@ -178,20 +177,20 @@ const App = () => {
 ```
 
 `rootRef` is forwarded onto the layout's root element so `useContainerWidth` can
-measure it. Maximize and the projection compose — branch on `view`, not
+measure it. Maximize and the projection compose: branch on `view`, not
 `store.model`, so a maximized tabset resolves against the stacked tree too.
 
 ## Guard rails
 
 Misuse is never silent. A part rendered outside its provider throws
 (`Tabset.Trigger` outside `Tabset.Tab`, any tabset part outside `Tabset.Root`).
-Soft mistakes — two `Tablist`s under one `Root`, a `Tab` whose node isn't in
-the tabset, double-click rename with no `RenameInput` composed — log a
-`[dashfoo]` warning and degrade gracefully.
+Soft mistakes (two `Tablist`s under one `Root`, a `Tab` whose node isn't in
+the tabset, double-click rename with no `RenameInput` composed) log a
+`[dashfoo]` warning and keep rendering.
 
 ## Working reference
 
 The demo's **Raw primitives** page (`apps/demo-vite/src/pages/raw.tsx`) builds
-a complete layout this way — custom labels, a tab counter, reordered toolbar,
-undo/redo buttons wired to the store — with no `DashfooLayout` anywhere, and
+a complete layout this way (custom labels, a tab counter, reordered toolbar,
+undo/redo buttons wired to the store) with no `DashfooLayout` anywhere, and
 its Playwright suite drags, renames, and maximizes against it.

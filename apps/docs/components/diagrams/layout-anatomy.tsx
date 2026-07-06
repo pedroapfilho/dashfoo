@@ -12,21 +12,21 @@ const LegendItem = ({ children, n, term }: LegendItemProps) => (
   <li className="flex items-start gap-2">
     <Marker className="mt-px" n={n} />
     <span>
-      <span className="text-fd-foreground font-medium">{term}</span> — {children}
+      <span className="text-fd-foreground font-medium">{term}</span>: {children}
     </span>
   </li>
 );
 
 const LayoutAnatomy = () => (
   <DiagramFigure
-    caption="The demo's overview layout, plus one floating panel and one minimized chip. The grey badges are node ids — the same ids appear in the model tree below."
+    caption="The demo's overview layout, plus one floating panel and one minimized chip. The grey badges are node ids. The same ids appear in the model tree below."
     label="Anatomy of a dashfoo layout"
   >
     <div
       aria-hidden
       className="bg-fd-secondary/50 relative flex aspect-[16/10] min-w-105 overflow-hidden rounded-md border p-1.5"
     >
-      {/* tabset ts-main — weight 2 */}
+      {/* tabset ts-main: weight 2 */}
       <div className="bg-fd-background flex grow-[2] basis-0 flex-col overflow-hidden rounded-sm border">
         <MockTabStrip tabs={[{ name: "Canvas", selected: true }, { name: "Detail" }]}>
           <Marker className="mb-1 ml-1" n={1} />
@@ -46,7 +46,7 @@ const LayoutAnatomy = () => (
         <Marker className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" n={4} />
       </Gutter>
 
-      {/* nested row "right" — orientation: "column" */}
+      {/* nested row "right", orientation: "column" */}
       <div className="flex grow basis-0 flex-col">
         <div className="bg-fd-background flex grow basis-0 flex-col overflow-hidden rounded-sm border">
           <MockTabStrip tabs={[{ name: "Activity", selected: true }, { name: "Tasks" }]}>
@@ -74,7 +74,7 @@ const LayoutAnatomy = () => (
         </div>
       </div>
 
-      {/* floating panel — its own layout subtree above the grid */}
+      {/* floating panel: its own layout subtree above the grid */}
       <div className="bg-fd-popover absolute bottom-7 left-5 flex w-2/5 flex-col overflow-hidden rounded-md border shadow-lg">
         <div className="bg-fd-muted flex items-center justify-between border-b px-1.5 py-0.5">
           <span className="text-[10px] font-medium">Notes</span>
@@ -84,7 +84,7 @@ const LayoutAnatomy = () => (
         <div className="h-9" />
       </div>
 
-      {/* minimized chip — a float collapsed to a pill at the layout edge */}
+      {/* minimized chip: a float collapsed to a pill at the layout edge */}
       <div className="bg-fd-popover absolute right-2 bottom-1.5 flex items-center gap-1 rounded-full border py-0.5 pr-1 pl-2 shadow-sm">
         <span className="text-[9px]">Console</span>
         <Marker n={8} />

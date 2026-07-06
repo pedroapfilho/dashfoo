@@ -4,7 +4,7 @@ description: The Dashfoo node schema, the model builders, per-node enable flags,
 ---
 
 Everything dashfoo knows about a layout lives in one serializable tree: the
-`Dashfoo` object. It is plain JSON — no class instances, no functions, no DOM
+`Dashfoo` object. It is plain JSON, with no class instances, functions, or DOM
 references. The pure reducer in `@dashfoo/core` takes a `Dashfoo` plus an action
 and returns a new `Dashfoo` (via `structuredClone`, never mutation), so the same
 value round-trips through `JSON.stringify`, a database column, a postMessage, or
@@ -19,7 +19,7 @@ Every type and schema referenced here is exported from `@dashfoo/core` and
 defined in
 [`packages/core/src/model/schema.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/schema.ts).
 If the words tabset, pane, splitter, or float are new, start with
-[Concepts & terminology](/concepts) — it introduces them in one annotated
+[Concepts & terminology](/concepts), which introduces them in one annotated
 figure.
 
 ## Building a model: the builders
@@ -51,14 +51,14 @@ const m = model(
 | `row(children, opts?)`        | `RowNode`    | `type: "row"`; `orientation: "row"`; auto `id` (`row-…`) |
 | `model(layout, opts?)`        | `Dashfoo`    | `version: 1`; `global: {}`                               |
 
-`opts` carries the meaningful fields — `id` (pass one for any node you reference,
+`opts` carries the meaningful fields: `id` (pass one for any node you reference,
 e.g. via `activeTabsetId`), `weight`, `selected`, `orientation`, per-node
 `enable*` flags, `min`/`max`, `name` (on `tabset`, its accessible label),
 `config`, and on `model`: `activeTabsetId`, `maximizedTabsetId`, `global`.
 Because a tab's `id` defaults to its `component`, two `tab("chart", …)` calls
-collide — pass explicit ids when reusing a component; `model()` warns once if it
-detects duplicates. The output is exactly the plain object documented
-below — validate it with `dashfooSchema.parse` if you like. The raw form remains
+collide, so pass explicit ids when reusing a component; `model()` warns once if
+it detects duplicates. The output is exactly the plain object documented below.
+Validate it with `dashfooSchema.parse` if you like. The raw form remains
 fully supported (e.g. for models loaded from JSON).
 
 ## The root: `Dashfoo`
@@ -94,7 +94,7 @@ There are three node types, discriminated by their `type` field: `row`,
 `tabset`, and `tab`. Tabs are the leaves. Tabsets hold tabs. Rows hold
 tabsets and other rows.
 
-### `RowNode` — the recursive container
+### `RowNode`: the recursive container
 
 ```ts
 type RowNode = {
@@ -115,14 +115,14 @@ either tabsets (leaves of the grid) or nested rows (which is how you get a colum
 inside a row, and the resizable splitters between them). `weight` is the child's
 share of its parent's space relative to its siblings; the root row's own
 `weight` is ignored. `min` and `max` are optional `Dimension` constraints on the
-row as a whole — useful for clamping a nested column without constraining each
+row as a whole, useful for clamping a nested column without constraining each
 tabset inside it. See [Dimensions](#dimensions) below. `snap` overrides the
 layout-wide `global.snap` for this row's splitters; an empty `{}` opts a single
 row out of an inherited snap default.
 
 <RowOrientation />
 
-### `TabsetNode` — a tabbed pane
+### `TabsetNode`: a tabbed pane
 
 ```ts
 type TabsetNode = {
@@ -141,8 +141,8 @@ type TabsetNode = {
 
 A tabset is one pane with a tab strip. `children` is its tabs; `selected` is the
 index of the visible one (zero-based). `weight` works as it does on rows. `min`
-and `max` are optional `Dimension` constraints — see [Dimensions](#dimensions)
-below. `name` labels the tabset for assistive technology: the React renderer
+and `max` are optional `Dimension` constraints (see [Dimensions](#dimensions)
+below). `name` labels the tabset for assistive technology: the React renderer
 uses it as the tab strip's `aria-label`, falling back to `"Tabs"` when omitted.
 The two flags gate this tabset's chrome:
 
@@ -156,7 +156,7 @@ no tabset-level close global: an omitted `enableClose` defers to
 `global.tabEnableClose` and each tab's own `enableClose` (a tab is closable only
 when every level allows it).
 
-### `TabNode` — a leaf
+### `TabNode`: a leaf
 
 ```ts
 type TabNode = {
@@ -244,7 +244,7 @@ sets the default tabset minimum size in pixels. The React adapter uses `320`
 when `tabSetMinSize` is omitted.
 `snap` turns on magnetic snapping for splitter drags: the dragged boundary pulls
 onto a grid while within `threshold` percent (default `4`), then commits on
-release as one undo step. The grid is the union of two optional sources — `step`
+release as one undo step. The grid is the union of two optional sources: `step`
 (multiples of a fixed percent) and `divisions` (even splits: multiples of
 `100/d`, where `d` is the number, or `"panels"` to divide by the row's own panel
 count, so a 3-panel row snaps to thirds and a 4-panel row to quarters). Any
@@ -254,7 +254,7 @@ prop replaces this global when both are set, and compact mode locks it off with
 the rest of resize.
 
 These globals travel with the serialized document. The renderer-level "make the
-whole dashboard static" switch is deliberately not a global — it is the
+whole dashboard static" switch is deliberately not a global: it is the
 `editable` prop on `DashfooLayout` / `Layout.Root` (see
 [static layouts](/api-reference#static-layouts)), so a layout saved while
 locked does not come back locked.
@@ -323,17 +323,17 @@ const overviewModel: Dashfoo = {
 };
 ```
 
-Notice what is absent. No `enable*` flags, because the defaults are fine. No
-`min`/`max`, because `weight` handles the proportions. No `maximizedTabsetId`,
-because nothing starts maximized. The model carries only what differs from the
-defaults, and `normalize()` fills in the rest of the invariants.
+The object omits `enable*` flags (the defaults are fine), `min`/`max`
+(`weight` handles the proportions), and `maximizedTabsetId` (nothing starts
+maximized). The model carries only what differs from the defaults, and
+`normalize()` fills in the rest of the invariants.
 
 ## How `normalize()` self-heals
 
 Run after every action (and on every parse), `normalize()` rewrites a model into
 its canonical form. The reducer can therefore produce a slightly-off intermediate
-tree — a tabset whose last tab just closed, a row left with one child — and trust
-the normalize pass to clean it up. There is one definition of "valid layout," and
+tree (a tabset whose last tab just closed, a row left with one child), then let
+the normalize pass clean it up. There is one definition of "valid layout," and
 it lives in
 [`packages/core/src/model/invariants.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/invariants.ts).
 
@@ -351,18 +351,18 @@ leaving an empty frame behind.
 **3. Drop empty rows.** A row whose children all vanished (recursively) is
 removed too. Emptiness propagates upward.
 
-**4. Collapse single-child rows.** A row left with exactly one child is redundant
-— it adds a nesting level without splitting anything — so the lone child is
-lifted into the grandparent's place. The child inherits the lifted row's
+**4. Collapse single-child rows.** A row left with exactly one child is
+redundant (it adds a nesting level without splitting anything), so the lone
+child is lifted into the grandparent's place. The child inherits the lifted row's
 `weight`, so the visible sizing is preserved across the simplification. At the root,
 if the tree reduces to a single child that is itself a row, that row is absorbed:
 its children and orientation replace the root's, avoiding redundant nesting.
 
 **5. Repair the id references.** `activeTabsetId` is checked against the set of
-tabset ids that actually exist after the structural rewrites. If it no longer
+tabset ids that remain after the structural rewrites. If it no longer
 points at a real tabset, it falls back to the first tabset in the tree.
 `maximizedTabsetId` gets the same existence check, but a stale value is cleared
-to `undefined` rather than reassigned — you do not want to silently maximize a
+to `undefined` rather than reassigned: you do not want to silently maximize a
 different pane than the one the user chose.
 
 Because normalize is idempotent, applying it twice gives the same result as
@@ -385,12 +385,12 @@ const restored = fromJSON(json); // string -> validated, normalized Dashfoo
 
 `toJSON` is a thin `JSON.stringify`. The work is on the way back in. `fromJSON`
 parses the string, validates against `dashfooSchema`, and returns a normalized
-model — so anything you load from `localStorage`, a URL, or a server is
+model, so anything you load from `localStorage`, a URL, or a server is
 guaranteed to be a canonical `Dashfoo` or to throw. There is no path where a
 half-valid tree reaches your renderer.
 
 Under the hood `fromJSON` is `parseModel(JSON.parse(json))`, and `parseModel`
-is, at its core, two steps:
+reduces to two steps:
 
 ```ts
 const parseModel = (value: unknown): Dashfoo => normalize(dashfooSchema.parse(value));
@@ -411,13 +411,13 @@ you might hand your renderer a tree with a stale `selected` index.
 
 ## See also
 
-- [`packages/core/src/model/schema.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/schema.ts)
-  — the zod schemas and exported types for every node and for `Dashfoo` itself.
-- [`packages/core/src/model/invariants.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/invariants.ts)
-  — the full `normalize()` implementation.
-- [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts)
-  — `toJSON`, `fromJSON`, `parseModel`.
-- [`apps/demo-vite/src/models.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/models.ts)
-  — the five demo models (`overviewModel`, `dockingModel`, `chromeModel`,
+- [`packages/core/src/model/schema.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/schema.ts):
+  the zod schemas and exported types for every node and for `Dashfoo` itself.
+- [`packages/core/src/model/invariants.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/invariants.ts):
+  the full `normalize()` implementation.
+- [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts):
+  `toJSON`, `fromJSON`, `parseModel`.
+- [`apps/demo-vite/src/models.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/models.ts):
+  the five demo models (`overviewModel`, `dockingModel`, `chromeModel`,
   `playgroundModel`, `sizingModel`), all written with the builders, that you can
   copy from.
