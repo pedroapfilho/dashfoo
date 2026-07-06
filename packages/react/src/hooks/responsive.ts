@@ -1,7 +1,7 @@
 "use client";
 
 import type { Dashfoo } from "@dashfoo/core";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Breakpoint = {
   // When true, the active breakpoint locks every structural interaction (tab and
@@ -118,16 +118,21 @@ const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): Respons
   }, [breakpoints]);
 
   const active = activeBreakpoint(breakpoints, width);
-  const isCompact = active.compact === true;
-  return {
-    breakpoint: active.id,
-    containerRef,
-    draggableTabs: !isCompact,
-    draggableTabsets: !isCompact,
-    isCompact,
-    model: active.model,
-    resizableSplits: !isCompact,
-  };
+  // Memoized on the active breakpoint (a stable element of the caller's array),
+  // so callers can hold the whole result in hook deps without their memoization
+  // dissolving on every width pulse within the same breakpoint.
+  return useMemo(() => {
+    const isCompact = active.compact === true;
+    return {
+      breakpoint: active.id,
+      containerRef,
+      draggableTabs: !isCompact,
+      draggableTabsets: !isCompact,
+      isCompact,
+      model: active.model,
+      resizableSplits: !isCompact,
+    };
+  }, [active, containerRef]);
 };
 
 export { activeBreakpoint, matchBreakpoint, useContainerWidth, useResponsiveModel };
