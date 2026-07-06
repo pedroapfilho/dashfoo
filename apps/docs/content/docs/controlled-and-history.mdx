@@ -92,12 +92,12 @@ const dispatch = (history: History, action: Action): History => {
 A splitter drag still undoes as a single step, but not because the history
 folds anything: the resize layer (react-resizable-panels v4) commits one
 `adjustSplit` when the drag is released, not a burst of actions per frame.
-One commit, one step. The reasoning is recorded in
+The reasoning is recorded in
 [`packages/core/src/state/history.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/state/history.ts).
 
 `canUndo` and `canRedo` on the store are functions, not booleans. They read
-the live actor snapshot, so a caller checking them right after `undo()` —
-inside `onModelChange`, for instance — sees the fresh value rather than a
+the live actor snapshot, so a caller checking them right after `undo()`
+(inside `onModelChange`, for instance) sees the fresh value rather than a
 one-render-stale one.
 
 ## The imperative handle
@@ -139,13 +139,13 @@ type DashfooHandle = {
 | `resetLayout`       | Restores `defaultModel`, clearing undo history and any persisted copy.                                                                                                                              |
 | `selectTab`         | Selects the tab at `index` in the given tabset.                                                                                                                                                     |
 
-The action-dispatching methods work in both modes — in controlled mode the
+The action-dispatching methods work in both modes. In controlled mode the
 resulting model arrives through `onModelChange` like any other edit.
 `undo`, `redo`, and `resetLayout` are uncontrolled-only; in controlled mode
 they are no-ops because the host owns history and the default model.
 
-A worked runtime example — open a tab from a button, plus undo/redo and
-reset:
+A worked runtime example that opens a tab from a button and adds undo/redo
+and reset:
 
 ```tsx
 import { tab } from "@dashfoo/core";
@@ -209,7 +209,7 @@ const Workspace = (): ReactNode => {
 ```
 
 Two details to get right. `targetId` must be the id of a tabset that exists
-in the model — the dispatch is a silent no-op otherwise — so give your drop
+in the model (the dispatch is a silent no-op otherwise), so give your drop
 target an explicit id (here `"main"`) when building the model. And a tab's
 id defaults to its component string, so adding a second `"chart"` tab
 without an explicit `id` collides with the first; generate one per call.
@@ -221,7 +221,7 @@ shortcuts, and a live model inspector fed from `onModelChange`.
 ## Controlled: the prop is the source of truth
 
 In controlled mode you hold the model in your own state and pass it down.
-The layout renders exactly what you give it and never mutates on its own.
+The layout renders the model you give it and never mutates on its own.
 
 ```tsx
 const Workspace = () => {
@@ -239,8 +239,8 @@ dispatch that produces no change emits nothing.
 Two consequences follow from this.
 
 First, the screen does not update until your new `model` arrives. If
-`onModelChange` does nothing, the layout sits still. That is the
-contract: you own the model, so you decide when it changes. A `useEffect`
+`onModelChange` does nothing, the layout sits still. You own the model, so you
+decide when it changes. A `useEffect`
 syncs each new `model` prop back into the actor, so the inspector and any
 internal selectors still observe the current document.
 
@@ -336,8 +336,8 @@ const handleRedo = useCallback((): void => {
 }, []);
 ```
 
-This is the same algorithm `@dashfoo/core`'s `History` uses internally.
-Replicating it in user space is the point of controlled mode: you decide
+`@dashfoo/core`'s `History` uses the same algorithm internally. Replicating it
+in user space is the point of controlled mode: you decide
 the policy. Cap the stack depth, persist it to a server, branch it, merge
 two histories. The layout stays a pure function of `present`.
 
@@ -389,8 +389,8 @@ every committed change:
 ```
 
 Because `present` is the same object the layout renders from, the inspector
-is exact. There is no separate projection to keep in sync. The model you
-read is the model on screen.
+is exact: there is no separate projection to keep in sync, and the model
+you read is the model on screen.
 
 ## Observing and intercepting changes
 
@@ -407,8 +407,8 @@ Beyond `onModelChange`, `DashfooLayout` exposes hooks that work in either mode:
 The first three are also `useDashfooStore` options; the two render props
 belong to the layout component only.
 
-`onAction` is the interception point — e.g. confirm before a `deleteTab`, or
-remap a drop:
+`onAction` is the interception point, e.g. to confirm before a `deleteTab`
+or remap a drop:
 
 ```tsx
 <DashfooLayout
@@ -424,7 +424,7 @@ remap a drop:
 | Do you want a working layout with built-in undo/redo? | Uncontrolled            |
 | Do you need to persist or sync the model elsewhere?   | either                  |
 | Do you need custom history (depth caps, branching)?   | Controlled              |
-| Do you need toolbar- or shortcut-driven edits?        | either — use the handle |
+| Do you need toolbar- or shortcut-driven edits?        | either (use the handle) |
 | Do you want the smallest amount of wiring?            | Uncontrolled            |
 
 Start uncontrolled. Pass `defaultModel`, add `onModelChange` if you need

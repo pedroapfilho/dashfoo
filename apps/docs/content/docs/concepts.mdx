@@ -1,0 +1,67 @@
+---
+title: Concepts & terminology
+description: The names dashfoo uses for tabs, panes, rows, splitters, and floating panels, with one annotated figure, the vocabulary, and the same layout as data.
+---
+
+dashfoo describes every layout with a small, fixed vocabulary. The same words
+appear in the model's node types, in the `data-dashfoo="…"` attributes you
+style, and in the reducer's action names. This page introduces them once, in
+one picture, before the deeper guides.
+
+## Anatomy of a layout
+
+<LayoutAnatomy />
+
+Three of the labeled parts are node types in the model (`RowNode`,
+`TabsetNode`, `TabNode`), and floating panels are a fourth, `FloatNode`, which
+lives in `Dashfoo.floats` beside the tiled tree. The tab strip and the splitters are
+renderer chrome: they exist in the markup (`data-dashfoo="tabstrip"`,
+`data-dashfoo="splitter"`) but not in the model, which is why resizing a pane
+changes `weight` rather than storing pixel widths.
+
+## The vocabulary
+
+| Term              | In the model                                                                 | Meaning                                                                                                                                    |
+| ----------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tab               | `TabNode`                                                                    | One document: a `component` registry key plus a `name` label. Content never lives in the model. Your `factory` resolves the key at render. |
+| Tab strip         | renderer chrome                                                              | The row of tab buttons on a tabset. `global.tabLocation` puts it at the `"top"` (default) or `"bottom"`.                                   |
+| Tabset / pane     | `TabsetNode`                                                                 | A tab strip plus one visible body; `selected` picks the visible tab.                                                                       |
+| Active tabset     | `activeTabsetId`                                                             | The focused pane: the last one interacted with, tracked so chrome and themes can highlight it.                                             |
+| Maximized tabset  | `maximizedTabsetId`                                                          | One tabset rendered full-area, hiding its siblings until restored.                                                                         |
+| Row               | `RowNode`                                                                    | The recursive container: lays children (tabsets or nested rows) along one axis.                                                            |
+| Orientation       | `orientation: "row" \| "column"`                                             | The row's axis: left-to-right or top-to-bottom.                                                                                            |
+| Weight            | `weight`                                                                     | A child's share of its parent row's space, relative to its siblings.                                                                       |
+| Splitter / gutter | renderer chrome                                                              | The draggable resize handle between a row's children; `global.splitterSize` sets its thickness.                                            |
+| Dock location     | `"center" \| "split-left" \| "split-right" \| "split-top" \| "split-bottom"` | Where a drop lands: stack into the tab strip, or split the pane toward an edge.                                                            |
+| Floating panel    | `FloatNode`                                                                  | A window-like panel above the grid with its own layout subtree and pixel `geometry`.                                                       |
+| Minimized chip    | `minimized: true`                                                            | A floating panel collapsed to a small pill docked at the layout edge.                                                                      |
+
+The floating panel is as close as dashfoo gets to a window. It renders in the
+same React tree, never in a separate browser window, so context, events, and
+styling stay connected. See [Floating panels](/floating-panels).
+
+## Row versus column
+
+Rows are the only recursive container. The anatomy figure's right-hand column
+is a row with `orientation: "column"` nested inside the root row:
+
+<RowOrientation />
+
+## The same layout, as data
+
+Everything above is one plain, serializable object: the `Dashfoo` model. Here
+is the anatomy figure again, as the tree the renderer reads. The ids match the
+grey badges in the figure:
+
+<ModelTree />
+
+[The layout model](/the-model) walks this shape field by field, including the
+builders that write it tersely and the `normalize()` pass that keeps it
+canonical.
+
+## Where next
+
+- [The layout model](/the-model): the full node schema, builders, and self-healing invariants.
+- [Drag and dock](/drag-and-dock): how pointer position becomes a dock location.
+- [Floating panels](/floating-panels): floating, minimizing, and docking back.
+- [Theming](/theming): styling the `data-dashfoo="…"` markup you saw above.

@@ -1,14 +1,16 @@
 ---
 title: Floating panels
-description: Float a panel out of the docked layout into a draggable, resizable overlay — first-class, serializable nodes that stay in the same app.
+description: Float a panel out of the docked layout into a draggable, resizable overlay. Floats are first-class, serializable nodes that stay in the same app.
 ---
 
 A panel can lift out of the tiled layout into a **floating panel**: a draggable,
-resizable overlay that sits above the docked rows but stays in the same app — the
-"float" move from FlexLayout. A floating panel is not a separate browser window; it
-renders in the same React tree, so context, events, and styling just work. And it
-is a first-class node in the model (`Dashfoo.floats`), so it serializes, validates,
-and self-heals exactly like a docked panel.
+resizable overlay that sits above the docked rows but stays in the same app (the
+"float" move from FlexLayout). A floating panel is not a separate browser window;
+it renders in the same React tree, so context, events, and styling stay connected.
+It is also a first-class node in the model (`Dashfoo.floats`), so it serializes,
+validates, and self-heals exactly like a docked panel. The
+[anatomy figure](/concepts#anatomy-of-a-layout) shows where floats and their
+minimized chips sit relative to the tiled grid.
 
 ## The `floatable` prop
 
@@ -44,7 +46,7 @@ Clicking the `[data-dashfoo="tabset-float"]` control floats the whole tabset int
 overlay positioned over where it was docked. Drag the **title bar** to move it
 anywhere on the page, drag the **edge/corner handles** to resize, **minimize** it to
 a small chip (and click the chip to restore), and **Dock back** to return it to the
-layout. You can also drag tabs **into and out of** a float — it is a full
+layout. You can also drag tabs **into and out of** a float: it is a full
 participant in drag-dock.
 
 ## Floats are model nodes
@@ -64,11 +66,11 @@ reducer(floated, { type: "dockFloat", floatId: floated.floats![0].id });
 ```
 
 The reducer actions are `floatTab`, `floatTabset`, `dockFloat`, `moveFloat` (persists
-a float's rect as you drag or resize it — one undo step per gesture),
+a float's rect as you drag or resize it, one undo step per gesture),
 `setFloatMinimized`, and `renameFloat`. `geometry` is in viewport CSS pixels (the
 overlay is fixed), so a float can be dragged anywhere on the page. A float carries
 its own `name` ("Panel", "Panel 1", … assigned when it is floated), shown as the
-window title — never the active tab's name. `normalize` heals each float's own
+window title, never the active tab's name. `normalize` heals each float's own
 layout and drops a float the moment its last panel leaves, the same way it removes an
 empty tabset. Because a float owns a full `RowNode`, a floated panel is a real
 container: it can hold one tab or several.
@@ -76,9 +78,9 @@ container: it can hold one tab or several.
 ## What's in scope
 
 - **Same React tree, full drag-dock.** Floats render through the normal `Layout.Rows`
-  in the same tree, sharing one drag manager with the docked layout — so app context
+  in the same tree, sharing one drag manager with the docked layout, so app context
   (a theme provider, a query client), event handling, your stylesheet, and **dragging
-  tabs into and out of a float** all just work.
+  tabs into and out of a float** all stay connected.
 - **Drag anywhere + resize.** The title bar moves the float across the viewport;
   eight handles resize it. Both update the DOM imperatively during the gesture and
   commit one `moveFloat` on release, so a drag is a single undo step.
@@ -89,12 +91,12 @@ container: it can hold one tab or several.
   (`setFloatMinimized`); tapping the chip (draggable itself) restores it to its
   saved rect.
 - **Dock back as a panel.** The "Dock back" control returns the float as its own
-  panel — all its tabs, grouped — rather than flattening them into another tabset.
-- **Bring to front.** Clicking anywhere in a float — its body, a tab, or its
-  chrome — raises it above the others.
+  panel (all its tabs, grouped) rather than flattening them into another tabset.
+- **Bring to front.** Clicking anywhere in a float (its body, a tab, or its
+  chrome) raises it above the others.
 - **Honors `editable`.** Under `editable={false}` a float is static: its content
   stays selectable and it still raises to the front, but move, resize, rename,
-  minimize, and dock-back are all switched off — none of `moveFloat`, `renameFloat`,
+  minimize, and dock-back are all switched off: none of `moveFloat`, `renameFloat`,
   `setFloatMinimized`, or `dockFloat` can be dispatched from a static layout.
 
 The overlay is `pointer-events: none`, so empty space stays click-through to the
@@ -103,8 +105,8 @@ docked layout underneath; each float opts pointer events back in.
 ## Hand-built layouts
 
 If you compose the `Layout.*` primitives yourself, wrap the layout's content with
-`Layout.FloatLayer` (passing `floats` + `global`) — it renders each floated panel as
-an overlay over the rows — and add `Tabset.FloatButton` to your tabset toolbar.
+`Layout.FloatLayer` (passing `floats` + `global`), which renders each floated panel
+as an overlay over the rows, and add `Tabset.FloatButton` to your tabset toolbar.
 
 ```tsx
 <Layout.Root dispatch={store.dispatch} floatable model={store.model} renderTab={renderPanel}>

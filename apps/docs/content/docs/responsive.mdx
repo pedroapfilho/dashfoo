@@ -1,19 +1,19 @@
 ---
 title: Adaptive layouts
-description: Stack and lock the layout at a breakpoint with the responsive prop — no remount, state preserved.
+description: Stack and lock the layout at a breakpoint with the responsive prop, without remounting or losing state.
 ---
 
 A dashfoo layout is already fluid: panels are weight-based percentages, so the
-whole tree scales with its container at any size. What it does not do on its own
-is _restructure_ at a breakpoint — collapse a three-pane terminal into a single
+whole tree scales with its container at any size. A breakpoint needs a
+structural change: a three-pane terminal should collapse into a single
 scrollable column on a phone, where dragging a tab onto a 22%-wide dock band or
-grabbing a splitter is hopeless.
+grabbing a splitter is too cramped.
 
-That is the `responsive` prop. Below a width it renders the layout as one stacked
-column and **locks every structural interaction** — tab and tabset drag, split
-resize — leaving tap-to-switch and maximize. This is the same call VS Code makes:
-docking is a desktop interaction, so mobile gets a read-only, navigable view
-rather than a cramped, unusable one.
+The `responsive` prop handles that case. Below a width it renders the layout as
+one stacked column and **locks every structural interaction** (tab and tabset
+drag, split resize), leaving tap-to-switch and maximize. VS Code makes the same
+call: docking is a desktop interaction, so mobile gets a read-only, navigable
+view rather than a cramped one.
 
 ## The `responsive` prop
 
@@ -51,14 +51,14 @@ export { Dashboard };
 `responsive` is `{ maxWidth: number; orientation?: Orientation }`. At or below
 `maxWidth` the layout is compact: stacked and locked. `orientation` controls the
 stack direction (`"column"` by default). The width is measured on the layout's
-**own container** with a `ResizeObserver`, not the viewport — a docking layout
+**own container** with a `ResizeObserver`, not the viewport. A docking layout
 often lives inside a sidebar or split, so it reacts to its own width.
 
 ## State is preserved across the breakpoint
 
 The stacked view is a **derived projection** of your model, not a replacement:
 the canonical model in the store is never mutated while compact. Because every
-structural edit is locked on mobile, there is nothing to map back — so widening
+structural edit is locked on mobile, there is nothing to map back, so widening
 past `maxWidth` restores the desktop arrangement exactly, and the layout is
 **never remounted**. Undo history, persistence, tab selection, and mounted panel
 content all survive the breakpoint cross. Tap-to-select still works because the
@@ -73,9 +73,9 @@ drag is off.
 
 If you compose the `Layout.*` primitives yourself instead of using
 `DashfooLayout`, make the same behavior with `useContainerWidth` and `stackModel`:
-measure the container, derive `isCompact`, render a stacked projection, and lock
-the flags. No remount — the projection is view-only and `dispatch` still targets
-your canonical store.
+measure the container, derive `isCompact`, render a stacked projection, and
+lock the flags. The projection is view-only, and `dispatch` still targets your
+canonical store.
 
 ```tsx
 import { stackModel } from "@dashfoo/core";
@@ -119,11 +119,11 @@ const HandBuilt = ({ defaultModel }) => {
 
 ## Distinct per-breakpoint models
 
-When mobile and desktop should be _different layouts_ (not the same tree stacked)
-— a hand-authored tablet arrangement, a panel hidden on small screens — use
-`useResponsiveModel`. You describe the breakpoints; it returns the active model,
-the locking flags, and a `containerRef`. Feed them to `DashfooLayout` as reactive
-props, with **no `key`** — so it swaps the model without a remount.
+When mobile and desktop should be _different layouts_ (not the same tree
+stacked), such as a hand-authored tablet arrangement or a panel hidden on small
+screens, use `useResponsiveModel`. You describe the breakpoints; it returns the active model,
+the locking flags, and a `containerRef`. Feed them to `DashfooLayout` as
+reactive props, with **no `key`**, so it swaps the model without a remount.
 
 ```tsx
 import { stackModel } from "@dashfoo/core";
@@ -159,7 +159,7 @@ A breakpoint is `{ id, model, query?, compact? }`. `query` is **either** a
 container width (`{ maxWidth: number }`) **or** a media query
 (`{ media: string }`, via `matchMedia`); omit it on the last breakpoint to make it
 the catch-all. Mark a breakpoint `compact: true` to lock drag and resize while it
-is active — the returned `draggableTabs` / `draggableTabsets` / `resizableSplits`
+is active. The returned `draggableTabs` / `draggableTabsets` / `resizableSplits`
 flip to `false`. Feed the model to `model` (controlled) rather than `defaultModel`
 so swaps take effect without a remount.
 
