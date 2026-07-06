@@ -76,8 +76,8 @@ type MockTabStripProps = {
 
 const MockTabStrip = ({ children, className, tabs }: MockTabStripProps) => (
   <div className={cn("bg-fd-muted flex items-end gap-0.5 border-b px-1 pt-1", className)}>
-    {tabs.map((tabProps) => (
-      <MockTab key={tabProps.name} {...tabProps} />
+    {tabs.map(({ name, selected }) => (
+      <MockTab key={name} name={name} selected={selected} />
     ))}
     {children}
   </div>
