@@ -19,7 +19,6 @@ const ImperativeControlPage = (): ReactNode => {
   const layout = useRef<DashfooHandle>(null);
   const [view, setView] = useState<View>({ canRedo: false, canUndo: false, model: initial });
 
-  // Read history flags off the handle at change time (an event, not render).
   const handleModelChange = useCallback((model: Dashfoo): void => {
     setView({
       canRedo: layout.current?.canRedo() ?? false,
@@ -39,7 +38,6 @@ const ImperativeControlPage = (): ReactNode => {
     }
   }, []);
 
-  // Remove the tab the user is looking at: the selected tab of the focused tabset.
   const handleCloseActive = useCallback((): void => {
     const handle = layout.current;
     if (!handle) {
@@ -54,7 +52,6 @@ const ImperativeControlPage = (): ReactNode => {
     }
   }, []);
 
-  // ⌘Z / ⇧⌘Z, ignored while typing (e.g. renaming a tab).
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
       const target = event.target;

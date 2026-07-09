@@ -47,9 +47,6 @@ const centroid = (points: ReadonlyArray<Point>): Point => ({
   y: points.reduce((sum, p) => sum + p.y, 0) / points.length,
 });
 
-// Strictly interior samples of a convex polygon: its centroid plus points
-// interpolated from the centroid toward each vertex — t close to 1 probes the
-// seams and corners without ever landing exactly on a shared boundary.
 const interiorSamples = (points: ReadonlyArray<Point>): Array<Point> => {
   const c = centroid(points);
   return [

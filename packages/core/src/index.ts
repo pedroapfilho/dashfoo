@@ -1,7 +1,3 @@
-// Public API barrel for @dashfoo/core.
-// The framework-free engine: schema · tree · invariants · actions · reducer ·
-// geometry · history · serialize · ids · the XState actor system.
-
 export * from "./state/actions";
 export * from "./model/builders";
 export * from "./geometry/geometry";

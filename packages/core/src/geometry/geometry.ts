@@ -7,11 +7,8 @@ type DockTarget = { kind: "tab" } | { edge: Edge; kind: "split" };
 type BandOptions = { bandFraction?: number };
 type DockZone = { location: DockLocation; points: Array<Point> };
 
-// Shared by resolveDockTarget and dockZonePolygons so the painted map and the
-// live hit-test can never disagree on where the edge bands end.
 const DEFAULT_BAND_FRACTION = 0.22;
 
-// Fractional distance of the pointer from each of the four edges of a rect.
 const edgeDistances = (
   pointer: Point,
   rect: Rect,
@@ -35,13 +32,9 @@ const closestEdge = (d: { bottom: number; left: number; right: number; top: numb
   return "bottom";
 };
 
-// Where a drag dropped over a tabset should land: stacked as a tab when the
-// pointer is in the center, or splitting the tabset when it is within an outer
-// band (default 22%) of one of the four edges — the closer edge wins in corners.
 const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): DockTarget => {
   const band = opts?.bandFraction ?? DEFAULT_BAND_FRACTION;
-  // a zero-size tabset has no meaningful edges; dividing by its width/height
-  // yields NaN distances that would silently resolve to a bogus split.
+
   if (rect.width <= 0 || rect.height <= 0) {
     return { kind: "tab" };
   }
@@ -54,12 +47,6 @@ const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): Dock
   return { edge: closestEdge(distances), kind: "split" };
 };
 
-// The full hit-region partition of a tabset for resolveDockTarget: four edge
-// trapezoids and the inner center rect. Seams between adjacent edge zones sit
-// where the fractional edge distances tie — straight diagonals from each rect
-// corner to the matching inner-rect corner — so the map is an exact picture of
-// which location a pointer anywhere over the rect resolves to. A zero-size rect
-// collapses to a single center polygon, mirroring resolveDockTarget's fallback.
 const dockZonePolygons = (rect: Rect, opts?: BandOptions): Array<DockZone> => {
   const { height: h, width: w, x, y } = rect;
   const nw: Point = { x, y };
@@ -85,8 +72,6 @@ const dockZonePolygons = (rect: Rect, opts?: BandOptions): Array<DockZone> => {
   ];
 };
 
-// The region the dock indicator highlights for a given location over a tabset:
-// the whole tabset for a center stack, the matching half for a split.
 const zoneRect = (rect: Rect, location: DockLocation): Rect => {
   const halfW = rect.width / 2;
   const halfH = rect.height / 2;

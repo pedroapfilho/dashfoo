@@ -3,9 +3,6 @@ import { describe, expect, test } from "vitest";
 
 import { sameDragSubject, sameDropIntent } from "./drag-hooks";
 
-// The guard the adapter uses to keep OVER pulses (a fresh intent object per
-// pointer move) from notifying store subscribers when the resolved drop hasn't
-// actually changed.
 describe("sameDropIntent", () => {
   const intent: DropIntent = { index: 2, location: "center", targetId: "ts-main" };
 
@@ -37,8 +34,6 @@ describe("sameDropIntent", () => {
   });
 });
 
-// Layouts sharing a manager each build their own subject object for the same
-// drag — the guard keeps the second adapter's write from notifying again.
 describe("sameDragSubject", () => {
   const subject: DragSubject = { id: "tab-1", kind: "tab" };
 

@@ -3,10 +3,6 @@ import type { Dashfoo } from "./schema";
 import { dashfooSchema } from "./schema";
 import { findDuplicateIds } from "./tree";
 
-// Validate an untrusted value against the schema and return a normalized,
-// canonical model. Throws if the value is not a valid model — including a
-// payload whose `version` is not the pinned `1`; warns (does not throw) on
-// duplicate ids, which corrupt React keys and the plumbing.
 const parseModel = (value: unknown): Dashfoo => {
   const model = normalize(dashfooSchema.parse(value));
   const duplicates = findDuplicateIds(model);

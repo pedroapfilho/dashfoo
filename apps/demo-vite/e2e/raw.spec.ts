@@ -1,10 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
-// The raw-primitives page: a layout hand-built from Layout.* and Tabset.* parts
-// (no DashfooLayout). Verifies the composed parts behave like the stock chrome —
-// select, close, rename, maximize, and drag-dock.
-
 const tabsByTabset = (page: Page): Promise<Array<Array<string | null>>> =>
   page.evaluate(() =>
     [...document.querySelectorAll('[data-dashfoo="tabset"]')].map((tabset) =>
@@ -19,9 +15,9 @@ const dragTabTo = async (page: Page, label: string, x: number, y: number): Promi
   }
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8); // arm the sensor
+  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
   await page.mouse.move(x, y, { steps: 16 });
-  await page.mouse.move(x, y, { steps: 4 }); // settle on the target
+  await page.mouse.move(x, y, { steps: 4 });
   await page.mouse.up();
 };
 
@@ -31,7 +27,6 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("the hand-built composition renders its custom chrome", async ({ page }) => {
-  // The tab counter badge is unique to the raw composition.
   await expect(page.getByText("3 tabs")).toBeVisible();
   await expect(page.getByText("2 tabs")).toBeVisible();
 });
@@ -78,7 +73,6 @@ test("dragging a tab onto the other tabset docks it there", async ({ page }) => 
 
   await dragTabTo(page, "Notes", target.x + target.width / 2, target.y + target.height / 2);
 
-  // poll past dnd-kit's drop animation before asserting the settled model.
   await expect
     .poll(async () => {
       const tabs = await tabsByTabset(page);

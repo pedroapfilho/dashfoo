@@ -19,15 +19,8 @@ import {
   TabsetToolbar,
 } from "./tabset-toolbar";
 
-// Static JSX hoisted to module scope (elements are immutable, so one instance
-// is safely shared) — DefaultTabsetLayout re-renders on every selection change
-// and must not rebuild it each time.
 const tabsetContent = <TabsetContent />;
 
-// The canonical composition of the Tabset parts — what DashfooLayout and
-// Layout.Rows render by default, and the reference for anyone composing the
-// parts by hand. Lives inside Tabset.Root because the toolbar-visibility
-// condition needs the store's overflow count.
 const DefaultTabsetLayout = (): ReactNode => {
   const draggableTabsets = useLayout((state) => state.draggableTabsets);
   const floatable = useLayout((state) => state.floatable);
@@ -39,8 +32,6 @@ const DefaultTabsetLayout = (): ReactNode => {
   const overflowCount = useTabset((state) => state.overflowItems.length);
   const showMaximize = useTabset((state) => state.showMaximize);
 
-  // The toolbar exists only when it has content; each part also self-hides so
-  // the condition and the parts can never disagree.
   const showToolbar =
     showMaximize ||
     renderTabsetToolbar !== undefined ||

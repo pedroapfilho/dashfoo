@@ -2,10 +2,6 @@ import type { TabNode } from "@dashfoo/core";
 import { Panel } from "@dashfoo/react";
 import type { ReactNode } from "react";
 
-// Every tab renders the same content-light placeholder: a titled panel with
-// skeleton bars, keeping the demos about the layout, not the content. The
-// dashfoo-* utilities come from the theme's @theme bridge and follow the
-// data-dashfoo-theme remap without dark: variants.
 const PlaceholderPanel = ({ node }: { node: TabNode }): ReactNode => (
   <Panel.Root>
     <Panel.Header>
@@ -24,7 +20,6 @@ const PlaceholderPanel = ({ node }: { node: TabNode }): ReactNode => (
   </Panel.Root>
 );
 
-// The factory every page hands to DashfooLayout.
 const renderPanel = (tab: TabNode): ReactNode => <PlaceholderPanel node={tab} />;
 
 export { renderPanel };

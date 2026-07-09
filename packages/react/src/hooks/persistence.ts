@@ -4,8 +4,6 @@ import type { Dashfoo } from "@dashfoo/core";
 import { fromJSON, toJSON } from "@dashfoo/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-// A minimal localStorage-shaped backend so layouts can persist to anything: the
-// browser, sessionStorage, an in-memory map, or a custom store.
 type StorageAdapter = {
   getItem: (key: string) => string | null;
   removeItem: (key: string) => void;
@@ -25,8 +23,6 @@ const memoryStorageAdapter = (): StorageAdapter => {
   };
 };
 
-// SSR-safe browser adapter: reads return null and writes are swallowed (with a
-// warning) when storage is unavailable or throws (no window, private mode, quota).
 const localStorageAdapter: StorageAdapter = {
   getItem: (key) => {
     if (typeof window === "undefined") {
@@ -45,7 +41,7 @@ const localStorageAdapter: StorageAdapter = {
     try {
       window.localStorage.removeItem(key);
     } catch {
-      // storage unavailable — nothing to remove.
+      void 0;
     }
   },
   setItem: (key, value) => {
@@ -55,15 +51,12 @@ const localStorageAdapter: StorageAdapter = {
     try {
       window.localStorage.setItem(key, value);
     } catch (error) {
-      // A persistence failure (quota, private mode) must not be silent.
       // oxlint-disable-next-line no-console
       console.warn("[dashfoo] failed to persist layout", error);
     }
   },
 };
 
-// A resolved persistence target: where to save and how often. DashfooLayout's
-// `persist` prop normalizes its input to this.
 type PersistConfig = {
   debounceMs: number;
   key: string;
@@ -72,30 +65,20 @@ type PersistConfig = {
 
 type Persistence = {
   clear: () => void;
-  // undefined only in controlled mode, where no defaultModel seeds the load.
+
   initialModel: Dashfoo | undefined;
   save: (model: Dashfoo) => void;
 };
 
-// The load/save half of persistence, behind the DashfooLayout `persist` prop.
-// Loads the saved model once (validated via serialize.ts, falling back to
-// `defaultModel` on miss or corruption) and
-// debounce-saves every change. Resetting the live model is the caller's job —
-// this primitive only owns the storage side. A null config makes it a no-op, so
-// callers can run the hook unconditionally.
 const usePersistence = (
   config: PersistConfig | null,
   defaultModel: Dashfoo | undefined,
 ): Persistence => {
-  // Refs keep the callbacks stable while always seeing the latest config; synced
-  // in an effect (never written during render).
   const configRef = useRef(config);
   useEffect(() => {
     configRef.current = config;
   });
 
-  // Load the saved model once. The initializer stays pure (no writes during
-  // render); a corrupt stored value is pruned in the mount effect below.
   const [initialModel] = useState<Dashfoo | undefined>(() => {
     if (config === null || defaultModel === undefined) {
       return defaultModel;
@@ -123,16 +106,12 @@ const usePersistence = (
     try {
       fromJSON(raw);
     } catch (error) {
-      // Mirror the setItem warn: a discarded corrupt layout must not be silent.
       // oxlint-disable-next-line no-console
       console.warn("[dashfoo] discarding unreadable persisted layout", error);
       current.storage.removeItem(current.key);
     }
   }, []);
 
-  // We load + prune once, but save/flush/clear target the *current* key. Changing
-  // config.key for a mounted layout would save the stale model under the new key
-  // and clobber it; warn instead of doing that silently. Remounting is the fix.
   const loadedKey = useRef(config?.key);
   useEffect(() => {
     if (config !== null && config.key !== loadedKey.current) {
@@ -145,9 +124,7 @@ const usePersistence = (
   }, [config]);
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // The pending write carries the key and storage it was produced for, so a
-  // config change while a save is queued cannot write the old value into the
-  // new target.
+
   const pending = useRef<{ key: string; storage: StorageAdapter; value: string } | null>(null);
 
   const flush = useCallback((): void => {
@@ -176,11 +153,6 @@ const usePersistence = (
     [flush],
   );
 
-  // Flush a pending save on unmount so the last change is never lost — and on
-  // page teardown: a reload or navigation never unmounts React, so the debounced
-  // timer dies with the page. pagehide is the teardown signal (bfcache-safe);
-  // visibilitychange→hidden covers backgrounded tabs killed without a pagehide
-  // (mobile). flush() is idempotent, so overlapping signals are harmless.
   useEffect(() => {
     const handlePageHide = (): void => {
       flush();
@@ -211,8 +183,6 @@ const usePersistence = (
     }
   }, []);
 
-  // Memoized so callers can hold the whole object in hook deps without their
-  // memoization dissolving on every render.
   return useMemo(() => ({ clear, initialModel, save }), [clear, initialModel, save]);
 };
 

@@ -13,8 +13,6 @@ import {
   TabsetToolbar,
 } from "./tabset-toolbar";
 
-// Compound namespace, same pattern as Panel: users compose the parts freely and
-// they coordinate through the scoped store Tabset.Root provides.
 const Tabset = {
   CloseButton: TabsetCloseButton,
   Content: TabsetContent,

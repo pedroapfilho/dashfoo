@@ -1,15 +1,11 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
-// Sizing constraints on the docking layout: tabset "a" sets min: 180, "b" uses
-// the engine default.
 const aPanel = (page: Page): Locator => page.locator("#a");
 const bPanel = (page: Page): Locator => page.locator("#b");
 const splitter = (page: Page): Locator => page.locator('[data-dashfoo="splitter"]').first();
 const rootGroup = (page: Page): Locator => page.locator('[data-dashfoo="row"]').first();
 
-// The dragged boundary sits at a%/(a%+b%); the splitter gutter is excluded from
-// both, so this ratio is exactly rrp's left-panel percentage.
 const boundaryRatio = async (page: Page): Promise<number> => {
   const a = await panelWidth(aPanel(page));
   const b = await panelWidth(bPanel(page));
@@ -69,8 +65,6 @@ test("magnetic snapping pulls the boundary onto the grid (default step 25%)", as
     throw new Error("root group has no bounding box");
   }
 
-  // Release at 53.5% — inside the 4% threshold of the 50% grid line, but far
-  // enough off that an un-snapped result (~0.535) is distinguishable from 0.5.
   await dragSplitterTo(page, group.x + group.width * 0.535);
 
   await expect.poll(() => boundaryRatio(page)).toBeLessThan(0.52);
@@ -85,14 +79,12 @@ test("the splitter highlights while a snap is engaged and clears on release", as
   }
   const y = box.y + box.height / 2;
 
-  // The layout starts 50/50, so drag into a different grid zone (~27%, inside the
-  // 4% threshold of the 25% line) to make the boundary actually move and snap.
   await page.mouse.move(box.x + box.width / 2, y);
   await page.mouse.down();
   await page.mouse.move(group.x + group.width * 0.27, y, { steps: 16 });
 
   await expect(splitter(page)).toHaveAttribute("data-dashfoo-snapped", "true");
-  // The group arms the glide transition while snapped.
+
   await expect(rootGroup(page)).toHaveAttribute("data-dashfoo-snapping", "true");
 
   await page.mouse.up();
@@ -111,7 +103,6 @@ test("with snapping off the boundary stays where it is dropped", async ({ page }
 
   await dragSplitterTo(page, group.x + group.width * 0.535);
 
-  // No grid pull, so the boundary lands near 53.5%, well off the 50% line.
   await expect.poll(() => boundaryRatio(page)).toBeGreaterThan(0.52);
 });
 
@@ -123,8 +114,6 @@ test("a divisions grid lets the boundary snap to a third", async ({ page }) => {
     throw new Error("root group has no bounding box");
   }
 
-  // Release at 30% — inside the 4% threshold of the one-third (33.3%) line, which
-  // a fixed-percent grid like 25% could never offer.
   await dragSplitterTo(page, group.x + group.width * 0.3);
 
   await expect.poll(() => boundaryRatio(page)).toBeGreaterThan(0.315);

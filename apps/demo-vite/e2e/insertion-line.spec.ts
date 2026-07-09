@@ -5,8 +5,6 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole("tab", { name: "Canvas" }).first()).toBeVisible();
 });
 
-// Regression: dropping at the end of a strip must place the insertion line past
-// the last tab's close button — not between the label and the close.
 test("the end-of-strip insertion line sits past the last tab's close button", async ({ page }) => {
   const firstTabset = page.locator('[data-dashfoo="tabset"]').first();
   const notesItem = firstTabset.locator('[data-dashfoo="tab-item"]', { hasText: "Notes" });
@@ -20,8 +18,8 @@ test("the end-of-strip insertion line sits past the last tab's close button", as
   await page.mouse.down();
   await page.mouse.move(tasks.x + tasks.width / 2 - 8, tasks.y + tasks.height / 2 + 6, {
     steps: 5,
-  }); // arm
-  // hover just past the close button, in the empty end of the strip
+  });
+
   await page.mouse.move(closeBox.x + closeBox.width + 12, closeBox.y + closeBox.height / 2, {
     steps: 12,
   });

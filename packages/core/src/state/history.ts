@@ -3,18 +3,12 @@ import type { Dashfoo } from "../model/schema";
 import type { Action } from "./actions";
 import { reducer } from "./reducer";
 
-// past/present/future snapshots. Each committed action is its own undo step:
-// rrp v4's onLayoutChanged fires one adjustSplit per release, so there is no
-// per-frame burst to coalesce.
 type History = {
   future: Array<Dashfoo>;
   past: Array<Dashfoo>;
   present: Dashfoo;
 };
 
-// Snapshots are full model clones, so an unbounded past grows memory for the
-// life of the session (every action — even a tab click — is one step). 100
-// steps is far beyond practical undo depth while keeping memory flat.
 const HISTORY_LIMIT = 100;
 
 const createHistory = (present: Dashfoo): History => ({

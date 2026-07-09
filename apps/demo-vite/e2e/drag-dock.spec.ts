@@ -20,9 +20,9 @@ const dragTabTo = async (page: Page, label: string, x: number, y: number): Promi
   }
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8); // arm the sensor
+  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
   await page.mouse.move(x, y, { steps: 16 });
-  await page.mouse.move(x, y, { steps: 4 }); // settle on the target
+  await page.mouse.move(x, y, { steps: 4 });
   await page.mouse.up();
 };
 
@@ -39,7 +39,6 @@ test("dragging a tab to the center of another tabset stacks it there", async ({ 
 
   await dragTabTo(page, "Tasks", canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
 
-  // poll past dnd-kit's drop animation before asserting the settled model.
   await expect.poll(() => tasksCount(page)).toBe(1);
   const tabs = await tabsByTabset(page);
   expect(tabs[0]).toContain("Tasks");
@@ -54,11 +53,10 @@ test("dropping a tab onto another tabset's tab strip stacks it there (not a spli
     throw new Error("no tab strip box");
   }
 
-  // drop onto the canvas tab strip (right of its existing tabs)
   await dragTabTo(page, "Tasks", strip.x + strip.width - 24, strip.y + strip.height / 2);
 
   await expect.poll(() => tasksCount(page)).toBe(1);
-  // it should join the canvas tabset, keeping 3 tabsets (a split would make 4)
+
   await expect.poll(() => tabsByTabset(page).then((tabs) => tabs.length)).toBe(3);
   const tabs = await tabsByTabset(page);
   expect(tabs[0]).toContain("Tasks");
@@ -76,7 +74,6 @@ test("dragging a tab to the left edge of a tabset splits it into a new tabset", 
 
   await dragTabTo(page, "Tasks", canvas.x + canvas.width * 0.08, canvas.y + canvas.height / 2);
 
-  // settle past the drop animation, then assert the split created one new tabset.
   await expect.poll(() => tasksCount(page)).toBe(1);
   await expect.poll(() => tabsByTabset(page).then((tabs) => tabs.length)).toBe(before + 1);
 });
@@ -106,12 +103,11 @@ test("a dock indicator appears while dragging over a tabset and clears after dro
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
   await page.mouse.move(leftX, midY, { steps: 16 });
-  await page.mouse.move(leftX, midY); // settle so the throttled onDragMove lands here
+  await page.mouse.move(leftX, midY);
   await page.waitForTimeout(80);
 
   await expect(indicator).toBeVisible();
-  // it should highlight the canvas tabset's left half (split-left), not the
-  // tabset the drag started in nor the whole tabset (center).
+
   const indicatorBox = await indicator.boundingBox();
   expect(indicatorBox?.x ?? Infinity).toBeLessThan(canvas.x + 40);
   expect(indicatorBox?.width ?? Infinity).toBeLessThan(canvas.width * 0.7);
@@ -140,7 +136,7 @@ test("the stack indicator is a thin insertion line in the tab bar", async ({ pag
 
   await expect(indicator).toBeVisible();
   const ind = await indicator.boundingBox();
-  // a thin caret spanning the strip height — not a tab-sized block.
+
   expect(ind?.width ?? Infinity).toBeLessThanOrEqual(6);
   expect(Math.abs((ind?.height ?? 0) - strip.height)).toBeLessThanOrEqual(2);
   expect(Math.abs((ind?.y ?? 0) - strip.y)).toBeLessThanOrEqual(2);
@@ -156,7 +152,6 @@ test("dropping on a tab-strip slot inserts the tab at that position", async ({ p
     throw new Error("no Detail tab box");
   }
 
-  // drop on the boundary just left of Detail — index 1, between Canvas and Detail.
   await dragTabTo(page, "Tasks", detail.x + 2, detail.y + detail.height / 2);
 
   await expect
@@ -166,15 +161,13 @@ test("dropping on a tab-strip slot inserts the tab at that position", async ({ p
 
 test("adjacent widgets are separated by a visible gutter", async ({ page }) => {
   const tabsets = page.locator('[data-dashfoo="tabset"]');
-  const canvas = await tabsets.nth(0).boundingBox(); // left
-  const activity = await tabsets.nth(1).boundingBox(); // top-right
-  const metrics = await tabsets.nth(2).boundingBox(); // bottom-right
+  const canvas = await tabsets.nth(0).boundingBox();
+  const activity = await tabsets.nth(1).boundingBox();
+  const metrics = await tabsets.nth(2).boundingBox();
   if (!canvas || !activity || !metrics) {
     throw new Error("missing tabset boxes");
   }
 
-  // a real resizable gutter sits between panels, not touching edges (the rrp
-  // separator must carry width/height — it collapses to 0 if the theme misses it).
   const horizontalGutter = activity.x - (canvas.x + canvas.width);
   const verticalGutter = metrics.y - (activity.y + activity.height);
   expect(horizontalGutter).toBeGreaterThanOrEqual(12);
@@ -187,7 +180,6 @@ test("reordering a tab within its own tabset ignores the tab being moved", async
     throw new Error("no Detail tab box");
   }
 
-  // drag Canvas (the first tab) past Detail in its own strip → [Detail, Canvas].
   await dragTabTo(page, "Canvas", detail.x + detail.width + 12, detail.y + detail.height / 2);
 
   await expect.poll(() => tabsByTabset(page).then((tabs) => tabs[0])).toEqual(["Detail", "Canvas"]);

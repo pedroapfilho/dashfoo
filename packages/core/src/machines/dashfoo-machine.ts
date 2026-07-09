@@ -15,10 +15,6 @@ type DashfooEvent =
 
 type DashfooInput = { model: Dashfoo };
 
-// The document actor: it owns the undo/redo history (whose `present` is the live
-// model) and processes document mutations by invoking the pure reducer via the
-// history helpers. It has no finite states beyond `ready` — the document is data,
-// not a lifecycle — so every mutation is an event handled with assign.
 const dashfooMachine = setup({
   types: {
     context: {} as DashfooContext,

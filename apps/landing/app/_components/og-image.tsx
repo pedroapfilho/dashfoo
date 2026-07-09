@@ -1,8 +1,5 @@
 import { ImageResponse } from "next/og";
 
-// Shared social-card renderer for the OpenGraph and Twitter image routes.
-// Satori (behind ImageResponse) only reads inline styles and needs an explicit
-// display:flex on every element that has more than one child.
 const ogSize = { height: 630, width: 1200 };
 const ogContentType = "image/png";
 const ogAlt = "dashfoo: headless React docking layout";

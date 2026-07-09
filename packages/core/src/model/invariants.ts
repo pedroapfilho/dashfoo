@@ -5,8 +5,7 @@ const clampSelected = (length: number, selected: number): number => {
   if (length === 0) {
     return 0;
   }
-  // coerce to a non-negative integer first to match the schema's z.number().int():
-  // a persisted 1.5 or NaN must not survive as a fractional/NaN index.
+
   const base = Number.isFinite(selected) ? Math.trunc(selected) : 0;
   if (base < 0) {
     return 0;
@@ -22,9 +21,6 @@ const normalizeTabset = (tabset: TabsetNode): TabsetNode => ({
   selected: clampSelected(tabset.children.length, tabset.selected),
 });
 
-// Drop empty tabsets and empty rows, recurse into child rows, and simplify a
-// single-child row by lifting its lone child (which inherits the lifted row's
-// weight so sizing is preserved).
 const normalizeRowChildren = (children: RowNode["children"]): RowNode["children"] => {
   const out: RowNode["children"] = [];
 
@@ -56,9 +52,6 @@ const normalizeRowChildren = (children: RowNode["children"]): RowNode["children"
 const rowContainsTabset = (row: RowNode): boolean =>
   row.children.some((child) => (child.type === "tabset" ? true : rowContainsTabset(child)));
 
-// The root is always a row; if it reduces to a single child that is itself a
-// row, absorb that row (adopt its children + orientation) to avoid redundant
-// nesting.
 const normalizeLayout = (root: RowNode): RowNode => {
   let children = normalizeRowChildren(root.children);
   let orientation = root.orientation;
@@ -73,14 +66,9 @@ const normalizeLayout = (root: RowNode): RowNode => {
   return { ...root, children, orientation };
 };
 
-// Self-healing pass run after every action so the tree stays canonical: no empty
-// tabsets or rows, no redundant single-child rows, selected indices in range,
-// and active/maximized ids that always point at an existing tabset.
 const normalize = (model: Dashfoo): Dashfoo => {
   const layout = normalizeLayout(model.layout);
 
-  // Heal each float's own layout, then drop any float that emptied out (its last
-  // tab closed/moved away) — the float equivalent of empty-tabset cleanup.
   const healedFloats: Array<FloatNode> = [];
   for (const float of model.floats ?? []) {
     const floatLayout = normalizeLayout(float.layout);

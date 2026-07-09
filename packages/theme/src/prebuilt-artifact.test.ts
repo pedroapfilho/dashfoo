@@ -3,11 +3,6 @@ import { join } from "node:path";
 
 import { describe, expect, test } from "vitest";
 
-// Guards the compiled zero-build artifact: tokens + skin must survive the
-// Tailwind CLI build, and nothing Tailwind-specific (layers, preflight,
-// default theme vars, @theme mirrors) may leak into non-Tailwind pages.
-// Requires the package build to have run first (turbo: @dashfoo/theme#test
-// depends on build).
 const artifact = await readFile(join(import.meta.dirname, "../dist/dashfoo.css"), "utf8");
 
 describe("dist/dashfoo.css", () => {
@@ -45,16 +40,14 @@ describe("dist/dashfoo.css", () => {
       /\[data-dashfoo="row"\]\[data-dashfoo-snapping="true"\] > \[data-panel\]\s*\{[^\}]*\}/v,
     )?.[0];
     expect(glide).toContain("transition: var(--dashfoo-snap-transition");
-    // Disabled under reduced motion alongside the dock indicator.
+
     const reduced = artifact.match(/prefers-reduced-motion: reduce[^@]*/v)?.[0];
     expect(reduced).toContain("--dashfoo-snap-transition: none");
   });
 
   test("keeps disabled separators sized but drops their resize cues", () => {
-    // Static layouts disable the separator; it must keep the gutter rules above
-    // while the doubled-attribute cursor override survives the build.
     expect(artifact).toContain('[data-separator="disabled"][aria-orientation]');
-    // The grab pill is hidden entirely on disabled separators.
+
     const pill = artifact.match(/\[data-separator="disabled"\]::before\s*\{[^\}]*\}/v)?.[0];
     expect(pill).toContain("display: none");
   });
@@ -63,7 +56,7 @@ describe("dist/dashfoo.css", () => {
     expect(artifact).not.toContain("@layer");
     expect(artifact).not.toContain("@theme");
     expect(artifact).not.toContain("--color-dashfoo");
-    // Preflight and default-theme markers.
+
     expect(artifact).not.toContain("::file-selector-button");
     expect(artifact).not.toContain("--spacing");
   });

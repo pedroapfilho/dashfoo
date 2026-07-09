@@ -12,8 +12,6 @@ import { dockingModel } from "../models";
 import type { WidgetDefinition } from "../widgets";
 import { addTargetId, createWidgetTab, WIDGETS } from "../widgets";
 
-// One marketplace entry: drag the card into the layout, or add it with the
-// button (the keyboard path — pointer drag is the only drag input).
 const WidgetCard = ({
   onAdd,
   widget,
@@ -48,8 +46,6 @@ const WidgetCard = ({
   );
 };
 
-// "Even" tracks the panel count (a 3-panel row snaps to thirds, 4 to quarters);
-// "Thirds" forces a 1/3 grid regardless of count; the rest are fixed-percent grids.
 const SNAP_CONFIGS: Record<string, SnapConfig | undefined> = {
   "25%": { step: 25 },
   "50%": { step: 50 },

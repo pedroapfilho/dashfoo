@@ -111,13 +111,12 @@ describe("usePersistence", () => {
     act(() => {
       result.current.save(modelWith("Edited"));
     });
-    // Change the persist key while the debounced write is still queued.
+
     rerender({ key: "new" });
     act(() => {
       vi.advanceTimersByTime(300);
     });
 
-    // The pending write is key-tagged, so it lands under "old", never the new key.
     expect(storage.getItem("old")).toBe(toJSON(modelWith("Edited")));
     expect(storage.getItem("new")).toBeNull();
   });
@@ -134,7 +133,7 @@ describe("usePersistence", () => {
     act(() => {
       result.current.save(modelWith("Edited"));
     });
-    // Swap the storage backend while the debounced write is still queued.
+
     rerender({ storage: newStorage });
     act(() => {
       vi.advanceTimersByTime(300);
@@ -152,7 +151,7 @@ describe("usePersistence", () => {
       result.current.save(modelWith("One"));
       result.current.save(modelWith("Two"));
     });
-    expect(storage.getItem("layout")).toBeNull(); // not yet (debounced)
+    expect(storage.getItem("layout")).toBeNull();
 
     act(() => {
       vi.advanceTimersByTime(300);
@@ -194,7 +193,7 @@ describe("usePersistence", () => {
     act(() => {
       result.current.save(modelWith("Edited"));
     });
-    expect(storage.getItem("layout")).toBeNull(); // still debounced
+    expect(storage.getItem("layout")).toBeNull();
 
     act(() => {
       window.dispatchEvent(new Event("pagehide"));
@@ -210,7 +209,7 @@ describe("usePersistence", () => {
     act(() => {
       result.current.save(modelWith("Edited"));
     });
-    // jsdom reports "visible" by default; a visible change must not flush.
+
     act(() => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
@@ -223,7 +222,7 @@ describe("usePersistence", () => {
     act(() => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
-    // Drop the own property so the prototype getter is back for other tests.
+
     Reflect.deleteProperty(document, "visibilityState");
 
     expect(storage.getItem("layout")).toBe(toJSON(modelWith("Edited")));
@@ -234,7 +233,6 @@ describe("usePersistence", () => {
     storage.setItem("layout", toJSON(modelWith("Saved")));
     const { result } = renderHook(() => usePersistence(null, modelWith("Default")));
 
-    // null config => the default seeds initialModel; storage is never read or written.
     expect(firstTabName(result.current.initialModel)).toBe("Default");
     act(() => {
       result.current.save(modelWith("Edited"));

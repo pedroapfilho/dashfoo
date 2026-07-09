@@ -4,16 +4,12 @@ import { describe, expect, test, vi } from "vitest";
 import type { TopmostDetectorInput } from "./topmost-collision";
 import { createTopmostPointerIntersection } from "./topmost-collision";
 
-// jsdom has no layout, so elementFromPoint is injected: the detector's contract
-// is "the winner contains the topmost element", not the geometry behind it.
-
 const inputFor = (
   droppable: TopmostDetectorInput["droppable"],
   x = 10,
   y = 10,
 ): TopmostDetectorInput => ({ dragOperation: { position: { current: { x, y } } }, droppable });
 
-// A tabset-ish element containing a child the pointer can land on.
 const tabsetElement = (): { child: HTMLElement; element: HTMLElement } => {
   const element = document.createElement("div");
   const child = document.createElement("button");
@@ -36,8 +32,6 @@ describe("createTopmostPointerIntersection", () => {
   });
 
   test("an occluded droppable returns null even when its rect would contain the point", () => {
-    // The float's element is on top: elementFromPoint returns its child, so the
-    // docked tabset (whose rect also contains the point) must not collide.
     const docked = tabsetElement();
     const float = tabsetElement();
     const detect = createTopmostPointerIntersection(() => float.child);
@@ -73,8 +67,7 @@ describe("createTopmostPointerIntersection", () => {
 
     expect(outerHit).not.toBeNull();
     expect(innerHit).not.toBeNull();
-    // Same priority and type — dnd-kit ranks by value, so DOM depth must break
-    // the tie toward the innermost.
+
     expect(innerHit!.value).toBeGreaterThan(outerHit!.value);
   });
 
@@ -88,8 +81,6 @@ describe("createTopmostPointerIntersection", () => {
     detect(inputFor({ element: other.element, id: "b" }));
     expect(topElementAt).toHaveBeenCalledTimes(1);
 
-    // The cache dies with the microtask queue — the next pass (same coords,
-    // possibly scrolled DOM) must look up fresh.
     await Promise.resolve();
     detect(inputFor({ element, id: "a" }));
     expect(topElementAt).toHaveBeenCalledTimes(2);

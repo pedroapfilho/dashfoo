@@ -7,14 +7,6 @@ type CodeBlockProps = {
   lang?: string;
 };
 
-/**
- * Server-rendered syntax highlighting via shiki. The panel is always dark —
- * a deliberate fixed surface, which reads as intentional and avoids shipping
- * a dual-theme runtime to a static marketing page.
- *
- * shiki's HAST is rendered into real React elements (not raw innerHTML) so the
- * markup goes through JSX escaping like any other component.
- */
 const CodeBlock = async ({ code, lang = "tsx" }: CodeBlockProps) => {
   const hast = await codeToHast(code, { lang, theme: "dracula" });
 

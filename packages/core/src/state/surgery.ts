@@ -4,10 +4,6 @@ import { findRootContaining, findTabset, findTabsetParent } from "../model/tree"
 
 import type { DockLocation } from "./actions";
 
-// In-place tree-surgery helpers shared by the reducer and the float operations:
-// removing/placing tabsets and tabs across any root. Each mutates the draft model
-// the reducer deep-cloned, so they never touch the caller's input.
-
 const removeTabset = (row: RowNode, tabsetId: string): boolean => {
   const index = row.children.findIndex((child) => child.type === "tabset" && child.id === tabsetId);
   if (index !== -1) {
@@ -22,7 +18,6 @@ const removeTabset = (row: RowNode, tabsetId: string): boolean => {
   return false;
 };
 
-// Detach a tabset from the tree and return it (for moving a whole tabset).
 const removeTabsetReturning = (row: RowNode, tabsetId: string): TabsetNode | undefined => {
   const index = row.children.findIndex((child) => child.type === "tabset" && child.id === tabsetId);
   if (index !== -1) {
@@ -46,10 +41,6 @@ const splitOrientation = (location: DockLocation): "column" | "row" =>
 const splitsBefore = (location: DockLocation): boolean =>
   location === "split-left" || location === "split-top";
 
-// Place an (already-detached) tabset beside the target for a split-* location:
-// reuse the parent row when the orientation already matches, else wrap the target
-// in a new row. Shared by insertTab (a fresh tabset), moveTabset (an existing one),
-// and dockFloat. Splits the target's space in half.
 const placeBesideTarget = (
   draft: Dashfoo,
   placed: TabsetNode,
@@ -57,8 +48,7 @@ const placeBesideTarget = (
   location: DockLocation,
 ): void => {
   const targetTabset = findTabset(draft, targetId);
-  // Operate within whichever root holds the target (main layout or a float), so a
-  // split docked inside a floated panel stays in that float.
+
   const targetRoot = findRootContaining(draft, targetId) ?? draft.layout;
   const found = findTabsetParent(targetRoot, targetId);
   if (!targetTabset || !found) {
@@ -92,8 +82,6 @@ const placeBesideTarget = (
   draft.activeTabsetId = placed.id;
 };
 
-// Insert a tab into the model at a dock target. center stacks it into the target
-// tabset; split-* creates a new tabset beside the target.
 type DropTarget = { id: string; index?: number; location: DockLocation };
 
 const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
@@ -130,7 +118,6 @@ const tabsetsInRow = (row: RowNode, acc: Array<TabsetNode>): void => {
   }
 };
 
-// Wrap a detached node in the row → tabset scaffolding a float's layout needs.
 const wrapTabInLayout = (tab: TabNode): RowNode => ({
   children: [{ children: [tab], id: createNodeId("tabset"), selected: 0, type: "tabset" }],
   id: createNodeId("row"),

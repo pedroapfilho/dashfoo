@@ -1,12 +1,8 @@
 import type { Dashfoo, FloatNode, RowNode, TabNode, TabsetNode } from "./schema";
 
-// A tab lives inside a tabset.
 type TabContainer = TabsetNode;
 type TabLocation = { container: TabContainer; index: number; tab: TabNode };
 
-// Every layout root: the main layout first, then each floating panel's layout.
-// Traversals fan out over this so a floated tabset is as reachable as a docked
-// one; "first" semantics (active tabset fallbacks) prefer the main layout.
 const collectRoots = (model: Dashfoo): Array<RowNode> => [
   model.layout,
   ...(model.floats ?? []).map((float) => float.layout),
@@ -25,7 +21,6 @@ const collectTabsetsInRow = (row: RowNode, acc: Array<TabsetNode>): void => {
   }
 };
 
-// Every tabset across all roots (main layout + windows), depth-first.
 const collectTabsets = (model: Dashfoo): Array<TabsetNode> => {
   const acc: Array<TabsetNode> = [];
   for (const root of collectRoots(model)) {
@@ -53,8 +48,6 @@ const findTabInContainer = (container: TabContainer, tabId: string): TabLocation
   return { container, index, tab };
 };
 
-// Locate a tab anywhere in the model — searching every tabset — returning the
-// tab, its container, and its index within that container.
 const findTab = (model: Dashfoo, tabId: string): TabLocation | undefined => {
   for (const tabset of collectTabsets(model)) {
     const found = findTabInContainer(tabset, tabId);
@@ -68,7 +61,6 @@ const findTab = (model: Dashfoo, tabId: string): TabLocation | undefined => {
 
 type AttributedNode = RowNode | TabNode | TabsetNode;
 
-// Find a row anywhere in the layout tree by id.
 const findRow = (row: RowNode, id: string): RowNode | undefined => {
   if (row.id === id) {
     return row;
@@ -99,8 +91,7 @@ const findAttributedNodeInRow = (row: RowNode, id: string): AttributedNode | und
     if (child.id === id) {
       return child;
     }
-    // Single-id recursive search invoked once per lookup over small layout
-    // trees — building a Map per call would cost more than it saves.
+
     // oxlint-disable-next-line react-doctor/js-index-maps
     const tab = child.children.find((candidate) => candidate.id === id);
     if (tab) {
@@ -110,7 +101,6 @@ const findAttributedNodeInRow = (row: RowNode, id: string): AttributedNode | und
   return undefined;
 };
 
-// Locate any attributed node (row, tabset, or tab) by id — backs updateNodeAttributes.
 const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefined => {
   for (const root of collectRoots(model)) {
     const found = findAttributedNodeInRow(root, id);
@@ -121,9 +111,6 @@ const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefi
   return undefined;
 };
 
-// The root row (main layout or a float's layout) whose subtree contains the
-// node. Lets the reducer run root-relative surgery (findRow, findTabsetParent,
-// removeTabset) against the correct tree instead of assuming the main layout.
 const findRootContaining = (model: Dashfoo, nodeId: string): RowNode | undefined => {
   for (const root of collectRoots(model)) {
     if (findAttributedNodeInRow(root, nodeId)) {
@@ -133,7 +120,6 @@ const findRootContaining = (model: Dashfoo, nodeId: string): RowNode | undefined
   return undefined;
 };
 
-// The row holding a tabset, and the tabset's index within it — backs split placement.
 const findTabsetParent = (
   row: RowNode,
   tabsetId: string,
@@ -167,9 +153,6 @@ const collectIdsInRow = (row: RowNode, acc: Array<string>): void => {
   }
 };
 
-// Ids that appear more than once across the whole model (rows, tabsets, tabs).
-// Duplicate ids produce duplicate React keys and corrupt the resize/drag
-// plumbing, so this backs a load-time diagnostic.
 const findDuplicateIds = (model: Dashfoo): Array<string> => {
   const ids: Array<string> = [];
   for (const float of model.floats ?? []) {

@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
 
-// Inline link for a third-party library mention. Inherits the surrounding text
-// color and just adds an underline, brightening on hover.
 const LibLink = ({ children, href }: { children: ReactNode; href: string }): ReactNode => (
   <a
     className="decoration-dashfoo-border hover:text-dashfoo-foreground hover:decoration-dashfoo-foreground underline underline-offset-2 transition-colors"

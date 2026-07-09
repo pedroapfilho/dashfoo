@@ -1,9 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
-// The static-layout page: editable={false} by default, with a toggle that
-// flips the prop at runtime. Covers the drag/resize no-ops jsdom cannot.
-
 const tabsByTabset = (page: Page): Promise<Array<Array<string | null>>> =>
   page.evaluate(() =>
     [...document.querySelectorAll('[data-dashfoo="tabset"]')].map((tabset) =>
@@ -18,9 +15,9 @@ const dragTabTo = async (page: Page, label: string, x: number, y: number): Promi
   }
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8); // arm the sensor
+  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
   await page.mouse.move(x, y, { steps: 16 });
-  await page.mouse.move(x, y, { steps: 4 }); // settle on the target
+  await page.mouse.move(x, y, { steps: 4 });
   await page.mouse.up();
 };
 
@@ -52,7 +49,6 @@ test("splitters are disabled in place: same gutter, no resize, no grab pill", as
   const splitter = page.locator('[data-dashfoo="splitter"]').first();
   await expect(splitter).toHaveAttribute("data-separator", "disabled");
 
-  // The theme hides the grab pill (the ::before handle) on disabled separators.
   const pillDisplay = await splitter.evaluate((el) => getComputedStyle(el, "::before").display);
   expect(pillDisplay).toBe("none");
 
@@ -62,7 +58,6 @@ test("splitters are disabled in place: same gutter, no resize, no grab pill", as
   }
   expect(before.width).toBeGreaterThan(0);
 
-  // A drag across the gutter must not move it.
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
   await page.mouse.down();
   await page.mouse.move(before.x + before.width / 2 + 120, before.y + before.height / 2, {
@@ -97,7 +92,6 @@ test("a locked tab keeps symmetric padding without its close button", async ({ p
 test("a locked layout stays responsive: it stacks into one column when narrow", async ({
   page,
 }) => {
-  // Three tabsets side by side (two columns) at desktop width.
   const columns = async (): Promise<number> => {
     const xs = await page
       .locator('[data-dashfoo="tabset"]')
@@ -107,10 +101,9 @@ test("a locked layout stays responsive: it stacks into one column when narrow", 
   expect(await columns()).toBe(2);
 
   await page.setViewportSize({ height: 900, width: 600 });
-  // The breakpoint swap rides a ResizeObserver, so the stacked model lands
-  // asynchronously — poll instead of asserting immediately.
+
   await expect.poll(columns).toBe(1);
-  // Still locked after the stack swap.
+
   await expect(page.locator('[data-dashfoo="tab-close"]')).toHaveCount(0);
 
   await page.setViewportSize({ height: 720, width: 1280 });
@@ -127,11 +120,9 @@ test("unlocking restores editing without losing the layout", async ({ page }) =>
     "disabled",
   );
 
-  // Editing genuinely works after the flip: close a tab.
   await page.getByRole("button", { name: "Close Detail" }).click();
   await expect(page.getByRole("tab", { name: "Detail" })).toHaveCount(0);
 
-  // And locking again hides the affordances that were just used.
   await page.getByRole("button", { name: "Lock editing" }).click();
   await expect(page.locator('[data-dashfoo="tab-close"]')).toHaveCount(0);
 });

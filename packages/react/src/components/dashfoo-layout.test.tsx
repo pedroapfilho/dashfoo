@@ -4,8 +4,6 @@ import { describe, expect, test, vi } from "vitest";
 
 import { DashfooLayout } from "./dashfoo-layout";
 
-// unique to this test so the module-level warnedComponents Set can't be tripped
-// by another test registering or warning about the same key first.
 const MISSING_COMPONENT = "ghost-unregistered-xyz";
 
 const missingComponentModel = (): Dashfoo => ({
@@ -109,7 +107,6 @@ describe("DashfooLayout", () => {
       const panel = screen.getByRole("tabpanel");
       expect(panel).toBeEmptyDOMElement();
 
-      // a re-render walks renderTab again; the warning must stay deduped.
       rerender(<DashfooLayout components={components} defaultModel={missingComponentModel()} />);
 
       const warnCalls = warn.mock.calls.filter((args) =>

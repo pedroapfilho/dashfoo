@@ -101,17 +101,16 @@ describe("history", () => {
 
   test("oldest steps are dropped, newest kept", () => {
     let history = createHistory(model());
-    // dispatch 10 steps that will be trimmed, then HISTORY_LIMIT more that are kept
+
     for (let i = 0; i < 10; i++) {
       history = dispatch(history, { name: `early-${i}`, tabId: "t1", type: "renameTab" });
     }
-    // record what the state looks like after the 10th dispatch (oldest kept step)
+
     const stateAfterTenth = history.present;
     for (let i = 0; i < HISTORY_LIMIT; i++) {
       history = dispatch(history, { name: `late-${i}`, tabId: "t1", type: "renameTab" });
     }
 
-    // undo all HISTORY_LIMIT kept steps — should arrive at stateAfterTenth
     for (let i = 0; i < HISTORY_LIMIT; i++) {
       history = undo(history);
     }

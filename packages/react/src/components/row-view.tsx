@@ -11,15 +11,6 @@ import { useLayout } from "../hooks/layout-store";
 
 import { TabsetView } from "./tabset/tabset-view";
 
-// This module is the resize adapter: the only place that imports
-// react-resizable-panels. It maps the model's responsive weights to rrp's
-// percentage layout and unit-typed min/max constraints to rrp sizes, and commits
-// a drag (on release) back to the document as an adjustSplit action.
-//
-// Magnetic snapping is layered on top: rrp's continuous onLayoutChange pulls the
-// dragged boundary onto a grid (groupRef.setLayout), and onLayoutChanged commits
-// the already-snapped weights as a single undo step on release.
-
 const dimensionToSize = (dimension: Dimension): string => `${dimension.value}${dimension.unit}`;
 const dimensionToPixels = (dimension: Dimension | undefined): number | undefined =>
   dimension?.unit === "px" ? dimension.value : undefined;
@@ -35,7 +26,6 @@ const layoutFromWeights = (children: RowNode["children"], total: number): Layout
     return layout;
   }, {});
 
-// rrp's id-keyed Layout <-> the ordered percentage array the pure snap math wants.
 const orderedFromLayout = (layout: Layout, children: RowNode["children"]): Array<number> =>
   children.map((child) => layout[child.id] ?? 0);
 
@@ -91,8 +81,7 @@ const descendantMinSize = (
 
 type RowViewProps = {
   node: RowNode;
-  // Substitutes a custom tabset composition at every leaf of the split tree;
-  // defaults to the stock TabsetView.
+
   renderTabset?: (node: TabsetNode) => ReactNode;
 };
 
@@ -101,8 +90,7 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
   const resizableSplits = useLayout((state) => state.resizableSplits);
   const tabsetMinSize = useLayout((state) => state.tabsetMinSize);
   const globalSnap = useLayout((state) => state.snap);
-  // A row's own snap attribute overrides the layout-wide default; an empty config
-  // (or step 0 with no divisions) means this row does not snap.
+
   const effectiveSnap: SnapConfig | null = node.snap ?? globalSnap;
   const snapActive = snapEnabled(effectiveSnap);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
@@ -112,16 +100,11 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     [node.children, total],
   );
 
-  // rrp fires onLayoutChanged once on mount with its measured layout. That is not
-  // a user resize — committing it would rewrite the authored weights and push a
-  // spurious undo entry — so the first call (per mount) is ignored.
   const measured = useRef(false);
   const groupRef = useRef<GroupImperativeHandle | null>(null);
   const groupElement = useRef<HTMLDivElement | null>(null);
   const syncing = useRef(false);
-  // Which boundary the pointer grabbed (captured on the separator's pointerdown),
-  // a re-entrancy guard for our own setLayout, and the snapped boundary mirrored
-  // into state only on engage/disengage so the highlight re-renders ~twice a drag.
+
   const activeBoundary = useRef<number | null>(null);
   const snapping = useRef(false);
   const snappedBoundaryRef = useRef<number | null>(null);
@@ -134,10 +117,6 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     }
   };
 
-  // Toggle the flex transition on the group imperatively (not via React state):
-  // it must be live in the DOM before the snapping setLayout writes flex this same
-  // frame, so the panels glide onto the grid line. Cleared on free-tracking frames
-  // so dragging stays 1:1 with the pointer (snap-out is instant).
   const setSnapTransition = (active: boolean): void => {
     const element = groupElement.current;
     if (!element) {
@@ -174,11 +153,6 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     };
   }, [desiredLayout]);
 
-  // Fires on every pointer move during a drag. Pull the grabbed boundary onto the
-  // nearest grid target and push it back into rrp so the panel visibly sticks. The
-  // `snapping` guard plus the idempotence check keep our own setLayout from
-  // re-triggering this and prevent jitter at the threshold edge, whatever rrp's
-  // re-fire timing.
   const handleLayoutChange = (layout: Layout): void => {
     if (snapping.current || syncing.current || !resizableSplits) {
       return;
@@ -198,12 +172,10 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     );
     setHighlight(snapped ? boundary : null);
     if (!snapped) {
-      // Pointer tracking resumes 1:1 — drop the transition so it never lags.
       setSnapTransition(false);
       return;
     }
 
-    // Arm the glide before writing the snapped layout this frame.
     setSnapTransition(true);
     const group = groupRef.current;
     const target = layoutFromOrdered(sizes, node.children);
@@ -227,14 +199,12 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     activeBoundary.current = null;
     setHighlight(null);
     setSnapTransition(false);
-    // Belt over the disabled Group/Separator: a non-resizable row never commits
-    // an adjustSplit, even if rrp reports a layout change for another reason.
+
     if (!resizableSplits) {
       return;
     }
     let weights = node.children.map((child) => layout[child.id] ?? child.weight ?? 1);
-    // Re-snap the committed value so the model lands exactly on the grid (one undo
-    // step), regardless of where the final frame left rrp.
+
     if (boundary !== null && effectiveSnap !== null && snapActive) {
       weights = snapSizes(weights, boundary, effectiveSnap).sizes;
     }
@@ -276,8 +246,7 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
 
         return (
           <Fragment key={child.id}>
-            {/* The separator stays mounted when resizing is off — removing it
-                would collapse the theme-sized gutter and reflow every panel. */}
+            {}
             {index > 0 ? (
               <Separator
                 data-dashfoo="splitter"

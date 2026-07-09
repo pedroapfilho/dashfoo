@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-// A JSON-serializable value. Per-tab `config` is validated against this so the
-// model stays losslessly serializable (a function or symbol in config fails).
 type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };
 
 const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
@@ -24,13 +22,6 @@ const dimensionSchema = z.object({
   value: z.number(),
 });
 
-// Magnetic snap config for split resize. The grid the dragged boundary snaps to is
-// the union of two optional sources: `step` (multiples of a fixed percent) and
-// `divisions` (even splits — multiples of 100/d, where d is the number or, for
-// "panels", the row's own child count, so a 3-panel row snaps to thirds and a
-// 4-panel row to quarters). `threshold` is the magnetic grab distance in percent.
-// An empty config (or a `step` of 0 with no `divisions`) disables snapping — used
-// to opt a single row out of an inherited global default.
 const snapSchema = z.object({
   divisions: z.union([z.number().positive(), z.literal("panels")]).optional(),
   step: z.number().min(0).optional(),
@@ -61,8 +52,6 @@ const tabsetNodeSchema = z.object({
   weight: z.number().optional(),
 });
 
-// RowNode is recursive (a row may contain rows), so its type is declared
-// explicitly and the schema is built with z.lazy.
 type RowNode = {
   children: Array<RowNode | z.infer<typeof tabsetNodeSchema>>;
   id: string;
@@ -87,9 +76,6 @@ const rowNodeSchema: z.ZodType<RowNode> = z.lazy(() =>
   }),
 );
 
-// A floating panel's rectangle, in CSS pixels relative to the layout container.
-// Captured when the panel is floated and refreshed as the user drags or resizes
-// it, so the model round-trips the float's position.
 const geometrySchema = z.object({
   height: z.number(),
   left: z.number(),
@@ -97,16 +83,11 @@ const geometrySchema = z.object({
   width: z.number(),
 });
 
-// A floating panel: a tabset (or split) lifted out of the docked layout into a
-// draggable, resizable overlay that still lives in the same app. It owns a full
-// RowNode layout (the same shape as the main root), so a float can hold a single
-// tab, several tabs, or nested splits and reuses the exact same rendering.
 const floatNodeSchema = z.object({
   geometry: geometrySchema,
   id: z.string(),
   layout: rowNodeSchema,
-  // Collapsed to a small chip (the window minimized); geometry is preserved so
-  // restoring reopens it at its previous rect.
+
   minimized: z.boolean().optional(),
   name: z.string().optional(),
   type: z.literal("float"),
@@ -128,15 +109,11 @@ const globalAttributesSchema = z.object({
 
 const dashfooSchema = z.object({
   activeTabsetId: z.string().optional(),
+  floats: z.array(floatNodeSchema).optional(),
   global: globalAttributesSchema,
   layout: rowNodeSchema,
   maximizedTabsetId: z.string().optional(),
-  // The persisted-payload format version, pinned by the schema itself: any
-  // future format change bumps the literal, so foreign payloads fail validation.
   version: z.literal(1),
-  // Floating panels, each owning its own layout subtree. Optional so existing
-  // payloads (and hand-built models) stay valid; absent means "nothing floating".
-  floats: z.array(floatNodeSchema).optional(),
 });
 
 type Json = JsonValue;
