@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-// Stable, deterministic bar heights — no Math.random so SSR and client agree.
 const CHART_BARS = [42, 68, 55, 80, 47, 92, 61, 74, 38, 86, 70, 58] as const;
 
 const ChartPanel = (): ReactNode => (

@@ -10,9 +10,6 @@ import { useTab, useTabset } from "./tabset-store";
 
 type TabsetRenameInputProps = ComponentProps<"input">;
 
-// Inline rename editor. Enter/Escape set `done` so the unmount blur does not
-// re-commit after a deliberate commit or cancel. A separate inner component so
-// each editing session mounts fresh (autofocus + select, reset `done`).
 const RenameEditor = ({
   defaultValue,
   onBlur,
@@ -66,9 +63,6 @@ const RenameEditor = ({
   );
 };
 
-// Renders only while its tab is being renamed. Always composed (it registers its
-// presence on mount so startEditing can warn when no editor exists), but inert
-// until the trigger's double-click flips editingTabId.
 const TabsetRenameInput = (props: TabsetRenameInputProps): ReactNode => {
   const { tab } = useTab();
   const editing = useTabset((state) => state.editingTabId === tab.id);
@@ -98,7 +92,7 @@ const TabsetCloseButton = ({ children, onClick, ...props }: TabsetCloseButtonPro
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
     onClick?.(event);
-    // Closing must not bubble into the trigger and select the closing tab.
+
     event.stopPropagation();
     closeTab(tab.id);
   };
@@ -110,8 +104,6 @@ const TabsetCloseButton = ({ children, onClick, ...props }: TabsetCloseButtonPro
       {...props}
       data-dashfoo="tab-close"
       onClick={handleClick}
-      // Roving tabindex: only the active tab's close button is tabbable, so
-      // Tab does not stop on a close button inside every tab in the tablist.
       tabIndex={index === visualSelected ? 0 : -1}
       type="button"
     >

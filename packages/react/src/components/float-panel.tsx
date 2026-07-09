@@ -20,15 +20,6 @@ import { LayoutRoot } from "./layout-root";
 import { RowView } from "./row-view";
 import { DockIcon, FloatIcon, GripIcon, MinimizeIcon } from "./tabset-icons";
 
-// One floating panel: an absolutely-positioned overlay over the layout, dragged by
-// its title bar and resized by edge/corner handles, with the panel itself rendered
-// through a nested Layout.Root (drag-dock, float, and maximize switched off — a
-// float is select/close/rename plus the title-bar "Dock back" control). Drag and
-// resize update the DOM imperatively during the gesture and commit one `moveFloat`
-// on release, so a drag is a single undo step and never re-renders per pointer move.
-
-// The window title is the float's own name ("Panel", "Panel 1", …), set when it is
-// floated and editable via the title bar — never the active tab's name.
 const floatTitle = (node: FloatNode): string => node.name ?? "Panel";
 
 const titleBarStyle: CSSProperties = {
@@ -56,15 +47,13 @@ const dockButtonStyle: CSSProperties = {
 
 const bodyStyle: CSSProperties = { flex: 1, minHeight: 0, position: "relative" };
 
-// Approximate footprint of the minimized chip, used to keep it on screen while it
-// is dragged (its window rect is preserved in geometry for restore).
 const CHIP_SIZE: Size = { height: 34, width: 168 };
-// Pointer travel (px) past which a press counts as a drag, not a tap.
+
 const TAP_SLOP = 4;
 
 type Gesture = {
   bounds: Size;
-  edges: ResizeEdges | null; // null = move (no edges), else resize
+  edges: ResizeEdges | null;
   pointerId: number;
   start: Geometry;
   startX: number;
@@ -73,9 +62,6 @@ type Gesture = {
 
 type TitleProps = { dispatch: (action: Action) => void; node: FloatNode };
 
-// Inline title editor — mirrors the tab-rename pattern: focus + select on mount,
-// a `done` ref so the unmount blur doesn't re-commit after a deliberate
-// Enter/Escape, and stopPropagation so clicking into it doesn't start a drag.
 const FloatTitleEditor = ({
   dispatch,
   node,
@@ -129,8 +115,6 @@ const FloatTitleEditor = ({
   );
 };
 
-// The window title: the float's name, double-click to rename. A static layout
-// (renamable=false) shows the name as plain, non-editable text.
 const FloatTitle = ({
   dispatch,
   node,
@@ -180,7 +164,6 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     panelRef.current = element;
   };
 
-  // Restore (un-minimize) is a structural edit, so a static layout cannot do it.
   const restore = (): void => {
     if (!editable) {
       return;
@@ -188,30 +171,20 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     dispatch({ floatId: node.id, minimized: false, type: "setFloatMinimized" });
   };
 
-  // One pointerdown handler for the title bar / chip (move) and the resize handles;
-  // the moving edges ride the target's data-edge, so it can be assigned directly to
-  // onPointerDown (no per-render closure that reads refs). Raise-to-front is wired
-  // separately (onPointerDownCapture on the frame), so it still works for body and
-  // tab clicks — and even while a static layout has move/resize switched off.
   const handlePointerDown = (event: ReactPointerEvent<HTMLElement>): void => {
     const panel = panelRef.current;
-    // A static layout never moves or resizes a float — no gesture, no moveFloat.
+
     if (!panel || !editable) {
       return;
     }
-    // A new press supersedes any prior gesture. Release a capture the prior one
-    // may still hold (a gesture whose pointerup/cancel was missed) so it neither
-    // strands its pointer nor blocks this press — without this, a stale gesture
-    // from a different pointerId would make the float permanently unmovable
-    // (each touch has its own pointerId; the move handler ignores the mismatch).
+
     const prior = gestureRef.current;
     if (prior && panel.hasPointerCapture?.(prior.pointerId)) {
       panel.releasePointerCapture(prior.pointerId);
     }
     movedRef.current = false;
     const edgeKey = event.currentTarget.dataset.edge;
-    // While minimized the chip keeps its small footprint on screen; otherwise the
-    // whole window rect is clamped against the viewport (the overlay).
+
     const parent = panel.offsetParent as HTMLElement | null;
     const gesture: Gesture = {
       bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
@@ -223,13 +196,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     };
     gestureRef.current = gesture;
     latestRef.current = node.geometry;
-    // A resize has no tap/double-click meaning, so capture the pointer up front: a
-    // fast drag that outruns the small handle must keep routing move/up events to
-    // this panel. Without capture the first move lands on the layout beneath, its
-    // pointerup never reaches us, and the orphaned gesture resumed when the cursor
-    // came back over the float. The title bar and chip instead defer capture to
-    // the first real move so a tap or double-click can still reach the rename /
-    // restore handlers.
+
     if (gesture.edges) {
       panel.setPointerCapture(event.pointerId);
     }
@@ -241,15 +208,12 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
       return;
     }
     gestureRef.current = null;
-    // Resize captures eagerly (even a no-move click holds it), so always release.
-    // Optional call: jsdom (and other non-DOM hosts) may not implement the API.
+
     const panel = panelRef.current;
     if (panel?.hasPointerCapture?.(event.pointerId)) {
       panel.releasePointerCapture(event.pointerId);
     }
-    // A tap (never moved past the slop) restores the chip, or is a no-op on the
-    // title bar — leaving the click/double-click to reach the title. Only a real
-    // drag commits the new rect.
+
     if (!movedRef.current) {
       if (node.minimized) {
         restore();
@@ -265,8 +229,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     if (!gesture || !panel || event.pointerId !== gesture.pointerId) {
       return;
     }
-    // No button down means the pointerup was missed (it landed on a non-capturing
-    // element mid-drag); end the gesture instead of chasing the released cursor.
+
     if (event.buttons === 0) {
       handlePointerUp(event);
       return;
@@ -274,12 +237,11 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     const dx = event.clientX - gesture.startX;
     const dy = event.clientY - gesture.startY;
     if (!movedRef.current) {
-      // Below the slop it is still a (possible) tap — don't move or capture yet.
       if (Math.hypot(dx, dy) <= TAP_SLOP) {
         return;
       }
       movedRef.current = true;
-      // Resize already captured at pointerdown; the move gesture captures here.
+
       if (!gesture.edges) {
         panel.setPointerCapture(gesture.pointerId);
       }
@@ -291,22 +253,17 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
           gesture.bounds,
           node.minimized ? CHIP_SIZE : undefined,
         );
-    // next always carries the window's own width/height (the chip's footprint is
-    // only used to clamp position), so restore reopens at the saved size.
+
     latestRef.current = next;
     panel.style.left = `${next.left}px`;
     panel.style.top = `${next.top}px`;
-    // The chip's size is CSS-driven; only the window writes its own dimensions.
+
     if (!node.minimized) {
       panel.style.width = `${next.width}px`;
       panel.style.height = `${next.height}px`;
     }
   };
 
-  // pointercancel means the OS took the pointer (a system gesture, a scroll that
-  // won the touch). That is an abort, not a release: revert the imperative DOM to
-  // where the drag started and never commit a half-finished rect. handlePointerUp
-  // (a real release) is what commits.
   const handlePointerCancel = (event: ReactPointerEvent): void => {
     const gesture = gestureRef.current;
     const panel = panelRef.current;
@@ -366,9 +323,6 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
   return (
     <div
       data-dashfoo="float"
-      // Capture so a click anywhere in the float — body, tab, or chrome — raises it
-      // above the others before any child handler runs, even when a static layout
-      // has move/resize off.
       onPointerCancel={handlePointerCancel}
       onPointerDownCapture={onFocus}
       onPointerMove={handlePointerMove}
@@ -377,8 +331,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
       style={{
         height: node.geometry.height,
         left: node.geometry.left,
-        // The overlay is pointer-events:none so it never blocks the docked layout;
-        // each float opts back in.
+
         pointerEvents: "auto",
         position: "absolute",
         top: node.geometry.top,
@@ -389,7 +342,6 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
       <div
         data-dashfoo="float-titlebar"
         onPointerDown={handlePointerDown}
-        // A static layout's title bar doesn't drag, so don't dangle a grab cursor.
         style={editable ? titleBarStyle : { ...titleBarStyle, cursor: "default" }}
       >
         <span aria-hidden="true" data-dashfoo="float-grip">
@@ -443,8 +395,7 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
           resizableSplits={resizableSplits}
           snap={snap ?? undefined}
         >
-          {/* Its own drag layer, joined to the shared manager above, so tabs drag
-              between this float and the main layout (and other floats). */}
+          {}
           <DragProvider>
             <RowView node={node.layout} />
           </DragProvider>

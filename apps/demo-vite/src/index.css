@@ -1,9 +1,6 @@
 @import "tailwindcss";
 @import "@dashfoo/theme/tailwind.css";
 
-/* Geist Mono is the dashfoo brand font for the demos (the published theme keeps
- * its system stack). Overriding --dashfoo-font is an app-level remap, not a
- * library change, so it also reaches the embedded DashfooLayout. */
 @theme {
   --font-sans: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -17,8 +14,6 @@ body {
   font-family: var(--dashfoo-font);
 }
 
-/* The shell's dark: variant keys off the same attribute the dashfoo theme
- * uses, so one toggle flips the demo chrome and the layout together. */
 @custom-variant dark (&:where([data-dashfoo-theme="dark"], [data-dashfoo-theme="dark"] *));
 
 html {

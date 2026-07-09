@@ -32,7 +32,7 @@ describe("resolveSnapTargets", () => {
     expect(resolveSnapTargets({ divisions: 3, step: 25 }, 2).map(round2)).toEqual([
       25, 33.33, 50, 66.67, 75,
     ]);
-    // step 25 and divisions 4 produce the same grid — no duplicates.
+
     expect(resolveSnapTargets({ divisions: 4, step: 25 }, 2)).toEqual([25, 50, 75]);
   });
 
@@ -93,7 +93,7 @@ describe("snapSizes", () => {
   test("snaps a three-panel row to even thirds via divisions: 'panels'", () => {
     const result = snapSizes([30, 35, 35], 0, { divisions: "panels", threshold: 4 });
     expect(result.snapped).toBe(true);
-    // Only the dragged pair moves; the third panel is left alone.
+
     expect(result.sizes.map(round2)).toEqual([33.33, 31.67, 35]);
   });
 
@@ -142,7 +142,6 @@ describe("snapSizes", () => {
   });
 
   test("does not snap when the correction would drive an adjacent panel negative", () => {
-    // cum=23 wants target 25 (delta +2), but the right neighbour only has 1% to give.
     expect(snapSizes([23, 1, 76], 0, { step: 25, threshold: 4 })).toEqual({
       sizes: [23, 1, 76],
       snapped: false,

@@ -124,7 +124,6 @@ describe("model", () => {
   test("warns on duplicate node ids from two same-component tabs lacking explicit ids", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
-      // both tabs default their id to "chart", colliding inside the tabset.
       model(
         row([tabset([tab("chart", "Left"), tab("chart", "Right")], { id: "ts" })], { id: "root" }),
       );

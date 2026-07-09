@@ -88,8 +88,6 @@ describe("reducer", () => {
   });
 
   test("adjustSplit ignores extra weights past the row's child count", () => {
-    // root has 2 children; the third weight has no child to land on, so the loop
-    // hits its skip-on-missing-child branch and the extra weight is dropped.
     const next = reducer(baseModel(), {
       rowId: "root",
       type: "adjustSplit",

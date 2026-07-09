@@ -53,12 +53,8 @@ const renderLayout = (props?: Partial<DashfooLayoutProps>) =>
 const splitterOf = (container: HTMLElement): HTMLElement | null =>
   container.querySelector<HTMLElement>('[data-dashfoo="splitter"]');
 
-// Draggable registration is deferred via queueMicrotask (see drag-lifecycle
-// Q1); registry assertions must flush the microtask queue first.
 const flushRegistrations = () => Promise.resolve();
 
-// Module-scope so rerenders keep the same component identity — swapping the
-// wrapper would remount the layout and void the no-remount assertions.
 const ManagerProbe = ({
   children,
   onManager,
@@ -70,9 +66,6 @@ const ManagerProbe = ({
   return children;
 };
 
-// Renders the layout under a shared manager so tests can read the dnd-kit
-// registry: which Draggable instances actually exist is the ground truth for
-// "can this be dragged" (jsdom cannot simulate the drag itself).
 const renderWithManager = (props?: Partial<DashfooLayoutProps>) => {
   let manager: DragDropManager | null = null;
   const capture = (value: DragDropManager | null): void => {

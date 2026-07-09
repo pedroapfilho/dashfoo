@@ -7,12 +7,6 @@ import { createPortal } from "react-dom";
 import type { ActiveCell, TabsetMeasurement, ZoneCell } from "../lib/drop-zone-map";
 import { activeCellAt, buildZoneMap, cellKey } from "../lib/drop-zone-map";
 
-// Debug visualization of the drag hit-regions: while a drag is live, paints
-// every candidate drop cell (voronoi-style trapezoids + strip insertion slots)
-// and highlights the one under the pointer, with safe-triangle dashed lines
-// from the cursor. Sits under the library's own dock indicator (z 9999) and is
-// pointer-events-none, so it never affects the drag itself.
-
 const DOCK_LABELS: Record<string, string> = {
   center: "stack",
   "split-bottom": "split ↓",
@@ -67,8 +61,6 @@ const cellFill = (cell: ZoneCell, highlighted: boolean, noop: boolean): string =
   return `hsl(${hueOf(cell.tabsetIndex)} 70% 55% / ${cell.kind === "slot" ? 0.16 : 0.09})`;
 };
 
-// What the chip next to the cursor reads: the library-resolved drop, or "no-op"
-// when the pointer is over a tabset whose drop the library suppressed.
 const chipText = (intent: DropIntent | null, activeCell: ActiveCell | null): string | null => {
   if (intent === null) {
     return activeCell === null ? null : "no-op";
@@ -115,8 +107,6 @@ const ZonePolygon = ({
   );
 };
 
-// Measurements are keyed to the drag's subject so a finished drag's map is
-// never painted for the next one (the drop may have rearranged the layout).
 type Measured = { list: Array<TabsetMeasurement>; subject: DragSubject };
 
 const DropZoneOverlay = ({
@@ -132,8 +122,6 @@ const DropZoneOverlay = ({
   const [measured, setMeasured] = useState<Measured | null>(null);
   const dragging = enabled && subject !== null;
 
-  // rAF-throttled pointer tracking, independent of the library (which exposes
-  // the intent, not the pointer).
   useEffect(() => {
     if (!dragging) {
       return undefined;
@@ -149,8 +137,7 @@ const DropZoneOverlay = ({
         });
       }
     };
-    // Capture phase: dnd-kit's PointerSensor stops pointermove propagation
-    // during a drag, so a bubble listener would freeze at the start position.
+
     window.addEventListener("pointermove", handlePointerMove, { capture: true });
     return () => {
       window.removeEventListener("pointermove", handlePointerMove, { capture: true });
@@ -160,9 +147,6 @@ const DropZoneOverlay = ({
     };
   }, [dragging]);
 
-  // Measured once per drag (the layout tree is static while a drag is live —
-  // the model only changes on drop) and again on window resize. The first
-  // measure rides an rAF so the effect body never sets state synchronously.
   useEffect(() => {
     if (!dragging) {
       return undefined;
@@ -195,8 +179,7 @@ const DropZoneOverlay = ({
   const activePolygon = activeKey
     ? (cells.find((cell) => cellKey(cell) === activeKey)?.points ?? null)
     : null;
-  // The library suppresses no-op drops (sole tab back home, tabset onto itself)
-  // by resolving a null intent — mirror that as a grayed-out cell.
+
   const noop = intent === null && activeCell !== null;
   const chip = chipText(intent, activeCell);
   const lineColor = noop ? "hsl(0 0% 50% / 0.6)" : "hsl(210 80% 55% / 0.6)";

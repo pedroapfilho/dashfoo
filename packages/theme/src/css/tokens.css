@@ -1,73 +1,54 @@
-/*
- * dashfoo design tokens — the override surface for the skin in ./dashfoo.css.
- * shadcn-style semantic tokens (prefixed --dashfoo-) with Tailwind v4 neutral
- * oklch values, so selection/focus/state read through lightness and weight.
- * Light is the default; opt into dark by setting data-dashfoo-theme="dark" on
- * any ancestor (e.g. <html data-dashfoo-theme="dark">).
- * Remap any custom property to skin dashfoo to your own design system.
- */
-
 :root {
   color-scheme: light;
 
-  /* surfaces */
-  --dashfoo-background: oklch(1 0 0); /* white */
+  --dashfoo-background: oklch(1 0 0);
   --dashfoo-card: oklch(1 0 0);
   --dashfoo-popover: oklch(1 0 0);
-  --dashfoo-muted: oklch(0.97 0 0); /* neutral-100 */
+  --dashfoo-muted: oklch(0.97 0 0);
   --dashfoo-accent: oklch(0.97 0 0);
 
-  /* content */
-  --dashfoo-foreground: oklch(0.145 0 0); /* neutral-950 */
-  --dashfoo-muted-foreground: oklch(0.556 0 0); /* neutral-500 */
-  --dashfoo-accent-foreground: oklch(0.205 0 0); /* neutral-900 */
+  --dashfoo-foreground: oklch(0.145 0 0);
+  --dashfoo-muted-foreground: oklch(0.556 0 0);
+  --dashfoo-accent-foreground: oklch(0.205 0 0);
   --dashfoo-primary: oklch(0.205 0 0);
 
-  /* lines + focus */
-  --dashfoo-border: oklch(0.922 0 0); /* neutral-200 */
-  --dashfoo-ring: oklch(0.708 0 0); /* neutral-400 */
+  --dashfoo-border: oklch(0.922 0 0);
+  --dashfoo-ring: oklch(0.708 0 0);
 
-  /* shape + type */
   --dashfoo-radius: 0.625rem;
-  --dashfoo-radius-sm: 0.375rem; /* nested chrome: tabs, focus ring, menus */
+  --dashfoo-radius-sm: 0.375rem;
   --dashfoo-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --dashfoo-font-size: 13px;
 
-  /* splitters */
   --dashfoo-splitter-size: 1rem;
-  /* the grab pill turns this color while a magnetic snap is engaged */
+
   --dashfoo-snap: var(--dashfoo-primary);
 
-  /* dock indicators — component-scoped, derived from the semantic tokens
-     (also consumed by the drag overlay's inline fallbacks) */
   --dashfoo-dock-fill: color-mix(in oklab, var(--dashfoo-primary) 10%, transparent);
   --dashfoo-dock-border: var(--dashfoo-ring);
-  /* the dock pane previews a panel position, so it carries the panel radius */
+
   --dashfoo-dock-radius: var(--dashfoo-radius);
-  /* the insertion line is a thin caret between tabs, so its ends are pills */
+
   --dashfoo-dock-line-radius: 2px;
 }
 
-/* Opt-in dark theme: same neutral scale inverted. Only the lightness-bearing
-   tokens change; shape/type/splitter tokens are shared with the light default. */
 [data-dashfoo-theme="dark"] {
   color-scheme: dark;
 
-  --dashfoo-background: oklch(0.145 0 0); /* neutral-950 */
-  --dashfoo-card: oklch(0.205 0 0); /* neutral-900 */
-  --dashfoo-popover: oklch(0.269 0 0); /* neutral-800 */
+  --dashfoo-background: oklch(0.145 0 0);
+  --dashfoo-card: oklch(0.205 0 0);
+  --dashfoo-popover: oklch(0.269 0 0);
   --dashfoo-muted: oklch(0.269 0 0);
   --dashfoo-accent: oklch(0.269 0 0);
 
-  --dashfoo-foreground: oklch(0.985 0 0); /* neutral-50 */
-  --dashfoo-muted-foreground: oklch(0.708 0 0); /* neutral-400 */
+  --dashfoo-foreground: oklch(0.985 0 0);
+  --dashfoo-muted-foreground: oklch(0.708 0 0);
   --dashfoo-accent-foreground: oklch(0.985 0 0);
-  --dashfoo-primary: oklch(0.922 0 0); /* neutral-200 */
+  --dashfoo-primary: oklch(0.922 0 0);
 
   --dashfoo-border: oklch(1 0 0 / 10%);
-  --dashfoo-ring: oklch(0.556 0 0); /* neutral-500 */
+  --dashfoo-ring: oklch(0.556 0 0);
 
-  /* re-declared so subtree-scoped dark re-resolves the var() references */
   --dashfoo-dock-fill: color-mix(in oklab, var(--dashfoo-primary) 10%, transparent);
   --dashfoo-dock-border: var(--dashfoo-ring);
   --dashfoo-snap: var(--dashfoo-primary);

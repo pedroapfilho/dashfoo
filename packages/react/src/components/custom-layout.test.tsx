@@ -10,11 +10,6 @@ import { Layout } from "./layout";
 import { Tabset } from "./tabset/tabset";
 import { useTab, useTabset } from "./tabset/tabset-store";
 
-// A layout assembled by hand from the exported primitives — no DashfooLayout.
-// This suite is the contract that the parts compose outside the batteries-
-// included component: select/close/rename/keyboard all work, drag is opt-in,
-// and renderTabset reaches every leaf of the split tree.
-
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",
   global: {},
@@ -91,7 +86,6 @@ const CONTENT: Record<string, string> = { book: "BOOK", chart: "CHART", trades: 
 
 const renderTabContent = (tab: TabNode): ReactNode => <div>{CONTENT[tab.component]}</div>;
 
-// A visibly custom tab label proving parts can read the tab and tabset state.
 const CustomLabel = (): ReactNode => {
   const { index, tab } = useTab();
   const selected = useTabset((state) => state.visualSelected === index);
@@ -217,7 +211,6 @@ describe("hand-composed layout from primitives", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: "Maximize" })[0]!);
 
-    // The maximized branch renders the stock composition for ts1 only.
     expect(screen.queryByRole("tab", { name: "Trades" })).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Chart" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Restore" })).toBeInTheDocument();
@@ -283,9 +276,6 @@ describe("misuse", () => {
   test("moving a tab between tabsets does not emit a false orphan warning", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    // Right after a move, the destination Root renders the new node prop while
-    // its store still holds the previous node until the layout-effect sync —
-    // the orphan check must not fire on that transient render.
     const MovableLayout = (): ReactNode => {
       const store = useDashfooStore({ defaultModel: model() });
       const handleMove = (): void =>

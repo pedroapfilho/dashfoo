@@ -14,7 +14,6 @@ const PANELS: Record<string, () => ReactNode> = {
   table: TablePanel,
 };
 
-// The factory DashfooLayout calls per tab. Switches on the tab's component key.
 const renderPanel = (node: TabNode): ReactNode => {
   const Body = PANELS[node.component] ?? ChartPanel;
   return (

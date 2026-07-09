@@ -54,7 +54,7 @@ describe("inactive-tab keep-alive", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Book" }));
 
     expect(screen.getByText("BOOK")).toBeVisible();
-    expect(screen.getByText("CHART")).toBeInTheDocument(); // still mounted, hidden
+    expect(screen.getByText("CHART")).toBeInTheDocument();
     expect(screen.getByText("CHART").closest('[data-dashfoo="tabcontent"]')).not.toBeVisible();
   });
 });

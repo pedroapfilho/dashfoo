@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-// Tabset chrome (close, rename, maximize) on the overview layout.
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("tab", { name: "Canvas" })).toBeVisible();

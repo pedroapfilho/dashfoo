@@ -1,10 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-// The /docking debug overlay: paints every candidate drop cell while a drag is
-// live (dock trapezoids + strip slots), and clears on drop. The map must agree
-// with the library's hit-testing, so the cells come from @dashfoo/core's
-// dockZonePolygons and the highlight from useDropIntent.
-
 test.beforeEach(async ({ page }) => {
   await page.goto("/docking");
   await expect(page.getByRole("tab", { name: "Canvas" })).toBeVisible();
@@ -22,11 +17,11 @@ test("the drop-zone map appears mid-drag and clears after the drop", async ({ pa
 
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8); // arm the sensor
+  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
   await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 12 });
 
   await expect(overlay).toBeVisible();
-  // Every tabset contributes its five dock cells (center + four splits).
+
   const tabsets = await page.locator('[data-dashfoo="tabset"]').count();
   expect(await overlay.locator("polygon").count()).toBeGreaterThanOrEqual(tabsets * 5);
 

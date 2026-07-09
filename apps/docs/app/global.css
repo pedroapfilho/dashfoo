@@ -2,12 +2,10 @@
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
-/* CSS-only view transitions between docs pages */
 @view-transition {
   navigation: auto;
 }
 
-/* Scroll-driven reading progress indicator */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes reading-progress {
     from {
@@ -23,11 +21,6 @@
 
 @source "../node_modules/fumadocs-ui/dist/**/*.js";
 
-/*
- * dashfoo docs theme — neutral grayscale to match the hue-free library brand.
- * Fumadocs' neutral preset already maps these onto its --color-fd-* variables;
- * the primary is intentionally near-ink so nothing reads as a coloured accent.
- */
 :root {
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);

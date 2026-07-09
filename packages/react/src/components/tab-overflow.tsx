@@ -20,10 +20,6 @@ const menuStyle: CSSProperties = {
 
 type OverflowItem = { id: string; name: string };
 
-// A dependency-free overflow control: a button that toggles a menu of the hidden
-// tabs. Implements the WAI-ARIA APG menu-button keyboard model — roving tabindex,
-// arrow/Home/End navigation, Escape-to-close with focus return. Closes on outside
-// pointerdown and focusout.
 const TabOverflowMenu = ({
   items,
   onSelect,
@@ -52,9 +48,6 @@ const TabOverflowMenu = ({
     };
   }, [open]);
 
-  // moving DOM focus onto the first menuitem is a side effect of the menu becoming
-  // visible, so it belongs in an effect rather than the click handler (the items don't
-  // exist yet there). activeIndex is reset to 0 on open, so we always land on the first.
   useEffect(() => {
     if (open) {
       itemRefs.current[0]?.focus();
@@ -115,8 +108,6 @@ const TabOverflowMenu = ({
     }
   };
 
-  // Tab out of the menu (or any other focus leaving the root) closes it without
-  // stealing focus, complementing the outside-pointerdown handler for keyboard users.
   const handleFocusOut = (event: FocusEvent<HTMLDivElement>): void => {
     if (event.relatedTarget instanceof Node && rootRef.current?.contains(event.relatedTarget)) {
       return;

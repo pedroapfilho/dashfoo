@@ -10,10 +10,6 @@ import { useTabset } from "./tabset-store";
 
 const contentStyle: CSSProperties = { flex: 1, minHeight: 0, overflow: "auto" };
 
-// Content is resolved through a component (not inline) so the panel has a stable
-// element identity and React keeps its state across re-renders instead of
-// remounting the inline result. Covers both the registry default (renderTab)
-// and a consumer-supplied render prop.
 const TabPanel = ({
   render,
   tab,
@@ -26,7 +22,6 @@ const TabPanel = ({
 };
 
 type TabsetContentProps = Omit<ComponentProps<"div">, "children"> & {
-  // Overrides the layout's renderTab for this tabset's panels.
   children?: (tab: TabNode) => ReactNode;
 };
 
@@ -37,8 +32,6 @@ const TabsetContent = ({ children, style, ...props }: TabsetContentProps): React
 
   const mergedStyle = { ...contentStyle, ...style };
 
-  // keepMounted renders every panel (inactive ones hidden) so their state
-  // survives a tab switch; otherwise only the active panel mounts.
   if (keepMounted && node.children.length > 0) {
     return node.children.map((tab, index) => (
       <div

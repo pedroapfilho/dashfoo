@@ -100,7 +100,7 @@ describe("dashfooSchema", () => {
 
   test("rejects an unknown dimension unit", () => {
     const badUnit = structuredClone(validModel);
-    // ts2 carries a `min` dimension; corrupt its unit.
+
     (badUnit.layout.children[1] as { children: Array<{ min: unknown }> }).children[0].min = {
       unit: "parsecs",
       value: 240,

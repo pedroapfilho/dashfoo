@@ -169,8 +169,6 @@ describe("useDashfooStore (controlled)", () => {
       result.current.dispatch({ tabsetId: "ts2", type: "setActiveTabset" });
     });
 
-    // controlled: the prop is unchanged until the host updates it; the next model
-    // is offered through onModelChange.
     expect(result.current.model.activeTabsetId).toBe("ts1");
     expect(onModelChange).toHaveBeenCalledWith(
       expect.objectContaining({ activeTabsetId: "ts2" }),

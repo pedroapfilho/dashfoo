@@ -102,7 +102,6 @@ describe("useResponsiveModel", () => {
   });
 
   test("a compact breakpoint locks every structural interaction", () => {
-    // width seeds POSITIVE_INFINITY, so a compact catch-all is the active one.
     const { result } = renderHook(() =>
       useResponsiveModel({ breakpoints: [{ compact: true, id: "stacked", model: MOBILE }] }),
     );

@@ -47,7 +47,6 @@ describe("tab close", () => {
   test("each tab has a close button that removes the tab without selecting it", () => {
     renderLayout();
 
-    // Chart (index 0) is selected; closing the non-active Book must not switch to it.
     fireEvent.click(screen.getByRole("button", { name: "Close Book" }));
 
     expect(screen.queryByRole("tab", { name: "Book" })).not.toBeInTheDocument();
@@ -125,7 +124,6 @@ describe("tab keyboard navigation (WAI-ARIA Tabs)", () => {
   test("ArrowLeft moves and selects the previous tab", () => {
     renderLayout();
 
-    // Move to Book first so ArrowLeft has somewhere to go back to.
     fireEvent.keyDown(screen.getByRole("tab", { name: "Chart" }), { key: "ArrowRight" });
     fireEvent.keyDown(screen.getByRole("tab", { name: "Book" }), { key: "ArrowLeft" });
 
@@ -151,7 +149,6 @@ describe("tab keyboard navigation (WAI-ARIA Tabs)", () => {
   test("ArrowRight on the last tab wraps to the first", () => {
     renderLayout();
 
-    // Chart -> Book (last), then wrap back to Chart.
     fireEvent.keyDown(screen.getByRole("tab", { name: "Chart" }), { key: "ArrowRight" });
     fireEvent.keyDown(screen.getByRole("tab", { name: "Book" }), { key: "ArrowRight" });
 
@@ -173,8 +170,6 @@ describe("tab keyboard navigation (WAI-ARIA Tabs)", () => {
   test("closing a tab returns focus to the newly-selected tab, not body", () => {
     renderLayout();
 
-    // Select Book, then close it; focus must land on the next active tab (Chart),
-    // never fall to <body>.
     fireEvent.keyDown(screen.getByRole("tab", { name: "Chart" }), { key: "ArrowRight" });
     fireEvent.click(screen.getByRole("button", { name: "Close Book" }));
 
@@ -200,7 +195,6 @@ describe("tabset maximize", () => {
     renderLayout();
     expect(screen.getByRole("tab", { name: "Trades" })).toBeInTheDocument();
 
-    // first tabset's maximize button
     fireEvent.click(screen.getAllByRole("button", { name: "Maximize" })[0]);
 
     expect(screen.queryByRole("tab", { name: "Trades" })).not.toBeInTheDocument();

@@ -7,10 +7,6 @@ import { useSyncExternalStore } from "react";
 const THEME_KEY = "dashfoo:landing:theme";
 const THEME_EVENT = "dashfoo:theme-change";
 
-// The current theme lives on <html data-dashfoo-theme> (set pre-paint in
-// layout.tsx). useSyncExternalStore reads it SSR-safely — server snapshot is
-// always light, then React reconciles to the real value after hydration with
-// no setState-in-effect and no flash.
 const subscribe = (callback: () => void): (() => void) => {
   window.addEventListener(THEME_EVENT, callback);
   return () => window.removeEventListener(THEME_EVENT, callback);
@@ -31,7 +27,7 @@ const ThemeToggle = (): ReactNode => {
     try {
       localStorage.setItem(THEME_KEY, next ? "dark" : "light");
     } catch {
-      // storage unavailable — the choice just won't survive a reload
+      void 0;
     }
     window.dispatchEvent(new Event(THEME_EVENT));
   };

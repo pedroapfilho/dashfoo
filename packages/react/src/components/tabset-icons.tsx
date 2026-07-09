@@ -2,9 +2,6 @@ import type { CSSProperties, ReactNode } from "react";
 
 const iconStyle: CSSProperties = { pointerEvents: "none" };
 
-// Shared lucide-style icon frame (24-unit grid, currentColor stroke). iconStyle
-// sets pointer-events:none so a pointerdown on a grip lands on the button (the
-// draggable), not the svg path — otherwise the drag sensor never activates.
 const Icon = ({ children }: { children: ReactNode }): ReactNode => (
   <svg
     aria-hidden="true"
@@ -60,7 +57,6 @@ const MaximizeIcon = ({ maximized }: { maximized: boolean }): ReactNode =>
     </Icon>
   );
 
-// "Float" — a small panel lifted off the surface (a framed rect with a header).
 const FloatIcon = (): ReactNode => (
   <Icon>
     <rect height="14" rx="2" width="18" x="3" y="6" />
@@ -68,14 +64,12 @@ const FloatIcon = (): ReactNode => (
   </Icon>
 );
 
-// "Minimize" — collapse to a chip.
 const MinimizeIcon = (): ReactNode => (
   <Icon>
     <path d="M5 12h14" />
   </Icon>
 );
 
-// "Dock back" — an arrow returning into a frame.
 const DockIcon = (): ReactNode => (
   <Icon>
     <path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2" />

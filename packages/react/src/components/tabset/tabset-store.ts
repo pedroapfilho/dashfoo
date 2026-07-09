@@ -9,14 +9,6 @@ import { tabDomId } from "../../lib/tab-ids";
 import { warnOnce } from "../../lib/warn-once";
 import type { OverflowItem } from "../tab-overflow";
 
-// The per-tabset coordination store behind <Tabset.Root>. Model-derived fields
-// (node, visualSelected, flags) are synced in by Root each render; coordination
-// state (editingTabId, overflowItems, tablistElement, restoreFocus) lives here
-// so sibling parts stay in lockstep without prop threading; actions read live
-// state via get(). editingTabId being a single field guarantees at most one open
-// rename editor per tabset. restoreFocus is set by closeTab so Root's post-delete
-// effect knows to move focus to the newly-selected tab instead of leaving it on
-// <body>.
 type TabsetState = {
   activeTab: TabNode | undefined;
   cancelRename: () => void;
@@ -133,7 +125,6 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
         return;
       }
       if (renameInputCount === 0) {
-        // The trigger must not vanish into nothing when no editor is composed.
         warnOnce(
           `missing-rename-input-${node.id}`,
           "startEditing needs a <Tabset.RenameInput> in the composition; ignoring",
@@ -149,7 +140,6 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
     },
   }));
 
-// Carries only the store instance — state always flows through selectors.
 const TabsetStoreContext = createContext<TabsetStore | null>(null);
 
 const useTabset = <T>(selector: (state: TabsetState) => T): T => {
@@ -160,8 +150,6 @@ const useTabset = <T>(selector: (state: TabsetState) => T): T => {
   return useStore(store, selector);
 };
 
-// Identity only — which tab a Trigger/CloseButton/RenameInput belongs to.
-// Derived state (selected, editing) comes from useTabset selectors.
 type TabContextValue = { index: number; tab: TabNode };
 
 const TabContext = createContext<TabContextValue | null>(null);

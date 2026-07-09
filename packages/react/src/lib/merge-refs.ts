@@ -8,8 +8,6 @@ const applyRef = <T>(ref: Ref<T> | undefined, value: T | null): void => {
   }
 };
 
-// Fans one element out to several refs so a part can keep its internal ref
-// (draggable wiring, focus lookups) while still honoring a consumer-supplied one.
 const mergeRefs =
   <T>(...refs: Array<Ref<T> | undefined>) =>
   (value: T | null): void => {

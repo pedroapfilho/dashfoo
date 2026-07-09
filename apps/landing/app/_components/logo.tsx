@@ -1,8 +1,6 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 
-// The existing dashfoo brand mark — light variant in light mode, dark variant
-// in dark mode (the dark: variant keys off data-dashfoo-theme on <html>).
 const Logo = ({ className = "h-6 w-auto" }: { className?: string }): ReactNode => (
   <>
     <Image

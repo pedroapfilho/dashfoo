@@ -6,17 +6,13 @@ import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
 import { createStore, useStore } from "zustand";
 
-// The layout-wide configuration every part below <Layout.Root> coordinates
-// through: resolved chrome flags, slot renderers, and the model dispatcher.
-// A scoped zustand store rather than a plain context value so parts subscribe
-// per-field — changing one flag re-renders only the parts that select it.
 type LayoutState = {
   closableTabs: boolean;
   dispatch: (action: Action) => void;
   draggableTabs: boolean;
   draggableTabsets: boolean;
   editable: boolean;
-  // Whether tabsets show a "float into a movable panel" control.
+
   floatable: boolean;
   keepMounted: boolean;
   maximizable: boolean;
@@ -26,8 +22,7 @@ type LayoutState = {
   renderTabLabel: ((tab: TabNode) => ReactNode) | undefined;
   renderTabsetToolbar: ((tabset: TabsetNode) => ReactNode) | undefined;
   resizableSplits: boolean;
-  // Magnetic snap defaults for split resize; null = no snapping. A row may still
-  // override this via its own `snap` attribute (read in row-view).
+
   snap: SnapConfig | null;
   splitDock: boolean;
   tabLocation: "bottom" | "top";
@@ -40,7 +35,6 @@ type LayoutStore = StoreApi<LayoutState>;
 const createLayoutStore = (initial: LayoutState): LayoutStore =>
   createStore<LayoutState>(() => initial);
 
-// Carries only the store instance — state always flows through selectors.
 const LayoutStoreContext = createContext<LayoutStore | null>(null);
 
 const useLayout = <T>(selector: (state: LayoutState) => T): T => {

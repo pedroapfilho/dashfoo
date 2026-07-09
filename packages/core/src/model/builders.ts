@@ -1,11 +1,3 @@
-// Ergonomic constructors for the layout model, so consumers seed a Dashfoo
-// without hand-writing `type`/`version`/`selected` boilerplate or nested
-// literals. Every builder fills the required-but-mechanical fields and leaves
-// the meaningful ones (ids that get referenced, weights) to the caller. Output
-// is schema-valid by construction; id uniqueness across reused components is
-// the caller's responsibility (tabs default their id to the component name), so
-// `model` warns once if it detects duplicate node ids.
-
 import { createNodeId } from "./ids";
 import type {
   Dashfoo,
@@ -32,8 +24,6 @@ type TabOptions = {
   id?: string;
 };
 
-// The id defaults to the component name — the common case where a layout holds
-// one tab per component and references it by that name.
 const tab = (component: string, name: string, options: TabOptions = {}): TabNode => ({
   component,
   name,
@@ -93,7 +83,6 @@ type FloatOptions = {
   name?: string;
 };
 
-// A floating panel wrapping a layout subtree at a given in-app rect.
 const floatNode = (layout: RowNode, geometry: Geometry, options: FloatOptions = {}): FloatNode => ({
   geometry,
   layout,

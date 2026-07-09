@@ -60,10 +60,6 @@ describe("stackModel", () => {
     expect(stackModel(nested(), "row").layout.orientation).toBe("row");
   });
 
-  // The responsive lock-on-mobile design renders stackModel as a view-only
-  // projection while dispatch still targets the canonical model. That only works
-  // because tabset ids survive stacking: a tap-to-select in the narrow view
-  // dispatches a tabset id that still resolves against the desktop model.
   test("a selectTab using a stacked-view tabset id lands on the canonical model", () => {
     const source = nested();
     const stacked = stackModel(source);
@@ -75,16 +71,13 @@ describe("stackModel", () => {
     expect(tabset.type === "tabset" && tabset.selected).toBe(1);
   });
 
-  // Floating panels are independent overlays, so stacking the main layout must not
-  // pull their tabsets in — otherwise a floated panel would appear in both the
-  // compact main view and its float (duplicate ids).
   test("leaves floating-panel tabsets out of the stacked main layout", () => {
     const floated = reducer(nested(), { tabsetId: "ts-a", type: "floatTabset" });
     expect(floated.floats).toHaveLength(1);
 
     const stacked = stackModel(floated);
     expect(stacked.layout.children.map((child) => child.id)).toEqual(["ts-b", "ts-c"]);
-    // The float passes through untouched.
+
     expect(stacked.floats).toHaveLength(1);
     expect(stacked.floats?.[0]?.id).toBe(floated.floats?.[0]?.id);
   });

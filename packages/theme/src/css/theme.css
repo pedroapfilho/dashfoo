@@ -1,16 +1,3 @@
-/*
- * Tailwind v4 bridge — mirrors the runtime --dashfoo-* tokens into @theme
- * namespaces so Tailwind consumers get utilities (bg-dashfoo-card,
- * text-dashfoo-foreground, rounded-dashfoo, font-dashfoo, …) that stay in
- * sync with the skin. `inline` is load-bearing: utilities must inline
- * var(--dashfoo-*) so a [data-dashfoo-theme="dark"] subtree remap resolves
- * at the element, not at :root. Custom CSS should keep reading the
- * --dashfoo-* tokens directly, never these mirrors.
- *
- * splitter-size, dock-*, and the off-scale font-size tokens are deliberately
- * unmapped — component-scoped values with no sensible utility surface.
- */
-
 @theme inline {
   --color-dashfoo-background: var(--dashfoo-background);
   --color-dashfoo-card: var(--dashfoo-card);

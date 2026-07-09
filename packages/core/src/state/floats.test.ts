@@ -8,7 +8,6 @@ import { reducer } from "./reducer";
 
 const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab" });
 
-// Two-tabset main layout: ts1 has t1/t2, ts2 has t3.
 const baseModel = (): Dashfoo => ({
   activeTabsetId: "ts1",
   global: {},
@@ -94,8 +93,7 @@ describe("dockFloat", () => {
     const next = reducer(floated, { floatId: float.id, type: "dockFloat" });
 
     expect(next.floats ?? []).toHaveLength(0);
-    // ts1 is untouched; the float's ts2 comes back as its own tabset with its tab,
-    // rather than its tabs being flattened into ts1.
+
     const restored = collectTabsets(next).find((ts) => ts.id === "ts2");
     expect(restored?.children.map((t) => t.id)).toEqual(["t3"]);
     const ts1 = collectTabsets(next).find((ts) => ts.id === "ts1");
@@ -120,7 +118,7 @@ describe("dockFloat", () => {
   test("preserves the tab selected inside the float when restoring as a panel", () => {
     const floated = reducer(baseModel(), { tabsetId: "ts1", type: "floatTabset" });
     const float = onlyFloat(floated);
-    // ts1 (t1, t2) is now in the float; select its second tab there.
+
     const selected = reducer(floated, { index: 1, tabsetId: "ts1", type: "selectTab" });
 
     const next = reducer(selected, { floatId: float.id, type: "dockFloat" });
@@ -142,7 +140,7 @@ describe("dockFloat", () => {
     });
 
     expect(next.floats ?? []).toHaveLength(0);
-    // t3 lives somewhere back in the main layout again.
+
     const ids = collectTabsets(next).flatMap((ts) => ts.children.map((t) => t.id));
     expect(ids).toContain("t3");
   });
@@ -261,7 +259,6 @@ describe("normalize with floats", () => {
   test("collectTabsets and findDuplicateIds span float roots", () => {
     const floated = reducer(baseModel(), { tabId: "t1", type: "floatTab" });
 
-    // t1 (now in a float) and t2/t3 (main) are all reachable.
     const allTabIds = collectTabsets(floated).flatMap((ts) => ts.children.map((t) => t.id));
     expect(allTabIds.toSorted()).toEqual(["t1", "t2", "t3"]);
     expect(findDuplicateIds(floated)).toEqual([]);
@@ -271,7 +268,7 @@ describe("normalize with floats", () => {
 describe("actions still resolve nodes that live inside a float", () => {
   test("selectTab and renameTab reach a float's tabset/tab", () => {
     const floated = reducer(baseModel(), { tabsetId: "ts1", type: "floatTabset" });
-    // ts1 (with t1, t2) now lives in a float.
+
     const renamed = reducer(floated, { name: "Floated", tabId: "t1", type: "renameTab" });
     const floatTabset = onlyFloat(renamed).layout.children[0] as TabsetNode;
 

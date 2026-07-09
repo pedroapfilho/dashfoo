@@ -10,9 +10,9 @@ const dragGripTo = async (page: Page, grip: Locator, x: number, y: number): Prom
   }
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8); // arm the sensor
+  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
   await page.mouse.move(x, y, { steps: 16 });
-  await page.mouse.move(x, y, { steps: 4 }); // settle on the target
+  await page.mouse.move(x, y, { steps: 4 });
   await page.mouse.up();
 };
 
@@ -43,14 +43,11 @@ test("dragging a tabset grip to an edge splits it beside the target", async ({ p
     throw new Error("no target box");
   }
 
-  // the docking layout starts side by side (a vertical splitter, no horizontal one)
   await expect(page.locator('[data-separator][aria-orientation="horizontal"]')).toHaveCount(0);
 
-  // drop on the bottom edge band of the second tabset
   const grip = tabsets(page).first().locator('[data-dashfoo="tabset-grip"]');
   await dragGripTo(page, grip, target.x + target.width / 2, target.y + target.height * 0.94);
 
-  // still two tabsets, now stacked as a unit (a horizontal splitter appears)
   await expect.poll(() => tabsets(page).count()).toBe(2);
   await expect
     .poll(() => page.locator('[data-separator][aria-orientation="horizontal"]').count())

@@ -9,8 +9,6 @@ import { createLayoutStore, LayoutStoreContext } from "../hooks/layout-store";
 
 const DEFAULT_TABSET_MIN_SIZE = 320;
 
-// position: relative so the floating-panel overlay (absolute, inset 0) anchors to
-// the layout frame and floats are positioned in layout-container coordinates.
 const rootStyle = { display: "flex", height: "100%", position: "relative", width: "100%" } as const;
 
 type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
@@ -19,12 +17,9 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
   dispatch: (action: Action) => void;
   draggableTabs?: boolean;
   draggableTabsets?: boolean;
-  // The umbrella switch: false turns off every structural edit (tab/tabset drag,
-  // close, rename, splitter resize, external drops) in one go, leaving view
-  // interactions (tab selection, maximize, overflow) and dispatch untouched.
+
   editable?: boolean;
-  // Tabsets show a control that floats the panel into a movable, resizable overlay.
-  // Off by default — opt in, since it changes the model's `floats`.
+
   floatable?: boolean;
   keepMounted?: boolean;
   maximizable?: boolean;
@@ -34,18 +29,12 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
   renderTabLabel?: (tab: TabNode) => ReactNode;
   renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
   resizableSplits?: boolean;
-  // Forwarded onto the root element so a width observer can measure the actual
-  // container — the hook behind responsive lock-on-mobile.
+
   rootRef?: Ref<HTMLDivElement>;
-  // Magnetic snap default for split resize; the prop replaces (not merges with)
-  // model.global.snap when both are present.
+
   snap?: SnapConfig;
 };
 
-// The frame of a hand-built layout: creates the scoped layout store every part
-// below subscribes to. Takes the model and dispatch (the two store fields the
-// parts need) rather than a whole DashfooStore — wire useDashfooStore and pass
-// store.model / store.dispatch.
 const LayoutRoot = ({
   children,
   closableTabs = true,
@@ -67,11 +56,6 @@ const LayoutRoot = ({
   style,
   ...props
 }: LayoutRootProps): ReactNode => {
-  // Model-level globals act as a default layer under the component props: a
-  // feature is on unless the prop, the global, or the per-node flag turns it off.
-  // `editable` is an extra AND-term over every structural capability — but not
-  // maximize, which is reversible view state (same class as tab selection) and
-  // stays available in a static layout.
   const global = model.global;
   const snapshot: LayoutState = {
     closableTabs: editable && closableTabs && global.tabEnableClose !== false,
@@ -96,9 +80,7 @@ const LayoutRoot = ({
   };
 
   const [store] = useState(() => createLayoutStore(snapshot));
-  // Props→store sync. useLayoutEffect so subscribers see fresh state before
-  // paint; never during render — setState on an external store mid-render is
-  // unsafe.
+
   useLayoutEffect(() => {
     store.setState(snapshot);
   });

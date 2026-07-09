@@ -1,8 +1,5 @@
 import { ImageResponse } from "next/og";
 
-// Apple touch icons must be raster (PNG), so the dashfoo mark is drawn with divs
-// and rendered to PNG instead of reusing icon.svg. iOS adds its own rounded mask
-// over the opaque tile.
 export const size = { height: 180, width: 180 };
 export const contentType = "image/png";
 

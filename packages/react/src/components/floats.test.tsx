@@ -33,8 +33,6 @@ const model = (): Dashfoo => ({
   version: 1,
 });
 
-// A float node holding one tab, for seeding a model that already has floats (the
-// shape a persisted layout loads with) without going through the float gesture.
 const floatNode = (id: string, tabId: string, component: string, name: string): FloatNode => ({
   geometry: { height: 300, left: 40, top: 40, width: 400 },
   id,
@@ -90,15 +88,14 @@ describe("floating panels", () => {
 
     const panel = floatPanel()!;
     const titleBar = panel.querySelector('[data-dashfoo="float-titlebar"]')!;
-    // jsdom has no real layout, but the gesture math still applies the delta.
+
     panel.setPointerCapture = () => {};
     panel.releasePointerCapture = () => {};
-    // buttons:1 — a real drag keeps the button down (a no-button move ends it).
+
     fireEvent.pointerDown(titleBar, { buttons: 1, clientX: 0, clientY: 0, pointerId: 1 });
     fireEvent.pointerMove(panel, { buttons: 1, clientX: 40, clientY: 30, pointerId: 1 });
     fireEvent.pointerUp(panel, { clientX: 40, clientY: 30, pointerId: 1 });
 
-    // The float still exists (move, not dock) after the gesture commits.
     expect(floatPanel()).not.toBeNull();
   });
 
@@ -113,15 +110,11 @@ describe("floating panels", () => {
     const handles = [...panel.querySelectorAll<HTMLElement>('[data-dashfoo="float-resize"]')];
     const se = handles.find((h) => h.dataset.edge === "se")!;
 
-    // Grab the SE corner and drag outward with the button held.
     fireEvent.pointerDown(se, { buttons: 1, clientX: 100, clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(panel, { buttons: 1, clientX: 160, clientY: 140, pointerId: 1 });
     const draggedWidth = panel.style.width;
     expect(draggedWidth).not.toBe("");
 
-    // The pointerup never arrived (released off a non-capturing element on a fast
-    // drag). The next move comes back over the panel with no button down — the
-    // gesture must end, not keep chasing the cursor.
     fireEvent.pointerMove(panel, { buttons: 0, clientX: 300, clientY: 260, pointerId: 1 });
     fireEvent.pointerMove(panel, { buttons: 0, clientX: 420, clientY: 380, pointerId: 1 });
 
@@ -145,7 +138,6 @@ describe("floating panels", () => {
     fireEvent.pointerMove(panel, { buttons: 1, clientX: 180, clientY: 160, pointerId: 1 });
     expect(panel.style.width).not.toBe(startWidth);
 
-    // The OS aborts the drag — the rect snaps back, nothing is committed.
     fireEvent.pointerCancel(panel, { clientX: 180, clientY: 160, pointerId: 1 });
     expect(panel.style.width).toBe(startWidth);
   });
@@ -163,12 +155,8 @@ describe("floating panels", () => {
       (h) => h.dataset.edge === "se",
     )!;
 
-    // Pointer 1 presses the title bar but its pointerup is never delivered (it
-    // left before crossing the slop on touch) — gestureRef is left stale.
     fireEvent.pointerDown(titleBar, { buttons: 1, clientX: 0, clientY: 0, pointerId: 1 });
 
-    // Pointer 2 (a different finger) now resizes — it must be accepted, not
-    // blocked by the stale gesture.
     const startWidth = panel.style.width;
     fireEvent.pointerDown(se, { buttons: 1, clientX: 100, clientY: 100, pointerId: 2 });
     fireEvent.pointerMove(panel, { buttons: 1, clientX: 180, clientY: 160, pointerId: 2 });
@@ -191,7 +179,7 @@ describe("floating panels", () => {
     fireEvent.click(screen.getByLabelText("Float panel"));
 
     const title = floatPanel()!.querySelector('[data-dashfoo="float-title"]')!;
-    // The active tab is "Chart"; the window title is its own name instead.
+
     expect(title).toHaveTextContent("Panel");
 
     fireEvent.doubleClick(title);
@@ -211,12 +199,10 @@ describe("floating panels", () => {
 
     fireEvent.click(within(floatPanel()!).getByLabelText("Minimize panel"));
 
-    // The window is gone; a chip stands in its place.
     expect(floatPanel()).toBeNull();
     const chip = document.querySelector('[data-dashfoo="float-chip"]');
     expect(chip).not.toBeNull();
 
-    // Activating the chip restores the window.
     fireEvent.keyDown(chip!, { key: "Enter" });
     expect(floatPanel()).not.toBeNull();
   });
@@ -227,9 +213,9 @@ describe("floating panels", () => {
 
     const panel = floatPanel()!;
     expect(panel).not.toBeNull();
-    // Its content still renders and stays selectable — only structural edits go.
+
     expect(within(panel).getByText("CHART")).toBeInTheDocument();
-    // No minimize, dock-back, or resize affordances.
+
     expect(within(panel).queryByLabelText("Minimize panel")).not.toBeInTheDocument();
     expect(
       within(panel).queryByLabelText("Dock panel back into the main layout"),
@@ -242,11 +228,10 @@ describe("floating panels", () => {
     render(<DashfooLayout components={components} defaultModel={m} editable={false} />);
 
     const panel = floatPanel()!;
-    // Double-clicking the title never opens the inline editor.
+
     fireEvent.doubleClick(panel.querySelector('[data-dashfoo="float-title"]')!);
     expect(panel.querySelector('[data-dashfoo="float-rename"]')).toBeNull();
 
-    // Dragging the title bar is inert — the geometry never moves.
     panel.setPointerCapture = () => {};
     panel.releasePointerCapture = () => {};
     const titleBar = panel.querySelector('[data-dashfoo="float-titlebar"]')!;
@@ -265,18 +250,14 @@ describe("floating panels", () => {
     render(<DashfooLayout components={components} defaultModel={m} floatable />);
 
     const [first, second] = floatPanels();
-    // Both start in the lower stacking band; nothing is raised yet.
+
     expect(second.style.zIndex).toBe("1");
 
-    // A pointerdown on the body (a tab/content area, not chrome) brings it forward.
     fireEvent.pointerDown(within(second).getByText("BOOK"));
     expect(second.style.zIndex).toBe("2");
     expect(first.style.zIndex).toBe("1");
   });
 
-  // A hand-built layout that turns on `floatable` but forgets <Layout.FloatLayer>
-  // has nowhere to render the float. The control must not float a panel into
-  // nowhere — it hides and warns (DashfooLayout always supplies the layer).
   test("hides the float control and warns when no FloatLayer is present", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const m = model();

@@ -5,7 +5,6 @@ import { insertionIndex, insertionLineRect, pointInRect, shouldAllowDrop } from 
 
 const r = (x: number, width: number): Rect => ({ height: 30, width, x, y: 0 });
 
-// a tab-item resting inside a taller strip (y=8, height=30), 60 wide
 const item = (x: number): Rect => ({ height: 30, width: 60, x, y: 8 });
 
 describe("pointInRect", () => {
@@ -27,7 +26,6 @@ describe("pointInRect", () => {
 });
 
 describe("insertionIndex", () => {
-  // three tabs: [0,40) [40,80) [80,120)
   const rects = [r(0, 40), r(40, 40), r(80, 40)];
 
   test("left of the first midpoint inserts at 0", () => {
@@ -49,7 +47,7 @@ describe("insertionIndex", () => {
 
 describe("insertionLineRect", () => {
   const strip: Rect = { height: 36, width: 300, x: 10, y: 5 };
-  const items = [item(10), item(70), item(130)]; // last item ends at x=190
+  const items = [item(10), item(70), item(130)];
 
   test("before a given tab centers the line on that tab-item's left edge", () => {
     expect(insertionLineRect(strip, items, 1)).toEqual({
@@ -73,17 +71,17 @@ describe("insertionLineRect", () => {
     expect(insertionLineRect(strip, [], 0)).toEqual({
       height: 36,
       width: 4,
-      x: 10, // x - width/2 would be 8, outside the strip
+      x: 10,
       y: 5,
     });
   });
 
   test("clamps to the strip's right edge when the boundary sits at the strip end", () => {
-    const fullItems = [item(10), item(70), item(250)]; // last item ends at x=310, the strip end
+    const fullItems = [item(10), item(70), item(250)];
     expect(insertionLineRect(strip, fullItems, 3)).toEqual({
       height: 36,
       width: 4,
-      x: 306, // strip end (310) minus the line width
+      x: 306,
       y: 5,
     });
   });

@@ -49,9 +49,7 @@ const Hero = (): ReactNode => (
             <span className="text-dashfoo-muted-foreground ml-3 text-sm">yourterminal.com</span>
           </div>
           <div className="bg-dashfoo-background p-3 sm:p-4">
-            {/* Square corners + padding so the demo reads as a browser content area,
-                and its focus/dock outlines sit inside the padding instead of the
-                frame's overflow clip. */}
+            {}
             <div className="h-[420px] sm:h-[480px]">
               <LiveDemo />
             </div>

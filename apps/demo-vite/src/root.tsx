@@ -26,8 +26,6 @@ const NAV = [
   { exact: false, icon: Lock, label: "Static layout", to: "/static" },
 ] as const;
 
-// Cross-links to the other dashfoo surfaces. Kept out of the scrolling demo
-// <nav> so they stay pinned beside the theme toggle at any width.
 const EXTERNAL = [
   { href: "https://docs.dashfoo.com", icon: BookOpen, label: "Docs" },
   { href: "https://dashfoo.com", icon: Home, label: "dashfoo.com" },
@@ -35,9 +33,6 @@ const EXTERNAL = [
 
 const THEME_KEY = "dashfoo:demo:theme";
 
-// Flips data-dashfoo-theme on <html> — the dashfoo theme and the shell's
-// Tailwind dark: variant both key off it. The pre-paint script in index.html
-// applied the initial value, so state is read back from the DOM.
 const ThemeToggle = (): ReactNode => {
   const [dark, setDark] = useState(() => document.documentElement.dataset.dashfooTheme === "dark");
 
@@ -49,12 +44,12 @@ const ThemeToggle = (): ReactNode => {
     } else {
       delete document.documentElement.dataset.dashfooTheme;
     }
-    // Keep the browser chrome color matched to the layout background.
+
     document.querySelector("#theme-color")?.setAttribute("content", next ? "#0a0a0a" : "#ffffff");
     try {
       localStorage.setItem(THEME_KEY, next ? "dark" : "light");
     } catch {
-      // storage unavailable — the choice just won't survive a reload
+      void 0;
     }
   };
 
@@ -70,9 +65,6 @@ const ThemeToggle = (): ReactNode => {
   );
 };
 
-// A top bar instead of a fixed sidebar so the shell holds up at any width: the
-// nav scrolls horizontally when it doesn't fit, and the stage keeps the full
-// viewport width on small screens.
 const RootLayout = (): ReactNode => (
   <div className="flex h-dvh w-full flex-col overflow-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
     <header className="flex shrink-0 items-center gap-3 border-b border-neutral-200 bg-white px-3 py-1.5 sm:px-4 dark:border-neutral-800 dark:bg-neutral-900">

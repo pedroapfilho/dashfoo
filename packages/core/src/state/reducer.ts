@@ -94,9 +94,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       if (!source) {
         return;
       }
-      // Remove the source first; action.index is the destination slot measured
-      // against the tabs that remain (the drag adapter excludes the dragged tab),
-      // so it indexes the post-removal array directly — no reorder adjustment.
+
       const [removed] = source.container.children.splice(source.index, 1);
       if (!removed) {
         return;
@@ -120,12 +118,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
         const target = findTabset(draft, action.targetId);
         if (target) {
           const mergeStart = target.children.length;
-          // Clamp the source's selection against the SOURCE's own tab count before
-          // offsetting. normalize's clampSelected only bounds against the FINAL
-          // merged length, so a stale/out-of-range source.selected would otherwise
-          // resolve to a valid-but-wrong merged index (an original target tab, or
-          // the wrong source tab) that normalize cannot catch. Clamp here so the
-          // merged selection always lands on a tab that came from the source.
+
           const sourceSelected = Math.min(Math.max(source.selected, 0), source.children.length - 1);
           target.children.push(...source.children);
           target.selected = mergeStart + sourceSelected;
@@ -136,7 +129,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
         }
         return;
       }
-      // split-* moves the whole tabset beside the target.
+
       if (action.location.startsWith("split-")) {
         const sourceRoot = findRootContaining(draft, action.sourceId);
         const detached = sourceRoot
@@ -151,7 +144,6 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
     case "renameFloat": {
       const float = findFloat(draft, action.floatId);
       if (float) {
-        // Dedupe against the other floats so two windows never share a title.
         const others = (draft.floats ?? []).filter((other) => other.id !== action.floatId);
         float.name = uniqueFloatName(action.name, others);
       }
@@ -205,9 +197,6 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
   }
 };
 
-// The canonical engine: deep-copy the model (so the input is never mutated), apply
-// one action to the copy, then run the self-healing invariants so the result is
-// always a valid, canonical model.
 const reducer = (model: Dashfoo, action: Action): Dashfoo => {
   const draft = structuredClone(model);
   applyAction(draft, action);

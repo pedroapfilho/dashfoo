@@ -25,8 +25,6 @@ const baseModel = (): Dashfoo => ({
 const tabsetById = (model: Dashfoo, id: string): TabsetNode | undefined =>
   model.layout.children.find((c): c is TabsetNode => c.type === "tabset" && c.id === id);
 
-// A split gives the new tabset a generated id; grab it by exclusion so the
-// weight/ordering assertions don't depend on the random id.
 const splitModel = (): Dashfoo => ({
   activeTabsetId: "ts1",
   global: {},
@@ -102,8 +100,6 @@ describe("moveNode", () => {
   });
 
   test("reorders a tab to the end of its own tabset (index excludes the tab itself)", () => {
-    // ts1 is [t1, t2]; moving t1 to the end means dropping it after the one tab
-    // that remains, so the post-removal index is 1, not 2.
     const next = reducer(baseModel(), {
       index: 1,
       location: "center",
@@ -151,8 +147,7 @@ describe("moveTabset", () => {
 
     expect(tabsetById(next, "ts1")?.children.map((t) => t.id)).toEqual(["t1", "t2", "t3"]);
     expect(next.layout.children.map((c) => c.id)).toEqual(["ts1"]);
-    // The merge selects the source's previously-visible tab: ts2.selected was 0 and
-    // the target (ts1) had 2 tabs, so the merged-in tab lands at index 2.
+
     expect(tabsetById(next, "ts1")?.selected).toBe(2);
   });
 
@@ -187,7 +182,7 @@ describe("moveTabset", () => {
 
     const merged = tabsetById(next, "ts1");
     expect(merged?.children.map((t) => t.id)).toEqual(["t1", "s1", "s2"]);
-    // target had 1 tab, source.selected was 1 → merged selected is 1 + 1 = 2 (s2).
+
     expect(merged?.selected).toBe(2);
     expect(merged?.children[merged.selected]?.id).toBe("s2");
   });
@@ -219,8 +214,6 @@ describe("moveTabset", () => {
 
 describe("split weight geometry", () => {
   test("a split into a matching-orientation row halves the target's weight", () => {
-    // root is a row; split-right matches it, so the parent row is reused and the
-    // target's weight (100) is split evenly between target and the new tabset.
     const next = reducer(splitModel(), {
       location: "split-right",
       tab: tab("new"),
@@ -233,9 +226,6 @@ describe("split weight geometry", () => {
   });
 
   test("a wrapping split sets both halves to 50 and gives the new row the target's weight", () => {
-    // split-bottom is the opposite orientation of the root row, so the target is
-    // wrapped in a new column row that inherits the target's original weight (100)
-    // while both tabsets inside it reset to 50.
     const next = reducer(splitModel(), {
       location: "split-bottom",
       tab: tab("new"),
@@ -264,7 +254,6 @@ describe("split weight geometry", () => {
       type: "addNode",
     });
 
-    // matching orientation reuses the root row; the new tabset lands at index 0.
     const first = next.layout.children[0];
     expect(first?.type).toBe("tabset");
     expect((first as TabsetNode).children[0]?.id).toBe("L");
@@ -310,8 +299,6 @@ describe("split weight geometry", () => {
   });
 
   test("moveTabset split into a matching-orientation row halves the target's weight", () => {
-    // ts2 (weight 40) is detached and placed beside ts1 (weight 100) in the reused
-    // root row, so ts1 and the moved ts2 each end up at 50.
     const next = reducer(splitModel(), {
       location: "split-right",
       sourceId: "ts2",
@@ -325,13 +312,6 @@ describe("split weight geometry", () => {
   });
 
   test("moveTabset split into a mismatched orientation wraps the target in a new row", () => {
-    // splitModel()'s root is row-oriented; split-bottom is column orientation, so
-    // moving ts2 onto ts1 mismatches the parent and forces placeBesideTarget's
-    // wrapping else. ts2 survives the move (a split move detaches the whole tabset,
-    // unlike a center merge which destroys the source), placed beside ts1 with both
-    // halves at 50. Detaching ts2 leaves the root row with the lone wrapping column
-    // row as its only child, so normalize absorbs the wrap into the root: the final
-    // layout is a column-oriented root holding [ts1, ts2] directly.
     const next = reducer(splitModel(), {
       location: "split-bottom",
       sourceId: "ts2",

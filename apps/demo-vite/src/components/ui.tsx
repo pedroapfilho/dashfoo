@@ -22,7 +22,6 @@ const Button = ({
   </button>
 );
 
-// A titled stage that hosts a dashfoo layout in a fill-height box.
 const DemoStage = ({
   actions,
   children,

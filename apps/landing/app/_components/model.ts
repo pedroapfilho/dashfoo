@@ -1,9 +1,6 @@
 import type { Dashfoo } from "@dashfoo/core";
 import { model, row, tab, tabset } from "@dashfoo/core";
 
-// The showcase layout: a wide primary tabset beside a stacked side column.
-// First arg of tab() is the component key the panel factory switches on; the
-// second is the display label shown in the tab strip.
 const showcaseModel = (): Dashfoo =>
   model(
     row(

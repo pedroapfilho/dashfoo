@@ -7,22 +7,12 @@ import { useState } from "react";
 import { FloatLayerContext } from "./float-context";
 import { FloatPanel } from "./float-panel";
 
-// The floating-panel layer: the in-app counterpart of the drag layer. It renders
-// `model.floats` as draggable, resizable overlays over the docked layout, in the
-// SAME React tree — so context, events, and styling just work (no separate window,
-// no portal). Wrap the layout's content with <Layout.FloatLayer> and it drops an
-// absolutely-positioned overlay alongside the rows.
-
 const overlayStyle: CSSProperties = {
   inset: 0,
-  // Never block the docked layout underneath; each float opts pointer events back
-  // in, so empty overlay space stays click-through. Fixed to the viewport so a
-  // float can be dragged anywhere on the page, not just within the layout box.
+
   pointerEvents: "none",
   position: "fixed",
-  // An explicit layer so a drop indicator aimed at a docked tabset (rendered at
-  // z:auto) stays *behind* the floats that overlap it; a float's own indicator
-  // opts back above this layer. See DockIndicator in drag-overlays.tsx.
+
   zIndex: 1,
 };
 
@@ -33,8 +23,6 @@ const FloatOverlay = ({
   floats: Array<FloatNode>;
   global: GlobalAttributes;
 }): ReactNode => {
-  // The clicked float comes to the front; the rest share the lower band, stacking
-  // by DOM (model) order.
   const [topId, setTopId] = useState<string | null>(null);
   if (floats.length === 0) {
     return null;

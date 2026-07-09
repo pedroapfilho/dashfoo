@@ -1,17 +1,10 @@
 import type { DockLocation, Point, Rect } from "@dashfoo/core";
 import { dockZonePolygons, resolveDockTarget } from "@dashfoo/core";
 
-// Pure geometry for the drop-zone debug overlay: measured rects in, paintable
-// cells out. The dock trapezoids come straight from @dashfoo/core's
-// dockZonePolygons (the exact hit-region partition resolveDockTarget uses); the
-// strip slots repeat the one-line midpoint rule of the react package's
-// insertionIndex (packages/react/src/lib/tab-insertion.ts) — slot boundaries sit
-// at tab midpoints, dragged tab excluded.
-
 type TabsetMeasurement = {
   rect: Rect;
   strip: Rect | null;
-  // x midpoints of the strip's tab rects, dragged tab excluded.
+
   tabMidpoints: Array<number>;
 };
 
@@ -60,10 +53,6 @@ type ActiveCell =
   | { kind: "dock"; location: DockLocation; tabsetIndex: number }
   | { kind: "slot"; slotIndex: number; tabsetIndex: number };
 
-// Which cell the pointer is in, mirroring the adapter's hit-test chain
-// (drag-adapter.tsx intentForTabset): strip slots take precedence over the dock
-// zones, everything else defers to resolveDockTarget so the highlight can never
-// disagree with where a drop actually lands.
 const activeCellAt = (tabsets: Array<TabsetMeasurement>, point: Point): ActiveCell | null => {
   const tabsetIndex = tabsets.findIndex((tabset) => inRect(point, tabset.rect));
   const tabset = tabsets[tabsetIndex];

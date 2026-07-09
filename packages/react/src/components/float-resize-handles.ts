@@ -2,18 +2,14 @@ import type { CSSProperties } from "react";
 
 import type { ResizeEdges } from "../lib/float-geometry";
 
-// Edge grab band straddles the frame border evenly (half outside, half inside)
-// so the cursor lands on a real target whether the user aims slightly in or out.
 const EDGE_THICKNESS = 12;
 const EDGE_OFFSET = -(EDGE_THICKNESS / 2);
-// Corners sit mostly outside the frame and are larger for a forgiving grab.
+
 const CORNER_SIZE = 20;
 const CORNER_OFFSET = -8;
-// Each edge band starts where the corner handle ends, so the corner (painted
-// later, same zIndex) keeps its zone while the band covers the rest of the side.
+
 const EDGE_INSET = CORNER_SIZE + CORNER_OFFSET;
 
-// data-edge encodes which edges the handle moves; style positions it on the frame.
 const RESIZE_HANDLES: ReadonlyArray<{ edges: ResizeEdges; key: string; style: CSSProperties }> = [
   {
     edges: { x: 0, y: -1 },
@@ -101,8 +97,6 @@ const RESIZE_HANDLES: ReadonlyArray<{ edges: ResizeEdges; key: string; style: CS
   },
 ];
 
-// Resolve a resize handle's data-edge back to its edges; a missing key (the title
-// bar or the minimized chip) means a move, not a resize.
 const EDGE_BY_KEY = new Map<string, ResizeEdges>(RESIZE_HANDLES.map((h) => [h.key, h.edges]));
 
 export { EDGE_BY_KEY, RESIZE_HANDLES };

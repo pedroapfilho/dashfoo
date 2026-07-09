@@ -7,8 +7,6 @@ import {
 
 import { RootLayout } from "./root";
 
-// Each page is lazily imported so it ships as its own chunk — the initial bundle
-// loads only the shell + the landing route, not every demo page at once.
 const rootRoute = createRootRoute({ component: RootLayout });
 
 const indexRoute = createRoute({
@@ -48,7 +46,6 @@ const routeTree = rootRoute.addChildren([
 const router = createRouter({ defaultPreload: "intent", routeTree });
 
 declare module "@tanstack/react-router" {
-  // Module augmentation requires declaration merging — must stay an interface.
   // oxlint-disable-next-line typescript-eslint/consistent-type-definitions
   interface Register {
     router: typeof router;

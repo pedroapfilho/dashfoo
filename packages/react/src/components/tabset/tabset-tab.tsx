@@ -14,15 +14,11 @@ import { TabContext, TabsetStoreContext, useTab, useTabset } from "./tabset-stor
 
 type TabsetTabProps = ComponentProps<"span"> & { tab: TabNode };
 
-// The per-tab wrapper: provides identity (which tab, which index) to Trigger,
-// CloseButton, and RenameInput, and owns the focus-return-after-rename effect.
 const TabsetTab = ({ children, ref: userRef, tab, ...props }: TabsetTabProps): ReactNode => {
   const store = useContext(TabsetStoreContext);
   const node = useTabset((state) => state.node);
   const editing = useTabset((state) => state.editingTabId === tab.id);
-  // `data-dragging` is driven off the drag machine's subject, which is
-  // authoritative for the whole drag — the source tab stays in the strip (dimmed)
-  // while the overlay chip follows the pointer.
+
   const dragSubject = useDragSubject();
   const isDragging = dragSubject?.kind === "tab" && dragSubject.id === tab.id;
   const itemRef = useRef<HTMLSpanElement | null>(null);
@@ -30,12 +26,6 @@ const TabsetTab = ({ children, ref: userRef, tab, ...props }: TabsetTabProps): R
 
   const index = node.children.findIndex((child) => child.id === tab.id);
 
-  // The orphan check must not run at render time: right after a tab moves
-  // between tabsets, this render sees the new `tab` prop against the store's
-  // not-yet-synced node, so a legitimately moved tab transiently looks
-  // orphaned (the index self-corrects before paint). The effect reads the live
-  // store instead — Root's layout-effect sync always lands before any passive
-  // effect flushes, so only a genuinely missing tab warns.
   const orphanAtRender = index === -1;
   useEffect(() => {
     const settled = store?.getState().node.children.some((child) => child.id === tab.id);
@@ -47,7 +37,6 @@ const TabsetTab = ({ children, ref: userRef, tab, ...props }: TabsetTabProps): R
     }
   }, [orphanAtRender, store, tab.id]);
 
-  // Return focus to the tab button once the inline editor closes.
   useEffect(() => {
     if (wasEditing.current && !editing) {
       itemRef.current?.querySelector<HTMLElement>('[data-dashfoo="tab"]')?.focus();
@@ -74,10 +63,6 @@ const TabsetTab = ({ children, ref: userRef, tab, ...props }: TabsetTabProps): R
 
 type TabsetTriggerProps = ComponentProps<"button">;
 
-// The tab button itself — a sibling of the close control (not its parent, which
-// would be invalid markup and would pollute the tab's accessible name). Hidden
-// while the rename editor is open; the draggable hook stays mounted so the
-// Draggable instance survives the swap.
 const TabsetTrigger = ({
   children,
   onClick,

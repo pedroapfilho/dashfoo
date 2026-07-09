@@ -28,9 +28,6 @@ const TabsetToolbar = ({ style, ...props }: TabsetToolbarProps): ReactNode => (
 
 type TabsetGripProps = ComponentProps<"button">;
 
-// The whole tabset is draggable from its grip. It carries the active tab's name
-// so the drag overlay can label the chip. Self-hides when tabset dragging is off
-// or the tabset is maximized (nowhere to dock).
 const TabsetGrip = ({ children, ref: userRef, ...props }: TabsetGripProps): ReactNode => {
   const activeTabName = useTabset((state) => state.activeTab?.name ?? "");
   const isMaximized = useTabset((state) => state.isMaximized);
@@ -95,9 +92,6 @@ const TabsetMaximizeButton = ({
 
 type TabsetFloatButtonProps = ComponentProps<"button">;
 
-// Floats the whole tabset out into a draggable, resizable overlay (dispatches
-// `floatTabset` with a rect measured over the panel). Self-hides when floating is
-// off or the tabset is maximized (a maximized panel already owns the frame).
 const TabsetFloatButton = ({ children, onClick, ...props }: TabsetFloatButtonProps): ReactNode => {
   const floatable = useLayout((state) => state.floatable);
   const dispatch = useLayout((state) => state.dispatch);
@@ -109,10 +103,6 @@ const TabsetFloatButton = ({ children, onClick, ...props }: TabsetFloatButtonPro
     return null;
   }
 
-  // `floatable` is on but there is no <Layout.FloatLayer> to render the float (a
-  // hand-built layout that forgot it — DashfooLayout always adds one). Hide the
-  // control and warn rather than render a button that would float a panel into
-  // nowhere.
   if (!hasFloatLayer) {
     warnOnce(
       "float-no-layer",

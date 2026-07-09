@@ -6,8 +6,6 @@ import { GitHubIcon } from "./github-icon";
 const DOCS_URL = "https://docs.dashfoo.com";
 const GITHUB_URL = "https://github.com/pedroapfilho/dashfoo";
 
-// Centered band — sits below the full-width bordered sections, which create the
-// natural divide that lets a centered layout follow the left-aligned ones.
 const Cta = (): ReactNode => (
   <section className="border-dashfoo-border/70 border-t py-20 sm:py-28">
     <div className="mx-auto max-w-6xl px-6 text-center lg:px-8">

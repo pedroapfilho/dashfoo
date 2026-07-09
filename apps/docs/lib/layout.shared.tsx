@@ -2,14 +2,6 @@ import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 
 const GITHUB_URL = "https://github.com/pedroapfilho/dashfoo";
 
-/**
- * Layout options shared between the docs layout and any home layout.
- * The nav title renders the dashfoo brand mark. The site theme is toggled
- * via next-themes' `.dark` class, not `prefers-color-scheme`, so the
- * light/dark variant must swap on the Tailwind `dark:` variant — a
- * <picture> media query would follow the OS and show the wrong mark
- * whenever the toggle disagrees with the OS.
- */
 export const baseOptions = (): BaseLayoutProps => ({
   githubUrl: GITHUB_URL,
   links: [

@@ -1,7 +1,6 @@
 import type { Dashfoo } from "@dashfoo/core";
 import { model, row, tab, tabset } from "@dashfoo/core";
 
-// The composite overview: a main tabset beside a column of two stacked tabsets.
 const overviewModel = (): Dashfoo =>
   model(
     row(
@@ -29,8 +28,6 @@ const overviewModel = (): Dashfoo =>
     { activeTabsetId: "ts-main" },
   );
 
-// A sandbox for stacking/splitting/reordering by dragging tabs. Tabset "a"
-// carries a min width so the splitter also demos sizing constraints.
 const dockingModel = (): Dashfoo =>
   model(
     row(
@@ -50,7 +47,6 @@ const dockingModel = (): Dashfoo =>
     { activeTabsetId: "a" },
   );
 
-// A small layout used to demonstrate controlled mode.
 const playgroundModel = (): Dashfoo =>
   model(
     row(

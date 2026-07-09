@@ -48,8 +48,6 @@ const model: Dashfoo = {
   version: 1,
 };
 
-// A layout nested two rows deep: root row -> r2 (column) -> r3 (row) holding the
-// deeply-nested tabset+tab, exercising the recursive descent in the finders.
 const deepModel: Dashfoo = {
   global: {},
   layout: {
