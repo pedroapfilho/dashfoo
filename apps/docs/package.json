@@ -16,10 +16,10 @@
     "@tailwindcss/postcss": "^4.3.2",
     "class-variance-authority": "^0.7.1",
     "cnfast": "^0.0.8",
-    "fumadocs-core": "^16.10.7",
-    "fumadocs-mdx": "^15.0.13",
-    "fumadocs-ui": "^16.10.7",
-    "lucide-react": "^1.23.0",
+    "fumadocs-core": "^16.11.1",
+    "fumadocs-mdx": "^15.1.0",
+    "fumadocs-ui": "^16.11.1",
+    "lucide-react": "^1.24.0",
     "next": "^16.2.10",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -28,7 +28,7 @@
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/mdx": "^2.0.14",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "typescript": "^6.0.3"
