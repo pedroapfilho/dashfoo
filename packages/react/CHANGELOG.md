@@ -1,5 +1,11 @@
 # @dashfoo/react
 
+## 0.6.2
+
+### Patch Changes
+
+- adbaa4b: Bump react-resizable-panels to ^4.12.1
+
 ## 0.6.1
 
 ### Patch Changes

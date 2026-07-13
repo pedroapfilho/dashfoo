@@ -1,5 +1,12 @@
 # landing
 
+## 0.0.7
+
+### Patch Changes
+
+- Updated dependencies [adbaa4b]
+  - @dashfoo/react@0.6.2
+
 ## 0.0.6
 
 ### Patch Changes
