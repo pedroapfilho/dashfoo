@@ -4,7 +4,12 @@ import type { Dimension, RowNode, SnapConfig, TabsetNode } from "@dashfoo/core";
 import { snapEnabled, snapSizes } from "@dashfoo/core";
 import type { CSSProperties, ReactNode } from "react";
 import { Fragment, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { GroupImperativeHandle, Layout, Orientation } from "react-resizable-panels";
+import type {
+  GroupImperativeHandle,
+  Layout,
+  LayoutChangedMeta,
+  Orientation,
+} from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
 import { useLayout } from "../hooks/layout-store";
@@ -100,7 +105,6 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     [node.children, total],
   );
 
-  const measured = useRef(false);
   const groupRef = useRef<GroupImperativeHandle | null>(null);
   const groupElement = useRef<HTMLDivElement | null>(null);
   const syncing = useRef(false);
@@ -187,9 +191,8 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     snapping.current = false;
   };
 
-  const handleLayoutChanged = (layout: Layout): void => {
-    if (!measured.current) {
-      measured.current = true;
+  const handleLayoutChanged = (layout: Layout, meta: LayoutChangedMeta): void => {
+    if (!meta.isUserInteraction) {
       return;
     }
     if (syncing.current) {
