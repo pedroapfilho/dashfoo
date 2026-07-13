@@ -11,7 +11,7 @@ import type {
 } from "@dashfoo/core";
 import { findTabset, stackModel } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
-import { forwardRef, useCallback, useContext, useImperativeHandle, useMemo, useRef } from "react";
+import { forwardRef, useCallback, useContext, useImperativeHandle, useMemo } from "react";
 
 import { SharedDragManagerContext } from "../hooks/drag-hooks";
 import type { PersistConfig, StorageAdapter } from "../hooks/persistence";
@@ -210,16 +210,15 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     [isCompact, responsive?.orientation, store.model],
   );
 
-  const isCompactRef = useRef(isCompact);
-  isCompactRef.current = isCompact;
+  const storeDispatch = store.dispatch;
   const dispatch = useCallback(
     (action: Action): void => {
-      if (isCompactRef.current && action.type === "adjustSplit") {
+      if (isCompact && action.type === "adjustSplit") {
         return;
       }
-      store.dispatch(action);
+      storeDispatch(action);
     },
-    [store],
+    [isCompact, storeDispatch],
   );
 
   const maximized = view.maximizedTabsetId ? findTabset(view, view.maximizedTabsetId) : undefined;
