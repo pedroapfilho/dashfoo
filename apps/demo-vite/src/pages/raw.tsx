@@ -10,7 +10,7 @@ import {
 } from "@dashfoo/react";
 import { Redo2, Undo2 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 
 import { renderPanel } from "../components/panels";
 import { Button, DemoStage } from "../components/ui";
@@ -75,11 +75,8 @@ const RawPage = (): ReactNode => {
   );
   const maximized = view.maximizedTabsetId ? findTabset(view, view.maximizedTabsetId) : undefined;
 
-  const isCompactRef = useRef(isCompact);
-  // oxlint-disable-next-line react-hooks-js/refs
-  isCompactRef.current = isCompact;
   const dispatch = (action: Parameters<typeof store.dispatch>[0]): void => {
-    if (isCompactRef.current && action.type === "adjustSplit") {
+    if (isCompact && action.type === "adjustSplit") {
       return;
     }
     store.dispatch(action);
