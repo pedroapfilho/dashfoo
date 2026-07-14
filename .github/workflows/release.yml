@@ -35,6 +35,6 @@ jobs:
           title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # actions/setup-node generates an .npmrc that reads NODE_AUTH_TOKEN — must match.
+          # actions/setup-node generates an .npmrc that reads NODE_AUTH_TOKEN; must match.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
