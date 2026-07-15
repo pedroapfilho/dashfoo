@@ -8,10 +8,10 @@ variant. Import it and the layout is styled; remap a few tokens to make it yours
 
 Two artifacts, one source:
 
-- **`@dashfoo/theme/tailwind.css`** — a Tailwind CSS v4 source entry. Import it
+- **`@dashfoo/theme/tailwind.css`**: a Tailwind CSS v4 source entry. Import it
   into your Tailwind pipeline and you also get `dashfoo-*` utilities
   (`bg-dashfoo-card`, `rounded-dashfoo`, …) generated from the same tokens.
-- **`@dashfoo/theme/dashfoo.css`** — a prebuilt plain-CSS file compiled from the
+- **`@dashfoo/theme/dashfoo.css`**: a prebuilt plain-CSS file compiled from the
   same source at package build time. No Tailwind, no build step required.
 
 ## Install
@@ -34,10 +34,10 @@ setups are identical):
 
 Tokens land in Tailwind's `theme` layer and the skin in the `components` layer,
 so your own utilities and unlayered CSS override the skin without specificity
-wars — import the theme before your own component-layer CSS.
+wars; import the theme before your own component-layer CSS.
 
 The entry also bridges the tokens into `@theme`, generating utilities for your
-own markup that stay in sync with the skin (including the dark remap — no
+own markup that stay in sync with the skin (including the dark remap, no
 `dark:` variant needed):
 
 | Tokens                                                    | Utilities                                                              |
@@ -58,7 +58,7 @@ Import the prebuilt skin once, anywhere in your app's entry:
 import "@dashfoo/theme/dashfoo.css";
 ```
 
-That's it — the file is compiled from the same source as the Tailwind entry
+That's it: the file is compiled from the same source as the Tailwind entry
 (tokens included), so every `data-dashfoo` element from `@dashfoo/react` is
 styled. The chrome is light neutral by default.
 
@@ -75,7 +75,7 @@ Scope it to a subtree instead by putting the attribute on a wrapping element.
 
 Tailwind users who want their own `dark:` variants to key off the same
 attribute can define a custom variant in their app CSS (the theme deliberately
-doesn't ship one — your app owns the `dark` variant):
+doesn't ship one; your app owns the `dark` variant):
 
 ```css
 @custom-variant dark (&:where([data-dashfoo-theme="dark"], [data-dashfoo-theme="dark"] *));
@@ -93,7 +93,7 @@ import "@dashfoo/theme/tokens.css";
 ## Customize
 
 Every value in the skin resolves through a `--dashfoo-*` custom property.
-Reskinning is a token remap — you never touch the chrome rules. Override on
+Reskinning is a token remap; you never touch the chrome rules. Override on
 `:root` (or any scope):
 
 ```css
@@ -162,7 +162,7 @@ indicator look:
 
 ## The `data-dashfoo` contract
 
-If you'd rather write your own skin, target these attributes — they're stable and
+If you'd rather write your own skin, target these attributes; they're stable and
 emitted by `@dashfoo/react` with zero imposed styling.
 
 | Selector                             | Element                                                                 |
@@ -198,12 +198,12 @@ emitted by `@dashfoo/react` with zero imposed styling.
 
 Read state off standard ARIA and data attributes:
 
-- `[data-dashfoo="tab"][aria-selected="true"]` — the active tab
-- `[data-dashfoo="tabset-maximize"][aria-pressed="true"]` — a maximized tabset's toggle
-- `[data-dashfoo="tab-item"][data-dragging]` — a tab being lifted into the drag preview (the source, dimmed)
-- `[data-dashfoo="tabset"][data-dragging-source]` — a tabset being dragged by its grip
-- `[data-dashfoo="tabset"][data-tab-location="bottom"]` — a tabset with its strip on the bottom
-- `[data-separator][aria-orientation="vertical"]` — a column resize handle (also `horizontal`)
+- `[data-dashfoo="tab"][aria-selected="true"]`: the active tab
+- `[data-dashfoo="tabset-maximize"][aria-pressed="true"]`: a maximized tabset's toggle
+- `[data-dashfoo="tab-item"][data-dragging]`: a tab being lifted into the drag preview (the source, dimmed)
+- `[data-dashfoo="tabset"][data-dragging-source]`: a tabset being dragged by its grip
+- `[data-dashfoo="tabset"][data-tab-location="bottom"]`: a tabset with its strip on the bottom
+- `[data-separator][aria-orientation="vertical"]`: a column resize handle (also `horizontal`)
 - `:focus-visible` / `:focus-within` for focus rings
 
 ## Notes

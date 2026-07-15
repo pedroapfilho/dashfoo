@@ -98,7 +98,7 @@ const ImperativeControlPage = (): ReactNode => {
           </Button>
         </>
       }
-      description="DashfooLayout exposes an imperative handle via ref — addTab and closeTab drive the widget buttons below, undo/redo and ⌘Z / ⇧⌘Z drive the engine's own history; no external state is rebuilt. The live model is mirrored in the inspector."
+      description="DashfooLayout exposes an imperative handle via ref: addTab and closeTab drive the widget buttons below, undo/redo and ⌘Z / ⇧⌘Z drive the engine's own history; no external state is rebuilt. The live model is mirrored in the inspector."
       title="Imperative control & history"
     >
       <div className="flex h-full min-h-0 flex-col gap-3 lg:flex-row">

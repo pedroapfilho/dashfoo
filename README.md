@@ -5,12 +5,12 @@
   </picture>
   <br />
   <br />
-  <strong>A headless React docking-layout library — tiled, resizable, tabbed regions with a serializable model and zero imposed styling.</strong>
+  <strong>A headless React docking-layout library: tiled, resizable, tabbed regions with a serializable model and zero imposed styling.</strong>
   <br />
   <br />
 </div>
 
-dashfoo builds VS-Code-style dashboards in React: nested rows and columns of resizable panes, each pane a tabset you can restack, split, reorder, rename, close, and maximize by dragging. The layout is a single serializable model — a plain object validated by zod — that is the one source of truth. The engine ships structure, not appearance: `@dashfoo/react` renders markup tagged with `data-dashfoo="..."` attributes and applies no CSS, so the chrome is yours to style.
+dashfoo builds VS-Code-style dashboards in React: nested rows and columns of resizable panes, each pane a tabset you can restack, split, reorder, rename, close, and maximize by dragging. The layout is a single serializable model (a plain object validated by zod) that is the one source of truth. The engine ships structure, not appearance: `@dashfoo/react` renders markup tagged with `data-dashfoo="..."` attributes and applies no CSS, so the chrome is yours to style.
 
 It exists to deliver FlexLayout's power without FlexLayout's central weakness, chrome you cannot restructure. State lives in one XState actor system, document mutations run through a pure reducer, and the drag/resize primitives sit behind adapters you never touch.
 
@@ -18,8 +18,8 @@ It exists to deliver FlexLayout's power without FlexLayout's central weakness, c
 
 - **What it is.** A headless docking-layout engine for React: split/tab tree, drag-docking, resizable splitters, maximize, undo/redo.
 - **What it gives you.** A serializable zod-validated model, a typed `<DashfooLayout>` component, controlled or uncontrolled state, and a `data-dashfoo` markup contract you style however you want.
-- **Who it's for.** Apps that need real docking — trading terminals, IDEs, dashboards, monitoring consoles — and teams who want to own the look instead of fighting a prebuilt skin.
-- **Built on.** `react-resizable-panels` (resize), `@dnd-kit/dom` `0.4.0` (drag, framework-agnostic core — no React bindings), XState v5 (state), zod (schema). All bundled, none exposed.
+- **Who it's for.** Apps that need real docking (trading terminals, IDEs, dashboards, monitoring consoles) and teams who want to own the look instead of fighting a prebuilt skin.
+- **Built on.** `react-resizable-panels` (resize), `@dnd-kit/dom` `0.4.0` (drag, framework-agnostic core, no React bindings), XState v5 (state), zod (schema). All bundled, none exposed.
 
 ## Quickstart
 
@@ -29,10 +29,10 @@ pnpm add @dashfoo/core @dashfoo/react
 pnpm add @dashfoo/theme
 ```
 
-Two things every setup needs: a **sized mount point** and a way to **resolve tab content**. `<DashfooLayout>` fills 100% of its parent, and in a fresh Vite or Next.js app the default `#root` has no height — without the CSS below the layout renders zero pixels tall and the page looks blank.
+Two things every setup needs: a **sized mount point** and a way to **resolve tab content**. `<DashfooLayout>` fills 100% of its parent, and in a fresh Vite or Next.js app the default `#root` has no height; without the CSS below the layout renders zero pixels tall and the page looks blank.
 
 ```css
-/* src/index.css — give the mount chain a real height */
+/* src/index.css: give the mount chain a real height */
 html,
 body,
 #root {
@@ -41,7 +41,7 @@ body,
 }
 ```
 
-Build the layout with the model builders, then mount `<DashfooLayout>`. Tab content is never stored in the model — each `tab` carries a `component` key that you resolve to a React element, either through a `components` registry or a `factory` callback.
+Build the layout with the model builders, then mount `<DashfooLayout>`. Tab content is never stored in the model; each `tab` carries a `component` key that you resolve to a React element, either through a `components` registry or a `factory` callback.
 
 ```tsx
 // src/dashboard.tsx
@@ -95,12 +95,12 @@ const renderPanel = (tab: TabNode): ReactNode => {
 <DashfooLayout defaultModel={model} factory={renderPanel} />;
 ```
 
-That is the whole surface for a working dashboard: a model and a way to resolve tab content. Drag, resize, rename, close, and maximize come for free. One default worth knowing up front: inactive tab panels **unmount** when deselected, so their local React state resets on a tab switch — pass `keepMounted` to keep them alive instead.
+That is the whole surface for a working dashboard: a model and a way to resolve tab content. Drag, resize, rename, close, and maximize come for free. One default worth knowing up front: inactive tab panels **unmount** when deselected, so their local React state resets on a tab switch; pass `keepMounted` to keep them alive instead.
 
 ## Highlights
 
 - **Model is the source of truth.** The layout is a plain, JSON-serializable object validated by `dashfooSchema`. `toJSON` / `fromJSON` round-trip it losslessly because content never lives in the model, only a `component` registry key.
-- **Headless by design.** `@dashfoo/react` renders markup with `data-dashfoo="..."` attributes and applies zero styling. Target those attributes with your own CSS, or drop in `@dashfoo/theme` — a framework-agnostic plain-CSS skin over overridable `--dashfoo-*` tokens, with an opt-in dark variant.
+- **Headless by design.** `@dashfoo/react` renders markup with `data-dashfoo="..."` attributes and applies zero styling. Target those attributes with your own CSS, or drop in `@dashfoo/theme`, a framework-agnostic plain-CSS skin over overridable `--dashfoo-*` tokens, with an opt-in dark variant.
 - **Batteries, still optional.** A `Panel` helper for common panel chrome, model builders, and a one-prop `persist="key"` for localStorage are there when you want them, and absent from the markup when you don't.
 - **Controlled or uncontrolled.** Pass `defaultModel` and let the engine own state with built-in undo/redo, or pass `model` + `onModelChange` and own persistence yourself (backend, URL). Same model shape either way.
 - **Pure reducer, self-healing tree.** Every change is one immutable `Action` run through `reducer(model, action)`. Invariants normalize after each action: empty tabsets are removed, single-child rows collapse, `selected` indices clamp, `maximizedTabsetId` clears when its tabset disappears.
@@ -111,7 +111,7 @@ That is the whole surface for a working dashboard: a model and a way to resolve 
 
 | Reach for dashfoo when…                                                      | Reach for something else when…                                                    |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| You need real docking — drag tabs to stack, split, or dock to an edge.       | You need a free 2D grid with absolute x/y/w/h (use react-grid-layout/gridstack).  |
+| You need real docking: drag tabs to stack, split, or dock to an edge.        | You need a free 2D grid with absolute x/y/w/h (use react-grid-layout/gridstack).  |
 | You want to own every pixel of the chrome and style raw markup yourself.     | You want a turnkey, fully-styled panel UI out of the box right now.               |
 | You want the layout as a serializable model you can save, diff, and restore. | A simple two-pane resizable split is all you need (use react-resizable-panels).   |
 | You want undo/redo and self-healing tree invariants for free.                | You need panels that detach into native browser windows or float over the layout. |
@@ -128,7 +128,7 @@ Three published packages, plus the demo apps that exercise them.
 | `@dashfoo/react` | The React layer. `DashfooLayout`, the `Panel` helper, the store binding (controlled/uncontrolled + undo/redo), the `persist` prop + persistence hooks, and the `react-resizable-panels` + `@dnd-kit/dom` adapters. Renders headless `data-dashfoo` markup with zero styling. | `pnpm add @dashfoo/react` |
 | `@dashfoo/theme` | Opt-in default skin for the headless chrome: framework-agnostic **plain CSS** (`@dashfoo/theme/dashfoo.css`) over overridable `--dashfoo-*` design tokens (`@dashfoo/theme/tokens.css`), with an opt-in dark theme. No Tailwind, no build step.                              | `pnpm add @dashfoo/theme` |
 
-`@dashfoo/react` declares `react` and `react-dom` (`^18.3.1 || ^19.0.0`) as its only peers. The primitives — `xstate`, `@xstate/react`, `react-resizable-panels`, `@dnd-kit/*` — are bundled dependencies that never leak into your dependency tree. You install `@dashfoo/core` alongside `@dashfoo/react` because your own code imports it directly for the builders, types, and schema.
+`@dashfoo/react` declares `react` and `react-dom` (`^18.3.1 || ^19.0.0`) as its only peers. The primitives (`xstate`, `@xstate/react`, `react-resizable-panels`, `@dnd-kit/*`) are bundled dependencies that never leak into your dependency tree. You install `@dashfoo/core` alongside `@dashfoo/react` because your own code imports it directly for the builders, types, and schema.
 
 ## Architecture
 
@@ -138,7 +138,7 @@ A `Dashfoo` model is a plain object: a `version`, a `global` attributes bag, and
 
 ```ts
 type Dashfoo = {
-  version: 1; // pinned by the schema — a payload in any other format fails validation
+  version: 1; // pinned by the schema; a payload in any other format fails validation
   global: GlobalAttributes;
   layout: RowNode; // root is always a row
   activeTabsetId?: string;
@@ -146,17 +146,17 @@ type Dashfoo = {
 };
 ```
 
-| Node         | Shape                                                                                                                                                                           |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `RowNode`    | `{ type: "row"; id; orientation: "row" \| "column"; weight?; min?; max?; children: (RowNode \| TabsetNode)[] }` — orientation is explicit, never inferred from depth.           |
-| `TabsetNode` | `{ type: "tabset"; id; selected: number; name?; weight?; min?; max?; enableClose?; enableMaximize?; children: TabNode[] }` — a pane holding ordered tabs.                       |
-| `TabNode`    | `{ type: "tab"; id; component: string; name: string; config?: Json; enableClose?; enableDrag?; enableRename? }` — `component` is a registry key; content is resolved at render. |
+| Node         | Shape                                                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `RowNode`    | `{ type: "row"; id; orientation: "row" \| "column"; weight?; min?; max?; children: (RowNode \| TabsetNode)[] }`. Orientation is explicit, never inferred from depth.           |
+| `TabsetNode` | `{ type: "tabset"; id; selected: number; name?; weight?; min?; max?; enableClose?; enableMaximize?; children: TabNode[] }`. A pane holding ordered tabs.                       |
+| `TabNode`    | `{ type: "tab"; id; component: string; name: string; config?: Json; enableClose?; enableDrag?; enableRename? }`. `component` is a registry key; content is resolved at render. |
 
 Sizing is responsive by default: `weight` is a proportional share within a row, so resized layouts stay fluid as the container changes. `Dimension` (`{ value, unit }`, with units `px` / `%` / `em` / `rem` / `vh` / `vw`) is reserved for `min` / `max` constraints and intentionally fixed panes. A tabset with no `min` of its own falls back to `global.tabSetMinSize` (a number, in px), and to `320px` when that global is also omitted.
 
 ### The core engine
 
-`@dashfoo/core` is pure TypeScript with no React. Every document change is one immutable `Action` from a discriminated union — `addNode`, `moveNode`, `moveTabset`, `deleteTab`, `deleteTabset`, `renameTab`, `selectTab`, `setActiveTabset`, `adjustSplit`, `setMaximizedTabset`, `updateNodeAttributes`, `updateGlobalAttributes`. The engine is a pure function:
+`@dashfoo/core` is pure TypeScript with no React. Every document change is one immutable `Action` from a discriminated union: `addNode`, `moveNode`, `moveTabset`, `deleteTab`, `deleteTabset`, `renameTab`, `selectTab`, `setActiveTabset`, `adjustSplit`, `setMaximizedTabset`, `updateNodeAttributes`, `updateGlobalAttributes`. The engine is a pure function:
 
 ```ts
 import { reducer, normalize, toJSON, fromJSON } from "@dashfoo/core";
@@ -171,9 +171,9 @@ The reducer is pure and immutable, runs the self-healing invariants (`normalize`
 `@dashfoo/react` binds a `dashfooMachine` actor to React. The two primitives are isolated behind adapters so the engine never imports them directly:
 
 - The **resize adapter** wraps `react-resizable-panels`, mapping `weight` to percentage layout and `Dimension` to fixed/min/max panel sizes, and commits `adjustSplit`.
-- The **drag adapter** drives the framework-agnostic `@dnd-kit/dom` `0.4.0` core imperatively (no React bindings). It renders its own drag-preview chip, hit-tests the pointer against the registered tabsets, forwards the lifecycle into the dock machine via `resolveDockTarget`, and commits `moveNode` (a tab drag), `moveTabset` (a tabset dragged by its grip), or `addNode` (an external source dragged in via `DashfooDragProvider` + `useExternalTabSource`). Drag is **pointer-only** — see [the drag guide](https://docs.dashfoo.com/drag-and-dock) for the a11y note.
+- The **drag adapter** drives the framework-agnostic `@dnd-kit/dom` `0.4.0` core imperatively (no React bindings). It renders its own drag-preview chip, hit-tests the pointer against the registered tabsets, forwards the lifecycle into the dock machine via `resolveDockTarget`, and commits `moveNode` (a tab drag), `moveTabset` (a tabset dragged by its grip), or `addNode` (an external source dragged in via `DashfooDragProvider` + `useExternalTabSource`). Drag is **pointer-only**; see [the drag guide](https://docs.dashfoo.com/drag-and-dock) for the a11y note.
 
-XState is internal — it never appears in the public API. `useDashfooStore` exposes `{ model, dispatch, undo, redo, canUndo, canRedo, setModel }`; in controlled mode every change routes through `onModelChange`, in uncontrolled mode the actor owns the document with full undo/redo. Persistence is a single `persist="key"` prop (or the lower-level `usePersistence` hook): it debounce-saves the model to a swappable `StorageAdapter` (localStorage, sessionStorage, in-memory, or your own), validating on load.
+XState is internal; it never appears in the public API. `useDashfooStore` exposes `{ model, dispatch, undo, redo, canUndo, canRedo, setModel }`; in controlled mode every change routes through `onModelChange`, in uncontrolled mode the actor owns the document with full undo/redo. Persistence is a single `persist="key"` prop (or the lower-level `usePersistence` hook): it debounce-saves the model to a swappable `StorageAdapter` (localStorage, sessionStorage, in-memory, or your own), validating on load.
 
 ### The headless data-dashfoo contract
 
@@ -209,7 +209,7 @@ State hooks: `[data-dashfoo="tab-item"][data-dragging]` (a tab being dragged), `
 [data-dashfoo="tab"][aria-selected="true"] {
   background: #1d1d1d;
 }
-/* Splitters ship with no intrinsic size — give them one or resize is unusable. */
+/* Splitters ship with no intrinsic size; give them one or resize is unusable. */
 [data-separator][aria-orientation="vertical"] {
   width: 6px;
   cursor: col-resize;
@@ -235,7 +235,7 @@ import "@dashfoo/theme/dashfoo.css"; // neutral oklch tokens, light by default
 
 ## Demo
 
-`apps/demo-vite` is a neutral TanStack Router showcase across three pages: an overview (a composite layout persisted to localStorage — rearrange, reload, it survives), a docking sandbox with a widget marketplace (drag widgets into the layout from outside it, or add them with a button), and an imperative-control page (undo/redo, add/remove widgets, live model inspector).
+`apps/demo-vite` is a neutral TanStack Router showcase across three pages: an overview (a composite layout persisted to localStorage; rearrange, reload, it survives), a docking sandbox with a widget marketplace (drag widgets into the layout from outside it, or add them with a button), and an imperative-control page (undo/redo, add/remove widgets, live model inspector).
 
 Hosted demo: [demo.dashfoo.com](https://demo.dashfoo.com).
 
@@ -246,10 +246,10 @@ pnpm dev
 
 ## Docs and links
 
-- **Documentation** — [docs.dashfoo.com](https://docs.dashfoo.com): [getting started](https://docs.dashfoo.com/getting-started), [the model](https://docs.dashfoo.com/the-model), [drag and dock](https://docs.dashfoo.com/drag-and-dock), [controlled mode & history](https://docs.dashfoo.com/controlled-and-history), [persistence](https://docs.dashfoo.com/persistence), [responsive layouts](https://docs.dashfoo.com/responsive), [theming](https://docs.dashfoo.com/theming), and the [API reference](https://docs.dashfoo.com/api-reference). The content lives in [`apps/docs/content/docs`](./apps/docs/content/docs) — the single source for the guides.
-- **Package READMEs** — [`@dashfoo/core`](./packages/core/README.md), [`@dashfoo/react`](./packages/react/README.md), [`@dashfoo/theme`](./packages/theme/README.md) — per-package API reference, also shown on npm.
-- **Architecture decisions** — `docs/adr/` (the record behind the headless engine, the one-XState-actor-system state model, and the pinned primitive choices).
-- **Design spec** — [`docs/superpowers/specs/2026-06-02-dashfoo-design.md`](./docs/superpowers/specs/2026-06-02-dashfoo-design.md) — the full goals, non-goals, model, action set, machine map, and build sequence.
+- **Documentation**: [docs.dashfoo.com](https://docs.dashfoo.com): [getting started](https://docs.dashfoo.com/getting-started), [the model](https://docs.dashfoo.com/the-model), [drag and dock](https://docs.dashfoo.com/drag-and-dock), [controlled mode & history](https://docs.dashfoo.com/controlled-and-history), [persistence](https://docs.dashfoo.com/persistence), [responsive layouts](https://docs.dashfoo.com/responsive), [theming](https://docs.dashfoo.com/theming), and the [API reference](https://docs.dashfoo.com/api-reference). The content lives in [`apps/docs/content/docs`](./apps/docs/content/docs), the single source for the guides.
+- **Package READMEs**: [`@dashfoo/core`](./packages/core/README.md), [`@dashfoo/react`](./packages/react/README.md), [`@dashfoo/theme`](./packages/theme/README.md); per-package API reference, also shown on npm.
+- **Architecture decisions**: `docs/adr/` (the record behind the headless engine, the one-XState-actor-system state model, and the pinned primitive choices).
+- **Design spec**: [`docs/superpowers/specs/2026-06-02-dashfoo-design.md`](./docs/superpowers/specs/2026-06-02-dashfoo-design.md), the full goals, non-goals, model, action set, machine map, and build sequence.
 
 ## Scripts
 
@@ -264,7 +264,7 @@ pnpm dev
 | `pnpm format:check`                                                           | Check formatting without writing.                                                                                                                                     |
 | `pnpm typecheck`                                                              | Run TypeScript checks across the monorepo.                                                                                                                            |
 | `pnpm clean`                                                                  | Clean all build artifacts.                                                                                                                                            |
-| `pnpm --filter demo-vite exec playwright install --with-deps chromium` (once) | Install Playwright browsers — required once before running e2e tests.                                                                                                 |
+| `pnpm --filter demo-vite exec playwright install --with-deps chromium` (once) | Install Playwright browsers; required once before running e2e tests.                                                                                                  |
 | `pnpm --filter demo-vite test:e2e`                                            | Run Playwright e2e tests for the demo app.                                                                                                                            |
 
 ## Stack
@@ -272,4 +272,4 @@ pnpm dev
 - **Packages:** `@dashfoo/core`, `@dashfoo/react`, `@dashfoo/theme` (React 19, XState v5, zod, react-resizable-panels v4, `@dnd-kit/dom` 0.4).
 - **Build:** Turborepo + pnpm workspaces; tsdown per package (ESM, bundled `.d.ts`, tree-shaking, source maps).
 - **Linting / formatting:** oxlint + oxfmt.
-- **Testing:** Vitest — node tests for the core engine and machines, jsdom for the React layer.
+- **Testing:** Vitest; node tests for the core engine and machines, jsdom for the React layer.
