@@ -1,5 +1,4 @@
 import type { Dashfoo } from "@dashfoo/core";
-import { findTabset } from "@dashfoo/core";
 import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooLayout } from "@dashfoo/react";
 import { Plus, Redo2, Undo2, X } from "lucide-react";
@@ -10,7 +9,7 @@ import { renderPanel } from "../components/panels";
 import { Button, DemoStage } from "../components/ui";
 import { playgroundModel } from "../models";
 import type { WidgetDefinition } from "../widgets";
-import { addTargetId, createWidgetTab, WIDGETS } from "../widgets";
+import { addTargetId, addWidget, closeActiveTab, WIDGETS } from "../widgets";
 
 type View = { canRedo: boolean; canUndo: boolean; model: Dashfoo };
 
@@ -28,28 +27,11 @@ const ImperativeControlPage = (): ReactNode => {
   }, []);
 
   const handleAddWidget = useCallback((widget: WidgetDefinition): void => {
-    const handle = layout.current;
-    if (!handle) {
-      return;
-    }
-    const targetId = addTargetId(handle.getModel());
-    if (targetId) {
-      handle.addTab(createWidgetTab(widget), { location: "center", targetId });
-    }
+    addWidget(layout.current, widget);
   }, []);
 
   const handleCloseActive = useCallback((): void => {
-    const handle = layout.current;
-    if (!handle) {
-      return;
-    }
-    const model = handle.getModel();
-    const tabsetId = addTargetId(model);
-    const tabset = tabsetId === undefined ? undefined : findTabset(model, tabsetId);
-    const activeTab = tabset?.children[tabset.selected ?? 0];
-    if (activeTab) {
-      handle.closeTab(activeTab.id);
-    }
+    closeActiveTab(layout.current);
   }, []);
 
   useEffect(() => {
