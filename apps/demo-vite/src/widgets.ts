@@ -1,5 +1,6 @@
 import type { Dashfoo, TabNode } from "@dashfoo/core";
-import { createNodeId, getFirstTabset, tab } from "@dashfoo/core";
+import { createNodeId, findTabset, getFirstTabset, tab } from "@dashfoo/core";
+import type { DashfooHandle } from "@dashfoo/react";
 import type { LucideIcon } from "lucide-react";
 import { Activity, Bell, FileText, Gauge, History, StickyNote } from "lucide-react";
 
@@ -20,5 +21,28 @@ const createWidgetTab = (widget: WidgetDefinition): TabNode =>
 const addTargetId = (model: Dashfoo): string | undefined =>
   model.activeTabsetId ?? getFirstTabset(model)?.id;
 
-export { addTargetId, createWidgetTab, WIDGETS };
+const addWidget = (handle: DashfooHandle | null, widget: WidgetDefinition): void => {
+  if (!handle) {
+    return;
+  }
+  const targetId = addTargetId(handle.getModel());
+  if (targetId) {
+    handle.addTab(createWidgetTab(widget), { location: "center", targetId });
+  }
+};
+
+const closeActiveTab = (handle: DashfooHandle | null): void => {
+  if (!handle) {
+    return;
+  }
+  const model = handle.getModel();
+  const targetId = addTargetId(model);
+  const tabset = targetId === undefined ? undefined : findTabset(model, targetId);
+  const activeTab = tabset?.children[tabset.selected ?? 0];
+  if (activeTab) {
+    handle.closeTab(activeTab.id);
+  }
+};
+
+export { addTargetId, addWidget, closeActiveTab, createWidgetTab, WIDGETS };
 export type { WidgetDefinition };

@@ -10,7 +10,7 @@ import { renderPanel } from "../components/panels";
 import { Button, DemoStage } from "../components/ui";
 import { dockingModel } from "../models";
 import type { WidgetDefinition } from "../widgets";
-import { addTargetId, createWidgetTab, WIDGETS } from "../widgets";
+import { addWidget, createWidgetTab, WIDGETS } from "../widgets";
 
 const WidgetCard = ({
   onAdd,
@@ -74,14 +74,7 @@ const DockingPage = (): ReactNode => {
   };
 
   const handleAddWidget = (widget: WidgetDefinition): void => {
-    const handle = layout.current;
-    if (!handle) {
-      return;
-    }
-    const targetId = addTargetId(handle.getModel());
-    if (targetId) {
-      handle.addTab(createWidgetTab(widget), { location: "center", targetId });
-    }
+    addWidget(layout.current, widget);
   };
 
   return (
