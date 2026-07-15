@@ -395,7 +395,6 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
           resizableSplits={resizableSplits}
           snap={snap ?? undefined}
         >
-          {}
           <DragProvider>
             <RowView node={node.layout} />
           </DragProvider>

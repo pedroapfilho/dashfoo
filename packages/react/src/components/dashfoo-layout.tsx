@@ -250,7 +250,6 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       rootRef={containerRef}
       snap={snap}
     >
-      {}
       {hasSharedManager ? tree : <DashfooDragProvider>{tree}</DashfooDragProvider>}
     </Layout.Root>
   );
