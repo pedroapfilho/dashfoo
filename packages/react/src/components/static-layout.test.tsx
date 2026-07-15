@@ -2,7 +2,7 @@ import type { Dashfoo } from "@dashfoo/core";
 import type { DragDropManager } from "@dnd-kit/dom";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { createRef, useContext } from "react";
+import { createRef, useContext, useEffect } from "react";
 import { describe, expect, test } from "vitest";
 
 import { SharedDragManagerContext } from "../hooks/drag-hooks";
@@ -62,7 +62,10 @@ const ManagerProbe = ({
   children: ReactNode;
   onManager: (manager: DragDropManager | null) => void;
 }): ReactNode => {
-  onManager(useContext(SharedDragManagerContext));
+  const manager = useContext(SharedDragManagerContext);
+  useEffect(() => {
+    onManager(manager);
+  });
   return children;
 };
 
