@@ -22,7 +22,6 @@ const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode =
     <SharedDragManagerContext.Provider value={manager}>
       <DragSubjectStoreContext.Provider value={subjectStore}>
         {children}
-        {}
         <DragPreviewOverlay manager={manager} />
       </DragSubjectStoreContext.Provider>
     </SharedDragManagerContext.Provider>

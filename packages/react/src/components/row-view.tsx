@@ -249,7 +249,6 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
 
         return (
           <Fragment key={child.id}>
-            {}
             {index > 0 ? (
               <Separator
                 data-dashfoo="splitter"

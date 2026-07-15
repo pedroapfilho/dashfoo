@@ -198,7 +198,7 @@ or a float) a node lives in.
 ## Floating panels
 
 A panel can float out into a movable, resizable overlay (the React layer renders
-it in-app — see `@dashfoo/react`). Floats are first-class model nodes
+it in-app; see `@dashfoo/react`). Floats are first-class model nodes
 (`Dashfoo.floats`), each owning a full `RowNode` layout, so they serialize and
 self-heal like the main tree:
 
@@ -241,7 +241,7 @@ region the dock indicator highlights for a `DockLocation`: the whole tabset for 
 `resolveDockTarget` as five polygons (`{ location, points }`): the inner center
 rect and four edge trapezoids whose seams run from each rect corner to the
 matching inner corner. The two functions share the band default, so a map
-painted from the polygons always agrees with the live hit-test — use it to
+painted from the polygons always agrees with the live hit-test; use it to
 visualize drop zones or to build custom drop indicators.
 
 ## Snapping
@@ -258,7 +258,7 @@ snapEnabled(config: SnapConfig | null): boolean;
 
 `resolveSnapTargets` builds the grid for a row from its config and panel count: the
 union of the `step` grid (multiples of a fixed percent) and the `divisions` grid
-(even splits — multiples of `100/d`, where `d` is the number or, for `"panels"`,
+(even splits: multiples of `100/d`, where `d` is the number or, for `"panels"`,
 the panel count). `snapSizes` snaps the boundary between panel `boundaryIndex` and
 the next onto the nearest target within `threshold` (default `4`), moving only that
 pair so siblings keep their size. It is a no-op when the grid is empty, the index
@@ -314,8 +314,8 @@ the document is data, so it has a single `ready` state and handles four events:
 | Event       | Payload      | Effect                         |
 | ----------- | ------------ | ------------------------------ |
 | `DISPATCH`  | `{ action }` | run the reducer via `dispatch` |
-| `UNDO`      | —            | step back                      |
-| `REDO`      | —            | step forward                   |
+| `UNDO`      | (none)       | step back                      |
+| `REDO`      | (none)       | step forward                   |
 | `SET_MODEL` | `{ model }`  | replace with a fresh history   |
 
 ```ts
@@ -334,7 +334,7 @@ abstract events the dnd-kit adapter maps from pointer and keyboard input. It own
 transient drag state only and never touches the document. On a valid `DROP` it
 **emits** a `COMMIT` carrying a `moveNode` action (the drag subject is a tab), a
 `moveTabset` action (the subject is a whole tabset, dragged by its grip), or an
-`addNode` action (an `external` subject — content dragged in from outside the
+`addNode` action (an `external` subject: content dragged in from outside the
 layout, carrying the `TabNode` to insert), which the React layer forwards to
 `dashfooMachine`.
 
@@ -342,48 +342,48 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 | -------- | -------------------- |
 | `START`  | `{ subject }`        |
 | `OVER`   | `{ intent \| null }` |
-| `DROP`   | —                    |
-| `CANCEL` | —                    |
+| `DROP`   | (none)               |
+| `CANCEL` | (none)               |
 
 ## Public exports
 
-`schema` — `dashfooSchema`, `rowNodeSchema`, `tabsetNodeSchema`, `tabNodeSchema`,
+`schema`: `dashfooSchema`, `rowNodeSchema`, `tabsetNodeSchema`, `tabNodeSchema`,
 `floatNodeSchema`, `geometrySchema`, `dimensionSchema`, `snapSchema`, `edgeSchema`,
 `unitSchema`, `orientationSchema`, `globalAttributesSchema`,
 `jsonValueSchema`; types `Dashfoo`, `RowNode`, `TabsetNode`, `TabNode`,
 `FloatNode`, `Geometry`, `Dimension`, `SnapConfig`, `Edge`, `Unit`, `Orientation`,
 `GlobalAttributes`, `Node`, `Json`.
 
-`builders` — `model`, `row`, `tabset`, `tab`, `floatNode`; option types
+`builders`: `model`, `row`, `tabset`, `tab`, `floatNode`; option types
 `ModelOptions`, `RowOptions`, `TabsetOptions`, `TabOptions`, `FloatOptions`.
 
-`ids` — `createNodeId`, `createTabId`.
+`ids`: `createNodeId`, `createTabId`.
 
-`actions` — `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`; types
+`actions`: `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`; types
 `Action`, `DockLocation`, `DropIntent`, `MutableNodeAttrs`.
 
-`reducer` — `reducer`. `invariants` — `normalize`.
+`reducer`: `reducer`. `invariants`: `normalize`.
 
-`tree` — `collectRoots`, `collectTabsets`, `collectTabsetsInRow`, `getFirstTabset`,
+`tree`: `collectRoots`, `collectTabsets`, `collectTabsetsInRow`, `getFirstTabset`,
 `findTabset`, `findTab`, `findFloat`, `findRow`, `findRootContaining`, `findAttributedNode`,
 `findTabsetParent`, `findDuplicateIds`;
 types `AttributedNode`, `TabContainer`, `TabLocation`.
 
-`geometry` — `resolveDockTarget`, `dockZonePolygons`, `zoneRect`; types
+`geometry`: `resolveDockTarget`, `dockZonePolygons`, `zoneRect`; types
 `DockTarget`, `DockZone`, `BandOptions`, `Point`, `Rect`.
 
-`snap` — `resolveSnapTargets`, `snapSizes`, `snapEnabled`, `DEFAULT_SNAP_THRESHOLD`;
+`snap`: `resolveSnapTargets`, `snapSizes`, `snapEnabled`, `DEFAULT_SNAP_THRESHOLD`;
 type `SnapResult`.
 
-`history` — `createHistory`, `dispatch`, `undo`, `redo`, `canUndo`, `canRedo`;
+`history`: `createHistory`, `dispatch`, `undo`, `redo`, `canUndo`, `canRedo`;
 type `History`.
 
-`serialize` — `toJSON`, `fromJSON`, `parseModel`.
+`serialize`: `toJSON`, `fromJSON`, `parseModel`.
 
-`stack` — `stackModel` (flatten any layout into one row or column of all its
+`stack`: `stackModel` (flatten any layout into one row or column of all its
 tabsets, the building block for a narrow-screen breakpoint).
 
-`machines` — `dashfooMachine`, `dragDockMachine`; types `DashfooContext`,
+`machines`: `dashfooMachine`, `dragDockMachine`; types `DashfooContext`,
 `DashfooEvent`, `DashfooInput`, `DragContext`, `DragEvent`, `DragSubject`,
 `DragEmitted`.
 

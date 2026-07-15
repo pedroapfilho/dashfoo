@@ -264,7 +264,6 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       <DragSubjectStoreContext.Provider value={subjectStore}>
         {children}
         <DockIndicator actorRef={actorRef} getTabsetElement={getTabsetElement} />
-        {}
         {ownManager === null ? null : <DragPreviewOverlay manager={ownManager} />}
       </DragSubjectStoreContext.Provider>
     </DragContext.Provider>

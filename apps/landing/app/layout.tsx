@@ -67,11 +67,8 @@ const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("dashfoo:landin
 const RootLayout = ({ children }: { children: ReactNode }) => (
   <html lang="en" suppressHydrationWarning>
     <head>
-      {}
       {/* oxlint-disable react/no-danger */}
-      {}
       <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-      {}
     </head>
     <body className="bg-dashfoo-background text-dashfoo-foreground font-dashfoo antialiased">
       {children}

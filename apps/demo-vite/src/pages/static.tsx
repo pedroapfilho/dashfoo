@@ -25,7 +25,7 @@ const StaticLayoutPage = (): ReactNode => {
           {editable ? "Lock editing" : "Unlock editing"}
         </Button>
       }
-      description="editable={false} freezes the arrangement: no tab or tabset dragging, no closing or renaming, and the splitters stop resizing while keeping their size. Switching tabs and maximizing a tabset still work — the dashboard stays usable as a viewer. The layout stays responsive: under 720px the responsive prop stacks the model into a single column and locks drag and resize, then restores the wide arrangement intact when the stage widens — the layout is never remounted."
+      description="editable={false} freezes the arrangement: no tab or tabset dragging, no closing or renaming, and the splitters stop resizing while keeping their size. Switching tabs and maximizing a tabset still work, so the dashboard stays usable as a viewer. The layout stays responsive: under 720px the responsive prop stacks the model into a single column and locks drag and resize, then restores the wide arrangement intact when the stage widens; the layout is never remounted."
       title="Static layout"
     >
       <DashfooLayout
