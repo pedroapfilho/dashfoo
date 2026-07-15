@@ -214,7 +214,7 @@ is omitted, the React adapter falls back to `320px`.
 ## External drag sources
 
 Tabs normally move within a layout. To drag new content in from outside it (a
-widget list, a palette, a marketplace) wrap both sides in `DashfooDragProvider`
+widget list, a palette, a marketplace), wrap both sides in `DashfooDragProvider`
 and register each source with `useExternalTabSource`. Dropping a source on the
 layout inserts the tab it creates (stacking on a strip or body, splitting on an
 edge), exactly like an internal tab drop. A drop outside any tabset is a no-op.
@@ -264,7 +264,7 @@ _restructure_ on small screens, give `DashfooLayout` a `responsive` prop:
 <DashfooLayout defaultModel={model} factory={renderPanel} responsive={{ maxWidth: 720 }} />
 ```
 
-At or below `maxWidth` (measured on the layout's own container, not the viewport)
+At or below `maxWidth` (measured on the layout's own container, not the viewport),
 the layout renders as a single stacked column and **locks every structural
 interaction** (tab/tabset drag, split resize), leaving tap-to-switch and
 maximize. This mirrors VS Code: docking is a desktop interaction, so narrow
@@ -521,7 +521,7 @@ pattern as `Panel`:
 | `Layout.Root`           | `div[data-dashfoo="layout"]`             | Creates the layout store. Takes `model`, `dispatch`, `renderTab`, and the chrome flags `DashfooLayout` accepts.             |
 | `Layout.DragLayer`      | none (overlays)                          | Opts the tree into drag-dock. Omit it and everything else still works, just without dragging.                               |
 | `Layout.Rows`           | rrp split tree                           | Renders a `RowNode` recursively. `renderTabset` swaps in a custom tabset composition at every leaf.                         |
-| `Layout.Tabset`         | (none)                                   | The stock tabset composition, for leaves that don't need custom chrome.                                                     |
+| `Layout.Tabset`         | the stock `Tabset.*` composition         | The stock tabset composition, for leaves that don't need custom chrome.                                                     |
 | `Layout.FloatLayer`     | overlay                                  | Wrap the tree's content to enable floating panels; renders `model.floats` as draggable overlays. Takes `floats` + `global`. |
 | `Tabset.Root`           | `div[data-dashfoo="tabset"]`             | Creates the per-tabset store; owns drop registration, overflow measurement, and focus restore after close.                  |
 | `Tabset.TabStrip`       | `div[data-dashfoo="tabstrip"]`           | The strip row (drag hit-testing targets this attribute).                                                                    |

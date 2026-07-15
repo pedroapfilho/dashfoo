@@ -19,7 +19,7 @@ It exists to deliver FlexLayout's power without FlexLayout's central weakness, c
 - **What it is.** A headless docking-layout engine for React: split/tab tree, drag-docking, resizable splitters, maximize, undo/redo.
 - **What it gives you.** A serializable zod-validated model, a typed `<DashfooLayout>` component, controlled or uncontrolled state, and a `data-dashfoo` markup contract you style however you want.
 - **Who it's for.** Apps that need real docking (trading terminals, IDEs, dashboards, monitoring consoles) and teams who want to own the look instead of fighting a prebuilt skin.
-- **Built on.** `react-resizable-panels` (resize), `@dnd-kit/dom` `0.4.0` (drag, framework-agnostic core, no React bindings), XState v5 (state), zod (schema). All bundled, none exposed.
+- **Built on.** `react-resizable-panels` (resize), `@dnd-kit/dom` `0.5.0` (drag, framework-agnostic core, no React bindings), XState v5 (state), zod (schema). All bundled, none exposed.
 
 ## Quickstart
 
@@ -171,7 +171,7 @@ The reducer is pure and immutable, runs the self-healing invariants (`normalize`
 `@dashfoo/react` binds a `dashfooMachine` actor to React. The two primitives are isolated behind adapters so the engine never imports them directly:
 
 - The **resize adapter** wraps `react-resizable-panels`, mapping `weight` to percentage layout and `Dimension` to fixed/min/max panel sizes, and commits `adjustSplit`.
-- The **drag adapter** drives the framework-agnostic `@dnd-kit/dom` `0.4.0` core imperatively (no React bindings). It renders its own drag-preview chip, hit-tests the pointer against the registered tabsets, forwards the lifecycle into the dock machine via `resolveDockTarget`, and commits `moveNode` (a tab drag), `moveTabset` (a tabset dragged by its grip), or `addNode` (an external source dragged in via `DashfooDragProvider` + `useExternalTabSource`). Drag is **pointer-only**; see [the drag guide](https://docs.dashfoo.com/drag-and-dock) for the a11y note.
+- The **drag adapter** drives the framework-agnostic `@dnd-kit/dom` `0.5.0` core imperatively (no React bindings). It renders its own drag-preview chip, hit-tests the pointer against the registered tabsets, forwards the lifecycle into the dock machine via `resolveDockTarget`, and commits `moveNode` (a tab drag), `moveTabset` (a tabset dragged by its grip), or `addNode` (an external source dragged in via `DashfooDragProvider` + `useExternalTabSource`). Drag is **pointer-only**; see [the drag guide](https://docs.dashfoo.com/drag-and-dock) for the a11y note.
 
 XState is internal; it never appears in the public API. `useDashfooStore` exposes `{ model, dispatch, undo, redo, canUndo, canRedo, setModel }`; in controlled mode every change routes through `onModelChange`, in uncontrolled mode the actor owns the document with full undo/redo. Persistence is a single `persist="key"` prop (or the lower-level `usePersistence` hook): it debounce-saves the model to a swappable `StorageAdapter` (localStorage, sessionStorage, in-memory, or your own), validating on load.
 
@@ -269,7 +269,7 @@ pnpm dev
 
 ## Stack
 
-- **Packages:** `@dashfoo/core`, `@dashfoo/react`, `@dashfoo/theme` (React 19, XState v5, zod, react-resizable-panels v4, `@dnd-kit/dom` 0.4).
+- **Packages:** `@dashfoo/core`, `@dashfoo/react`, `@dashfoo/theme` (React 19, XState v5, zod, react-resizable-panels v4, `@dnd-kit/dom` 0.5).
 - **Build:** Turborepo + pnpm workspaces; tsdown per package (ESM, bundled `.d.ts`, tree-shaking, source maps).
 - **Linting / formatting:** oxlint + oxfmt.
 - **Testing:** Vitest; node tests for the core engine and machines, jsdom for the React layer.
