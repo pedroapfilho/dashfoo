@@ -96,4 +96,4 @@ const normalize = (model: Dashfoo): Dashfoo => {
   return { ...withRoots, activeTabsetId, maximizedTabsetId };
 };
 
-export { normalize };
+export { clampSelected, normalize };

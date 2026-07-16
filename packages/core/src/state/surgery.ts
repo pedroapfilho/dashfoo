@@ -108,6 +108,12 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
   placeBesideTarget(draft, newTabset, targetId, location);
 };
 
+const mergeTabsInto = (target: TabsetNode, tabs: Array<TabNode>, selectedOffset: number): void => {
+  const mergeStart = target.children.length;
+  target.children.push(...tabs);
+  target.selected = mergeStart + selectedOffset;
+};
+
 const wrapTabInLayout = (tab: TabNode): RowNode => ({
   children: [{ children: [tab], id: createNodeId("tabset"), selected: 0, type: "tabset" }],
   id: createNodeId("row"),
@@ -124,6 +130,7 @@ const wrapTabsetInLayout = (tabset: TabsetNode): RowNode => ({
 
 export {
   insertTab,
+  mergeTabsInto,
   placeBesideTarget,
   removeTabset,
   removeTabsetReturning,

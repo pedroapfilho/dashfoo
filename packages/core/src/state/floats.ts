@@ -1,9 +1,15 @@
 import { createNodeId } from "../model/ids";
+import { clampSelected } from "../model/invariants";
 import type { Dashfoo, FloatNode, Geometry, RowNode, TabsetNode } from "../model/schema";
 import { collectTabsetsInRow, findRootContaining } from "../model/tree";
 
 import type { DockLocation } from "./actions";
-import { placeBesideTarget, removeTabsetReturning, wrapTabsetInLayout } from "./surgery";
+import {
+  mergeTabsInto,
+  placeBesideTarget,
+  removeTabsetReturning,
+  wrapTabsetInLayout,
+} from "./surgery";
 
 const DEFAULT_FLOAT_GEOMETRY: Geometry = { height: 360, left: 80, top: 80, width: 480 };
 
@@ -105,7 +111,7 @@ const dockFloat = (
 
   const leadTabset = tabsets[0];
   const selectedOffset = leadTabset
-    ? Math.min(Math.max(leadTabset.selected, 0), leadTabset.children.length - 1)
+    ? clampSelected(leadTabset.children.length, leadTabset.selected)
     : 0;
 
   const target = resolveMainTarget(draft, targetId);
@@ -116,9 +122,7 @@ const dockFloat = (
   }
 
   if (location === "center") {
-    const mergeStart = target.children.length;
-    target.children.push(...tabs);
-    target.selected = mergeStart + selectedOffset;
+    mergeTabsInto(target, tabs, selectedOffset);
     draft.activeTabsetId = target.id;
     return;
   }

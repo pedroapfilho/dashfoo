@@ -150,6 +150,45 @@ describe("dockFloat", () => {
 
     expect(next).toEqual(normalize(baseModel()));
   });
+
+  test("center-dock with an empty lead tabset selects the first merged tab", () => {
+    const model: Dashfoo = {
+      ...baseModel(),
+      floats: [
+        {
+          geometry: { height: 360, left: 0, top: 0, width: 480 },
+          id: "f1",
+          layout: {
+            children: [
+              { children: [], id: "fts-empty", selected: 0, type: "tabset", weight: 50 },
+              {
+                children: [tab("w1"), tab("w2")],
+                id: "fts2",
+                selected: 0,
+                type: "tabset",
+                weight: 50,
+              },
+            ],
+            id: "frow",
+            orientation: "row",
+            type: "row",
+          },
+          type: "float",
+        },
+      ],
+    };
+
+    const next = reducer(model, {
+      floatId: "f1",
+      location: "center",
+      targetId: "ts1",
+      type: "dockFloat",
+    });
+
+    const target = collectTabsets(next).find((ts) => ts.id === "ts1");
+    expect(target?.children.map((t) => t.id)).toEqual(["t1", "t2", "w1", "w2"]);
+    expect(target?.children[target.selected]?.id).toBe("w1");
+  });
 });
 
 describe("moveFloat", () => {
