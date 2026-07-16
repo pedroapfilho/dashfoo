@@ -3,6 +3,7 @@
 import type { ComponentProps, FocusEvent, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef } from "react";
 
+import { useInlineRename } from "../../hooks/use-inline-rename";
 import { mergeRefs } from "../../lib/merge-refs";
 import { CloseIcon } from "../tabset-icons";
 
@@ -20,33 +21,23 @@ const RenameEditor = ({
   const { tab } = useTab();
   const cancelRename = useTabset((state) => state.cancelRename);
   const commitRename = useTabset((state) => state.commitRename);
-  const ref = useRef<HTMLInputElement | null>(null);
-  const done = useRef(false);
-  const refCallback = useMemo(() => mergeRefs<HTMLInputElement>(ref, userRef), [userRef]);
-
-  useEffect(() => {
-    ref.current?.focus();
-    ref.current?.select();
-  }, []);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const rename = useInlineRename({
+    currentName: tab.name,
+    inputRef,
+    onCommit: (name) => commitRename(tab.id, name),
+    onDone: cancelRename,
+  });
+  const refCallback = useMemo(() => mergeRefs<HTMLInputElement>(inputRef, userRef), [userRef]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
     onKeyDown?.(event);
-    if (event.key === "Enter") {
-      done.current = true;
-      commitRename(tab.id, event.currentTarget.value);
-    } else if (event.key === "Escape") {
-      done.current = true;
-      cancelRename();
-    }
+    rename.handleKeyDown(event);
   };
 
   const handleCommitOnBlur = (event: FocusEvent<HTMLInputElement>): void => {
     onBlur?.(event);
-    if (done.current) {
-      return;
-    }
-    done.current = true;
-    commitRename(tab.id, event.currentTarget.value);
+    rename.handleBlur(event);
   };
 
   return (

@@ -1,16 +1,11 @@
 "use client";
 
 import type { Action, Dashfoo, FloatNode, Geometry, GlobalAttributes } from "@dashfoo/core";
-import type {
-  CSSProperties,
-  FocusEvent as ReactFocusEvent,
-  KeyboardEvent as ReactKeyboardEvent,
-  PointerEvent as ReactPointerEvent,
-  ReactNode,
-} from "react";
-import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
+import { useRef, useState } from "react";
 
 import { useLayout } from "../hooks/layout-store";
+import { useInlineRename } from "../hooks/use-inline-rename";
 import type { ResizeEdges, Size } from "../lib/float-geometry";
 import { clampToBounds, resizeRect } from "../lib/float-geometry";
 
@@ -67,38 +62,13 @@ const FloatTitleEditor = ({
   node,
   onDone,
 }: TitleProps & { onDone: () => void }): ReactNode => {
-  const ref = useRef<HTMLInputElement | null>(null);
-  const done = useRef(false);
-  useEffect(() => {
-    ref.current?.focus();
-    ref.current?.select();
-  }, []);
-
-  const commit = (value: string): void => {
-    const trimmed = value.trim();
-    if (trimmed && trimmed !== floatTitle(node)) {
-      dispatch({ floatId: node.id, name: trimmed, type: "renameFloat" });
-    }
-    onDone();
-  };
-
-  const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>): void => {
-    if (event.key === "Enter") {
-      done.current = true;
-      commit(event.currentTarget.value);
-    } else if (event.key === "Escape") {
-      done.current = true;
-      onDone();
-    }
-  };
-
-  const handleBlur = (event: ReactFocusEvent<HTMLInputElement>): void => {
-    if (done.current) {
-      return;
-    }
-    done.current = true;
-    commit(event.currentTarget.value);
-  };
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const { handleBlur, handleKeyDown } = useInlineRename({
+    currentName: floatTitle(node),
+    inputRef,
+    onCommit: (name) => dispatch({ floatId: node.id, name, type: "renameFloat" }),
+    onDone,
+  });
 
   return (
     <input
@@ -108,7 +78,7 @@ const FloatTitleEditor = ({
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       onPointerDown={(event) => event.stopPropagation()}
-      ref={ref}
+      ref={inputRef}
       style={titleStyle}
       type="text"
     />
