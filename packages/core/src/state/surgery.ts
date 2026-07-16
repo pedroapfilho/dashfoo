@@ -108,16 +108,6 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
   placeBesideTarget(draft, newTabset, targetId, location);
 };
 
-const tabsetsInRow = (row: RowNode, acc: Array<TabsetNode>): void => {
-  for (const child of row.children) {
-    if (child.type === "tabset") {
-      acc.push(child);
-    } else {
-      tabsetsInRow(child, acc);
-    }
-  }
-};
-
 const wrapTabInLayout = (tab: TabNode): RowNode => ({
   children: [{ children: [tab], id: createNodeId("tabset"), selected: 0, type: "tabset" }],
   id: createNodeId("row"),
@@ -137,7 +127,6 @@ export {
   placeBesideTarget,
   removeTabset,
   removeTabsetReturning,
-  tabsetsInRow,
   wrapTabInLayout,
   wrapTabsetInLayout,
 };

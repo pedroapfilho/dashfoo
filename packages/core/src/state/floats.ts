@@ -1,14 +1,9 @@
 import { createNodeId } from "../model/ids";
 import type { Dashfoo, FloatNode, Geometry, RowNode, TabsetNode } from "../model/schema";
-import { findRootContaining } from "../model/tree";
+import { collectTabsetsInRow, findRootContaining } from "../model/tree";
 
 import type { DockLocation } from "./actions";
-import {
-  placeBesideTarget,
-  removeTabsetReturning,
-  tabsetsInRow,
-  wrapTabsetInLayout,
-} from "./surgery";
+import { placeBesideTarget, removeTabsetReturning, wrapTabsetInLayout } from "./surgery";
 
 const DEFAULT_FLOAT_GEOMETRY: Geometry = { height: 360, left: 80, top: 80, width: 480 };
 
@@ -40,7 +35,7 @@ const pushFloat = (
   draft.floats = [...(draft.floats ?? []), float];
 
   const tabsets: Array<TabsetNode> = [];
-  tabsetsInRow(layout, tabsets);
+  collectTabsetsInRow(layout, tabsets);
   const first = tabsets[0];
   if (first) {
     draft.activeTabsetId = first.id;
@@ -68,7 +63,7 @@ const resolveMainTarget = (
   targetId: string | undefined,
 ): TabsetNode | undefined => {
   const mainTabsets: Array<TabsetNode> = [];
-  tabsetsInRow(draft.layout, mainTabsets);
+  collectTabsetsInRow(draft.layout, mainTabsets);
   if (targetId) {
     const explicit = mainTabsets.find((tabset) => tabset.id === targetId);
     if (explicit) {
@@ -102,7 +97,7 @@ const dockFloat = (
   }
 
   const tabsets: Array<TabsetNode> = [];
-  tabsetsInRow(float.layout, tabsets);
+  collectTabsetsInRow(float.layout, tabsets);
   const tabs = tabsets.flatMap((tabset) => tabset.children);
   if (tabs.length === 0) {
     return;
