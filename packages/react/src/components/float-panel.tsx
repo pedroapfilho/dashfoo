@@ -414,5 +414,5 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
   );
 };
 
-export { FloatPanel };
+export { FloatPanel, FloatTitleEditor };
 export type { FloatPanelProps };

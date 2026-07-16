@@ -112,5 +112,5 @@ const TabsetCloseButton = ({ children, onClick, ...props }: TabsetCloseButtonPro
   );
 };
 
-export { TabsetCloseButton, TabsetRenameInput };
+export { RenameEditor, TabsetCloseButton, TabsetRenameInput };
 export type { TabsetCloseButtonProps, TabsetRenameInputProps };
