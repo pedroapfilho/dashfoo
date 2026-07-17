@@ -1,12 +1,13 @@
 import { createNodeId } from "../model/ids";
+import { clampSelected } from "../model/invariants";
 import type { Dashfoo, FloatNode, Geometry, RowNode, TabsetNode } from "../model/schema";
-import { findRootContaining } from "../model/tree";
+import { collectTabsetsInRow, findRootContaining } from "../model/tree";
 
 import type { DockLocation } from "./actions";
 import {
+  mergeTabsInto,
   placeBesideTarget,
   removeTabsetReturning,
-  tabsetsInRow,
   wrapTabsetInLayout,
 } from "./surgery";
 
@@ -40,7 +41,7 @@ const pushFloat = (
   draft.floats = [...(draft.floats ?? []), float];
 
   const tabsets: Array<TabsetNode> = [];
-  tabsetsInRow(layout, tabsets);
+  collectTabsetsInRow(layout, tabsets);
   const first = tabsets[0];
   if (first) {
     draft.activeTabsetId = first.id;
@@ -68,7 +69,7 @@ const resolveMainTarget = (
   targetId: string | undefined,
 ): TabsetNode | undefined => {
   const mainTabsets: Array<TabsetNode> = [];
-  tabsetsInRow(draft.layout, mainTabsets);
+  collectTabsetsInRow(draft.layout, mainTabsets);
   if (targetId) {
     const explicit = mainTabsets.find((tabset) => tabset.id === targetId);
     if (explicit) {
@@ -102,7 +103,7 @@ const dockFloat = (
   }
 
   const tabsets: Array<TabsetNode> = [];
-  tabsetsInRow(float.layout, tabsets);
+  collectTabsetsInRow(float.layout, tabsets);
   const tabs = tabsets.flatMap((tabset) => tabset.children);
   if (tabs.length === 0) {
     return;
@@ -110,7 +111,7 @@ const dockFloat = (
 
   const leadTabset = tabsets[0];
   const selectedOffset = leadTabset
-    ? Math.min(Math.max(leadTabset.selected, 0), leadTabset.children.length - 1)
+    ? clampSelected(leadTabset.children.length, leadTabset.selected)
     : 0;
 
   const target = resolveMainTarget(draft, targetId);
@@ -121,9 +122,7 @@ const dockFloat = (
   }
 
   if (location === "center") {
-    const mergeStart = target.children.length;
-    target.children.push(...tabs);
-    target.selected = mergeStart + selectedOffset;
+    mergeTabsInto(target, tabs, selectedOffset);
     draft.activeTabsetId = target.id;
     return;
   }

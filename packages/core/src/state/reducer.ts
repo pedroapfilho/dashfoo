@@ -1,4 +1,4 @@
-import { normalize } from "../model/invariants";
+import { clampSelected, normalize } from "../model/invariants";
 import type { Dashfoo } from "../model/schema";
 import {
   findAttributedNode,
@@ -13,6 +13,7 @@ import type { Action } from "./actions";
 import { dockFloat, floatTabsetById, pushFloat, uniqueFloatName } from "./floats";
 import {
   insertTab,
+  mergeTabsInto,
   placeBesideTarget,
   removeTabset,
   removeTabsetReturning,
@@ -117,11 +118,11 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       if (action.location === "center") {
         const target = findTabset(draft, action.targetId);
         if (target) {
-          const mergeStart = target.children.length;
-
-          const sourceSelected = Math.min(Math.max(source.selected, 0), source.children.length - 1);
-          target.children.push(...source.children);
-          target.selected = mergeStart + sourceSelected;
+          mergeTabsInto(
+            target,
+            source.children,
+            clampSelected(source.children.length, source.selected),
+          );
           const sourceRoot = findRootContaining(draft, action.sourceId);
           if (sourceRoot) {
             removeTabset(sourceRoot, action.sourceId);
