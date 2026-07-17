@@ -1,5 +1,11 @@
 # @dashfoo/react
 
+## 0.6.3
+
+### Patch Changes
+
+- af26f5a: Keep responsive dispatch behavior tied to the committed React render.
+
 ## 0.6.2
 
 ### Patch Changes
