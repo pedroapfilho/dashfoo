@@ -9,7 +9,9 @@ const THEME_EVENT = "dashfoo:theme-change";
 
 const subscribe = (callback: () => void): (() => void) => {
   window.addEventListener(THEME_EVENT, callback);
-  return () => window.removeEventListener(THEME_EVENT, callback);
+  return () => {
+    window.removeEventListener(THEME_EVENT, callback);
+  };
 };
 const getSnapshot = (): boolean => document.documentElement.dataset.dashfooTheme === "dark";
 const getServerSnapshot = (): boolean => false;

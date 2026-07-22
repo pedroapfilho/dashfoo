@@ -87,7 +87,7 @@ describe("onAction veto", () => {
 
 describe("derived callbacks", () => {
   test("onMaximizedTabsetChange fires when a tabset is maximized and restored", () => {
-    const spy = vi.fn();
+    const spy = vi.fn<(tabsetId: string | undefined) => void>();
     render(
       <DashfooLayout
         components={components}

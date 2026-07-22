@@ -89,7 +89,9 @@ const ImperativeControlPage = (): ReactNode => {
             <Button
               icon={<Plus size={14} />}
               key={widget.component}
-              onClick={() => handleAddWidget(widget)}
+              onClick={() => {
+                handleAddWidget(widget);
+              }}
             >
               {widget.name}
             </Button>

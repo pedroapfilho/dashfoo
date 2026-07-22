@@ -29,8 +29,11 @@ const dragDockMachine = setup({
     hasValidDrop: ({ context }) => context.subject !== null && context.intent !== null,
   },
   types: {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- XState's documented phantom-type API; the values are compile-time only.
     context: {} as DragContext,
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- XState's documented phantom-type API; the values are compile-time only.
     emitted: {} as DragEmitted,
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- XState's documented phantom-type API; the values are compile-time only.
     events: {} as DragEvent,
   },
 }).createMachine({

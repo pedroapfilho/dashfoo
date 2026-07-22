@@ -7,7 +7,8 @@ const overflowingIds = (tablist: Element): Array<string> => {
   return [...tablist.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].flatMap((tab) => {
     const rect = tab.getBoundingClientRect();
     const clipped = rect.right > box.right + 1 || rect.left < box.left - 1;
-    return clipped && tab.dataset.tabId ? [tab.dataset.tabId] : [];
+    const tabId = tab.dataset.tabId;
+    return clipped && tabId !== undefined && tabId !== "" ? [tabId] : [];
   });
 };
 
@@ -23,7 +24,7 @@ const useTabOverflow = (tablist: HTMLElement | null, signature: string): Array<s
     };
     recompute();
     if (!tablist) {
-      return;
+      return undefined;
     }
     const observer = new ResizeObserver(recompute);
     observer.observe(tablist);

@@ -31,7 +31,9 @@ const renderFloatEditor = (): Harness => {
   };
   render(
     <FloatTitleEditor
-      dispatch={(action) => dispatched.push(action)}
+      dispatch={(action) => {
+        dispatched.push(action);
+      }}
       node={node}
       onDone={() => {
         closed = true;
@@ -40,8 +42,10 @@ const renderFloatEditor = (): Harness => {
   );
   return {
     dispatched,
-    expectClosed: () => expect(closed).toBe(true),
-    input: screen.getByRole("textbox") as HTMLInputElement,
+    expectClosed: () => {
+      expect(closed).toBe(true);
+    },
+    input: screen.getByRole("textbox"),
   };
 };
 
@@ -55,7 +59,9 @@ const renderTabEditor = (): Harness => {
   };
   const store = createTabsetStore({
     activeTab: node.children[0],
-    dispatch: (action) => dispatched.push(action),
+    dispatch: (action) => {
+      dispatched.push(action);
+    },
     isMaximized: false,
     node,
     showMaximize: false,
@@ -66,15 +72,17 @@ const renderTabEditor = (): Harness => {
   store.setState({ editingTabId: "t1" });
   render(
     <TabsetStoreContext.Provider value={store}>
-      <TabContext.Provider value={{ index: 0, tab: node.children[0]! }}>
+      <TabContext.Provider value={{ index: 0, tab: node.children[0] }}>
         <RenameEditor />
       </TabContext.Provider>
     </TabsetStoreContext.Provider>,
   );
   return {
     dispatched,
-    expectClosed: () => expect(store.getState().editingTabId).toBeNull(),
-    input: screen.getByRole("textbox") as HTMLInputElement,
+    expectClosed: () => {
+      expect(store.getState().editingTabId).toBeNull();
+    },
+    input: screen.getByRole("textbox"),
   };
 };
 

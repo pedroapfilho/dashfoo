@@ -17,8 +17,11 @@ type DashfooInput = { model: Dashfoo };
 
 const dashfooMachine = setup({
   types: {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- XState's documented phantom-type API; the values are compile-time only.
     context: {} as DashfooContext,
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- XState's documented phantom-type API; the values are compile-time only.
     events: {} as DashfooEvent,
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- XState's documented phantom-type API; the values are compile-time only.
     input: {} as DashfooInput,
   },
 }).createMachine({

@@ -48,6 +48,7 @@
     "@repo/config-vitest": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@tailwindcss/cli": "^4.3.2",
+    "@types/node": "^26.1.1",
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"

@@ -29,6 +29,7 @@ const RootLayout = ({ children }: { children: ReactNode }) => (
         className="reading-progress-bar fixed top-0 left-0 z-50 h-0.5 bg-[--primary] [animation-range:0%_100%]"
         style={{ width: "0%" }}
       />
+      {/* oxlint-disable-next-line typescript/no-deprecated -- fumadocs still supports the static preset; swapping to a hand-rolled Orama dialog is out of scope for the lint rollout. */}
       <RootProvider search={{ options: { type: "static" } }}>{children}</RootProvider>
     </body>
   </html>

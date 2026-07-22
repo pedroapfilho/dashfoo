@@ -50,7 +50,7 @@ const TabsetContent = ({ children, style, ...props }: TabsetContentProps): React
     ));
   }
 
-  const active = node.children[visualSelected];
+  const active = node.children.at(visualSelected);
   if (active) {
     return (
       <div

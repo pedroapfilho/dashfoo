@@ -127,9 +127,10 @@ const CustomLayout = ({
   withDrag?: boolean;
 }): ReactNode => {
   const store = useDashfooStore({ defaultModel });
-  const maximized = store.model.maximizedTabsetId
-    ? findTabset(store.model, store.model.maximizedTabsetId)
-    : undefined;
+  const maximized =
+    store.model.maximizedTabsetId === undefined
+      ? undefined
+      : findTabset(store.model, store.model.maximizedTabsetId);
   const tree = maximized ? (
     <Layout.Tabset node={maximized} />
   ) : (
@@ -209,7 +210,7 @@ describe("hand-composed layout from primitives", () => {
   test("maximize hands the leaf to the host, which swaps in the stock Layout.Tabset", () => {
     render(<CustomLayout defaultModel={model()} />);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Maximize" })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "Maximize" })[0]);
 
     expect(screen.queryByRole("tab", { name: "Trades" })).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Chart" })).toBeInTheDocument();
@@ -278,8 +279,9 @@ describe("misuse", () => {
 
     const MovableLayout = (): ReactNode => {
       const store = useDashfooStore({ defaultModel: model() });
-      const handleMove = (): void =>
+      const handleMove = (): void => {
         store.dispatch({ location: "center", sourceId: "t1", targetId: "ts2", type: "moveNode" });
+      };
       return (
         <Layout.Root dispatch={store.dispatch} model={store.model} renderTab={renderTabContent}>
           <button onClick={handleMove} type="button">

@@ -5,7 +5,6 @@ const reactConfig = defineConfig({
   plugins: [react()],
   test: {
     coverage: {
-      all: true,
       exclude: [
         "**/__tests__/**",
         "**/*.test.{ts,tsx}",

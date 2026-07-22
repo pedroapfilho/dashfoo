@@ -106,7 +106,9 @@ const DragPreviewOverlay = ({ manager }: { manager: DragDropManager }): ReactNod
         y: PREVIEW_OFFSET.y + (rect ? point.y - rect.top : 0),
       });
     });
-    const offEnd = manager.monitor.addEventListener("dragend", () => setChip(null));
+    const offEnd = manager.monitor.addEventListener("dragend", () => {
+      setChip(null);
+    });
     return () => {
       offStart();
       offEnd();

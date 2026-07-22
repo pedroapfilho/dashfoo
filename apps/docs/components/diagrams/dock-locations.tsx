@@ -25,7 +25,7 @@ const ThumbStrip = ({ newTab }: { newTab?: boolean }) => (
   <div className="bg-fd-muted flex h-2.5 shrink-0 items-end gap-px border-b px-0.5">
     <span className="bg-fd-background h-1.5 w-3 rounded-t-xs" />
     <span className="bg-fd-background/60 h-1.5 w-3 rounded-t-xs" />
-    {newTab ? <span className="bg-fd-primary/50 h-1.5 w-3 rounded-t-xs" /> : null}
+    {newTab === true ? <span className="bg-fd-primary/50 h-1.5 w-3 rounded-t-xs" /> : null}
   </div>
 );
 

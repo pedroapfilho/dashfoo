@@ -14,7 +14,12 @@ import { DragPreviewOverlay } from "./drag-overlays";
 
 const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode => {
   const [manager] = useState(createDragManager);
-  useInsertionEffect(() => () => manager.destroy(), [manager]);
+  useInsertionEffect(
+    () => () => {
+      manager.destroy();
+    },
+    [manager],
+  );
 
   const [subjectStore] = useState(createDragSubjectStore);
 

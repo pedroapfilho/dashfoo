@@ -51,7 +51,7 @@ const THREE_ITEMS = [
 
 describe("TabOverflowMenu", () => {
   test("lists the hidden tabs and selects one, then closes", () => {
-    const handleSelect = vi.fn();
+    const handleSelect = vi.fn<(id: string) => void>();
     render(<TabOverflowMenu items={[{ id: "c", name: "Console" }]} onSelect={handleSelect} />);
 
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
@@ -64,7 +64,7 @@ describe("TabOverflowMenu", () => {
   });
 
   test("Escape closes the menu", () => {
-    const handleSelect = vi.fn();
+    const handleSelect = vi.fn<(id: string) => void>();
     render(<TabOverflowMenu items={[{ id: "c", name: "Console" }]} onSelect={handleSelect} />);
 
     fireEvent.click(screen.getByRole("button", { name: "More tabs" }));
@@ -74,7 +74,7 @@ describe("TabOverflowMenu", () => {
   });
 
   test("opening moves focus to the first menuitem", () => {
-    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn()} />);
+    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn<(id: string) => void>()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "More tabs" }));
 
@@ -82,7 +82,7 @@ describe("TabOverflowMenu", () => {
   });
 
   test("roving tabindex marks only the active item as tabbable", () => {
-    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn()} />);
+    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn<(id: string) => void>()} />);
     fireEvent.click(screen.getByRole("button", { name: "More tabs" }));
 
     expect(screen.getByRole("menuitem", { name: "Alpha" })).toHaveAttribute("tabindex", "0");
@@ -90,7 +90,7 @@ describe("TabOverflowMenu", () => {
   });
 
   test("ArrowDown moves focus to the next item and wraps at the end", () => {
-    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn()} />);
+    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn<(id: string) => void>()} />);
     fireEvent.click(screen.getByRole("button", { name: "More tabs" }));
     const menu = screen.getByRole("menu");
 
@@ -105,7 +105,7 @@ describe("TabOverflowMenu", () => {
   });
 
   test("ArrowUp moves focus to the previous item and wraps at the start", () => {
-    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn()} />);
+    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn<(id: string) => void>()} />);
     fireEvent.click(screen.getByRole("button", { name: "More tabs" }));
     const menu = screen.getByRole("menu");
 
@@ -117,7 +117,7 @@ describe("TabOverflowMenu", () => {
   });
 
   test("Home jumps to the first item and End jumps to the last", () => {
-    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn()} />);
+    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn<(id: string) => void>()} />);
     fireEvent.click(screen.getByRole("button", { name: "More tabs" }));
     const menu = screen.getByRole("menu");
 
@@ -129,7 +129,7 @@ describe("TabOverflowMenu", () => {
   });
 
   test("Escape closes the menu and returns focus to the trigger", () => {
-    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn()} />);
+    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn<(id: string) => void>()} />);
     const trigger = screen.getByRole("button", { name: "More tabs" });
     fireEvent.click(trigger);
 
@@ -140,7 +140,7 @@ describe("TabOverflowMenu", () => {
   });
 
   test("selecting an item calls onSelect, closes, and returns focus to the trigger", () => {
-    const handleSelect = vi.fn();
+    const handleSelect = vi.fn<(id: string) => void>();
     render(<TabOverflowMenu items={THREE_ITEMS} onSelect={handleSelect} />);
     const trigger = screen.getByRole("button", { name: "More tabs" });
     fireEvent.click(trigger);
@@ -153,7 +153,7 @@ describe("TabOverflowMenu", () => {
   });
 
   test("reopening resets the active item to the first", () => {
-    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn()} />);
+    render(<TabOverflowMenu items={THREE_ITEMS} onSelect={vi.fn<(id: string) => void>()} />);
     const trigger = screen.getByRole("button", { name: "More tabs" });
 
     fireEvent.click(trigger);

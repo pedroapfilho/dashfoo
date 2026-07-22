@@ -66,7 +66,9 @@ const FloatTitleEditor = ({
   const { handleBlur, handleKeyDown } = useInlineRename({
     currentName: floatTitle(node),
     inputRef,
-    onCommit: (name) => dispatch({ floatId: node.id, name, type: "renameFloat" }),
+    onCommit: (name) => {
+      dispatch({ floatId: node.id, name, type: "renameFloat" });
+    },
     onDone,
   });
 
@@ -77,7 +79,9 @@ const FloatTitleEditor = ({
       defaultValue={floatTitle(node)}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
-      onPointerDown={(event) => event.stopPropagation()}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+      }}
       ref={inputRef}
       style={titleStyle}
       type="text"
@@ -92,12 +96,26 @@ const FloatTitle = ({
 }: TitleProps & { renamable: boolean }): ReactNode => {
   const [editing, setEditing] = useState(false);
   if (renamable && editing) {
-    return <FloatTitleEditor dispatch={dispatch} node={node} onDone={() => setEditing(false)} />;
+    return (
+      <FloatTitleEditor
+        dispatch={dispatch}
+        node={node}
+        onDone={() => {
+          setEditing(false);
+        }}
+      />
+    );
   }
   return (
     <span
       data-dashfoo="float-title"
-      onDoubleClick={renamable ? () => setEditing(true) : undefined}
+      onDoubleClick={
+        renamable
+          ? () => {
+              setEditing(true);
+            }
+          : undefined
+      }
       style={titleStyle}
       title={renamable ? "Double-click to rename" : undefined}
     >
@@ -155,10 +173,10 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     movedRef.current = false;
     const edgeKey = event.currentTarget.dataset.edge;
 
-    const parent = panel.offsetParent as HTMLElement | null;
+    const parent = panel.offsetParent instanceof HTMLElement ? panel.offsetParent : null;
     const gesture: Gesture = {
       bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
-      edges: edgeKey ? (EDGE_BY_KEY.get(edgeKey) ?? null) : null,
+      edges: edgeKey === undefined ? null : (EDGE_BY_KEY.get(edgeKey) ?? null),
       pointerId: event.pointerId,
       start: node.geometry,
       startX: event.clientX,
@@ -180,12 +198,12 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     gestureRef.current = null;
 
     const panel = panelRef.current;
-    if (panel?.hasPointerCapture?.(event.pointerId)) {
+    if (panel?.hasPointerCapture?.(event.pointerId) === true) {
       panel.releasePointerCapture(event.pointerId);
     }
 
     if (!movedRef.current) {
-      if (node.minimized) {
+      if (node.minimized === true) {
         restore();
       }
       return;
@@ -221,14 +239,14 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
       : clampToBounds(
           { ...gesture.start, left: gesture.start.left + dx, top: gesture.start.top + dy },
           gesture.bounds,
-          node.minimized ? CHIP_SIZE : undefined,
+          node.minimized === true ? CHIP_SIZE : undefined,
         );
 
     latestRef.current = next;
     panel.style.left = `${next.left}px`;
     panel.style.top = `${next.top}px`;
 
-    if (!node.minimized) {
+    if (node.minimized !== true) {
       panel.style.width = `${next.width}px`;
       panel.style.height = `${next.height}px`;
     }
@@ -249,13 +267,13 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
     }
     panel.style.left = `${gesture.start.left}px`;
     panel.style.top = `${gesture.start.top}px`;
-    if (!node.minimized) {
+    if (node.minimized !== true) {
       panel.style.width = `${gesture.start.width}px`;
       panel.style.height = `${gesture.start.height}px`;
     }
   };
 
-  if (node.minimized) {
+  if (node.minimized === true) {
     return (
       <button
         aria-label={`Restore ${floatTitle(node)} panel`}
@@ -323,10 +341,12 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
             <button
               aria-label="Minimize panel"
               data-dashfoo="float-minimize"
-              onClick={() =>
-                dispatch({ floatId: node.id, minimized: true, type: "setFloatMinimized" })
-              }
-              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => {
+                dispatch({ floatId: node.id, minimized: true, type: "setFloatMinimized" });
+              }}
+              onPointerDown={(event) => {
+                event.stopPropagation();
+              }}
               style={dockButtonStyle}
               title="Minimize panel"
               type="button"
@@ -336,8 +356,12 @@ const FloatPanel = ({ global, node, onFocus, zIndex }: FloatPanelProps): ReactNo
             <button
               aria-label="Dock panel back into the main layout"
               data-dashfoo="float-dock"
-              onClick={() => dispatch({ floatId: node.id, type: "dockFloat" })}
-              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => {
+                dispatch({ floatId: node.id, type: "dockFloat" });
+              }}
+              onPointerDown={(event) => {
+                event.stopPropagation();
+              }}
               style={dockButtonStyle}
               title="Dock panel back"
               type="button"

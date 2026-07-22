@@ -6,7 +6,7 @@ const { rewrite } = rewritePath("/{*path}", "/llms.mdx/{*path}");
 const proxy = (request: NextRequest) => {
   if (isMarkdownPreferred(request)) {
     const result = rewrite(request.nextUrl.pathname);
-    if (result) {
+    if (typeof result === "string" && result !== "") {
       return NextResponse.rewrite(new URL(result, request.nextUrl));
     }
   }

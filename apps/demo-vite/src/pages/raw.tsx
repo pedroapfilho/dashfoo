@@ -73,7 +73,8 @@ const RawPage = (): ReactNode => {
     () => (isCompact ? stackModel(store.model) : store.model),
     [isCompact, store.model],
   );
-  const maximized = view.maximizedTabsetId ? findTabset(view, view.maximizedTabsetId) : undefined;
+  const maximized =
+    view.maximizedTabsetId === undefined ? undefined : findTabset(view, view.maximizedTabsetId);
 
   const dispatch = (action: Parameters<typeof store.dispatch>[0]): void => {
     if (isCompact && action.type === "adjustSplit") {
@@ -81,8 +82,12 @@ const RawPage = (): ReactNode => {
     }
     store.dispatch(action);
   };
-  const handleUndo = (): void => store.undo();
-  const handleRedo = (): void => store.redo();
+  const handleUndo = (): void => {
+    store.undo();
+  };
+  const handleRedo = (): void => {
+    store.redo();
+  };
 
   return (
     <DemoStage

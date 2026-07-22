@@ -26,7 +26,7 @@ const addWidget = (handle: DashfooHandle | null, widget: WidgetDefinition): void
     return;
   }
   const targetId = addTargetId(handle.getModel());
-  if (targetId) {
+  if (targetId !== undefined) {
     handle.addTab(createWidgetTab(widget), { location: "center", targetId });
   }
 };

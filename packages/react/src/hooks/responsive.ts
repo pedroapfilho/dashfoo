@@ -54,7 +54,7 @@ const useContainerWidth = (): [(element: HTMLElement | null) => void, number] =>
       return;
     }
     const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
+      const entry = entries.at(0);
       if (entry) {
         setWidth(entry.contentRect.width);
       }
@@ -79,7 +79,7 @@ const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): Respons
 
   useEffect(() => {
     if (!hasMatchMedia()) {
-      return;
+      return undefined;
     }
     const lists = breakpoints.flatMap((breakpoint) =>
       breakpoint.query && "media" in breakpoint.query
@@ -87,7 +87,7 @@ const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): Respons
         : [],
     );
     if (lists.length === 0) {
-      return;
+      return undefined;
     }
     const handleChange = (): void => {
       setMediaTick((tick) => tick + 1);

@@ -55,8 +55,8 @@ type ActiveCell =
 
 const activeCellAt = (tabsets: Array<TabsetMeasurement>, point: Point): ActiveCell | null => {
   const tabsetIndex = tabsets.findIndex((tabset) => inRect(point, tabset.rect));
-  const tabset = tabsets[tabsetIndex];
-  if (!tabset) {
+  const tabset = tabsets.at(tabsetIndex);
+  if (tabsetIndex === -1 || !tabset) {
     return null;
   }
   if (tabset.strip && inRect(point, tabset.strip)) {

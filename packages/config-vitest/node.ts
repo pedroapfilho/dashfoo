@@ -3,7 +3,6 @@ import { defineConfig } from "vitest/config";
 const nodeConfig = defineConfig({
   test: {
     coverage: {
-      all: true,
       exclude: [
         "**/__tests__/**",
         "**/*.test.{ts,tsx}",

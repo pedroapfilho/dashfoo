@@ -42,7 +42,7 @@ const pushFloat = (
 
   const tabsets: Array<TabsetNode> = [];
   collectTabsetsInRow(layout, tabsets);
-  const first = tabsets[0];
+  const first = tabsets.at(0);
   if (first) {
     draft.activeTabsetId = first.id;
   }
@@ -70,7 +70,7 @@ const resolveMainTarget = (
 ): TabsetNode | undefined => {
   const mainTabsets: Array<TabsetNode> = [];
   collectTabsetsInRow(draft.layout, mainTabsets);
-  if (targetId) {
+  if (targetId !== undefined) {
     const explicit = mainTabsets.find((tabset) => tabset.id === targetId);
     if (explicit) {
       return explicit;
@@ -96,7 +96,7 @@ const dockFloat = (
   if (index === -1) {
     return;
   }
-  const [float] = floats.splice(index, 1);
+  const float = floats.splice(index, 1).at(0);
   draft.floats = floats;
   if (!float) {
     return;
@@ -109,7 +109,7 @@ const dockFloat = (
     return;
   }
 
-  const leadTabset = tabsets[0];
+  const leadTabset = tabsets.at(0);
   const selectedOffset = leadTabset
     ? clampSelected(leadTabset.children.length, leadTabset.selected)
     : 0;

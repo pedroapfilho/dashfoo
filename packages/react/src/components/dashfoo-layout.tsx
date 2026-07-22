@@ -153,31 +153,44 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
   useImperativeHandle(
     ref,
     () => ({
-      addTab: (tab, target) =>
+      addTab: (tab, target) => {
         store.dispatch({
           index: target.index,
           location: target.location ?? "center",
           tab,
           targetId: target.targetId,
           type: "addNode",
-        }),
+        });
+      },
       canRedo: store.canRedo,
       canUndo: store.canUndo,
-      closeTab: (tabId) => store.dispatch({ tabId, type: "deleteTab" }),
+      closeTab: (tabId) => {
+        store.dispatch({ tabId, type: "deleteTab" });
+      },
       dispatch: store.dispatch,
-      dockFloat: (floatId) => store.dispatch({ floatId, type: "dockFloat" }),
-      floatTab: (tabId) => store.dispatch({ tabId, type: "floatTab" }),
+      dockFloat: (floatId) => {
+        store.dispatch({ floatId, type: "dockFloat" });
+      },
+      floatTab: (tabId) => {
+        store.dispatch({ tabId, type: "floatTab" });
+      },
       getModel: () => store.model,
-      maximizeTabset: (tabsetId) => store.dispatch({ tabsetId, type: "setMaximizedTabset" }),
+      maximizeTabset: (tabsetId) => {
+        store.dispatch({ tabsetId, type: "setMaximizedTabset" });
+      },
       redo: store.redo,
-      renameTab: (tabId, name) => store.dispatch({ name, tabId, type: "renameTab" }),
+      renameTab: (tabId, name) => {
+        store.dispatch({ name, tabId, type: "renameTab" });
+      },
       resetLayout: () => {
         persistence.clear();
         if (defaultModel !== undefined) {
           store.setModel(defaultModel);
         }
       },
-      selectTab: (tabsetId, index) => store.dispatch({ index, tabsetId, type: "selectTab" }),
+      selectTab: (tabsetId, index) => {
+        store.dispatch({ index, tabsetId, type: "selectTab" });
+      },
       undo: store.undo,
     }),
     [defaultModel, persistence, store],
@@ -221,7 +234,8 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     [isCompact, storeDispatch],
   );
 
-  const maximized = view.maximizedTabsetId ? findTabset(view, view.maximizedTabsetId) : undefined;
+  const maximized =
+    view.maximizedTabsetId === undefined ? undefined : findTabset(view, view.maximizedTabsetId);
 
   const tree = (
     <Layout.FloatLayer floats={store.model.floats ?? []} global={store.model.global}>
