@@ -1,1 +1,5 @@
+# oxlint is type-aware here, so without workspace .d.ts on disk it reports
+# unresolved cross-package types as lint violations. Mirrors the build step in
+# .github/workflows/lint.yml; turbo replays it from cache in under a second.
+pnpm build --filter="./packages/*" --output-logs=errors-only
 pnpm lint-staged
