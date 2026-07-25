@@ -176,9 +176,8 @@ const DropZoneOverlay = ({
 
   const activeCell = pointer ? activeCellAt(tabsets, pointer) : null;
   const activeKey = activeCell ? cellKey(activeCell) : null;
-  const activePolygon = activeKey
-    ? (cells.find((cell) => cellKey(cell) === activeKey)?.points ?? null)
-    : null;
+  const activePolygon =
+    activeKey === null ? null : (cells.find((cell) => cellKey(cell) === activeKey)?.points ?? null);
 
   const noop = intent === null && activeCell !== null;
   const chip = chipText(intent, activeCell);
@@ -217,7 +216,7 @@ const DropZoneOverlay = ({
           <circle cx={pointer.x} cy={pointer.y} fill="hsl(210 80% 55%)" r={3.5} />
         </g>
       ) : null}
-      {pointer && chip ? (
+      {pointer && chip !== null && chip !== "" ? (
         <text
           className="fill-neutral-800 dark:fill-neutral-100"
           fontSize={11}

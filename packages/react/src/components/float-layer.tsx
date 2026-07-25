@@ -34,7 +34,9 @@ const FloatOverlay = ({
           global={global}
           key={node.id}
           node={node}
-          onFocus={() => setTopId(node.id)}
+          onFocus={() => {
+            setTopId(node.id);
+          }}
           zIndex={node.id === topId ? 2 : 1}
         />
       ))}

@@ -59,7 +59,9 @@ const tabButtonIn = (
 const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
   createStore<TabsetState>((set, get) => ({
     ...initial,
-    cancelRename: () => set({ editingTabId: null }),
+    cancelRename: () => {
+      set({ editingTabId: null });
+    },
     closeTab: (tabId) => {
       set({ restoreFocus: true });
       get().dispatch({ tabId, type: "deleteTab" });
@@ -77,7 +79,9 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
     overflowItems: [],
     registerRenameInput: () => {
       set((state) => ({ renameInputCount: state.renameInputCount + 1 }));
-      return () => set((state) => ({ renameInputCount: state.renameInputCount - 1 }));
+      return () => {
+        set((state) => ({ renameInputCount: state.renameInputCount - 1 }));
+      };
     },
     registerTablist: (element) => {
       if (element) {
@@ -94,7 +98,9 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
       set({ tablistElement: null });
     },
     renameInputCount: 0,
-    renameTab: (tabId, name) => get().dispatch({ name, tabId, type: "renameTab" }),
+    renameTab: (tabId, name) => {
+      get().dispatch({ name, tabId, type: "renameTab" });
+    },
     restoreFocus: false,
     selectOverflowTab: (tabId) => {
       const { dispatch, node, tablistElement } = get();
@@ -111,7 +117,7 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
     selectTab: (index, options) => {
       const { dispatch, node, tablistElement } = get();
       dispatch({ index, tabsetId: node.id, type: "selectTab" });
-      if (options?.focus) {
+      if (options?.focus === true) {
         const tabId = node.children[index]?.id;
         if (tabId) {
           tabButtonIn(tablistElement, node.id, tabId)?.focus();

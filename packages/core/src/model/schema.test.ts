@@ -111,7 +111,7 @@ describe("dashfooSchema", () => {
 
   test("rejects a row whose orientation is not row or column", () => {
     const badOrientation = structuredClone(validModel);
-    badOrientation.layout.orientation = "diagonal" as never;
+    badOrientation.layout.orientation = "diagonal";
 
     expect(() => dashfooSchema.parse(badOrientation)).toThrow();
   });

@@ -40,7 +40,7 @@ const findTabInContainer = (container: TabContainer, tabId: string): TabLocation
     return undefined;
   }
 
-  const tab = container.children[index];
+  const tab = container.children.at(index);
   if (!tab) {
     return undefined;
   }

@@ -88,6 +88,9 @@ const zoneRect = (rect: Rect, location: DockLocation): Rect => {
     case "split-top": {
       return { height: halfH, width: rect.width, x: rect.x, y: rect.y };
     }
+    case "center": {
+      return rect;
+    }
     default: {
       return rect;
     }

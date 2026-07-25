@@ -130,7 +130,7 @@ describe("useExternalTabSource lifecycle", () => {
         label: "Widget",
       });
 
-      return <div data-testid="source" ref={ref as React.RefCallback<HTMLDivElement>} />;
+      return <div data-testid="source" ref={ref} />;
     };
 
     const { unmount } = render(
@@ -185,8 +185,8 @@ describe("useTabsetDroppable lifecycle", () => {
     const [droppable] = droppablesFor(capturedManager!, "ts1");
     expect(droppable).toBeDefined();
 
-    expect((droppable!.data as { layerId?: string }).layerId).toBeTruthy();
-    expect(droppable!.element).toBeInstanceOf(HTMLElement);
+    expect((droppable.data as { layerId?: string }).layerId).toBeTruthy();
+    expect(droppable.element).toBeInstanceOf(HTMLElement);
 
     unmount();
 

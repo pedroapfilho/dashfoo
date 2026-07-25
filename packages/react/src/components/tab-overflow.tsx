@@ -35,10 +35,10 @@ const TabOverflowMenu = ({
 
   useEffect(() => {
     if (!open) {
-      return;
+      return undefined;
     }
     const handlePointerDown = (event: PointerEvent): void => {
-      if (event.target instanceof Node && !rootRef.current?.contains(event.target)) {
+      if (event.target instanceof Node && rootRef.current?.contains(event.target) !== true) {
         setOpen(false);
       }
     };
@@ -109,7 +109,10 @@ const TabOverflowMenu = ({
   };
 
   const handleFocusOut = (event: FocusEvent<HTMLDivElement>): void => {
-    if (event.relatedTarget instanceof Node && rootRef.current?.contains(event.relatedTarget)) {
+    if (
+      event.relatedTarget instanceof Node &&
+      rootRef.current?.contains(event.relatedTarget) === true
+    ) {
       return;
     }
     setOpen(false);
@@ -142,7 +145,9 @@ const TabOverflowMenu = ({
             <button
               data-dashfoo="tab-overflow-item"
               key={item.id}
-              onClick={() => handleSelect(item.id)}
+              onClick={() => {
+                handleSelect(item.id);
+              }}
               ref={(node) => {
                 itemRefs.current[index] = node;
               }}

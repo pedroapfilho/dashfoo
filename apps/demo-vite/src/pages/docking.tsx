@@ -23,7 +23,9 @@ const WidgetCard = ({
     createTab: () => createWidgetTab(widget),
     label: widget.name,
   });
-  const handleAdd = (): void => onAdd(widget);
+  const handleAdd = (): void => {
+    onAdd(widget);
+  };
 
   return (
     <div

@@ -39,7 +39,7 @@ describe("useDashfooStore (uncontrolled)", () => {
   });
 
   test("dispatch updates the model and fires onModelChange", () => {
-    const onModelChange = vi.fn();
+    const onModelChange = vi.fn<(model: Dashfoo) => void>();
     const { result } = renderHook(() => useDashfooStore({ defaultModel: model(), onModelChange }));
 
     act(() => {
@@ -73,8 +73,8 @@ describe("useDashfooStore (uncontrolled)", () => {
   });
 
   test("undo and redo fire onActiveTabsetChange with the restored id", () => {
-    const onActiveTabsetChange = vi.fn();
-    const onModelChange = vi.fn();
+    const onActiveTabsetChange = vi.fn<(tabsetId: string | undefined) => void>();
+    const onModelChange = vi.fn<(model: Dashfoo) => void>();
     const { result } = renderHook(() =>
       useDashfooStore({ defaultModel: model(), onActiveTabsetChange, onModelChange }),
     );
@@ -102,7 +102,7 @@ describe("useDashfooStore (uncontrolled)", () => {
   });
 
   test("undo and redo fire onMaximizedTabsetChange with the restored id", () => {
-    const onMaximizedTabsetChange = vi.fn();
+    const onMaximizedTabsetChange = vi.fn<(tabsetId: string | undefined) => void>();
     const { result } = renderHook(() =>
       useDashfooStore({ defaultModel: model(), onMaximizedTabsetChange }),
     );
@@ -125,7 +125,7 @@ describe("useDashfooStore (uncontrolled)", () => {
   });
 
   test("undo at the bottom of an empty stack does not fire onModelChange", () => {
-    const onModelChange = vi.fn();
+    const onModelChange = vi.fn<(model: Dashfoo) => void>();
     const { result } = renderHook(() => useDashfooStore({ defaultModel: model(), onModelChange }));
 
     expect(result.current.canUndo()).toBe(false);
@@ -157,7 +157,7 @@ describe("useDashfooStore (uncontrolled)", () => {
 
 describe("useDashfooStore (controlled)", () => {
   test("renders the model prop and routes changes through onModelChange", () => {
-    const onModelChange = vi.fn();
+    const onModelChange = vi.fn<(model: Dashfoo) => void>();
     const { rerender, result } = renderHook(
       ({ current }) => useDashfooStore({ model: current, onModelChange }),
       { initialProps: { current: model() } },
@@ -183,7 +183,7 @@ describe("useDashfooStore (controlled)", () => {
   });
 
   test("undo and redo are no-ops that never fire onModelChange", () => {
-    const onModelChange = vi.fn();
+    const onModelChange = vi.fn<(model: Dashfoo) => void>();
     const initialModel = model();
     const { result } = renderHook(
       ({ current }) => useDashfooStore({ model: current, onModelChange }),

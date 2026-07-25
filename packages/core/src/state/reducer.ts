@@ -41,7 +41,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
         return;
       }
       for (let index = 0; index < action.weights.length; index++) {
-        const child = row.children[index];
+        const child = row.children.at(index);
         const weight = action.weights[index];
         if (!child || weight === undefined) {
           continue;
@@ -73,7 +73,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       if (!location) {
         return;
       }
-      const [removed] = location.container.children.splice(location.index, 1);
+      const removed = location.container.children.splice(location.index, 1).at(0);
       if (removed) {
         pushFloat(draft, wrapTabInLayout(removed), action.geometry, action.floatId);
       }
@@ -96,7 +96,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
         return;
       }
 
-      const [removed] = source.container.children.splice(source.index, 1);
+      const removed = source.container.children.splice(source.index, 1).at(0);
       if (!removed) {
         return;
       }

@@ -25,16 +25,20 @@ type TreeNodeProps = {
 const TreeNode = ({ children, field, id, kind, meta }: TreeNodeProps) => (
   <li>
     <div className="flex flex-wrap items-center gap-1.5 py-0.5">
-      {field ? (
+      {field !== undefined && field !== "" ? (
         <span className="text-fd-muted-foreground font-mono text-[11px]">{field}:</span>
       ) : null}
       <span className={cn("rounded px-1.5 font-mono text-[10px] leading-4.5", KIND_STYLES[kind])}>
         {kind}
       </span>
-      {id ? <IdChip>{id}</IdChip> : null}
-      {meta ? <span className="text-fd-muted-foreground font-mono text-[10px]">{meta}</span> : null}
+      {id !== undefined && id !== "" ? <IdChip>{id}</IdChip> : null}
+      {meta !== undefined && meta !== "" ? (
+        <span className="text-fd-muted-foreground font-mono text-[10px]">{meta}</span>
+      ) : null}
     </div>
-    {children ? <ul className="ml-2 border-l pl-4">{children}</ul> : null}
+    {children !== undefined && children !== null ? (
+      <ul className="ml-2 border-l pl-4">{children}</ul>
+    ) : null}
   </li>
 );
 

@@ -57,8 +57,8 @@ const Footer = (): ReactNode => (
                 <a
                   className="text-dashfoo-muted-foreground hover:text-dashfoo-foreground font-normal transition-colors"
                   href={link.href}
-                  rel={link.external ? "noopener noreferrer" : undefined}
-                  target={link.external ? "_blank" : undefined}
+                  rel={link.external === true ? "noopener noreferrer" : undefined}
+                  target={link.external === true ? "_blank" : undefined}
                 >
                   {link.label}
                 </a>

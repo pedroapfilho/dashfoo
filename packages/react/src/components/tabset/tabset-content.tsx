@@ -51,6 +51,7 @@ const TabsetContent = ({ children, style, ...props }: TabsetContentProps): React
   }
 
   const active = node.children[visualSelected];
+  // oxlint-disable-next-line typescript/strict-boolean-expressions -- visualSelected is -1 while the tabset's only tab is dragged out, so this lookup really is undefined despite the non-optional type; `.at()` would wrongly resolve -1 to the last tab.
   if (active) {
     return (
       <div

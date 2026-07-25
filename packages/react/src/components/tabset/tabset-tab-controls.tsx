@@ -25,7 +25,9 @@ const RenameEditor = ({
   const rename = useInlineRename({
     currentName: tab.name,
     inputRef,
-    onCommit: (name) => commitRename(tab.id, name),
+    onCommit: (name) => {
+      commitRename(tab.id, name);
+    },
     onDone: cancelRename,
   });
   const refCallback = useMemo(() => mergeRefs<HTMLInputElement>(inputRef, userRef), [userRef]);

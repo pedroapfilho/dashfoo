@@ -136,14 +136,14 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
   useLayoutEffect(() => {
     const group = groupRef.current;
     if (!group) {
-      return;
+      return undefined;
     }
     const current = group.getLayout();
     const samePanelSet =
       Object.keys(current).length === Object.keys(desiredLayout).length &&
       Object.keys(desiredLayout).every((id) => id in current);
     if (!samePanelSet || layoutsMatch(current, desiredLayout)) {
-      return;
+      return undefined;
     }
 
     syncing.current = true;

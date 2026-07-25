@@ -231,8 +231,12 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       });
     };
 
-    const handleMove = (): void => syncIntent();
-    const handleCollision = (): void => syncIntent();
+    const handleMove = (): void => {
+      syncIntent();
+    };
+    const handleCollision = (): void => {
+      syncIntent();
+    };
 
     const handleEnd = (event: DragEndEvent): void => {
       if (event.canceled) {

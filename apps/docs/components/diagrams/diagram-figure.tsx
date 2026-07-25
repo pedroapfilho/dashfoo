@@ -60,7 +60,7 @@ const MockTab = ({ name, selected }: MockTabProps) => (
   <span
     className={cn(
       "flex items-center gap-1 rounded-t px-1.5 py-0.5 text-[10px] whitespace-nowrap",
-      selected ? "bg-fd-background text-fd-foreground" : "text-fd-muted-foreground",
+      selected === true ? "bg-fd-background text-fd-foreground" : "text-fd-muted-foreground",
     )}
   >
     {name}

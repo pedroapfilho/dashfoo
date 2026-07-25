@@ -26,7 +26,7 @@ const baseModel = (): Dashfoo => ({
 const onlyFloat = (model: Dashfoo) => {
   const floats = model.floats ?? [];
   expect(floats).toHaveLength(1);
-  return floats[0]!;
+  return floats[0];
 };
 
 const floatTabsets = (model: Dashfoo): Array<TabsetNode> =>
@@ -226,8 +226,8 @@ describe("float naming", () => {
     const b = reducer(a, { tabId: "t1", type: "floatTab" });
     const [first, second] = b.floats ?? [];
 
-    const r1 = reducer(b, { floatId: first!.id, name: "Foo", type: "renameFloat" });
-    const r2 = reducer(r1, { floatId: second!.id, name: "Foo", type: "renameFloat" });
+    const r1 = reducer(b, { floatId: first.id, name: "Foo", type: "renameFloat" });
+    const r2 = reducer(r1, { floatId: second.id, name: "Foo", type: "renameFloat" });
 
     expect((r2.floats ?? []).map((f) => f.name)).toEqual(["Foo", "Foo 1"]);
   });
@@ -299,7 +299,8 @@ describe("normalize with floats", () => {
     const floated = reducer(baseModel(), { tabId: "t1", type: "floatTab" });
 
     const allTabIds = collectTabsets(floated).flatMap((ts) => ts.children.map((t) => t.id));
-    expect(allTabIds.toSorted()).toEqual(["t1", "t2", "t3"]);
+    expect(allTabIds).toHaveLength(3);
+    expect(new Set(allTabIds)).toEqual(new Set(["t1", "t2", "t3"]));
     expect(findDuplicateIds(floated)).toEqual([]);
   });
 });
