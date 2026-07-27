@@ -46,9 +46,9 @@ const AGAINST: Array<{ content: ReactNode; key: string }> = [
 ];
 
 const When = (): ReactNode => (
-  <section className="border-dashfoo-border/70 border-t py-16 sm:py-24" id="fit">
+  <section className="border-dashfoo-border/70 scroll-mt-20 border-t py-16 sm:py-24" id="fit">
     <div className="mx-auto max-w-6xl px-6 lg:px-8">
-      <h2 className="text-dashfoo-foreground max-w-[24ch] text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+      <h2 className="text-dashfoo-foreground max-w-[35ch] text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
         Is dashfoo the right fit?
       </h2>
       <p className="text-dashfoo-muted-foreground mt-4 max-w-[56ch] text-base text-pretty">
@@ -65,7 +65,7 @@ const When = (): ReactNode => (
                 key={item.key}
               >
                 <Check
-                  className="text-dashfoo-foreground mt-0.5 size-5 shrink-0"
+                  className="stroke-dashfoo-foreground size-5 h-lh shrink-0"
                   strokeWidth={1.75}
                 />
                 {item.content}
@@ -83,7 +83,10 @@ const When = (): ReactNode => (
                 className="text-dashfoo-muted-foreground flex gap-3 text-base text-pretty"
                 key={item.key}
               >
-                <Minus className="mt-0.5 size-5 shrink-0" strokeWidth={1.75} />
+                <Minus
+                  className="stroke-dashfoo-muted-foreground size-5 h-lh shrink-0"
+                  strokeWidth={1.75}
+                />
                 {item.content}
               </li>
             ))}

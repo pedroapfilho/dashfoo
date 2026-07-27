@@ -8,10 +8,17 @@ type CodeBlockProps = {
 };
 
 const CodeBlock = async ({ code, lang = "tsx" }: CodeBlockProps) => {
-  const hast = await codeToHast(code, { lang, theme: "dracula" });
+  // defaultColor: false emits only --shiki-light/--shiki-dark per token and no
+  // inline `color`, so global.css can flip themes off [data-dashfoo-theme]
+  // without !important. Shiki also marks the <pre> tabbable, hence the focus ring.
+  const hast = await codeToHast(code, {
+    defaultColor: false,
+    lang,
+    themes: { dark: "vitesse-dark", light: "vitesse-light" },
+  });
 
   return (
-    <div className="overflow-hidden rounded-lg border border-white/10 font-mono text-sm shadow-lg [&_pre]:overflow-x-auto [&_pre]:p-5 [&_pre]:leading-relaxed">
+    <div className="border-dashfoo-border bg-dashfoo-code-bg rounded-dashfoo [&_pre]:focus-visible:outline-dashfoo-ring overflow-hidden border text-base/7 sm:text-sm/6 [&_pre]:overflow-x-auto [&_pre]:p-5 [&_pre]:focus-visible:outline-2 [&_pre]:focus-visible:outline-offset-2">
       {toJsxRuntime(hast, { Fragment, jsx, jsxs })}
     </div>
   );

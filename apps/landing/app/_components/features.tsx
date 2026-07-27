@@ -45,10 +45,10 @@ const FEATURES: Array<{ body: ReactNode; icon: LucideIcon; title: string }> = [
 ];
 
 const Features = (): ReactNode => (
-  <section className="py-16 sm:py-24" id="features">
+  <section className="scroll-mt-20 py-16 sm:py-24" id="features">
     <div className="mx-auto max-w-6xl px-6 lg:px-8">
       <div>
-        <h2 className="text-dashfoo-foreground max-w-[24ch] text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+        <h2 className="text-dashfoo-foreground max-w-[35ch] text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
           What dashfoo gives you
         </h2>
         <p className="text-dashfoo-muted-foreground mt-4 max-w-[56ch] text-base text-pretty">
@@ -61,7 +61,7 @@ const Features = (): ReactNode => (
           <div key={feature.title}>
             <dt className="text-dashfoo-foreground flex items-center gap-2.5 text-base font-medium">
               <feature.icon
-                className="text-dashfoo-muted-foreground size-5 h-lh shrink-0"
+                className="stroke-dashfoo-muted-foreground size-5 h-lh shrink-0"
                 strokeWidth={1.75}
               />
               {feature.title}

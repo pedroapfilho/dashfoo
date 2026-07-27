@@ -7,7 +7,7 @@ const SNIPPET = `<DashfooLayout
 />`;
 
 const CodePanel = (): ReactNode => (
-  <pre className="text-dashfoo-muted-foreground overflow-auto font-mono text-[11px] leading-relaxed">
+  <pre className="text-dashfoo-muted-foreground overflow-auto font-mono text-[0.6875rem]/4">
     {SNIPPET}
   </pre>
 );
