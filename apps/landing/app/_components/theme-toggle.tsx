@@ -34,11 +34,13 @@ const ThemeToggle = (): ReactNode => {
     window.dispatchEvent(new Event(THEME_EVENT));
   };
 
+  // The label stays static because aria-pressed already carries the state; an
+  // action-phrased label would make screen readers announce it twice, inverted.
   return (
     <button
-      aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
+      aria-label="Dark theme"
       aria-pressed={dark}
-      className="text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm focus-visible:ring-dashfoo-ring relative shrink-0 p-2 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+      className="text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm focus-visible:outline-dashfoo-ring relative shrink-0 p-2 focus-visible:outline-2 focus-visible:outline-offset-2"
       onClick={handleToggle}
       type="button"
     >

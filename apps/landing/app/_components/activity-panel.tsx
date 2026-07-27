@@ -8,7 +8,7 @@ const ACTIVITY = [
 ] as const;
 
 const ActivityPanel = (): ReactNode => (
-  <ul className="flex flex-col gap-2.5 text-[11px]">
+  <ul className="flex flex-col gap-2.5 text-[0.6875rem]">
     {ACTIVITY.map((line) => (
       <li className="flex items-center gap-2" key={line}>
         <span className="bg-dashfoo-accent size-1.5 shrink-0 rounded-full" />

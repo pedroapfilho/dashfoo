@@ -25,19 +25,22 @@ export const Dashboard = () => (
 );`;
 
 const Quickstart = (): ReactNode => (
-  <section className="border-dashfoo-border/70 border-t py-16 sm:py-24" id="quickstart">
+  <section
+    className="border-dashfoo-border/70 scroll-mt-20 border-t py-16 sm:py-24"
+    id="quickstart"
+  >
     <div className="mx-auto grid max-w-6xl grid-cols-1 gap-x-8 gap-y-10 px-6 lg:grid-cols-2 lg:px-8">
       <div className="lg:pt-4">
-        <h2 className="text-dashfoo-foreground max-w-[20ch] text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+        <h2 className="text-dashfoo-foreground max-w-[35ch] text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
           Up and running in one component
         </h2>
-        <p className="text-dashfoo-muted-foreground mt-4 max-w-[52ch] text-base text-pretty">
+        <p className="text-dashfoo-muted-foreground mt-4 max-w-[56ch] text-base text-pretty">
           Install the engine and the React layer, give the mount a height, and resolve tab content
           with a registry or a factory. Tab content never lives in the model. That&rsquo;s the whole
           setup.
         </p>
         <a
-          className="text-dashfoo-foreground hover:text-dashfoo-muted-foreground mt-6 inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
+          className="text-dashfoo-foreground hover:text-dashfoo-muted-foreground focus-visible:outline-dashfoo-ring mt-6 inline-flex items-center gap-1.5 text-base font-medium focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm"
           href={DOCS_URL}
         >
           Read the full guide

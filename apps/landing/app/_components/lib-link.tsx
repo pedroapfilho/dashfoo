@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 const LibLink = ({ children, href }: { children: ReactNode; href: string }): ReactNode => (
   <a
-    className="decoration-dashfoo-border hover:text-dashfoo-foreground hover:decoration-dashfoo-foreground underline underline-offset-2 transition-colors"
+    className="decoration-dashfoo-border hover:text-dashfoo-foreground hover:decoration-dashfoo-foreground focus-visible:outline-dashfoo-ring underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2"
     href={href}
     rel="noopener noreferrer"
     target="_blank"

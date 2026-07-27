@@ -1,7 +1,7 @@
 import "@fontsource-variable/geist-mono/index.css";
 import "@/app/global.css";
 
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 const DESCRIPTION =
@@ -55,24 +55,15 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = {
-  themeColor: [
-    { color: "oklch(1 0 0)", media: "(prefers-color-scheme: light)" },
-    { color: "oklch(0.145 0 0)", media: "(prefers-color-scheme: dark)" },
-  ],
-};
-
 const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("dashfoo:landing:theme");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.dataset.dashfooTheme="dark";}}catch(e){}})();`;
 
 const RootLayout = ({ children }: { children: ReactNode }) => (
-  <html lang="en" suppressHydrationWarning>
+  <html className="antialiased" lang="en" suppressHydrationWarning>
     <head>
       {/* oxlint-disable react/no-danger */}
       <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
     </head>
-    <body className="bg-dashfoo-background text-dashfoo-foreground font-dashfoo antialiased">
-      {children}
-    </body>
+    <body className="bg-dashfoo-background text-dashfoo-foreground font-dashfoo">{children}</body>
   </html>
 );
 

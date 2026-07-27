@@ -3,38 +3,47 @@ import type { ReactNode } from "react";
 
 import { GitHubIcon } from "./github-icon";
 import { Logo } from "./logo";
+import { MobileNav } from "./mobile-nav";
+import { EXTERNAL_LINKS, GITHUB_URL, SECTION_LINKS } from "./nav-links";
 import { ThemeToggle } from "./theme-toggle";
 
-const GITHUB_URL = "https://github.com/pedroapfilho/dashfoo";
-const DOCS_URL = "https://docs.dashfoo.com";
-const DEMO_URL = "https://demo.dashfoo.com";
+const LINK_CLASS =
+  "text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm focus-visible:outline-dashfoo-ring px-3 py-2 font-medium focus-visible:outline-2 focus-visible:outline-offset-2";
 
 const Header = (): ReactNode => (
   <header className="border-dashfoo-border/70 bg-dashfoo-background/80 sticky top-0 z-10 border-b backdrop-blur">
     <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-3 lg:px-8">
       <Link
         aria-label="Homepage"
-        className="rounded-dashfoo-sm focus-visible:ring-dashfoo-ring shrink-0 focus-visible:ring-2 focus-visible:outline-none"
+        className="rounded-dashfoo-sm focus-visible:outline-dashfoo-ring shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2"
         href="/"
       >
         <Logo className="h-6 w-auto" />
       </Link>
-      <nav aria-label="Primary" className="ml-auto flex items-center gap-1 text-sm">
-        <a
-          className="text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm hidden px-3 py-2 font-medium transition-colors sm:block"
-          href={DOCS_URL}
-        >
-          Docs
-        </a>
-        <a
-          className="text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm hidden px-3 py-2 font-medium transition-colors sm:block"
-          href={DEMO_URL}
-        >
-          Demo
-        </a>
+      {/* Text-only links in the nav landmark; GitHub and the theme toggle are
+          actions, so they sit outside it where icons are allowed. */}
+      <nav aria-label="Primary" className="hidden items-center gap-1 text-sm lg:flex">
+        {SECTION_LINKS.map((link) => (
+          <a className={LINK_CLASS} href={link.href} key={link.href}>
+            {link.label}
+          </a>
+        ))}
+        {EXTERNAL_LINKS.map((link) => (
+          <a
+            className={LINK_CLASS}
+            href={link.href}
+            key={link.href}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
+      <div className="ml-auto flex items-center gap-1">
         <a
           aria-label="dashfoo on GitHub"
-          className="text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm relative p-2 transition-colors"
+          className="text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm focus-visible:outline-dashfoo-ring relative p-2 focus-visible:outline-2 focus-visible:outline-offset-2"
           href={GITHUB_URL}
           rel="noopener noreferrer"
           target="_blank"
@@ -46,7 +55,8 @@ const Header = (): ReactNode => (
           />
         </a>
         <ThemeToggle />
-      </nav>
+        <MobileNav />
+      </div>
     </div>
   </header>
 );
