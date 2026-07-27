@@ -2,7 +2,7 @@
 
 import { Menu, X } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { EXTERNAL_LINKS, SECTION_LINKS } from "./nav-links";
 
@@ -12,15 +12,29 @@ const LINK_CLASS =
 const MobileNav = (): ReactNode => {
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const panelRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Subscribed unconditionally rather than gated on `open`: closing an already
   // closed disclosure is a no-op React bails out of, and a single stable
-  // listener avoids re-subscribing on every toggle.
+  // listener avoids re-subscribing on every toggle. Reading focus off the refs
+  // at event time rather than from state keeps the dep array empty.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
-        setOpen(false);
+      if (event.key !== "Escape") {
+        return;
       }
+      // Only reclaim focus that the closing panel is about to orphan. Escape
+      // pressed while focus sits elsewhere on the page must not yank it back
+      // to the trigger. Focusing before the state update is safe: the panel is
+      // still mounted, so React unmounting it afterwards cannot move focus.
+      const orphansFocus =
+        panelRef.current?.contains(document.activeElement) === true ||
+        document.activeElement === triggerRef.current;
+      if (orphansFocus) {
+        triggerRef.current?.focus();
+      }
+      setOpen(false);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => {
@@ -44,6 +58,7 @@ const MobileNav = (): ReactNode => {
         aria-label="Menu"
         className="text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm focus-visible:outline-dashfoo-ring relative shrink-0 p-2 focus-visible:outline-2 focus-visible:outline-offset-2 lg:hidden"
         onClick={handleToggle}
+        ref={triggerRef}
         type="button"
       >
         {open ? (
@@ -66,6 +81,7 @@ const MobileNav = (): ReactNode => {
           aria-label="Mobile"
           className="border-dashfoo-border/70 bg-dashfoo-background absolute inset-x-0 top-full flex flex-col border-b px-6 py-3 lg:hidden"
           id={panelId}
+          ref={panelRef}
         >
           {[...SECTION_LINKS, ...EXTERNAL_LINKS].map((link) => {
             const isAnchor = link.href.startsWith("#");
