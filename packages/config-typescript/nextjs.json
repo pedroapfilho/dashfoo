@@ -3,11 +3,9 @@
   "display": "Next.js",
   "extends": "./base.json",
   "compilerOptions": {
-    "allowImportingTsExtensions": false,
     "allowJs": true,
     "incremental": true,
     "jsx": "preserve",
-    "noEmit": true,
     "plugins": [{ "name": "next" }]
   }
 }
