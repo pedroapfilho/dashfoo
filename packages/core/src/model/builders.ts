@@ -109,7 +109,7 @@ const model = (layout: RowNode, options: ModelOptions = {}): Dashfoo => {
   if (duplicates.length > 0) {
     // oxlint-disable-next-line no-console
     console.warn(
-      `[dashfoo] builder produced duplicate node ids: ${duplicates.join(", ")} — pass explicit ids when reusing a component`,
+      `[dashfoo] builder produced duplicate node ids: ${duplicates.join(", ")}. Pass explicit ids when reusing a component`,
     );
   }
   return built;
