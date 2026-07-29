@@ -4,36 +4,17 @@ import { findRootContaining, findTabset, findTabsetParent } from "../model/tree"
 
 import type { DockLocation } from "./actions";
 
-const removeTabset = (row: RowNode, tabsetId: string): boolean => {
-  const index = row.children.findIndex((child) => child.type === "tabset" && child.id === tabsetId);
-  if (index !== -1) {
-    row.children.splice(index, 1);
-    return true;
+const removeTabsetReturning = (row: RowNode, tabsetId: string): TabsetNode | undefined => {
+  const found = findTabsetParent(row, tabsetId);
+  if (!found) {
+    return undefined;
   }
-  for (const child of row.children) {
-    if (child.type === "row" && removeTabset(child, tabsetId)) {
-      return true;
-    }
-  }
-  return false;
+  const [removed] = found.parent.children.splice(found.index, 1);
+  return removed?.type === "tabset" ? removed : undefined;
 };
 
-const removeTabsetReturning = (row: RowNode, tabsetId: string): TabsetNode | undefined => {
-  const index = row.children.findIndex((child) => child.type === "tabset" && child.id === tabsetId);
-  if (index !== -1) {
-    const [removed] = row.children.splice(index, 1);
-    return removed?.type === "tabset" ? removed : undefined;
-  }
-  for (const child of row.children) {
-    if (child.type === "row") {
-      const found = removeTabsetReturning(child, tabsetId);
-      if (found) {
-        return found;
-      }
-    }
-  }
-  return undefined;
-};
+const removeTabset = (row: RowNode, tabsetId: string): boolean =>
+  removeTabsetReturning(row, tabsetId) !== undefined;
 
 const splitOrientation = (location: DockLocation): "column" | "row" =>
   location === "split-left" || location === "split-right" ? "row" : "column";
