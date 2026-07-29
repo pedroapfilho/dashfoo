@@ -59,6 +59,29 @@ describe("normalize", () => {
     expect(lifted?.weight).toBe(30);
   });
 
+  test("carries the collapsing row's min and max onto the lifted child", () => {
+    const collapsing = row("r1", [tabset("ts1", [tab("t1")])], {
+      max: { unit: "px", value: 480 },
+      min: { unit: "px", value: 240 },
+      weight: 30,
+    });
+    const result = normalize(model(row("root", [collapsing, tabset("ts2", [tab("t2")])])));
+
+    const lifted = result.layout.children[0];
+    expect(lifted?.min).toEqual({ unit: "px", value: 240 });
+    expect(lifted?.max).toEqual({ unit: "px", value: 480 });
+  });
+
+  test("carries snap onto a lifted row", () => {
+    const inner = row("r2", [tabset("ts1", [tab("t1")]), tabset("ts2", [tab("t2")])]);
+    const collapsing = row("r1", [inner], { snap: { step: 8, threshold: 12 } });
+    const result = normalize(model(row("root", [collapsing, tabset("ts3", [tab("t3")])])));
+
+    const lifted = result.layout.children[0];
+    expect(lifted?.type).toBe("row");
+    expect(lifted?.type === "row" ? lifted.snap : undefined).toEqual({ step: 8, threshold: 12 });
+  });
+
   test("clamps a tabset's selected index into range", () => {
     const ts = tabset("ts1", [tab("t1"), tab("t2")], { selected: 7 });
     const result = normalize(model(row("root", [ts])));

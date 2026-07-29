@@ -21,6 +21,30 @@ const normalizeTabset = (tabset: TabsetNode): TabsetNode => ({
   selected: clampSelected(tabset.children.length, tabset.selected),
 });
 
+type RowChild = RowNode["children"][number];
+
+/**
+ * A row that collapses to a single child hands its slot in the parent to
+ * that child, so the slot's sizing constraints have to travel with it.
+ * Dropping them silently widens a pinned sidebar, and `normalize` runs on
+ * load and on every persist, so the loss is permanent.
+ *
+ * `snap` only exists on rows, so it is carried only to a row survivor.
+ */
+const inheritSlot = (row: RowNode, survivor: RowChild): RowChild => {
+  const sized: RowChild = {
+    ...survivor,
+    ...(row.weight === undefined ? {} : { weight: row.weight }),
+    ...(row.min === undefined ? {} : { min: row.min }),
+    ...(row.max === undefined ? {} : { max: row.max }),
+  };
+
+  if (sized.type === "row" && row.snap !== undefined) {
+    return { ...sized, snap: row.snap };
+  }
+  return sized;
+};
+
 const normalizeRowChildren = (children: RowNode["children"]): RowNode["children"] => {
   const out: RowNode["children"] = [];
 
@@ -39,7 +63,7 @@ const normalizeRowChildren = (children: RowNode["children"]): RowNode["children"
     if (grandchildren.length === 1) {
       const only = grandchildren[0];
       if (only !== undefined) {
-        out.push(child.weight === undefined ? only : { ...only, weight: child.weight });
+        out.push(inheritSlot(child, only));
       }
       continue;
     }
