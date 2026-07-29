@@ -117,7 +117,7 @@ const usePersistence = (
     if (config !== null && config.key !== loadedKey.current) {
       // oxlint-disable-next-line no-console
       console.warn(
-        "[dashfoo] persist key changed for a mounted layout; the displayed layout still reflects the previous key — remount (key={persistKey}) to load the new key",
+        "[dashfoo] persist key changed for a mounted layout; the displayed layout still reflects the previous key; remount (key={persistKey}) to load the new key",
       );
       loadedKey.current = config.key;
     }
