@@ -1,5 +1,13 @@
 # @dashfoo/react
 
+## 0.6.4
+
+### Patch Changes
+
+- Updated dependencies [469da4c]
+- Updated dependencies [863fcdf]
+  - @dashfoo/core@0.5.2
+
 ## 0.6.3
 
 ### Patch Changes
