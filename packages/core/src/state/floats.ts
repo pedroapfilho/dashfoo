@@ -133,7 +133,6 @@ const dockFloat = (
     tabsets.length === 1 && leadTabset
       ? leadTabset
       : { children: tabs, id: createNodeId("tabset"), selected: selectedOffset, type: "tabset" };
-  placed.weight = 50;
   placeBesideTarget(draft, placed, target.id, where);
 };
 

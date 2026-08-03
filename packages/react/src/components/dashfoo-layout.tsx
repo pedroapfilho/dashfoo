@@ -223,22 +223,11 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     [isCompact, responsive?.orientation, store.model],
   );
 
-  const storeDispatch = store.dispatch;
-  const dispatch = useCallback(
-    (action: Action): void => {
-      if (isCompact && action.type === "adjustSplit") {
-        return;
-      }
-      storeDispatch(action);
-    },
-    [isCompact, storeDispatch],
-  );
-
   const maximized =
     view.maximizedTabsetId === undefined ? undefined : findTabset(view, view.maximizedTabsetId);
 
   const tree = (
-    <Layout.FloatLayer floats={store.model.floats ?? []} global={store.model.global}>
+    <Layout.FloatLayer floats={store.model.floats ?? []}>
       <Layout.DragLayer>
         {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={view.layout} />}
       </Layout.DragLayer>
@@ -248,11 +237,11 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
   return (
     <Layout.Root
       closableTabs={closableTabs}
-      dispatch={dispatch}
-      draggableTabs={isCompact ? false : draggableTabs}
-      draggableTabsets={isCompact ? false : draggableTabsets}
+      dispatch={store.dispatch}
+      draggableTabs={draggableTabs}
+      draggableTabsets={draggableTabsets}
       editable={editable}
-      floatable={isCompact ? false : floatable}
+      floatable={floatable}
       keepMounted={keepMounted}
       maximizable={maximizable}
       model={view}
@@ -260,7 +249,8 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       renderTab={renderTab}
       renderTabLabel={renderTabLabel}
       renderTabsetToolbar={renderTabsetToolbar}
-      resizableSplits={isCompact ? false : resizableSplits}
+      resizableSplits={resizableSplits}
+      restructurable={!isCompact}
       rootRef={containerRef}
       snap={snap}
     >

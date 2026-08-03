@@ -1,5 +1,6 @@
+import { splitEdge } from "../geometry/geometry";
 import { createNodeId } from "../model/ids";
-import type { Dashfoo, RowNode, TabNode, TabsetNode } from "../model/schema";
+import type { Dashfoo, Orientation, RowNode, TabNode, TabsetNode } from "../model/schema";
 import { findRootContaining, findTabset, findTabsetParent } from "../model/tree";
 
 import type { DockLocation } from "./actions";
@@ -16,11 +17,13 @@ const removeTabsetReturning = (row: RowNode, tabsetId: string): TabsetNode | und
 const removeTabset = (row: RowNode, tabsetId: string): boolean =>
   removeTabsetReturning(row, tabsetId) !== undefined;
 
-const splitOrientation = (location: DockLocation): "column" | "row" =>
-  location === "split-left" || location === "split-right" ? "row" : "column";
-
-const splitsBefore = (location: DockLocation): boolean =>
-  location === "split-left" || location === "split-top";
+const splitPlacement = (location: DockLocation): { before: boolean; orientation: Orientation } => {
+  const edge = splitEdge(location);
+  return {
+    before: edge === "left" || edge === "top",
+    orientation: edge === "left" || edge === "right" ? "row" : "column",
+  };
+};
 
 const placeBesideTarget = (
   draft: Dashfoo,
@@ -36,8 +39,7 @@ const placeBesideTarget = (
     return;
   }
 
-  const orientation = splitOrientation(location);
-  const before = splitsBefore(location);
+  const { before, orientation } = splitPlacement(location);
 
   if (found.parent.orientation === orientation) {
     const targetWeight = targetTabset.weight ?? 100;
@@ -84,7 +86,6 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
     id: createNodeId("tabset"),
     selected: 0,
     type: "tabset",
-    weight: 50,
   };
   placeBesideTarget(draft, newTabset, targetId, location);
 };

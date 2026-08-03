@@ -302,6 +302,12 @@ Every document mutation is one of 18 immutable, discriminated actions. The
 reducer is exhaustive over the union; validate untrusted payloads with
 `actionSchema` before dispatch.
 
+One exception to watch: `mutableNodeAttrsSchema` is a union of fully optional
+objects, so `actionSchema` strips the `attrs` of an `updateNodeAttributes`
+payload down to `{}`. Dispatch that action from typed code, or re-attach
+`attrs` after parsing. Either way the reducer validates `attrs` against the
+target node's own kind and drops keys that belong to another kind.
+
 | `action.type`            | Payload                                    | Effect                                                   |
 | ------------------------ | ------------------------------------------ | -------------------------------------------------------- |
 | `addNode`                | `{ tab, targetId, location, index? }`      | Insert a new tab at a dock location.                     |

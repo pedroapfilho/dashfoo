@@ -108,6 +108,28 @@ describe("reducer", () => {
     expect(tabsetById(next, "ts1")?.weight).toBe(80);
   });
 
+  test("updateNodeAttributes selects a tab through the tabset's own attributes", () => {
+    const next = reducer(baseModel(), {
+      attrs: { selected: 1 },
+      nodeId: "ts1",
+      type: "updateNodeAttributes",
+    });
+
+    expect(tabsetById(next, "ts1")?.selected).toBe(1);
+  });
+
+  test("updateNodeAttributes drops attributes that belong to another node kind", () => {
+    const next = reducer(baseModel(), {
+      attrs: { orientation: "column", weight: 80 },
+      nodeId: "ts1",
+      type: "updateNodeAttributes",
+    });
+
+    const tabset = tabsetById(next, "ts1");
+    expect(tabset?.weight).toBe(80);
+    expect(tabset).not.toHaveProperty("orientation");
+  });
+
   test("updateGlobalAttributes merges global options", () => {
     const next = reducer(baseModel(), {
       attrs: { tabEnableClose: true },

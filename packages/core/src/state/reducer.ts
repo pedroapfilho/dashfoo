@@ -1,5 +1,7 @@
+import { assertNever } from "../lib/assert-never";
 import { clampSelected, normalize } from "../model/invariants";
 import type { Dashfoo } from "../model/schema";
+import type { AttributedNode } from "../model/tree";
 import {
   findAttributedNode,
   findFloat,
@@ -9,8 +11,13 @@ import {
   findTabset,
 } from "../model/tree";
 
-import type { Action } from "./actions";
+import type { Action, MutableNodeAttrs } from "./actions";
 import { dockFloat, floatTabsetById, pushFloat, uniqueFloatName } from "./floats";
+import {
+  mutableRowAttrsSchema,
+  mutableTabAttrsSchema,
+  mutableTabsetAttrsSchema,
+} from "./node-attrs";
 import {
   insertTab,
   mergeTabsInto,
@@ -20,8 +27,21 @@ import {
   wrapTabInLayout,
 } from "./surgery";
 
-const assertNever = (value: never): never => {
-  throw new Error(`Unhandled action: ${JSON.stringify(value)}`);
+const parseNodeAttrs = (node: AttributedNode, attrs: MutableNodeAttrs): MutableNodeAttrs => {
+  switch (node.type) {
+    case "row": {
+      return mutableRowAttrsSchema.parse(attrs);
+    }
+    case "tab": {
+      return mutableTabAttrsSchema.parse(attrs);
+    }
+    case "tabset": {
+      return mutableTabsetAttrsSchema.parse(attrs);
+    }
+    default: {
+      return assertNever(node);
+    }
+  }
 };
 
 const applyAction = (draft: Dashfoo, action: Action): void => {
@@ -131,14 +151,10 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
         return;
       }
 
-      if (action.location.startsWith("split-")) {
-        const sourceRoot = findRootContaining(draft, action.sourceId);
-        const detached = sourceRoot
-          ? removeTabsetReturning(sourceRoot, action.sourceId)
-          : undefined;
-        if (detached) {
-          placeBesideTarget(draft, detached, action.targetId, action.location);
-        }
+      const sourceRoot = findRootContaining(draft, action.sourceId);
+      const detached = sourceRoot ? removeTabsetReturning(sourceRoot, action.sourceId) : undefined;
+      if (detached) {
+        placeBesideTarget(draft, detached, action.targetId, action.location);
       }
       return;
     }
@@ -188,7 +204,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
     case "updateNodeAttributes": {
       const node = findAttributedNode(draft, action.nodeId);
       if (node) {
-        Object.assign(node, action.attrs);
+        Object.assign(node, parseNodeAttrs(node, action.attrs));
       }
       return;
     }
