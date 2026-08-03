@@ -11,7 +11,7 @@
     "incremental": false,
     "inlineSources": false,
     "isolatedModules": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": ["ESNext"],
     "module": "ESNext",
     "moduleDetection": "force",
     "moduleResolution": "Bundler",
