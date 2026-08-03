@@ -40,16 +40,17 @@ const mutableRowAttrsSchema = z
   .partial();
 
 /**
- * Every member here is fully optional, so this union always resolves on its
- * first member and strips the keys the other two own. Do not rely on it to
- * decide which attributes belong to a node: `reducer` re-parses the payload
- * with the target node's own schema before writing it.
+ * One all-optional object carrying every mutable key of every node kind, not a
+ * union of the three: a union whose members are all fully optional matches on
+ * its first member and strips the keys the others own, which erased every
+ * tabset and row attribute at the parse boundary. The four keys that two kinds
+ * share (`enableClose`, `max`, `min`, `weight`) declare the same type on both
+ * sides, so merging widens nothing. Which keys are legal for a given node is
+ * enforced by the reducer against that node's own schema.
  */
-const mutableNodeAttrsSchema = z.union([
-  mutableTabAttrsSchema,
-  mutableTabsetAttrsSchema,
-  mutableRowAttrsSchema,
-]);
+const mutableNodeAttrsSchema = mutableTabAttrsSchema
+  .extend(mutableTabsetAttrsSchema.shape)
+  .extend(mutableRowAttrsSchema.shape);
 
 export {
   mutableNodeAttrsSchema,

@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import type { Dashfoo, TabNode, TabsetNode } from "../model/schema";
 
+import { actionSchema } from "./actions";
 import { reducer } from "./reducer";
 
 const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab" });
@@ -128,6 +129,24 @@ describe("reducer", () => {
     const tabset = tabsetById(next, "ts1");
     expect(tabset?.weight).toBe(80);
     expect(tabset).not.toHaveProperty("orientation");
+  });
+
+  test("updateNodeAttributes survives the documented actionSchema round trip", () => {
+    const parsed = actionSchema.parse({
+      attrs: { selected: 2, weight: 30 },
+      nodeId: "ts1",
+      type: "updateNodeAttributes",
+    });
+
+    expect(parsed).toStrictEqual({
+      attrs: { selected: 2, weight: 30 },
+      nodeId: "ts1",
+      type: "updateNodeAttributes",
+    });
+
+    const next = reducer(baseModel(), parsed);
+    expect(tabsetById(next, "ts1")?.weight).toBe(30);
+    expect(tabsetById(next, "ts1")?.selected).toBe(1);
   });
 
   test("updateGlobalAttributes merges global options", () => {
