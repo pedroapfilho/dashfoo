@@ -12,7 +12,13 @@ const stackModel = (model: Dashfoo, orientation: Orientation = "column"): Dashfo
 
   return normalize({
     ...model,
-    layout: { children, id: model.layout.id, orientation, type: "row" },
+    layout: {
+      children,
+      id: model.layout.id,
+      orientation,
+      type: "row",
+      weight: model.layout.weight,
+    },
     maximizedTabsetId: undefined,
   });
 };

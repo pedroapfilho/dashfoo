@@ -10,6 +10,7 @@ const tabset = (id: string, tabs: Array<TabNode>, extra: Partial<TabsetNode> = {
   id,
   selected: 0,
   type: "tabset",
+  weight: 1,
   ...extra,
 });
 
@@ -18,10 +19,12 @@ const row = (id: string, children: RowNode["children"], extra: Partial<RowNode> 
   id,
   orientation: "row",
   type: "row",
+  weight: 1,
   ...extra,
 });
 
 const model = (layout: RowNode, extra: Partial<Dashfoo> = {}): Dashfoo => ({
+  floats: [],
   global: {},
   layout,
   version: 1,
@@ -80,27 +83,6 @@ describe("normalize", () => {
     const lifted = result.layout.children[0];
     expect(lifted?.type).toBe("row");
     expect(lifted?.type === "row" ? lifted.snap : undefined).toEqual({ step: 8, threshold: 12 });
-  });
-
-  test("clamps a tabset's selected index into range", () => {
-    const ts = tabset("ts1", [tab("t1"), tab("t2")], { selected: 7 });
-    const result = normalize(model(row("root", [ts])));
-
-    expect((result.layout.children[0] as TabsetNode).selected).toBe(1);
-  });
-
-  test("truncates a fractional selected index to an integer", () => {
-    const ts = tabset("ts1", [tab("t1"), tab("t2")], { selected: 1.5 });
-    const result = normalize(model(row("root", [ts])));
-
-    expect((result.layout.children[0] as TabsetNode).selected).toBe(1);
-  });
-
-  test("coerces a NaN selected index to 0", () => {
-    const ts = tabset("ts1", [tab("t1"), tab("t2")], { selected: Number.NaN });
-    const result = normalize(model(row("root", [ts])));
-
-    expect((result.layout.children[0] as TabsetNode).selected).toBe(0);
   });
 
   test("absorbs a lone nested row into the root, adopting its children and orientation", () => {

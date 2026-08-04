@@ -68,20 +68,20 @@ type Dashfoo = {
   activeTabsetId?: string;
   global: GlobalAttributes;
   layout: RowNode;
-  floats?: FloatNode[];
+  floats: FloatNode[];
   maximizedTabsetId?: string;
   version: 1;
 };
 ```
 
-| Field               | Type               | What it holds                                                                          |
-| ------------------- | ------------------ | -------------------------------------------------------------------------------------- |
-| `layout`            | `RowNode`          | The tiled center area. Always a row at the root.                                       |
-| `global`            | `GlobalAttributes` | Defaults that apply tree-wide unless a node overrides them.                            |
-| `version`           | `1`                | The payload format version, pinned by the schema itself.                               |
-| `activeTabsetId`    | `string?`          | Id of the tabset that currently has focus.                                             |
-| `maximizedTabsetId` | `string?`          | Id of the tabset rendered full-area, hiding its siblings.                              |
-| `floats`            | `FloatNode[]?`     | Floating panels, each its own layout subtree. See [Floating panels](/floating-panels). |
+| Field               | Type               | What it holds                                                                                                          |
+| ------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `layout`            | `RowNode`          | The tiled center area. Always a row at the root.                                                                       |
+| `global`            | `GlobalAttributes` | Defaults that apply tree-wide unless a node overrides them.                                                            |
+| `version`           | `1`                | The payload format version, pinned by the schema itself.                                                               |
+| `activeTabsetId`    | `string?`          | Id of the tabset that currently has focus.                                                                             |
+| `maximizedTabsetId` | `string?`          | Id of the tabset rendered full-area, hiding its siblings.                                                              |
+| `floats`            | `FloatNode[]`      | Floating panels, each its own layout subtree. Empty when nothing is floating. See [Floating panels](/floating-panels). |
 
 `layout` is the part most people picture: a recursive grid of rows and tabsets.
 Both `activeTabsetId` and `maximizedTabsetId` are id references, not nested
@@ -105,7 +105,7 @@ type RowNode = {
   orientation: "row" | "column";
   snap?: { step?: number; divisions?: number | "panels"; threshold?: number };
   type: "row";
-  weight?: number;
+  weight: number;
 };
 ```
 
@@ -113,8 +113,8 @@ A row lays its children out along one axis. `orientation: "row"` arranges them
 left-to-right; `orientation: "column"` arranges them top-to-bottom. Children are
 either tabsets (leaves of the grid) or nested rows (which is how you get a column
 inside a row, and the resizable splitters between them). `weight` is the child's
-share of its parent's space relative to its siblings; the root row's own
-`weight` is ignored. `min` and `max` are optional `Dimension` constraints on the
+share of its parent's space relative to its siblings, defaulting to `1` when the
+input omits it; the root row's own `weight` is ignored. `min` and `max` are optional `Dimension` constraints on the
 row as a whole, useful for clamping a nested column without constraining each
 tabset inside it. See [Dimensions](#dimensions) below. `snap` overrides the
 layout-wide `global.snap` for this row's splitters; an empty `{}` opts a single
@@ -135,7 +135,7 @@ type TabsetNode = {
   name?: string;
   selected: number;
   type: "tabset";
-  weight?: number;
+  weight: number;
 };
 ```
 
@@ -325,8 +325,25 @@ const overviewModel: Dashfoo = {
 
 The object omits `enable*` flags (the defaults are fine), `min`/`max`
 (`weight` handles the proportions), and `maximizedTabsetId` (nothing starts
-maximized). The model carries only what differs from the defaults, and
-`normalize()` fills in the rest of the invariants.
+maximized). The model carries only what differs from the defaults; the builders
+fill in `weight`, `selected` and `floats`, exactly as `dashfooSchema` does for a
+parsed payload.
+
+## Invariants at the boundary
+
+Three invariants are enforced where a model enters the library rather than being
+repaired afterwards, so no reader has to carry a fallback for them:
+
+- **A `weight` on every row and tabset.** `dashfooSchema` defaults an omitted
+  `weight` to `1` and the builders do the same, so a reader can sum
+  `child.weight` without deciding what a missing one means.
+- **A `selected` inside its strip.** `tabsetNodeSchema` clamps `selected` into
+  `[0, children.length - 1]` at parse, `tabset()` clamps what you pass it, and
+  the actions that can invalidate it (selecting a tab, closing one, moving one
+  out, writing `selected` through `updateNodeAttributes`) re-clamp the one
+  tabset they touch.
+- **A `floats` array.** Omitted on input, always present on output, empty when
+  nothing is floating.
 
 ## How `normalize()` self-heals
 
@@ -337,28 +354,24 @@ the normalize pass clean it up. There is one definition of "valid layout," and
 it lives in
 [`packages/core/src/model/invariants.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/invariants.ts).
 
-The pass enforces five invariants.
+The pass enforces four structural invariants. Clamping `selected` is not one of
+them: that happens at the boundary (see above), not on every dispatch.
 
-**1. Clamp every `selected` into range.** A tabset's `selected` is forced into
-`[0, children.length - 1]`. An out-of-range index (say the selected tab was the
-one that got closed) snaps to the nearest valid tab instead of pointing at
-nothing.
-
-**2. Drop empty tabsets.** A tabset whose `children` array is empty is removed
+**1. Drop empty tabsets.** A tabset whose `children` array is empty is removed
 from its parent row. Closing the last tab in a pane removes the pane, rather than
 leaving an empty frame behind.
 
-**3. Drop empty rows.** A row whose children all vanished (recursively) is
+**2. Drop empty rows.** A row whose children all vanished (recursively) is
 removed too. Emptiness propagates upward.
 
-**4. Collapse single-child rows.** A row left with exactly one child is
+**3. Collapse single-child rows.** A row left with exactly one child is
 redundant (it adds a nesting level without splitting anything), so the lone
 child is lifted into the grandparent's place. The child inherits the lifted row's
 `weight`, so the visible sizing is preserved across the simplification. At the root,
 if the tree reduces to a single child that is itself a row, that row is absorbed:
 its children and orientation replace the root's, avoiding redundant nesting.
 
-**5. Repair the id references.** `activeTabsetId` is checked against the set of
+**4. Repair the id references.** `activeTabsetId` is checked against the set of
 tabset ids that remain after the structural rewrites. If it no longer
 points at a real tabset, it falls back to the first tabset in the tree.
 `maximizedTabsetId` gets the same existence check, but a stale value is cleared
@@ -406,8 +419,10 @@ written in a different format fails validation instead of loading lossily. A
 future format change bumps the literal.
 
 Order is deliberate: validate first (so a malformed payload is rejected with a
-zod error), normalize second (so the result is canonical). Skip normalize and
-you might hand your renderer a tree with a stale `selected` index.
+zod error, and the schema's own defaults and clamps apply), normalize second (so
+the structure is canonical). Skip normalize and you might hand your renderer a
+row that adds a nesting level without splitting anything, or an id reference
+pointing at a tabset that is no longer there.
 
 ## See also
 

@@ -1,5 +1,6 @@
 import { assertNever } from "../lib/assert-never";
-import { clampSelected, normalize } from "../model/invariants";
+import { clampSelected } from "../lib/clamp-selected";
+import { normalize } from "../model/invariants";
 import type { Dashfoo } from "../model/schema";
 import type { AttributedNode } from "../model/tree";
 import {
@@ -19,6 +20,7 @@ import {
   mutableTabsetAttrsSchema,
 } from "./node-attrs";
 import {
+  detachTab,
   insertTab,
   mergeTabsInto,
   placeBesideTarget,
@@ -36,7 +38,10 @@ const parseNodeAttrs = (node: AttributedNode, attrs: MutableNodeAttrs): MutableN
       return mutableTabAttrsSchema.parse(attrs);
     }
     case "tabset": {
-      return mutableTabsetAttrsSchema.parse(attrs);
+      const parsed = mutableTabsetAttrsSchema.parse(attrs);
+      return parsed.selected === undefined
+        ? parsed
+        : { ...parsed, selected: clampSelected(node.children.length, parsed.selected) };
     }
     default: {
       return assertNever(node);
@@ -73,7 +78,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
     case "deleteTab": {
       const location = findTab(draft, action.tabId);
       if (location) {
-        location.container.children.splice(location.index, 1);
+        detachTab(location.container, location.index);
       }
       return;
     }
@@ -93,7 +98,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       if (!location) {
         return;
       }
-      const removed = location.container.children.splice(location.index, 1).at(0);
+      const removed = detachTab(location.container, location.index);
       if (removed) {
         pushFloat(draft, wrapTabInLayout(removed), action.geometry, action.floatId);
       }
@@ -116,7 +121,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
         return;
       }
 
-      const removed = source.container.children.splice(source.index, 1).at(0);
+      const removed = detachTab(source.container, source.index);
       if (!removed) {
         return;
       }
@@ -161,7 +166,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
     case "renameFloat": {
       const float = findFloat(draft, action.floatId);
       if (float) {
-        const others = (draft.floats ?? []).filter((other) => other.id !== action.floatId);
+        const others = draft.floats.filter((other) => other.id !== action.floatId);
         float.name = uniqueFloatName(action.name, others);
       }
       return;
@@ -176,7 +181,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
     case "selectTab": {
       const tabset = findTabset(draft, action.tabsetId);
       if (tabset) {
-        tabset.selected = action.index;
+        tabset.selected = clampSelected(tabset.children.length, action.index);
       }
       return;
     }

@@ -1,4 +1,7 @@
+import { clampSelected } from "../lib/clamp-selected";
+
 import { createNodeId } from "./ids";
+import { DEFAULT_WEIGHT } from "./schema";
 import type {
   Dashfoo,
   Dimension,
@@ -52,7 +55,8 @@ const tabset = (children: Array<TabNode>, options: TabsetOptions = {}): TabsetNo
     ...(max === undefined ? {} : { max: toDimension(max) }),
     ...(min === undefined ? {} : { min: toDimension(min) }),
     id: options.id ?? createNodeId("tabset"),
-    selected: options.selected ?? 0,
+    selected: clampSelected(children.length, options.selected ?? 0),
+    weight: options.weight ?? DEFAULT_WEIGHT,
   };
 };
 
@@ -75,6 +79,7 @@ const row = (children: RowNode["children"], options: RowOptions = {}): RowNode =
     ...(min === undefined ? {} : { min: toDimension(min) }),
     id: options.id ?? createNodeId("row"),
     orientation: options.orientation ?? "row",
+    weight: options.weight ?? DEFAULT_WEIGHT,
   };
 };
 
@@ -103,6 +108,7 @@ const model = (layout: RowNode, options: ModelOptions = {}): Dashfoo => {
     layout,
     version: 1,
     ...options,
+    floats: options.floats ?? [],
     global: options.global ?? {},
   };
   const duplicates = findDuplicateIds(built);

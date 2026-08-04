@@ -13,7 +13,7 @@ type DashfooEvent =
   | { type: "REDO" }
   | { type: "UNDO" };
 
-type DashfooInput = { model: Dashfoo };
+type DashfooMachineInput = { model: Dashfoo };
 
 const dashfooMachine = setup({
   types: {
@@ -22,7 +22,7 @@ const dashfooMachine = setup({
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- XState's documented phantom-type API; the values are compile-time only.
     events: {} as DashfooEvent,
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- XState's documented phantom-type API; the values are compile-time only.
-    input: {} as DashfooInput,
+    input: {} as DashfooMachineInput,
   },
 }).createMachine({
   context: ({ input }) => ({ history: createHistory(input.model) }),
@@ -51,4 +51,4 @@ const dashfooMachine = setup({
 });
 
 export { dashfooMachine };
-export type { DashfooContext, DashfooEvent, DashfooInput };
+export type { DashfooContext, DashfooEvent, DashfooMachineInput };

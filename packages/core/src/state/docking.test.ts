@@ -9,6 +9,7 @@ const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab
 
 const baseModel = (): Dashfoo => ({
   activeTabsetId: "ts1",
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -18,6 +19,7 @@ const baseModel = (): Dashfoo => ({
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });
@@ -27,6 +29,7 @@ const tabsetById = (model: Dashfoo, id: string): TabsetNode | undefined =>
 
 const splitModel = (): Dashfoo => ({
   activeTabsetId: "ts1",
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -36,6 +39,7 @@ const splitModel = (): Dashfoo => ({
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });
@@ -154,6 +158,7 @@ describe("moveTabset", () => {
   test("center merge selects the source's non-zero selected tab in the merged array", () => {
     const model: Dashfoo = {
       activeTabsetId: "ts1",
+      floats: [],
       global: {},
       layout: {
         children: [
@@ -169,6 +174,7 @@ describe("moveTabset", () => {
         id: "root",
         orientation: "row",
         type: "row",
+        weight: 1,
       },
       version: 1,
     };

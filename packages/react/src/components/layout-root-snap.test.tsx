@@ -9,12 +9,14 @@ import { Layout } from "./layout";
 
 const model = (snap?: SnapConfig): Dashfoo => ({
   activeTabsetId: "ts1",
+  floats: [],
   global: snap === undefined ? {} : { snap },
   layout: {
-    children: [{ children: [], id: "ts1", selected: 0, type: "tabset" }],
+    children: [{ children: [], id: "ts1", selected: 0, type: "tabset", weight: 1 }],
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });

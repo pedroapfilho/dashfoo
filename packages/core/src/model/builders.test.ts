@@ -51,6 +51,17 @@ describe("tabset", () => {
     expect(node.weight).toBe(2);
   });
 
+  test("defaults weight to one relative share", () => {
+    expect(tabset([tab("chart", "Chart")]).weight).toBe(1);
+  });
+
+  test("clamps selected into the strip it was given", () => {
+    expect(tabset([tab("a", "A"), tab("b", "B")], { selected: 7 }).selected).toBe(1);
+    expect(tabset([tab("a", "A"), tab("b", "B")], { selected: -2 }).selected).toBe(0);
+    expect(tabset([tab("a", "A"), tab("b", "B")], { selected: 1.5 }).selected).toBe(1);
+    expect(tabset([tab("a", "A")], { selected: Number.NaN }).selected).toBe(0);
+  });
+
   test("flows an optional name through to label the tablist", () => {
     const node = tabset([tab("chart", "Chart")], { name: "Charts" });
     expect(node.name).toBe("Charts");
@@ -86,6 +97,10 @@ describe("row", () => {
     expect(node.weight).toBe(3);
   });
 
+  test("defaults weight to one relative share", () => {
+    expect(row([tabset([tab("a", "A")])]).weight).toBe(1);
+  });
+
   test("converts numeric row dimensions to px and preserves dimension objects", () => {
     const node = row([tabset([tab("a", "A")])], {
       max: { unit: "%", value: 90 },
@@ -106,10 +121,11 @@ describe("row", () => {
 });
 
 describe("model", () => {
-  test("stamps version 1 and defaults global to an empty object", () => {
+  test("stamps version 1 and defaults global and floats to empty", () => {
     const m = model(row([tabset([tab("a", "A")], { id: "ts" })], { id: "root" }));
     expect(m.version).toBe(1);
     expect(m.global).toEqual({});
+    expect(m.floats).toEqual([]);
   });
 
   test("honors activeTabsetId and global overrides", () => {

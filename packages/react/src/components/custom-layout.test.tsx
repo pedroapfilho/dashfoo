@@ -12,6 +12,7 @@ import { useTab, useTabset } from "./tabset/tabset-store";
 
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -36,12 +37,14 @@ const model = (): Dashfoo => ({
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });
 
 const nestedModel = (): Dashfoo => ({
   activeTabsetId: "ts1",
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -78,6 +81,7 @@ const nestedModel = (): Dashfoo => ({
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });

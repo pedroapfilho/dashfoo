@@ -10,6 +10,7 @@ const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab
 
 const baseModel = (): Dashfoo => ({
   activeTabsetId: "ts1",
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -19,18 +20,18 @@ const baseModel = (): Dashfoo => ({
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });
 
 const onlyFloat = (model: Dashfoo) => {
-  const floats = model.floats ?? [];
-  expect(floats).toHaveLength(1);
-  return floats[0];
+  expect(model.floats).toHaveLength(1);
+  return model.floats[0];
 };
 
 const floatTabsets = (model: Dashfoo): Array<TabsetNode> =>
-  collectTabsets({ ...model, floats: undefined, layout: onlyFloat(model).layout });
+  collectTabsets({ ...model, floats: [], layout: onlyFloat(model).layout });
 
 const mainTabsetIds = (model: Dashfoo): Array<string> =>
   model.layout.children.filter((c): c is TabsetNode => c.type === "tabset").map((c) => c.id);
@@ -92,7 +93,7 @@ describe("dockFloat", () => {
 
     const next = reducer(floated, { floatId: float.id, type: "dockFloat" });
 
-    expect(next.floats ?? []).toHaveLength(0);
+    expect(next.floats).toHaveLength(0);
 
     const restored = collectTabsets(next).find((ts) => ts.id === "ts2");
     expect(restored?.children.map((t) => t.id)).toEqual(["t3"]);
@@ -139,7 +140,7 @@ describe("dockFloat", () => {
       type: "dockFloat",
     });
 
-    expect(next.floats ?? []).toHaveLength(0);
+    expect(next.floats).toHaveLength(0);
 
     const ids = collectTabsets(next).flatMap((ts) => ts.children.map((t) => t.id));
     expect(ids).toContain("t3");
@@ -172,6 +173,7 @@ describe("dockFloat", () => {
             id: "frow",
             orientation: "row",
             type: "row",
+            weight: 1,
           },
           type: "float",
         },
@@ -209,7 +211,7 @@ describe("float naming", () => {
     expect(onlyFloat(one).name).toBe("Panel");
 
     const two = reducer(one, { tabId: "t1", type: "floatTab" });
-    expect((two.floats ?? []).map((f) => f.name)).toEqual(["Panel", "Panel 1"]);
+    expect(two.floats.map((f) => f.name)).toEqual(["Panel", "Panel 1"]);
   });
 
   test("renameFloat sets the window title", () => {
@@ -224,12 +226,12 @@ describe("float naming", () => {
   test("renameFloat keeps names unique by appending a number", () => {
     const a = reducer(baseModel(), { tabsetId: "ts2", type: "floatTabset" });
     const b = reducer(a, { tabId: "t1", type: "floatTab" });
-    const [first, second] = b.floats ?? [];
+    const [first, second] = b.floats;
 
     const r1 = reducer(b, { floatId: first.id, name: "Foo", type: "renameFloat" });
     const r2 = reducer(r1, { floatId: second.id, name: "Foo", type: "renameFloat" });
 
-    expect((r2.floats ?? []).map((f) => f.name)).toEqual(["Foo", "Foo 1"]);
+    expect(r2.floats.map((f) => f.name)).toEqual(["Foo", "Foo 1"]);
   });
 });
 
@@ -262,16 +264,16 @@ describe("normalize with floats", () => {
         {
           geometry: { height: 360, left: 0, top: 0, width: 480 },
           id: "f1",
-          layout: { children: [], id: "frow", orientation: "row", type: "row" },
+          layout: { children: [], id: "frow", orientation: "row", type: "row", weight: 1 },
           type: "float",
         },
       ],
     };
 
-    expect(normalize(model).floats).toBeUndefined();
+    expect(normalize(model).floats).toEqual([]);
   });
 
-  test("keeps a float with content and heals its selected index", () => {
+  test("keeps a float whose layout still holds a tabset", () => {
     const model: Dashfoo = {
       ...baseModel(),
       floats: [
@@ -279,10 +281,13 @@ describe("normalize with floats", () => {
           geometry: { height: 360, left: 0, top: 0, width: 480 },
           id: "f1",
           layout: {
-            children: [{ children: [tab("w1")], id: "fts", selected: 9, type: "tabset" }],
+            children: [
+              { children: [tab("w1")], id: "fts", selected: 0, type: "tabset", weight: 1 },
+            ],
             id: "frow",
             orientation: "row",
             type: "row",
+            weight: 1,
           },
           type: "float",
         },
@@ -291,8 +296,7 @@ describe("normalize with floats", () => {
 
     const next = normalize(model);
     expect(next.floats).toHaveLength(1);
-    const floatTabset = next.floats?.[0]?.layout.children[0] as TabsetNode;
-    expect(floatTabset.selected).toBe(0);
+    expect(next.floats[0]?.layout.children.map((child) => child.id)).toEqual(["fts"]);
   });
 
   test("collectTabsets and findDuplicateIds span float roots", () => {

@@ -9,6 +9,7 @@ const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab
 
 const baseModel = (): Dashfoo => ({
   activeTabsetId: "ts1",
+  floats: [],
   global: { tabLocation: "top" },
   layout: {
     children: [
@@ -18,6 +19,7 @@ const baseModel = (): Dashfoo => ({
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });
@@ -32,10 +34,19 @@ describe("reducer", () => {
     expect(tabsetById(next, "ts1")?.selected).toBe(1);
   });
 
-  test("selectTab clamps an out-of-range index via normalize", () => {
+  test("selectTab clamps an out-of-range index", () => {
     const next = reducer(baseModel(), { index: 9, tabsetId: "ts1", type: "selectTab" });
 
     expect(tabsetById(next, "ts1")?.selected).toBe(1);
+  });
+
+  test("deleteTab pulls a selected trailing tab back into range", () => {
+    const selectedLast = reducer(baseModel(), { index: 1, tabsetId: "ts1", type: "selectTab" });
+
+    const next = reducer(selectedLast, { tabId: "t2", type: "deleteTab" });
+
+    expect(tabsetById(next, "ts1")?.children.map((t) => t.id)).toEqual(["t1"]);
+    expect(tabsetById(next, "ts1")?.selected).toBe(0);
   });
 
   test("setActiveTabset updates activeTabsetId", () => {
@@ -147,6 +158,22 @@ describe("reducer", () => {
     const next = reducer(baseModel(), parsed);
     expect(tabsetById(next, "ts1")?.weight).toBe(30);
     expect(tabsetById(next, "ts1")?.selected).toBe(1);
+  });
+
+  test("an attrs payload without a weight leaves the tabset's weight alone", () => {
+    const parsed = actionSchema.parse({
+      attrs: { selected: 1 },
+      nodeId: "ts1",
+      type: "updateNodeAttributes",
+    });
+
+    expect(parsed).toStrictEqual({
+      attrs: { selected: 1 },
+      nodeId: "ts1",
+      type: "updateNodeAttributes",
+    });
+
+    expect(tabsetById(reducer(baseModel(), parsed), "ts1")?.weight).toBe(60);
   });
 
   test("updateGlobalAttributes merges global options", () => {

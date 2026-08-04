@@ -5,7 +5,7 @@ import {
   orientationSchema,
   snapSchema,
   tabNodeSchema,
-  tabsetNodeSchema,
+  tabsetNodeObjectSchema,
 } from "../model/schema";
 
 const mutableTabAttrsSchema = tabNodeSchema
@@ -18,15 +18,20 @@ const mutableTabAttrsSchema = tabNodeSchema
   })
   .partial();
 
-const mutableTabsetAttrsSchema = tabsetNodeSchema
+/**
+ * `weight` is re-declared instead of picked: `.partial()` over the schema's
+ * defaulted `weight` still injects the default, so `{ name: "x" }` would arrive
+ * at the reducer carrying a weight and silently resize the tabset.
+ */
+const mutableTabsetAttrsSchema = tabsetNodeObjectSchema
   .pick({
     enableClose: true,
     enableMaximize: true,
     max: true,
     min: true,
     selected: true,
-    weight: true,
   })
+  .extend({ weight: z.number() })
   .partial();
 
 const mutableRowAttrsSchema = z

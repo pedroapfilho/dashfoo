@@ -10,6 +10,7 @@ const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab
 
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -19,6 +20,7 @@ const model = (): Dashfoo => ({
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });

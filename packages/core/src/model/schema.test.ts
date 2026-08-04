@@ -54,6 +54,31 @@ describe("dashfooSchema", () => {
     expect(() => dashfooSchema.parse(withoutVersion)).toThrow();
   });
 
+  test("fills in an omitted floats list", () => {
+    expect(dashfooSchema.parse(validModel).floats).toEqual([]);
+  });
+
+  test("gives each parse its own floats array", () => {
+    const first = dashfooSchema.parse(validModel);
+    const second = dashfooSchema.parse(validModel);
+
+    first.floats.push({
+      geometry: { height: 10, left: 0, top: 0, width: 10 },
+      id: "f1",
+      layout: { children: [], id: "frow", orientation: "row", type: "row", weight: 1 },
+      type: "float",
+    });
+
+    expect(second.floats).toEqual([]);
+  });
+
+  test("fills in an omitted weight on rows and tabsets", () => {
+    const parsed = dashfooSchema.parse(validModel);
+
+    expect(parsed.layout.weight).toBe(1);
+    expect(parsed.layout.children[1]?.weight).toBe(1);
+  });
+
   test("global.splitterSize is accepted and preserved", () => {
     const parsed = dashfooSchema.parse({
       ...validModel,
@@ -84,6 +109,7 @@ describe("dashfooSchema", () => {
             min: { unit: "px", value: 160 },
             selected: 0,
             type: "tabset",
+            weight: 1,
           },
         ],
         max: { unit: "px", value: 900 },
@@ -149,6 +175,7 @@ describe("tabsetNodeSchema", () => {
     id: "ts1",
     selected: 0,
     type: "tabset",
+    weight: 1,
   };
 
   test("accepts an optional name labelling the tablist", () => {
@@ -170,5 +197,31 @@ describe("tabsetNodeSchema", () => {
 
     expect(parsed.max).toEqual({ unit: "%", value: 90 });
     expect(parsed.min).toEqual({ unit: "px", value: 120 });
+  });
+
+  test("clamps a selected index past the end of the strip", () => {
+    expect(tabsetNodeSchema.parse({ ...baseTabset, selected: 7 }).selected).toBe(0);
+  });
+
+  test("clamps a negative selected index", () => {
+    expect(tabsetNodeSchema.parse({ ...baseTabset, selected: -3 }).selected).toBe(0);
+  });
+
+  test("keeps an in-range selected index", () => {
+    const twoTabs = {
+      ...baseTabset,
+      children: [
+        ...baseTabset.children,
+        { component: "book", id: "t2", name: "Book", type: "tab" },
+      ],
+      selected: 1,
+    };
+
+    expect(tabsetNodeSchema.parse(twoTabs).selected).toBe(1);
+  });
+
+  test("rejects a fractional or NaN selected index", () => {
+    expect(tabsetNodeSchema.safeParse({ ...baseTabset, selected: 1.5 }).success).toBe(false);
+    expect(tabsetNodeSchema.safeParse({ ...baseTabset, selected: Number.NaN }).success).toBe(false);
   });
 });

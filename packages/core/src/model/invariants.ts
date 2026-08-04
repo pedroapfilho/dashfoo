@@ -1,25 +1,5 @@
-import type { Dashfoo, FloatNode, RowNode, TabsetNode } from "./schema";
+import type { Dashfoo, FloatNode, RowNode } from "./schema";
 import { collectTabsets } from "./tree";
-
-const clampSelected = (length: number, selected: number): number => {
-  if (length === 0) {
-    return 0;
-  }
-
-  const base = Number.isFinite(selected) ? Math.trunc(selected) : 0;
-  if (base < 0) {
-    return 0;
-  }
-  if (base > length - 1) {
-    return length - 1;
-  }
-  return base;
-};
-
-const normalizeTabset = (tabset: TabsetNode): TabsetNode => ({
-  ...tabset,
-  selected: clampSelected(tabset.children.length, tabset.selected),
-});
 
 type RowChild = RowNode["children"][number];
 
@@ -34,7 +14,7 @@ type RowChild = RowNode["children"][number];
 const inheritSlot = (row: RowNode, survivor: RowChild): RowChild => {
   const sized: RowChild = {
     ...survivor,
-    ...(row.weight === undefined ? {} : { weight: row.weight }),
+    weight: row.weight,
     ...(row.min === undefined ? {} : { min: row.min }),
     ...(row.max === undefined ? {} : { max: row.max }),
   };
@@ -51,7 +31,7 @@ const normalizeRowChildren = (children: RowNode["children"]): RowNode["children"
   for (const child of children) {
     if (child.type === "tabset") {
       if (child.children.length > 0) {
-        out.push(normalizeTabset(child));
+        out.push(child);
       }
       continue;
     }
@@ -93,14 +73,13 @@ const normalizeLayout = (root: RowNode): RowNode => {
 const normalize = (model: Dashfoo): Dashfoo => {
   const layout = normalizeLayout(model.layout);
 
-  const healedFloats: Array<FloatNode> = [];
-  for (const float of model.floats ?? []) {
+  const floats: Array<FloatNode> = [];
+  for (const float of model.floats) {
     const floatLayout = normalizeLayout(float.layout);
     if (rowContainsTabset(floatLayout)) {
-      healedFloats.push({ ...float, layout: floatLayout });
+      floats.push({ ...float, layout: floatLayout });
     }
   }
-  const floats = healedFloats.length > 0 ? healedFloats : undefined;
 
   const withRoots: Dashfoo = { ...model, floats, layout };
 
@@ -121,4 +100,4 @@ const normalize = (model: Dashfoo): Dashfoo => {
   return { ...withRoots, activeTabsetId, maximizedTabsetId };
 };
 
-export { clampSelected, normalize };
+export { normalize };

@@ -1,5 +1,17 @@
 import { z } from "zod";
 
+import { clampSelected } from "../lib/clamp-selected";
+
+/**
+ * Weights are relative shares, and every reader that rendered one already
+ * treated a missing weight as a single share (`row-view` summed `weight ?? 1`),
+ * so filling it in at the boundary changes nothing on screen. The one place that
+ * read a missing weight as a percentage was `placeBesideTarget`, which is why
+ * docking beside an unweighted target halved it to `50` and left its unweighted
+ * siblings rendering as a sliver of the row.
+ */
+const DEFAULT_WEIGHT = 1;
+
 type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };
 
 const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
@@ -39,7 +51,14 @@ const tabNodeSchema = z.object({
   type: z.literal("tab"),
 });
 
-const tabsetNodeSchema = z.object({
+/**
+ * The pre-transform object, kept separate so `node-attrs` can `.pick()` mutable
+ * keys off it. Picking from the transformed schema is impossible (a pipe has no
+ * `.pick`), and picking `weight` with its default attached would inject that
+ * default: `.partial()` over a defaulted field still fills it in, which would
+ * rewrite a tabset's weight on every unrelated attribute update.
+ */
+const tabsetNodeObjectSchema = z.object({
   children: z.array(tabNodeSchema),
   enableClose: z.boolean().optional(),
   enableMaximize: z.boolean().optional(),
@@ -49,8 +68,13 @@ const tabsetNodeSchema = z.object({
   name: z.string().optional(),
   selected: z.number().int(),
   type: z.literal("tabset"),
-  weight: z.number().optional(),
+  weight: z.number().default(DEFAULT_WEIGHT),
 });
+
+const tabsetNodeSchema = tabsetNodeObjectSchema.transform((tabset) => ({
+  ...tabset,
+  selected: clampSelected(tabset.children.length, tabset.selected),
+}));
 
 type RowNode = {
   children: Array<RowNode | z.infer<typeof tabsetNodeSchema>>;
@@ -60,10 +84,21 @@ type RowNode = {
   orientation: z.infer<typeof orientationSchema>;
   snap?: z.infer<typeof snapSchema>;
   type: "row";
+  weight: number;
+};
+
+type RowNodeInput = {
+  children: Array<RowNodeInput | z.input<typeof tabsetNodeSchema>>;
+  id: string;
+  max?: z.infer<typeof dimensionSchema>;
+  min?: z.infer<typeof dimensionSchema>;
+  orientation: z.infer<typeof orientationSchema>;
+  snap?: z.infer<typeof snapSchema>;
+  type: "row";
   weight?: number;
 };
 
-const rowNodeSchema: z.ZodType<RowNode> = z.lazy(() =>
+const rowNodeSchema: z.ZodType<RowNode, RowNodeInput> = z.lazy(() =>
   z.object({
     children: z.array(z.union([rowNodeSchema, tabsetNodeSchema])),
     id: z.string(),
@@ -72,7 +107,7 @@ const rowNodeSchema: z.ZodType<RowNode> = z.lazy(() =>
     orientation: orientationSchema,
     snap: snapSchema.optional(),
     type: z.literal("row"),
-    weight: z.number().optional(),
+    weight: z.number().default(DEFAULT_WEIGHT),
   }),
 );
 
@@ -109,7 +144,9 @@ const globalAttributesSchema = z.object({
 
 const dashfooSchema = z.object({
   activeTabsetId: z.string().optional(),
-  floats: z.array(floatNodeSchema).optional(),
+  // A getter, not a literal: zod hands the same array instance to every parse of
+  // a float-less model, and `dockFloat` splices its float list in place.
+  floats: z.array(floatNodeSchema).default(() => []),
   global: globalAttributesSchema,
   layout: rowNodeSchema,
   maximizedTabsetId: z.string().optional(),
@@ -128,10 +165,13 @@ type Geometry = z.infer<typeof geometrySchema>;
 type FloatNode = z.infer<typeof floatNodeSchema>;
 type GlobalAttributes = z.infer<typeof globalAttributesSchema>;
 type Dashfoo = z.infer<typeof dashfooSchema>;
+/** The loose shape `dashfooSchema` accepts: `weight` and `floats` may be omitted. */
+type DashfooInput = z.input<typeof dashfooSchema>;
 type Node = RowNode | TabsetNode | TabNode;
 
 export {
   dashfooSchema,
+  DEFAULT_WEIGHT,
   dimensionSchema,
   edgeSchema,
   floatNodeSchema,
@@ -142,12 +182,14 @@ export {
   rowNodeSchema,
   snapSchema,
   tabNodeSchema,
+  tabsetNodeObjectSchema,
   tabsetNodeSchema,
   unitSchema,
 };
 
 export type {
   Dashfoo,
+  DashfooInput,
   Dimension,
   Edge,
   FloatNode,
@@ -157,6 +199,7 @@ export type {
   Node,
   Orientation,
   RowNode,
+  RowNodeInput,
   SnapConfig,
   TabNode,
   TabsetNode,

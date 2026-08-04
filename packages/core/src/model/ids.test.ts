@@ -17,6 +17,7 @@ describe("createNodeId / createTabId", () => {
 });
 
 const modelWith = (firstId: string, secondId: string): Dashfoo => ({
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -25,17 +26,20 @@ const modelWith = (firstId: string, secondId: string): Dashfoo => ({
         id: "ts1",
         selected: 0,
         type: "tabset",
+        weight: 1,
       },
       {
         children: [{ component: "c", id: secondId, name: "B", type: "tab" }],
         id: "ts2",
         selected: 0,
         type: "tabset",
+        weight: 1,
       },
     ],
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });

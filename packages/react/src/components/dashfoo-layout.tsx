@@ -227,7 +227,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     view.maximizedTabsetId === undefined ? undefined : findTabset(view, view.maximizedTabsetId);
 
   const tree = (
-    <Layout.FloatLayer floats={store.model.floats ?? []}>
+    <Layout.FloatLayer floats={store.model.floats}>
       <Layout.DragLayer>
         {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={view.layout} />}
       </Layout.DragLayer>
