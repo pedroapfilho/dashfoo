@@ -80,5 +80,38 @@ const snapSizes = (sizes: Array<number>, boundaryIndex: number, config: SnapConf
   return { sizes: next, snapped: true };
 };
 
-export { DEFAULT_SNAP_THRESHOLD, resolveSnapTargets, snapEnabled, snapSizes };
-export type { SnapResult };
+type SnapDecision =
+  | { kind: "inactive" }
+  | { kind: "clear" }
+  | { kind: "engage"; sizes: Array<number> };
+
+const decideSnap = (
+  sizes: Array<number>,
+  boundaryIndex: number | null,
+  config: SnapConfig | null,
+): SnapDecision => {
+  if (boundaryIndex === null || config === null || !snapEnabled(config)) {
+    return { kind: "inactive" };
+  }
+  const { sizes: snappedSizes, snapped } = snapSizes(sizes, boundaryIndex, config);
+  return snapped ? { kind: "engage", sizes: snappedSizes } : { kind: "clear" };
+};
+
+const settleSnap = (
+  sizes: Array<number>,
+  boundaryIndex: number | null,
+  config: SnapConfig | null,
+): Array<number> => {
+  const decision = decideSnap(sizes, boundaryIndex, config);
+  return decision.kind === "engage" ? decision.sizes : sizes;
+};
+
+export {
+  DEFAULT_SNAP_THRESHOLD,
+  decideSnap,
+  resolveSnapTargets,
+  settleSnap,
+  snapEnabled,
+  snapSizes,
+};
+export type { SnapDecision, SnapResult };
