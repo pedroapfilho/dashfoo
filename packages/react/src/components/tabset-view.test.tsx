@@ -1,10 +1,13 @@
 import type { Dashfoo, TabsetNode } from "@dashfoo/core";
+import { dragDockMachine } from "@dashfoo/core";
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { describe, expect, test } from "vitest";
+import { createActor } from "xstate";
 
-import { createDragSubjectStore, DragSubjectStoreContext } from "../hooks/drag-hooks";
+import type { DragRootContextValue } from "../hooks/drag-hooks";
+import { createDragManager, DragRootContext } from "../hooks/drag-hooks";
 import { useDashfooStore } from "../hooks/store";
 import { fallbackSelectedIndex } from "../lib/tab-selection";
 
@@ -49,15 +52,15 @@ const renderTabContent = (): ReactNode => <div>CHART</div>;
 
 const DraggedSoleTabset = ({ keepMounted }: { keepMounted: boolean }): ReactNode => {
   const store = useDashfooStore({ defaultModel: soleTabModel() });
-  const [subjectStore] = useState(() => {
-    const created = createDragSubjectStore();
-    created.setState({ subject: { id: "t1", kind: "tab" } });
-    return created;
+  const [dragRoot] = useState<DragRootContextValue>(() => {
+    const actorRef = createActor(dragDockMachine).start();
+    actorRef.send({ subject: { id: "t1", kind: "tab" }, type: "START" });
+    return { actorRef, manager: createDragManager(), registerScope: () => () => {} };
   });
   const tabset = store.model.layout.children[0] as TabsetNode;
 
   return (
-    <DragSubjectStoreContext.Provider value={subjectStore}>
+    <DragRootContext.Provider value={dragRoot}>
       <Layout.Root
         dispatch={store.dispatch}
         keepMounted={keepMounted}
@@ -68,7 +71,7 @@ const DraggedSoleTabset = ({ keepMounted }: { keepMounted: boolean }): ReactNode
           <Tabset.Content />
         </Tabset.Root>
       </Layout.Root>
-    </DragSubjectStoreContext.Provider>
+    </DragRootContext.Provider>
   );
 };
 

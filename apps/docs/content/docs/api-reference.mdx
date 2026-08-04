@@ -257,11 +257,11 @@ and flushes a pending save on page hide (`pagehide` /
 Drag new tabs in from outside the layout. See
 [drag &amp; dock](/drag-and-dock#dragging-in-from-outside) for the full flow.
 
-| Export                     | Signature                                                          | Description                                                                                          |
-| -------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `DashfooDragProvider`      | `({ children }) => ReactNode`                                      | Shares one drag manager between a layout and outside sources. A standalone layout needs no provider. |
-| `useExternalTabSource`     | `(options: ExternalTabSourceOptions) => { ref }`                   | Registers an element as a drag source; put `ref` on it.                                              |
-| `ExternalTabSourceOptions` | `{ createTab: () => TabNode; label?: string; disabled?: boolean }` | `createTab` runs at drag start and must mint a fresh tab id per call.                                |
+| Export                     | Signature                                                          | Description                                                                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DashfooDragProvider`      | `({ children }) => ReactNode`                                      | Shares one drag manager and one drag lifecycle between a layout, its floats and outside sources. A standalone layout needs no provider: it mounts one internally. |
+| `useExternalTabSource`     | `(options: ExternalTabSourceOptions) => { ref }`                   | Registers an element as a drag source; put `ref` on it.                                                                                                           |
+| `ExternalTabSourceOptions` | `{ createTab: () => TabNode; label?: string; disabled?: boolean }` | `createTab` runs at drag start and must mint a fresh tab id per call.                                                                                             |
 
 ### `useContainerWidth`
 

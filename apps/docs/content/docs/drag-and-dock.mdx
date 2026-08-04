@@ -169,7 +169,8 @@ sources add a third kind: an element outside the layout (a widget list, a
 palette) that inserts a **new** tab when dropped on a tabset.
 
 Wrap the layout and the sources in `DashfooDragProvider` so they share one drag
-manager, and register each source with `useExternalTabSource`:
+manager and one drag lifecycle, and register each source with
+`useExternalTabSource`:
 
 ```tsx
 import { createTabId, tab } from "@dashfoo/core";
@@ -273,15 +274,23 @@ wire the DOM to the drag system. None of them is exported from
 
 ### 2. The adapter reads the pointer and hit-tests
 
-`DragProvider` constructs one `@dnd-kit/dom` `DragDropManager` (minus the
-`Accessibility` plugin and the keyboard sensor) and subscribes to
-its monitor. On `dragstart` it reads the source's data to
-decide the subject kind (a grip carries `type: "tabset"`, an external source
-carries `type: "external"`, a tab carries its own id) and sends `START`.
-On `dragmove` and on every `collision` pulse it reads the drop target dnd-kit's
-collision pass resolved, claims it when this layer owns it, resolves an
-intent, and sends `OVER`. On `dragend` it re-resolves from the final operation
-state, sends a last `OVER`, then `DROP`.
+`DashfooDragProvider` constructs one `@dnd-kit/dom` `DragDropManager` (minus the
+`Accessibility` plugin and the keyboard sensor), starts one `dragDockMachine`
+actor, and subscribes to the manager's monitor once for the whole tree. On
+`dragstart` it reads the source's data to decide the subject kind (a grip
+carries `type: "tabset"`, an external source carries `type: "external"`, a tab
+carries its own id) and sends `START`. On `dragmove` and on every `collision`
+pulse it takes the drop target dnd-kit's collision pass resolved, looks up the
+layer that registered it, asks that layer to resolve an intent, and sends
+`OVER`. On `dragend` it re-resolves from the final operation state, sends a last
+`OVER`, then `DROP`.
+
+Each `Layout.DragLayer` is one such layer: the main tree, plus one per float.
+A layer registers only how its own tabsets turn a pointer into an intent and
+where a committed action goes, keyed by a layer id that also namespaces its
+droppable registrations. It holds no drag state, so a pointer move costs one
+intent resolution rather than one per mounted layer. A `Layout.DragLayer` with
+no provider above it mounts its own, so it still works standalone.
 
 The `data-dashfoo="drag-preview"` chip is positioned by dnd-kit's `Feedback`
 plugin in overlay mode: the chip element is handed to Feedback's `overlay`
@@ -330,10 +339,11 @@ machine never mutates the model; it only emits the action.
 
 ### 4. `COMMIT` forwards the action
 
-`DragProvider` subscribes to the machine's `COMMIT` emission and forwards the
+The provider subscribes to the machine's `COMMIT` emission and forwards the
 action (`moveNode` for a tab drag, `moveTabset` for a grip drag, `addNode` for
-an external source) to `onCommit`, which `DashfooLayout` wires straight to
-`store.dispatch`.
+an external source) to the layer that resolved the live intent, which sends it
+to that layer's `onCommit` or, without one, to the `Layout.Root` above it.
+`DashfooLayout` wires that straight to `store.dispatch`.
 
 ### 5. The reducer applies the move
 
@@ -450,9 +460,10 @@ positions; set it to `none` to disable the movement, for example under
 When CSS variables aren't enough, the drag is fully observable from the
 outside. `useDropIntent()` returns the live drop intent: `{ targetId,
 location, index? }`, or `null` when nothing is dragging or the pointer is over
-no valid target. `useDragSubject()` returns what is being dragged. Both
-work anywhere under a layout, or anywhere under a `DashfooDragProvider` when
-one wraps the tree. Combine them with `dockZonePolygons` from `@dashfoo/core`
+no valid target. `useDragSubject()` returns what is being dragged. Both read the
+provider's drag actor, so they work anywhere under a layout or anywhere under a
+`DashfooDragProvider`, including a custom overlay mounted beside the layout
+rather than inside it. Outside a provider they return `null`. Combine them with `dockZonePolygons` from `@dashfoo/core`
 (the exact hit-region partition `resolveDockTarget` uses) and the
 `data-dashfoo="tabset"` / `"tabstrip"` / `"tab"` markup to paint anything from
 a custom highlight to a full drop-zone map. The demo's Docking page renders a
