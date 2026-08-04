@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { resolveSnapTargets, snapEnabled, snapSizes } from "./snap";
+import { decideSnap, resolveSnapTargets, settleSnap, snapEnabled, snapSizes } from "./snap";
 
 const round2 = (value: number): number => Math.round(value * 100) / 100;
 
@@ -146,5 +146,50 @@ describe("snapSizes", () => {
       sizes: [23, 1, 76],
       snapped: false,
     });
+  });
+});
+
+describe("decideSnap", () => {
+  test("is inactive when no boundary is being dragged", () => {
+    expect(decideSnap([48, 52], null, { step: 25 })).toEqual({ kind: "inactive" });
+  });
+
+  test("is inactive when there is no config", () => {
+    expect(decideSnap([48, 52], 0, null)).toEqual({ kind: "inactive" });
+  });
+
+  test("is inactive when the config disables snapping", () => {
+    expect(decideSnap([48, 52], 0, {})).toEqual({ kind: "inactive" });
+    expect(decideSnap([48, 52], 0, { step: 0 })).toEqual({ kind: "inactive" });
+    expect(decideSnap([48, 52], 0, { divisions: 1 })).toEqual({ kind: "inactive" });
+  });
+
+  test("engages with the corrected sizes inside the threshold", () => {
+    expect(decideSnap([48, 52], 0, { step: 25, threshold: 4 })).toEqual({
+      kind: "engage",
+      sizes: [50, 50],
+    });
+  });
+
+  test("clears when snapping applies but no target is in reach", () => {
+    expect(decideSnap([40, 60], 0, { step: 25, threshold: 4 })).toEqual({ kind: "clear" });
+  });
+
+  test("clears rather than going inactive for an out-of-range boundary", () => {
+    expect(decideSnap([50, 50], 1, { step: 25 })).toEqual({ kind: "clear" });
+  });
+});
+
+describe("settleSnap", () => {
+  test("returns the snapped sizes when a target is in reach", () => {
+    expect(settleSnap([48, 52], 0, { step: 25, threshold: 4 })).toEqual([50, 50]);
+  });
+
+  test("returns the input untouched when snapping does not apply", () => {
+    const sizes = [40, 60];
+    expect(settleSnap(sizes, 0, { step: 25, threshold: 4 })).toBe(sizes);
+    expect(settleSnap(sizes, null, { step: 25 })).toBe(sizes);
+    expect(settleSnap(sizes, 0, null)).toBe(sizes);
+    expect(settleSnap(sizes, 0, {})).toBe(sizes);
   });
 });
