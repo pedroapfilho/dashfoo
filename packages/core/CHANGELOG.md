@@ -1,5 +1,61 @@
 # @dashfoo/core
 
+## 1.0.0
+
+### Major Changes
+
+- bf17fd3: Move the model invariants to the parse boundary: `weight` and `floats` are now always present on a parsed model, and `selected` is clamped where it is written.
+
+  `dashfooSchema` still accepts everything it accepted before. What changes is the shape it hands back:
+
+  - `floats` defaults to `[]`, so `Dashfoo.floats` is `FloatNode[]` rather than `FloatNode[] | undefined`. `normalize` no longer maps an emptied list back to `undefined`.
+  - `weight` defaults to `1` on rows and tabsets, so `RowNode.weight` and `TabsetNode.weight` are `number`.
+  - `tabsetNodeSchema` gained a transform that clamps `selected` into `[0, children.length - 1]`. It is a `ZodPipe` now, not a `ZodObject`, so `.pick()`/`.extend()` on it no longer compile. `tabsetNodeObjectSchema` is exported for that: the same object, before the transform.
+
+  If you construct models with the builders (`model`, `row`, `tabset`) nothing changes: they fill the same defaults, and `tabset()` now clamps the `selected` you pass it.
+
+  If you hold hand-written model literals typed as `Dashfoo`, they will stop compiling, because `weight` and `floats` are required in that type. Two ways out:
+
+  ```ts
+  // 1. Parse it. Also gets you validation and the clamps.
+  import { parseModel } from "@dashfoo/core";
+  import type { DashfooInput } from "@dashfoo/core";
+
+  const stored: DashfooInput = { version: 1, global: {}, layout: { /* no weight needed */ } };
+  const model = parseModel(stored);
+
+  // 2. Keep the literal and add what the type now asks for.
+  const model: Dashfoo = { version: 1, global: {}, floats: [], layout: { …, weight: 1 } };
+  ```
+
+  `DashfooInput` (`z.input<typeof dashfooSchema>`) is the loose input shape, exported so host-supplied or stored data has a type that does not demand the filled-in fields.
+
+  `weight`'s default is `1`, the value every reader already used for a missing weight (`row-view` summed `child.weight ?? 1`). `placeBesideTarget` was the one place that read a missing weight as `100`, which is why docking beside an unweighted target used to halve it to `50` and collapse its unweighted siblings to a sliver of the row. Nothing renders differently: a row whose children all omitted `weight` already split evenly, and every explicit weight is untouched.
+
+  `normalize` keeps the structural work (dropping empty tabsets and rows, collapsing single-child rows, healing `activeTabsetId`/`maximizedTabsetId`) and no longer re-walks the tree clamping `selected`. The actions that can push `selected` out of range clamp the tabset they touch instead: `selectTab`, `deleteTab`, `moveNode`, `floatTab`, `dockFloat`, and a `selected` written through `updateNodeAttributes`. The one behaviour this drops: a hand-written model with an out-of-range `selected`, passed straight to `model`/`defaultModel` without being parsed, is no longer silently repaired at mount.
+
+  Serialized output grows the filled-in fields, so `toJSON` now emits `"floats":[]` and a `"weight"` on every row and tabset. Stored payloads written by an older version still load: the schema fills in what they omit.
+
+  `DashfooMachineInput` is the new name for the XState input type previously exported as `DashfooInput` (`{ model: Dashfoo }`).
+
+  On the React side only fallbacks went away (`store.model.floats ?? []`, four `child.weight ?? 1` reads in `row-view`); no prop or hook signature changed.
+
+### Minor Changes
+
+- 3476369: Add `dockLocationFor(target)` and `splitEdge(location)` to the geometry module, so the structured `DockTarget` is flattened to a `DockLocation` in one place and parsed back in one place instead of being assembled with string concatenation and taken apart with `startsWith`. The serialized `DockLocation` values are unchanged.
+
+  `zoneRect` is now exhaustive over `DockLocation` rather than falling back to the input rect: a caller passing a location outside the enum, which TypeScript already rejects, now gets an error instead of a silent identity result.
+
+### Patch Changes
+
+- 77f8e4a: Collapse the snap-resize state in `RowView` into one discriminated state machine and move the snap policy into `@dashfoo/core`.
+
+  `RowView` tracked a resize gesture across six refs plus a `useState`, one of which existed only to shadow the other. Two callbacks recomputed the snap decision independently with different guard combinations, and combinations like "syncing and snapping at the same time" were representable. The gesture now lives in a single `use-snap-resize` hook holding one `ResizeState` (`idle`, `syncing`, `dragging`, `snapped`); the highlighted boundary is derived from that state rather than stored beside it, and `data-dashfoo-snapping` is rendered as a prop instead of written straight onto the DOM node.
+
+  `@dashfoo/core` gains `decideSnap(sizes, boundaryIndex, config)` and `settleSnap(sizes, boundaryIndex, config)`, which answer "does snapping apply here, and where does the boundary land" next to `snapSizes` and `resolveSnapTargets`. Both are additive; no existing export changed.
+
+- 3476369: Fix `updateNodeAttributes` silently doing nothing. `mutableNodeAttrsSchema` was a union of three fully optional objects, so it always matched on its first member and stripped the keys the other two owned: running an action through `actionSchema` first, which is the documented path for untrusted payloads, turned every tabset and row attribute update into a no-op with `attrs: {}`. It is now one all-optional object holding every mutable key of every node kind, so nothing is stripped at the parse boundary, and the reducer validates the payload against the target node's own schema before writing it, so a tabset attribute can no longer land on a row. `MutableNodeAttrs` only gains optional keys, and the keys the node kinds share declare the same type on both sides, so nothing widened.
+
 ## 0.5.2
 
 ### Patch Changes

@@ -1,5 +1,79 @@
 # @dashfoo/react
 
+## 0.7.0
+
+### Minor Changes
+
+- 3476369: `Layout.Root` takes a `restructurable` prop. When it is `false` the tree is frozen (no tab or tabset dragging, no splitter resizing, no floating) while tabs stay closable and renamable, which is what compact responsive mode needs. `DashfooLayout` uses it instead of overriding four capability props one by one, and it no longer discards an explicitly dispatched `adjustSplit` while compact. `Layout.FloatLayer`'s `global` prop is now optional and unused: floating panels inherit their capabilities from the layout above them.
+
+### Patch Changes
+
+- 3476369: Add `dockLocationFor(target)` and `splitEdge(location)` to the geometry module, so the structured `DockTarget` is flattened to a `DockLocation` in one place and parsed back in one place instead of being assembled with string concatenation and taken apart with `startsWith`. The serialized `DockLocation` values are unchanged.
+
+  `zoneRect` is now exhaustive over `DockLocation` rather than falling back to the input rect: a caller passing a location outside the enum, which TypeScript already rejects, now gets an error instead of a silent identity result.
+
+- 77f8e4a: Collapse the snap-resize state in `RowView` into one discriminated state machine and move the snap policy into `@dashfoo/core`.
+
+  `RowView` tracked a resize gesture across six refs plus a `useState`, one of which existed only to shadow the other. Two callbacks recomputed the snap decision independently with different guard combinations, and combinations like "syncing and snapping at the same time" were representable. The gesture now lives in a single `use-snap-resize` hook holding one `ResizeState` (`idle`, `syncing`, `dragging`, `snapped`); the highlighted boundary is derived from that state rather than stored beside it, and `data-dashfoo-snapping` is rendered as a prop instead of written straight onto the DOM node.
+
+  `@dashfoo/core` gains `decideSnap(sizes, boundaryIndex, config)` and `settleSnap(sizes, boundaryIndex, config)`, which answer "does snapping apply here, and where does the boundary land" next to `snapSizes` and `resolveSnapTargets`. Both are additive; no existing export changed.
+
+- bf17fd3: Move the model invariants to the parse boundary: `weight` and `floats` are now always present on a parsed model, and `selected` is clamped where it is written.
+
+  `dashfooSchema` still accepts everything it accepted before. What changes is the shape it hands back:
+
+  - `floats` defaults to `[]`, so `Dashfoo.floats` is `FloatNode[]` rather than `FloatNode[] | undefined`. `normalize` no longer maps an emptied list back to `undefined`.
+  - `weight` defaults to `1` on rows and tabsets, so `RowNode.weight` and `TabsetNode.weight` are `number`.
+  - `tabsetNodeSchema` gained a transform that clamps `selected` into `[0, children.length - 1]`. It is a `ZodPipe` now, not a `ZodObject`, so `.pick()`/`.extend()` on it no longer compile. `tabsetNodeObjectSchema` is exported for that: the same object, before the transform.
+
+  If you construct models with the builders (`model`, `row`, `tabset`) nothing changes: they fill the same defaults, and `tabset()` now clamps the `selected` you pass it.
+
+  If you hold hand-written model literals typed as `Dashfoo`, they will stop compiling, because `weight` and `floats` are required in that type. Two ways out:
+
+  ```ts
+  // 1. Parse it. Also gets you validation and the clamps.
+  import { parseModel } from "@dashfoo/core";
+  import type { DashfooInput } from "@dashfoo/core";
+
+  const stored: DashfooInput = { version: 1, global: {}, layout: { /* no weight needed */ } };
+  const model = parseModel(stored);
+
+  // 2. Keep the literal and add what the type now asks for.
+  const model: Dashfoo = { version: 1, global: {}, floats: [], layout: { …, weight: 1 } };
+  ```
+
+  `DashfooInput` (`z.input<typeof dashfooSchema>`) is the loose input shape, exported so host-supplied or stored data has a type that does not demand the filled-in fields.
+
+  `weight`'s default is `1`, the value every reader already used for a missing weight (`row-view` summed `child.weight ?? 1`). `placeBesideTarget` was the one place that read a missing weight as `100`, which is why docking beside an unweighted target used to halve it to `50` and collapse its unweighted siblings to a sliver of the row. Nothing renders differently: a row whose children all omitted `weight` already split evenly, and every explicit weight is untouched.
+
+  `normalize` keeps the structural work (dropping empty tabsets and rows, collapsing single-child rows, healing `activeTabsetId`/`maximizedTabsetId`) and no longer re-walks the tree clamping `selected`. The actions that can push `selected` out of range clamp the tabset they touch instead: `selectTab`, `deleteTab`, `moveNode`, `floatTab`, `dockFloat`, and a `selected` written through `updateNodeAttributes`. The one behaviour this drops: a hand-written model with an out-of-range `selected`, passed straight to `model`/`defaultModel` without being parsed, is no longer silently repaired at mount.
+
+  Serialized output grows the filled-in fields, so `toJSON` now emits `"floats":[]` and a `"weight"` on every row and tabset. Stored payloads written by an older version still load: the schema fills in what they omit.
+
+  `DashfooMachineInput` is the new name for the XState input type previously exported as `DashfooInput` (`{ model: Dashfoo }`).
+
+  On the React side only fallbacks went away (`store.model.floats ?? []`, four `child.weight ?? 1` reads in `row-view`); no prop or hook signature changed.
+
+- 3476369: `undo()` and `redo()` now warn once when the layout is controlled through the `model` prop, instead of returning in silence. `canUndo()` and `canRedo()` keep reporting `false` in that mode.
+
+  `dispatch` now runs through the same internal actor whether or not the layout is controlled. In controlled mode it therefore derives the next model from the actor's present document, which every new `model` prop syncs into, rather than from the prop directly. A consumer that feeds `onModelChange` back into `model` sees no difference; one that ignores `onModelChange` now sees successive dispatches compound instead of each starting from the unchanged prop.
+
+- 9442365: One drag actor per tree instead of one per layer.
+
+  `DragProvider` (`Layout.DragLayer`) used to start its own `dragDockMachine` and attach its own listener set to the shared manager, and `FloatPanel` mounts one per float. With M floats open, a single pointer move fanned out to M+1 actors: M of them did not own the target, resolved `intent: null`, and would have swallowed the drop through the machine's `hasValidDrop` guard. Because N actors cannot be read as one value, drag state was mirrored into a module-level zustand store with hand-written equality and an ownership token to decide which actor's write won.
+
+  The actor, the manager and the listener set now live in `DashfooDragProvider`. A layer registers a scope (`{ layerId, resolveIntent, commit }`) and nothing else; the shared listener looks up the layer that owns the drop target, asks it for an intent, and routes the committed action back to that same layer. `createDragSubjectStore`, `DragSubjectStoreContext`, the null store, `sameDragSubject`, the ownership token and the 20-line mirror effect are gone.
+
+  `useDragSubject` and `useDropIntent` keep their signatures and their behaviour, including returning `null` outside a provider rather than throwing, since a component that renders both inside and outside a layout should not crash in one of them. They read the provider's actor through `useSelector`, with the same value-equality gate the mirror store applied, so a pointer move that resolves to the same slot still does not re-render their consumers.
+
+  A `Layout.DragLayer` with no `DashfooDragProvider` above it now mounts one internally (it used to create a bare manager), so hand-composed layouts keep working and also get the drag-preview overlay wiring they already had.
+
+- Updated dependencies [3476369]
+- Updated dependencies [77f8e4a]
+- Updated dependencies [3476369]
+- Updated dependencies [bf17fd3]
+  - @dashfoo/core@1.0.0
+
 ## 0.6.4
 
 ### Patch Changes

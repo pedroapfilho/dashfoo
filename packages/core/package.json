@@ -1,6 +1,6 @@
 {
   "name": "@dashfoo/core",
-  "version": "0.5.2",
+  "version": "1.0.0",
   "description": "Headless docking-layout engine: model, actions, reducer, serialization, geometry, and the XState actor system. No React.",
   "license": "MIT",
   "author": "Pedro Filho <pedro@filho.me>",
