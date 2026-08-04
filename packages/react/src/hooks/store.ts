@@ -1,9 +1,14 @@
 "use client";
 
 import type { Action, Dashfoo } from "@dashfoo/core";
-import { canRedo, canUndo, dashfooMachine, normalize, reducer } from "@dashfoo/core";
+import { canRedo, canUndo, dashfooMachine, normalize } from "@dashfoo/core";
 import { useActorRef, useSelector } from "@xstate/react";
 import { useCallback, useEffect, useMemo } from "react";
+
+import { warnOnce } from "../lib/warn-once";
+
+const CONTROLLED_HISTORY_MESSAGE =
+  "undo/redo are unavailable while `model` is controlled; keep the history in the state you own and drive it through onModelChange";
 
 type DashfooStore = {
   canRedo: () => boolean;
@@ -72,21 +77,16 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
         return;
       }
 
-      const transition = ((): { after: Dashfoo; before: Dashfoo } => {
-        if (controlledModel === undefined) {
-          const before = actorRef.getSnapshot().context.history.present;
-          actorRef.send({ action: resolved, type: "DISPATCH" });
-          return { after: actorRef.getSnapshot().context.history.present, before };
-        }
-        return { after: reducer(controlledModel, resolved), before: normalize(controlledModel) };
-      })();
-      notify(transition.before, transition.after, resolved);
+      const before = actorRef.getSnapshot().context.history.present;
+      actorRef.send({ action: resolved, type: "DISPATCH" });
+      notify(before, actorRef.getSnapshot().context.history.present, resolved);
     },
-    [actorRef, controlledModel, notify, onAction],
+    [actorRef, notify, onAction],
   );
 
   const undo = useCallback(() => {
     if (controlledModel !== undefined) {
+      warnOnce("controlled-undo", CONTROLLED_HISTORY_MESSAGE);
       return;
     }
     const before = actorRef.getSnapshot().context.history.present;
@@ -97,6 +97,7 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
 
   const redo = useCallback(() => {
     if (controlledModel !== undefined) {
+      warnOnce("controlled-redo", CONTROLLED_HISTORY_MESSAGE);
       return;
     }
     const before = actorRef.getSnapshot().context.history.present;
@@ -114,15 +115,17 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
 
   return useMemo(
     () => ({
-      canRedo: () => canRedo(actorRef.getSnapshot().context.history),
-      canUndo: () => canUndo(actorRef.getSnapshot().context.history),
+      canRedo: () =>
+        controlledModel === undefined && canRedo(actorRef.getSnapshot().context.history),
+      canUndo: () =>
+        controlledModel === undefined && canUndo(actorRef.getSnapshot().context.history),
       dispatch,
       model,
       redo,
       setModel,
       undo,
     }),
-    [actorRef, dispatch, model, redo, setModel, undo],
+    [actorRef, controlledModel, dispatch, model, redo, setModel, undo],
   );
 };
 

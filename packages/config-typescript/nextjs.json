@@ -6,6 +6,7 @@
     "allowJs": true,
     "incremental": true,
     "jsx": "preserve",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "plugins": [{ "name": "next" }]
   }
 }

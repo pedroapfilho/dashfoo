@@ -16,13 +16,7 @@ const overlayStyle: CSSProperties = {
   zIndex: 1,
 };
 
-const FloatOverlay = ({
-  floats,
-  global,
-}: {
-  floats: Array<FloatNode>;
-  global: GlobalAttributes;
-}): ReactNode => {
+const FloatOverlay = ({ floats }: { floats: Array<FloatNode> }): ReactNode => {
   const [topId, setTopId] = useState<string | null>(null);
   if (floats.length === 0) {
     return null;
@@ -31,7 +25,6 @@ const FloatOverlay = ({
     <div data-dashfoo="float-overlay" style={overlayStyle}>
       {floats.map((node) => (
         <FloatPanel
-          global={global}
           key={node.id}
           node={node}
           onFocus={() => {
@@ -47,13 +40,18 @@ const FloatOverlay = ({
 type FloatLayerProps = {
   children: ReactNode;
   floats: Array<FloatNode>;
-  global: GlobalAttributes;
+  /**
+   * Accepted for backwards compatibility only. Floating panels now inherit
+   * every global-derived capability from the layout store above them, so this
+   * is no longer read; it disappears in the next major.
+   */
+  global?: GlobalAttributes;
 };
 
-const FloatLayer = ({ children, floats, global }: FloatLayerProps): ReactNode => (
+const FloatLayer = ({ children, floats }: FloatLayerProps): ReactNode => (
   <FloatLayerContext.Provider value>
     {children}
-    <FloatOverlay floats={floats} global={global} />
+    <FloatOverlay floats={floats} />
   </FloatLayerContext.Provider>
 );
 

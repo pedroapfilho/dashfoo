@@ -6,6 +6,7 @@ export * from "./state/history";
 export * from "./model/ids";
 export { normalize } from "./model/invariants";
 export * from "./machines";
+export { mutableNodeAttrsSchema } from "./state/node-attrs";
 export * from "./state/reducer";
 export * from "./model/schema";
 export * from "./model/serialize";

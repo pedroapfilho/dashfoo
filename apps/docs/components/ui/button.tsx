@@ -13,6 +13,7 @@ export const buttonVariants = cva(
   "focus-visible:ring-fd-ring inline-flex items-center justify-center rounded-md p-2 text-sm font-medium transition-colors duration-100 focus-visible:ring-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
+      // fumadocs names this axis `color`, not `variant`
       color: variants,
       size: {
         icon: "p-1.5 [&_svg]:size-5",
@@ -20,7 +21,6 @@ export const buttonVariants = cva(
         "icon-xs": "p-1 [&_svg]:size-4",
         sm: "gap-1 px-2 py-1.5 text-xs",
       },
-      variant: variants,
     },
   },
 );

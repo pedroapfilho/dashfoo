@@ -104,8 +104,9 @@ const normalize = (model: Dashfoo): Dashfoo => {
 
   const withRoots: Dashfoo = { ...model, floats, layout };
 
-  const tabsetIds = new Set(collectTabsets(withRoots).map((tabset) => tabset.id));
-  const firstTabsetId = collectTabsets(withRoots)[0]?.id;
+  const tabsets = collectTabsets(withRoots);
+  const tabsetIds = new Set(tabsets.map((tabset) => tabset.id));
+  const firstTabsetId = tabsets[0]?.id;
 
   const activeTabsetId =
     model.activeTabsetId !== undefined && tabsetIds.has(model.activeTabsetId)

@@ -244,12 +244,12 @@ decide when it changes. A `useEffect`
 syncs each new `model` prop back into the actor, so the inspector and any
 internal selectors still observe the current document.
 
-Second, undo and redo are no-ops in controlled mode. Both early-return
-without touching anything or firing `onModelChange`, and `canUndo` /
-`canRedo` always report `false`: the controlled sync resets the actor's
-history on every update, so its stacks stay empty. There is no hidden
-internal stack to fall back on. If you want undo/redo in controlled mode,
-you keep the history yourself. That's the
+Second, undo and redo are no-ops in controlled mode. Both warn once and
+return without touching anything or firing `onModelChange`, and `canUndo` /
+`canRedo` always report `false`. The internal actor still records what you
+dispatch, but the controlled sync resets it on every new `model`, so it is
+never a stack you can walk. If you want undo/redo in controlled mode, you
+keep the history yourself. That's the
 [worked example](#worked-example-external-history--undoredo--inspector) below.
 
 ## Models are normalized at the boundary

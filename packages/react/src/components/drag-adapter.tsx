@@ -1,7 +1,13 @@
 "use client";
 
-import type { Action, DockLocation, DragSubject, DropIntent, Point } from "@dashfoo/core";
-import { dragDockMachine, resolveDockTarget, tabNodeSchema } from "@dashfoo/core";
+import type { Action, DragSubject, DropIntent, Point } from "@dashfoo/core";
+import {
+  dockLocationFor,
+  dragDockMachine,
+  resolveDockTarget,
+  splitEdge,
+  tabNodeSchema,
+} from "@dashfoo/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/dom";
 import { useActorRef } from "@xstate/react";
 import type { ReactNode } from "react";
@@ -51,8 +57,7 @@ const intentForTabset = (
       targetId: id,
     };
   }
-  const target = resolveDockTarget(point, element.getBoundingClientRect());
-  const location: DockLocation = target.kind === "tab" ? "center" : `split-${target.edge}`;
+  const location = dockLocationFor(resolveDockTarget(point, element.getBoundingClientRect()));
   if (location === "center" && strip) {
     return { index: tabRects(strip, draggedId).length, location, targetId: id };
   }
@@ -194,7 +199,7 @@ const DragProvider = ({ children, onCommit, splitDock }: DragProviderProps): Rea
       const intent = intentForTabset(targetId, element, point, draggedId);
 
       const splitDockResolved = splitDockRef.current ?? layoutStore?.getState().splitDock ?? true;
-      if (!splitDockResolved && intent.location.startsWith("split-")) {
+      if (!splitDockResolved && splitEdge(intent.location) !== undefined) {
         return { location: "center", targetId };
       }
       return intent;

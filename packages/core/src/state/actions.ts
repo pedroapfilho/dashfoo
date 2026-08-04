@@ -1,51 +1,8 @@
 import { z } from "zod";
 
-import {
-  dimensionSchema,
-  geometrySchema,
-  globalAttributesSchema,
-  orientationSchema,
-  snapSchema,
-  tabNodeSchema,
-  tabsetNodeSchema,
-} from "../model/schema";
+import { geometrySchema, globalAttributesSchema, tabNodeSchema } from "../model/schema";
 
-const mutableTabAttrsSchema = tabNodeSchema
-  .pick({
-    config: true,
-    enableClose: true,
-    enableDrag: true,
-    enableRename: true,
-    name: true,
-  })
-  .partial();
-
-const mutableTabsetAttrsSchema = tabsetNodeSchema
-  .pick({
-    enableClose: true,
-    enableMaximize: true,
-    max: true,
-    min: true,
-    selected: true,
-    weight: true,
-  })
-  .partial();
-
-const mutableRowAttrsSchema = z
-  .object({
-    max: dimensionSchema.optional(),
-    min: dimensionSchema.optional(),
-    orientation: orientationSchema,
-    snap: snapSchema.optional(),
-    weight: z.number(),
-  })
-  .partial();
-
-const mutableNodeAttrsSchema = z.union([
-  mutableTabAttrsSchema,
-  mutableTabsetAttrsSchema,
-  mutableRowAttrsSchema,
-]);
+import { mutableNodeAttrsSchema } from "./node-attrs";
 
 const dockLocationSchema = z.enum([
   "center",
@@ -143,5 +100,5 @@ type Action = z.infer<typeof actionSchema>;
 
 type DropIntent = { index?: number; location: DockLocation; targetId: string };
 
-export { actionSchema, dockLocationSchema, mutableNodeAttrsSchema };
+export { actionSchema, dockLocationSchema };
 export type { Action, DockLocation, DropIntent, MutableNodeAttrs };

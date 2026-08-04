@@ -1,3 +1,4 @@
+import { assertNever } from "../lib/assert-never";
 import type { Edge } from "../model/schema";
 import type { DockLocation } from "../state/actions";
 
@@ -30,6 +31,43 @@ const closestEdge = (d: { bottom: number; left: number; right: number; top: numb
     return "top";
   }
   return "bottom";
+};
+
+const dockLocationFor = (target: DockTarget): DockLocation => {
+  switch (target.kind) {
+    case "split": {
+      return `split-${target.edge}`;
+    }
+    case "tab": {
+      return "center";
+    }
+    default: {
+      return assertNever(target);
+    }
+  }
+};
+
+const splitEdge = (location: DockLocation): Edge | undefined => {
+  switch (location) {
+    case "center": {
+      return undefined;
+    }
+    case "split-bottom": {
+      return "bottom";
+    }
+    case "split-left": {
+      return "left";
+    }
+    case "split-right": {
+      return "right";
+    }
+    case "split-top": {
+      return "top";
+    }
+    default: {
+      return assertNever(location);
+    }
+  }
 };
 
 const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): DockTarget => {
@@ -92,10 +130,10 @@ const zoneRect = (rect: Rect, location: DockLocation): Rect => {
       return rect;
     }
     default: {
-      return rect;
+      return assertNever(location);
     }
   }
 };
 
-export { dockZonePolygons, resolveDockTarget, zoneRect };
+export { dockLocationFor, dockZonePolygons, resolveDockTarget, splitEdge, zoneRect };
 export type { BandOptions, DockTarget, DockZone, Point, Rect };

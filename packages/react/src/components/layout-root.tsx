@@ -5,7 +5,7 @@ import type { ComponentProps, CSSProperties, ReactNode, Ref } from "react";
 import { useLayoutEffect, useState } from "react";
 
 import type { LayoutState } from "../hooks/layout-store";
-import { createLayoutStore, LayoutStoreContext } from "../hooks/layout-store";
+import { createLayoutStore, LayoutStoreContext, useLayout } from "../hooks/layout-store";
 
 const DEFAULT_TABSET_MIN_SIZE = 320;
 
@@ -30,6 +30,9 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
   renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
   resizableSplits?: boolean;
 
+  /** When false, the tree itself is frozen: no dragging, splitting or floating. Tabs stay closable and renamable. */
+  restructurable?: boolean;
+
   rootRef?: Ref<HTMLDivElement>;
 
   snap?: SnapConfig;
@@ -51,6 +54,7 @@ const LayoutRoot = ({
   renderTabLabel,
   renderTabsetToolbar,
   resizableSplits = true,
+  restructurable = true,
   rootRef,
   snap,
   style,
@@ -60,10 +64,10 @@ const LayoutRoot = ({
   const snapshot: LayoutState = {
     closableTabs: editable && closableTabs && global.tabEnableClose !== false,
     dispatch,
-    draggableTabs: editable && draggableTabs && global.tabEnableDrag !== false,
-    draggableTabsets: editable && draggableTabsets,
+    draggableTabs: editable && restructurable && draggableTabs && global.tabEnableDrag !== false,
+    draggableTabsets: editable && restructurable && draggableTabsets,
     editable,
-    floatable: editable && floatable,
+    floatable: editable && restructurable && floatable,
     keepMounted,
     maximizable: maximizable && global.tabSetEnableMaximize !== false,
     maximizedTabsetId: model.maximizedTabsetId,
@@ -71,7 +75,8 @@ const LayoutRoot = ({
     renderTab,
     renderTabLabel,
     renderTabsetToolbar,
-    resizableSplits: editable && resizableSplits && global.enableSplitResize !== false,
+    resizableSplits:
+      editable && restructurable && resizableSplits && global.enableSplitResize !== false,
     snap: snap ?? global.snap ?? null,
     splitDock: global.enableSplitDock !== false,
     tabLocation: global.tabLocation ?? "top",
@@ -103,5 +108,35 @@ const LayoutRoot = ({
   );
 };
 
-export { LayoutRoot };
-export type { LayoutRootProps };
+type LayoutOverridesProps = {
+  children: ReactNode;
+  overrides: Partial<LayoutState>;
+};
+
+/**
+ * A nested subtree (a float) renders through the same components as the main
+ * layout, minus a few capabilities. It republishes the parent store with the
+ * overrides applied instead of re-deriving every flag from a synthetic model,
+ * so anything the parent changes keeps flowing into the subtree.
+ */
+const LayoutOverrides = ({ children, overrides }: LayoutOverridesProps): ReactNode => {
+  const parentState = useLayout((state) => state);
+  const snapshot: LayoutState = { ...parentState, ...overrides };
+
+  const [store] = useState(() => createLayoutStore(snapshot));
+
+  useLayoutEffect(() => {
+    store.setState(snapshot);
+  });
+
+  return (
+    <LayoutStoreContext.Provider value={store}>
+      <div data-dashfoo="layout" style={rootStyle}>
+        {children}
+      </div>
+    </LayoutStoreContext.Provider>
+  );
+};
+
+export { LayoutOverrides, LayoutRoot };
+export type { LayoutOverridesProps, LayoutRootProps };
