@@ -28,6 +28,7 @@ describe("fallbackSelectedIndex", () => {
 
 const soleTabModel = (): Dashfoo => ({
   activeTabsetId: "ts1",
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -36,11 +37,13 @@ const soleTabModel = (): Dashfoo => ({
         id: "ts1",
         selected: 0,
         type: "tabset",
+        weight: 1,
       },
     ],
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });

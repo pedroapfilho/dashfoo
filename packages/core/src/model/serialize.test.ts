@@ -7,12 +7,16 @@ const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab
 
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",
+  floats: [],
   global: { tabLocation: "top" },
   layout: {
-    children: [{ children: [tab("t1"), tab("t2")], id: "ts1", selected: 0, type: "tabset" }],
+    children: [
+      { children: [tab("t1"), tab("t2")], id: "ts1", selected: 0, type: "tabset", weight: 1 },
+    ],
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });
@@ -33,6 +37,7 @@ describe("serialize", () => {
       id: "ts2",
       selected: 0,
       type: "tabset",
+      weight: 1,
     });
     input.global.tabSetMinSize = 120;
 

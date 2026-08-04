@@ -12,6 +12,7 @@ import {
 } from "./tree";
 
 const model: Dashfoo = {
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -44,11 +45,13 @@ const model: Dashfoo = {
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 };
 
 const deepModel: Dashfoo = {
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -93,6 +96,7 @@ const deepModel: Dashfoo = {
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 };

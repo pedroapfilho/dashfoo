@@ -5,11 +5,11 @@ type TabLocation = { container: TabContainer; index: number; tab: TabNode };
 
 const collectRoots = (model: Dashfoo): Array<RowNode> => [
   model.layout,
-  ...(model.floats ?? []).map((float) => float.layout),
+  ...model.floats.map((float) => float.layout),
 ];
 
 const findFloat = (model: Dashfoo, floatId: string): FloatNode | undefined =>
-  (model.floats ?? []).find((float) => float.id === floatId);
+  model.floats.find((float) => float.id === floatId);
 
 type AttributedNode = RowNode | TabNode | TabsetNode;
 
@@ -161,7 +161,7 @@ const collectIdsInRow = (row: RowNode, acc: Array<string>): void => {
 
 const findDuplicateIds = (model: Dashfoo): Array<string> => {
   const ids: Array<string> = [];
-  for (const float of model.floats ?? []) {
+  for (const float of model.floats) {
     ids.push(float.id);
   }
   for (const root of collectRoots(model)) {

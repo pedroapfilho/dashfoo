@@ -6,6 +6,7 @@ import { useDashfooStore } from "./store";
 
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -27,6 +28,7 @@ const model = (): Dashfoo => ({
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });

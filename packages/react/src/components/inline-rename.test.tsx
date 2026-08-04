@@ -25,7 +25,7 @@ const renderFloatEditor = (): Harness => {
   const node: FloatNode = {
     geometry: { height: 300, left: 0, top: 0, width: 400 },
     id: "f1",
-    layout: { children: [], id: "frow", orientation: "row", type: "row" },
+    layout: { children: [], id: "frow", orientation: "row", type: "row", weight: 1 },
     name: CURRENT_NAME,
     type: "float",
   };
@@ -56,6 +56,7 @@ const renderTabEditor = (): Harness => {
     id: "ts1",
     selected: 0,
     type: "tabset",
+    weight: 1,
   };
   const store = createTabsetStore({
     activeTab: node.children[0],

@@ -27,7 +27,7 @@ type LayoutChild = RowNode["children"][number];
 
 const layoutFromWeights = (children: RowNode["children"], total: number): Layout =>
   children.reduce<Layout>((layout, child) => {
-    layout[child.id] = ((child.weight ?? 1) / total) * 100;
+    layout[child.id] = (child.weight / total) * 100;
     return layout;
   }, {});
 
@@ -99,7 +99,7 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
   const effectiveSnap: SnapConfig | null = node.snap ?? globalSnap;
   const snapActive = snapEnabled(effectiveSnap);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
-  const total = node.children.reduce((sum, child) => sum + (child.weight ?? 1), 0);
+  const total = node.children.reduce((sum, child) => sum + child.weight, 0);
   const desiredLayout = useMemo(
     () => layoutFromWeights(node.children, total),
     [node.children, total],
@@ -206,14 +206,15 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     if (!resizableSplits) {
       return;
     }
-    let weights = node.children.map((child) => layout[child.id] ?? child.weight ?? 1);
+    let weights = node.children.map((child) => layout[child.id] ?? child.weight);
 
     if (boundary !== null && effectiveSnap !== null && snapActive) {
       weights = snapSizes(weights, boundary, effectiveSnap).sizes;
     }
-    const weightsChanged = weights.some(
-      (weight, index) => Math.abs(weight - (node.children[index]?.weight ?? 1)) > WEIGHT_EPSILON,
-    );
+    const weightsChanged = weights.some((weight, index) => {
+      const child = node.children[index];
+      return child !== undefined && Math.abs(weight - child.weight) > WEIGHT_EPSILON;
+    });
 
     if (!weightsChanged) {
       return;
@@ -239,7 +240,7 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
       style={groupStyle}
     >
       {node.children.map((child, index) => {
-        const percent = ((child.weight ?? 1) / total) * 100;
+        const percent = (child.weight / total) * 100;
         let min = child.min ? dimensionToSize(child.min) : undefined;
         if (min === undefined) {
           const minimum = descendantMinSize(child, node.orientation, tabsetMinSize);

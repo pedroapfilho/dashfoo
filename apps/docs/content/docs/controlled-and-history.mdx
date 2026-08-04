@@ -267,8 +267,8 @@ The controlled sync does the same on every update:
 actorRef.send({ model: normalize(controlledModel), type: "SET_MODEL" });
 ```
 
-`normalize` enforces the same invariants the reducer guarantees: clamped
-selection indexes, no empty tabsets, a live `maximizedTabsetId`. Every
+`normalize` enforces the same structural invariants the reducer guarantees: no
+empty tabsets, no redundant single-child rows, a live `maximizedTabsetId`. Every
 entry point holds a canonical model, so a host-supplied document satisfies
 the same rules as one the reducer produced. You don't have to hand-build a
 perfectly-formed tree. Pass something reasonable and the boundary cleans it.

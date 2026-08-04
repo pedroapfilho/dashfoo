@@ -331,16 +331,16 @@ See [drag & dock](/drag-and-dock) for how drops become actions.
 
 ### Builders
 
-Constructors that fill the mechanical fields (`type`, `version`, `selected`) so
-seed models stay short.
+Constructors that fill the mechanical fields (`type`, `version`, `selected`,
+`weight`, `floats`) so seed models stay short.
 
-| Builder     | Signature                                                                    | Notes                                                                         |
-| ----------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `tab`       | `(component: string, name: string, options?: TabOptions) => TabNode`         | `id` defaults to `component`. Pass an explicit `id` when reusing a component. |
-| `tabset`    | `(children: Array<TabNode>, options?: TabsetOptions) => TabsetNode`          | `selected` defaults to `0`; `id` is auto-generated when omitted.              |
-| `row`       | `(children: RowNode["children"], options?: RowOptions) => RowNode`           | `orientation` defaults to `"row"`; `id` is auto-generated when omitted.       |
-| `model`     | `(layout: RowNode, options?: ModelOptions) => Dashfoo`                       | Fills `version: 1` and `global: {}`; warns once on duplicate node ids.        |
-| `floatNode` | `(layout: RowNode, geometry: Geometry, options?: FloatOptions) => FloatNode` | A floating panel wrapping a layout subtree at an in-app rect.                 |
+| Builder     | Signature                                                                    | Notes                                                                                                                    |
+| ----------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `tab`       | `(component: string, name: string, options?: TabOptions) => TabNode`         | `id` defaults to `component`. Pass an explicit `id` when reusing a component.                                            |
+| `tabset`    | `(children: Array<TabNode>, options?: TabsetOptions) => TabsetNode`          | `selected` defaults to `0` and is clamped into the strip; `weight` defaults to `1`; `id` is auto-generated when omitted. |
+| `row`       | `(children: RowNode["children"], options?: RowOptions) => RowNode`           | `orientation` defaults to `"row"`; `weight` defaults to `1`; `id` is auto-generated when omitted.                        |
+| `model`     | `(layout: RowNode, options?: ModelOptions) => Dashfoo`                       | Fills `version: 1`, `global: {}` and `floats: []`; warns once on duplicate node ids.                                     |
+| `floatNode` | `(layout: RowNode, geometry: Geometry, options?: FloatOptions) => FloatNode` | A floating panel wrapping a layout subtree at an in-app rect.                                                            |
 
 Option types: `TabOptions` (`config`, `enableClose`, `enableDrag`,
 `enableRename`, `id`), `TabsetOptions` (`enableClose`, `enableMaximize`, `id`,
@@ -369,6 +369,12 @@ Zod schemas and their inferred types. Field-by-field tables live in
 | `unitSchema`             | `Unit`             |
 | `jsonValueSchema`        | `Json`             |
 
+`DashfooInput` (`z.input<typeof dashfooSchema>`) is the loose counterpart of
+`Dashfoo`: the shape `parseModel` accepts, with `weight` and `floats` optional.
+Hold host-supplied or stored data as `DashfooInput` and parse it into a
+`Dashfoo`. `tabsetNodeObjectSchema` is `tabsetNodeSchema` before its clamping
+transform, for `.pick()`-ing mutable keys off.
+
 `Node` (`RowNode | TabsetNode | TabNode`) is exported as a type only.
 `FloatNode` (`{ type: "float"; id; layout: RowNode; geometry: Geometry; name?; minimized? }`)
 holds a floating panel; see [floating panels](/floating-panels). The model's
@@ -377,10 +383,10 @@ validation.
 
 ### Reducer and normalize
 
-| Export      | Signature                                     | Description                                                                                                                                                                           |
-| ----------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `reducer`   | `(model: Dashfoo, action: Action) => Dashfoo` | The pure engine: deep-copies via `structuredClone` (input never mutated), applies one action, runs `normalize`.                                                                       |
-| `normalize` | `(model: Dashfoo) => Dashfoo`                 | The self-healing canonical pass: clamps `selected`, removes empty tabsets, heals each float's layout and drops an emptied float, keeps `maximizedTabsetId` pointing at a live tabset. |
+| Export      | Signature                                     | Description                                                                                                                                                                                                                                                      |
+| ----------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reducer`   | `(model: Dashfoo, action: Action) => Dashfoo` | The pure engine: deep-copies via `structuredClone` (input never mutated), applies one action, runs `normalize`.                                                                                                                                                  |
+| `normalize` | `(model: Dashfoo) => Dashfoo`                 | The structural canonical pass: removes empty tabsets, collapses single-child rows, heals each float's layout and drops an emptied float, keeps `maximizedTabsetId` pointing at a live tabset. `selected` and `weight` are settled at the parse boundary instead. |
 
 ### Tree helpers
 
@@ -450,11 +456,11 @@ because react-resizable-panels v4 commits one `adjustSplit` per release.
 
 ### Serialization
 
-| Export       | Signature                     | Description                                                                                                      |
-| ------------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `toJSON`     | `(model: Dashfoo) => string`  | `JSON.stringify`, since the model is plain data.                                                                 |
-| `fromJSON`   | `(json: string) => Dashfoo`   | Parse + `parseModel`. Throws on invalid input.                                                                   |
-| `parseModel` | `(value: unknown) => Dashfoo` | Validate against `dashfooSchema` (including the pinned `version: 1`), normalize, and warn on duplicate node ids. |
+| Export       | Signature                     | Description                                                                                                                                                                                                      |
+| ------------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `toJSON`     | `(model: Dashfoo) => string`  | `JSON.stringify`, since the model is plain data.                                                                                                                                                                 |
+| `fromJSON`   | `(json: string) => Dashfoo`   | Parse + `parseModel`. Throws on invalid input.                                                                                                                                                                   |
+| `parseModel` | `(value: unknown) => Dashfoo` | Validate against `dashfooSchema` (including the pinned `version: 1`), normalize, and warn on duplicate node ids. Takes `DashfooInput`-shaped data: `weight` and `floats` may be omitted and come back filled in. |
 
 ### Machines
 
@@ -463,7 +469,7 @@ Two XState machines, for hosts that bypass the React binding.
 - `dashfooMachine`: the document actor. Input `{ model: Dashfoo }`, context
   `{ history: History }`. Events: `DISPATCH` (`{ action }`), `UNDO`, `REDO`,
   and `SET_MODEL` (`{ model }`, which resets history). Types: `DashfooContext`,
-  `DashfooEvent`, `DashfooInput`.
+  `DashfooEvent`, `DashfooMachineInput`.
 - `dragDockMachine`: the drag/dock interaction lifecycle. Events: `START`
   (`{ subject: DragSubject }`), `OVER` (`{ intent: DropIntent | null }`),
   `DROP`, `CANCEL`. A valid drop emits `{ type: "COMMIT", action }`: `moveNode`

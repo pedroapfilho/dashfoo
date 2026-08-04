@@ -1,6 +1,7 @@
+import { clampSelected } from "../lib/clamp-selected";
 import { createNodeId } from "../model/ids";
-import { clampSelected } from "../model/invariants";
 import type { Dashfoo, FloatNode, Geometry, RowNode, TabsetNode } from "../model/schema";
+import { DEFAULT_WEIGHT } from "../model/schema";
 import { collectTabsetsInRow, findRootContaining } from "../model/tree";
 
 import type { DockLocation } from "./actions";
@@ -35,10 +36,10 @@ const pushFloat = (
     geometry: geometry ?? DEFAULT_FLOAT_GEOMETRY,
     id: floatId ?? createNodeId("float"),
     layout,
-    name: uniqueFloatName("Panel", draft.floats ?? []),
+    name: uniqueFloatName("Panel", draft.floats),
     type: "float",
   };
-  draft.floats = [...(draft.floats ?? []), float];
+  draft.floats = [...draft.floats, float];
 
   const tabsets: Array<TabsetNode> = [];
   collectTabsetsInRow(layout, tabsets);
@@ -91,13 +92,12 @@ const dockFloat = (
   targetId: string | undefined,
   location: DockLocation | undefined,
 ): void => {
-  const floats = draft.floats ?? [];
+  const floats = draft.floats;
   const index = floats.findIndex((float) => float.id === floatId);
   if (index === -1) {
     return;
   }
   const float = floats.splice(index, 1).at(0);
-  draft.floats = floats;
   if (!float) {
     return;
   }
@@ -132,7 +132,13 @@ const dockFloat = (
   const placed: TabsetNode =
     tabsets.length === 1 && leadTabset
       ? leadTabset
-      : { children: tabs, id: createNodeId("tabset"), selected: selectedOffset, type: "tabset" };
+      : {
+          children: tabs,
+          id: createNodeId("tabset"),
+          selected: selectedOffset,
+          type: "tabset",
+          weight: DEFAULT_WEIGHT,
+        };
   placeBesideTarget(draft, placed, target.id, where);
 };
 

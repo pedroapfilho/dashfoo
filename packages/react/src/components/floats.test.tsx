@@ -12,6 +12,7 @@ const components = {
 
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -29,6 +30,7 @@ const model = (): Dashfoo => ({
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   version: 1,
 });
@@ -49,6 +51,7 @@ const floatNode = (id: string, tabId: string, component: string, name: string): 
     id: `${id}-row`,
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   name: `Panel ${id}`,
   type: "float",

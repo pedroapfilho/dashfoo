@@ -7,6 +7,7 @@ import { stackModel } from "./stack";
 
 const nested = (): Dashfoo => ({
   activeTabsetId: "ts-a",
+  floats: [],
   global: {},
   layout: {
     children: [
@@ -18,6 +19,7 @@ const nested = (): Dashfoo => ({
         id: "ts-a",
         selected: 0,
         type: "tabset",
+        weight: 1,
       },
       {
         children: [
@@ -26,22 +28,26 @@ const nested = (): Dashfoo => ({
             id: "ts-b",
             selected: 0,
             type: "tabset",
+            weight: 1,
           },
           {
             children: [{ component: "c", id: "t3", name: "C", type: "tab" }],
             id: "ts-c",
             selected: 0,
             type: "tabset",
+            weight: 1,
           },
         ],
         id: "r2",
         orientation: "column",
         type: "row",
+        weight: 1,
       },
     ],
     id: "root",
     orientation: "row",
     type: "row",
+    weight: 1,
   },
   maximizedTabsetId: "ts-a",
   version: 1,
