@@ -1,6 +1,13 @@
 "use client";
 
-import type { DragSubject, DropIntent, TabNode } from "@dashfoo/core";
+import type {
+  Action,
+  dragDockMachine,
+  DragSubject,
+  DropIntent,
+  Point,
+  TabNode,
+} from "@dashfoo/core";
 import {
   Accessibility,
   Draggable,
@@ -9,10 +16,10 @@ import {
   Feedback,
   PointerSensor,
 } from "@dnd-kit/dom";
+import { useSelector } from "@xstate/react";
 import type { Context } from "react";
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";
-import type { StoreApi } from "zustand";
-import { createStore, useStore } from "zustand";
+import type { ActorRefFrom } from "xstate";
 
 import { topmostPointerIntersection } from "../lib/topmost-collision";
 
@@ -43,7 +50,37 @@ const createDragManager = (): DragDropManager =>
     sensors: () => [PointerSensor.configure({ preventActivation })],
   });
 
+type DragActor = ActorRefFrom<typeof dragDockMachine>;
+
+/**
+ * One scope per rendered layer (the main tree, then one per float). The manager
+ * and the drag actor are shared above them; a scope only says how to turn a
+ * pointer over one of *its* tabsets into an intent, and where a committed action
+ * goes. `layerId` is what namespaces its droppable registrations, so two layers
+ * can hold a tabset with the same model id.
+ */
+type DragScope = {
+  commit: (action: Action) => void;
+  layerId: string;
+  resolveIntent: (
+    targetId: string,
+    element: HTMLElement,
+    point: Point,
+    draggedId?: string,
+  ) => DropIntent | null;
+};
+
+type DragRootContextValue = {
+  actorRef: DragActor;
+  manager: DragDropManager;
+  registerScope: (scope: DragScope) => () => void;
+};
+
+const DragRootContext: Context<DragRootContextValue | null> =
+  createContext<DragRootContextValue | null>(null);
+
 type DragContextValue = {
+  actorRef: DragActor;
   layerId: string;
   manager: DragDropManager;
 };
@@ -53,17 +90,11 @@ const DragContext = createContext<DragContextValue | null>(null);
 const SharedDragManagerContext: Context<DragDropManager | null> =
   createContext<DragDropManager | null>(null);
 
-type DragSubjectState = {
-  intent: DropIntent | null;
-  intentOwner: string | null;
-  subject: DragSubject | null;
-};
-
-type DragSubjectStore = StoreApi<DragSubjectState>;
-
-const createDragSubjectStore = (): DragSubjectStore =>
-  createStore<DragSubjectState>(() => ({ intent: null, intentOwner: null, subject: null }));
-
+/**
+ * The actor assigns a freshly built intent on every pointer move, so selecting
+ * `context.intent` by reference would re-render every reader of `useDropIntent`
+ * for each move that resolved to the same slot.
+ */
 const sameDropIntent = (a: DropIntent | null, b: DropIntent | null): boolean =>
   a === b ||
   (a !== null &&
@@ -71,14 +102,6 @@ const sameDropIntent = (a: DropIntent | null, b: DropIntent | null): boolean =>
     a.index === b.index &&
     a.location === b.location &&
     a.targetId === b.targetId);
-
-const sameDragSubject = (a: DragSubject | null, b: DragSubject | null): boolean =>
-  a === b || (a !== null && b !== null && a.id === b.id && a.kind === b.kind);
-
-const nullSubjectStore = createDragSubjectStore();
-
-const DragSubjectStoreContext: Context<DragSubjectStore | null> =
-  createContext<DragSubjectStore | null>(null);
 
 type DraggableHandle = {
   draggableRef: { current: Draggable | null };
@@ -214,23 +237,34 @@ const useExternalTabSource = ({
   return useDraggableEntity({ data, id: `external-${id}` }, disabled, label);
 };
 
+/**
+ * Both drag readers are documented as working anywhere under the provider, which
+ * includes a custom overlay mounted beside the layout rather than inside a drag
+ * layer, so they read the root's actor. Outside a provider entirely there is no
+ * actor to read and they report the empty state instead of throwing: a component
+ * that renders both inside and outside a layout should not crash in one of them.
+ */
 const useDragSubject = (): DragSubject | null => {
-  const store = useContext(DragSubjectStoreContext);
-  return useStore(store ?? nullSubjectStore, (state) => state.subject);
+  const actorRef = useContext(DragRootContext)?.actorRef;
+  return useSelector(actorRef, (snapshot) => snapshot?.context.subject ?? null);
 };
 
 const useDropIntent = (): DropIntent | null => {
-  const store = useContext(DragSubjectStoreContext);
-  return useStore(store ?? nullSubjectStore, (state) => state.intent);
+  const actorRef = useContext(DragRootContext)?.actorRef;
+  return useSelector(actorRef, (snapshot) => snapshot?.context.intent ?? null, sameDropIntent);
 };
 
-export type { DragContextValue, DragSubjectStore, ExternalTabSourceOptions };
+export type {
+  DragActor,
+  DragContextValue,
+  DragRootContextValue,
+  DragScope,
+  ExternalTabSourceOptions,
+};
 export {
   createDragManager,
-  createDragSubjectStore,
   DragContext,
-  DragSubjectStoreContext,
-  sameDragSubject,
+  DragRootContext,
   sameDropIntent,
   SharedDragManagerContext,
   useDragSubject,

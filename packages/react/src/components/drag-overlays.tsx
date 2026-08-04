@@ -1,18 +1,16 @@
 "use client";
 
-import type { dragDockMachine, Point } from "@dashfoo/core";
+import type { Point } from "@dashfoo/core";
 import { zoneRect } from "@dashfoo/core";
 import type { DragDropManager } from "@dnd-kit/dom";
 import { Feedback } from "@dnd-kit/dom";
 import { useSelector } from "@xstate/react";
 import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
-import type { ActorRefFrom } from "xstate";
 
+import type { DragActor } from "../hooks/drag-hooks";
 import type { Zone } from "../lib/tab-insertion";
 import { insertionLineRect } from "../lib/tab-insertion";
-
-type DragActor = ActorRefFrom<typeof dragDockMachine>;
 
 const overlayBase: CSSProperties = {
   boxSizing: "border-box",

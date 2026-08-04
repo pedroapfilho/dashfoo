@@ -1,7 +1,7 @@
-import type { DragSubject, DropIntent } from "@dashfoo/core";
+import type { DropIntent } from "@dashfoo/core";
 import { describe, expect, test } from "vitest";
 
-import { sameDragSubject, sameDropIntent } from "./drag-hooks";
+import { sameDropIntent } from "./drag-hooks";
 
 describe("sameDropIntent", () => {
   const intent: DropIntent = { index: 2, location: "center", targetId: "ts-main" };
@@ -31,21 +31,5 @@ describe("sameDropIntent", () => {
     expect(sameDropIntent(intent, { ...intent, location: "split-right" })).toBe(false);
     expect(sameDropIntent(intent, { ...intent, index: 3 })).toBe(false);
     expect(sameDropIntent(intent, { location: "center", targetId: "ts-main" })).toBe(false);
-  });
-});
-
-describe("sameDragSubject", () => {
-  const subject: DragSubject = { id: "tab-1", kind: "tab" };
-
-  test("matches two nulls and value-equal subjects across identities", () => {
-    expect(sameDragSubject(null, null)).toBe(true);
-    expect(sameDragSubject(subject, { ...subject })).toBe(true);
-  });
-
-  test("differs on null, id, or kind", () => {
-    expect(sameDragSubject(subject, null)).toBe(false);
-    expect(sameDragSubject(null, subject)).toBe(false);
-    expect(sameDragSubject(subject, { id: "tab-2", kind: "tab" })).toBe(false);
-    expect(sameDragSubject(subject, { id: "tab-1", kind: "tabset" })).toBe(false);
   });
 });

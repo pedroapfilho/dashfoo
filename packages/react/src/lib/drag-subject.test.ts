@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
 
-import { subjectFor } from "./drag-adapter";
+import { subjectFor } from "./drag-subject";
 
 describe("subjectFor", () => {
   test("tabset source returns tabset subject with tabsetId", () => {

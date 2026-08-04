@@ -5,7 +5,14 @@ import type { ReactNode } from "react";
 import { StrictMode, useContext } from "react";
 import { describe, expect, test } from "vitest";
 
-import { DragContext, SharedDragManagerContext } from "../hooks/drag-hooks";
+import type { DragActor } from "../hooks/drag-hooks";
+import {
+  DragContext,
+  DragRootContext,
+  SharedDragManagerContext,
+  useDragSubject,
+  useDropIntent,
+} from "../hooks/drag-hooks";
 
 import { DragProvider } from "./drag-adapter";
 import { DashfooDragProvider } from "./drag-root";
@@ -61,6 +68,75 @@ describe("shared vs own manager selection", () => {
     expect(innerManager).not.toBeNull();
 
     expect(innerManager).toBe(sharedManager);
+  });
+});
+
+describe("one actor per tree", () => {
+  test("sibling layers under one root read the same drag actor", () => {
+    const seen: Array<DragActor | undefined> = [];
+
+    const Probe = (): null => {
+      seen.push(useContext(DragContext)?.actorRef);
+      return null;
+    };
+
+    render(
+      <DashfooDragProvider>
+        <DragProvider onCommit={() => {}}>
+          <Probe />
+        </DragProvider>
+        <DragProvider onCommit={() => {}}>
+          <Probe />
+        </DragProvider>
+      </DashfooDragProvider>,
+    );
+
+    expect(seen).toHaveLength(2);
+    expect(seen[0]).toBeDefined();
+    expect(new Set(seen).size).toBe(1);
+  });
+
+  test("a reader mounted beside a layer still reaches the actor the layer uses", () => {
+    let outside: DragActor | undefined;
+    let inside: DragActor | undefined;
+
+    const OutsideProbe = (): null => {
+      outside = useContext(DragRootContext)?.actorRef;
+      return null;
+    };
+
+    const InsideProbe = (): null => {
+      inside = useContext(DragContext)?.actorRef;
+      return null;
+    };
+
+    render(
+      <DashfooDragProvider>
+        <OutsideProbe />
+        <DragProvider onCommit={() => {}}>
+          <InsideProbe />
+        </DragProvider>
+      </DashfooDragProvider>,
+    );
+
+    expect(outside).toBeDefined();
+    expect(outside).toBe(inside);
+  });
+
+  test("the drag readers report an empty state outside any provider", () => {
+    let subject: unknown = "unset";
+    let intent: unknown = "unset";
+
+    const Probe = (): null => {
+      subject = useDragSubject();
+      intent = useDropIntent();
+      return null;
+    };
+
+    render(<Probe />);
+
+    expect(subject).toBeNull();
+    expect(intent).toBeNull();
   });
 });
 
