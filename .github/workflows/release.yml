@@ -10,6 +10,7 @@ permissions:
   contents: write # push the version commit and git tags
   pull-requests: write # open/update the "Version Packages" PR
   id-token: write # npm publish provenance
+  actions: write # dispatch the gate workflows onto the version branch
 
 jobs:
   release:
@@ -28,6 +29,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - uses: changesets/action@v1
+        id: changesets
         with:
           version: pnpm version-packages
           publish: pnpm release
@@ -38,3 +40,17 @@ jobs:
           # actions/setup-node generates an .npmrc that reads NODE_AUTH_TOKEN; must match.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
+
+      # The version PR is authored by GITHUB_TOKEN, so its pull_request runs are
+      # created in `action_required` and never execute: without this the PR would
+      # merge and publish to npm on the feature PR's CI alone, and changesets
+      # rewrites every version and internal dependency range in the workspace.
+      # workflow_dispatch is exempt from that approval gate.
+      - name: Run gates on the version PR
+        if: steps.changesets.outputs.pullRequestNumber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for workflow in build lint typecheck test format fallow e2e publish-checks; do
+            gh workflow run "${workflow}.yml" --ref changeset-release/main
+          done
