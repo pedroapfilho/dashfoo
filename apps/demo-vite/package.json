@@ -18,8 +18,8 @@
     "@dashfoo/theme": "workspace:*",
     "@fontsource-variable/geist-mono": "^5.2.8",
     "@tailwindcss/vite": "^4.3.2",
-    "@tanstack/react-router": "^1.170.17",
-    "lucide-react": "^1.24.0",
+    "@tanstack/react-router": "^1.170.25",
+    "lucide-react": "^1.31.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwindcss": "^4.3.2"
