@@ -9,11 +9,11 @@
     "./setup-react": "./setup-react.ts"
   },
   "dependencies": {
-    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^6.0.3",
     "@vitest/coverage-v8": "^4.1.10",
-    "jsdom": "^29.1.1",
+    "jsdom": "^30.0.1",
     "vitest": "^4.1.10"
   },
   "devDependencies": {
