@@ -15,7 +15,7 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.2",
     "class-variance-authority": "^0.7.1",
-    "cnfast": "^0.0.8",
+    "cnfast": "^0.1.0",
     "fumadocs-core": "^16.14.3",
     "fumadocs-mdx": "^15.2.3",
     "fumadocs-ui": "^16.14.3",
