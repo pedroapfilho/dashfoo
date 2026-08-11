@@ -21,8 +21,6 @@ const useInlineRename = ({
   onCommit,
   onDone,
 }: InlineRenameOptions): InlineRename => {
-  // Blur can fire after Enter/Escape already settled the edit; the ref
-  // suppresses that trailing blur so the commit happens at most once.
   const done = useRef(false);
 
   useEffect(() => {

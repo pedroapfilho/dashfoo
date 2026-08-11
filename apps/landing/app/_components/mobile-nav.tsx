@@ -15,19 +15,11 @@ const MobileNav = (): ReactNode => {
   const panelRef = useRef<HTMLElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  // Subscribed unconditionally rather than gated on `open`: closing an already
-  // closed disclosure is a no-op React bails out of, and a single stable
-  // listener avoids re-subscribing on every toggle. Reading focus off the refs
-  // at event time rather than from state keeps the dep array empty.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.key !== "Escape") {
         return;
       }
-      // Only reclaim focus that the closing panel is about to orphan. Escape
-      // pressed while focus sits elsewhere on the page must not yank it back
-      // to the trigger. Focusing before the state update is safe: the panel is
-      // still mounted, so React unmounting it afterwards cannot move focus.
       const orphansFocus =
         panelRef.current?.contains(document.activeElement) === true ||
         document.activeElement === triggerRef.current;

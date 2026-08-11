@@ -50,8 +50,6 @@ const placeBesideTarget = (
     placed.weight = half;
     found.parent.children.splice(before ? found.index : found.index + 1, 0, placed);
   } else {
-    // The wrapping row takes over the slot the target held, so it inherits the
-    // target's weight while the two halves split its interior evenly.
     const newRow: RowNode = {
       children: before ? [placed, targetTabset] : [targetTabset, placed],
       id: createNodeId("row"),
@@ -77,9 +75,6 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
   }
 
   if (location === "center") {
-    // `index` is caller-supplied and only validated as an integer. Splice pins
-    // an out-of-range one to an end of the strip, so `selected` has to be
-    // pinned the same way or it points past the tab it was meant to follow.
     const at = Math.min(
       Math.max(index ?? targetTabset.children.length, 0),
       targetTabset.children.length,

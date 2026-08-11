@@ -104,8 +104,6 @@ const useSnapResize = ({
 
     transition({ kind: "syncing" });
     group.setLayout(desiredLayout);
-    // The group can emit follow-up layout events after the DOM settles, so the guard has to
-    // outlive the synchronous echo by a frame.
     const frame = requestAnimationFrame(() => {
       transition(IDLE);
     });
