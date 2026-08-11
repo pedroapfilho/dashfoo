@@ -16,8 +16,6 @@ type AttributedNode = RowNode | TabNode | TabsetNode;
 type Visit = {
   index: number;
   node: AttributedNode;
-  // A tabset's parent is always a row, a tab's is always a tabset; only a
-  // walk's own root has none.
   parent: RowNode | TabsetNode | undefined;
 };
 

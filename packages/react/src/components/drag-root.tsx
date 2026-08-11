@@ -53,10 +53,6 @@ const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode =
       return { element, scope, tabsetId: data.tabsetId };
     };
 
-    // The layer that resolved the live intent is the one that commits the drop.
-    // Recorded as the pointer moves, because by the time `dragend` fires the
-    // operation's target is gone. Kept as an id, not the scope object, so a
-    // layer that re-registers mid-drag still commits through its current props.
     let intentLayerId: string | null = null;
 
     const syncIntent = (): void => {

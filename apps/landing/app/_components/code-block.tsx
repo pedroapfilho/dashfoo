@@ -8,9 +8,6 @@ type CodeBlockProps = {
 };
 
 const CodeBlock = async ({ code, lang = "tsx" }: CodeBlockProps) => {
-  // defaultColor: false emits only --shiki-light/--shiki-dark per token and no
-  // inline `color`, so global.css can flip themes off [data-dashfoo-theme]
-  // without !important. Shiki also marks the <pre> tabbable, hence the focus ring.
   const hast = await codeToHast(code, {
     defaultColor: false,
     lang,

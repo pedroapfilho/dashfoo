@@ -144,8 +144,6 @@ const globalAttributesSchema = z.object({
 
 const dashfooSchema = z.object({
   activeTabsetId: z.string().optional(),
-  // A getter, not a literal: zod hands the same array instance to every parse of
-  // a float-less model, and `dockFloat` splices its float list in place.
   floats: z.array(floatNodeSchema).default(() => []),
   global: globalAttributesSchema,
   layout: rowNodeSchema,

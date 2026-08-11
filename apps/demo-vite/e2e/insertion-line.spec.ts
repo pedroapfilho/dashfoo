@@ -23,15 +23,10 @@ test("the end-of-strip insertion line sits past the last tab's close button", as
   const targetX = closeBox.x + closeBox.width + 12;
   const targetY = closeBox.y + closeBox.height / 2;
   await page.mouse.move(targetX, targetY, { steps: 12 });
-  // Settle move: the stepped traverse passes over earlier slots, and dnd-kit
-  // only recomputes collisions on a pointermove, so without a final move at the
-  // resting position the indicator can still be showing an intermediate slot.
   await page.mouse.move(targetX, targetY);
 
   const line = page.locator('[data-dashfoo="dock-indicator"]');
   await expect(line).toBeVisible();
-  // Polled rather than sampled once: the indicator's position lands a render
-  // behind the pointer, which is why a single read flaked on slower CI runners.
   await expect
     .poll(async () => {
       const box = await line.boundingBox();
