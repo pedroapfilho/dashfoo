@@ -25,6 +25,7 @@
 
 html {
   color-scheme: light;
+  scrollbar-gutter: stable;
 }
 html[data-dashfoo-theme="dark"] {
   color-scheme: dark;
