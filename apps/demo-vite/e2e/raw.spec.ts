@@ -65,6 +65,24 @@ test("maximize fills the area; restore brings the other tabset back", async ({ p
   await expect(page.getByRole("tab", { name: "Activity" })).toBeVisible();
 });
 
+test("undo restores a closed tab and redo removes it again", async ({ page }) => {
+  const undo = page.getByRole("button", { name: "Undo" });
+  const redo = page.getByRole("button", { name: "Redo" });
+  await expect(undo).toBeDisabled();
+
+  await page.getByRole("button", { name: "Close Notes" }).click();
+  await expect(page.getByRole("tab", { name: "Notes" })).toHaveCount(0);
+  await expect(undo).toBeEnabled();
+
+  await undo.click();
+  await expect(page.getByRole("tab", { name: "Notes" })).toBeVisible();
+  await expect(page.getByText("3 tabs")).toBeVisible();
+  await expect(redo).toBeEnabled();
+
+  await redo.click();
+  await expect(page.getByRole("tab", { name: "Notes" })).toHaveCount(0);
+});
+
 test("dragging a tab onto the other tabset docks it there", async ({ page }) => {
   const target = await page.locator('[data-dashfoo="tabset"]').last().boundingBox();
   if (!target) {
