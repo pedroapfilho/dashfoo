@@ -235,7 +235,7 @@ import "@dashfoo/theme/dashfoo.css"; // neutral oklch tokens, light by default
 
 ## Demo
 
-`apps/demo-vite` is a neutral TanStack Router showcase across three pages: an overview (a composite layout persisted to localStorage; rearrange, reload, it survives), a docking sandbox with a widget marketplace (drag widgets into the layout from outside it, or add them with a button), and an imperative-control page (undo/redo, add/remove widgets, live model inspector).
+`apps/demo-vite` is a neutral TanStack Router showcase across five pages: an overview (a composite layout persisted to localStorage; rearrange, reload, it survives), a docking sandbox with a widget marketplace (drag widgets into the layout from outside it, or add them with a button), an imperative-control page (undo/redo, add/remove widgets, live model inspector), a raw-primitives page (no `DashfooLayout`; the store wired to `Layout.*` and every tabset composed from `Tabset.*` parts by hand), and a static-layout page (`editable={false}` freezes the arrangement into a viewer that still switches tabs, maximizes, and restacks responsively).
 
 Hosted demo: [demo.dashfoo.com](https://demo.dashfoo.com).
 
