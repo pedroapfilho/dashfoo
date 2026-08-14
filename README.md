@@ -235,7 +235,7 @@ import "@dashfoo/theme/dashfoo.css"; // neutral oklch tokens, light by default
 
 ## Demo
 
-`apps/demo-vite` is a neutral TanStack Router showcase across three pages: an overview (a composite layout persisted to localStorage; rearrange, reload, it survives), a docking sandbox with a widget marketplace (drag widgets into the layout from outside it, or add them with a button), and an imperative-control page (undo/redo, add/remove widgets, live model inspector).
+`apps/demo-vite` is a neutral TanStack Router showcase across five pages: an overview (a composite layout persisted to localStorage; rearrange, reload, it survives), a docking sandbox with a widget marketplace (drag widgets into the layout from outside it, or add them with a button), an imperative-control page (undo/redo, add/remove widgets, live model inspector), a raw-primitives page (no `DashfooLayout`; the store wired to `Layout.*` and every tabset composed from `Tabset.*` parts by hand), and a static-layout page (`editable={false}` freezes the arrangement into a viewer that still switches tabs, maximizes, and restacks responsively).
 
 Hosted demo: [demo.dashfoo.com](https://demo.dashfoo.com).
 
@@ -249,7 +249,6 @@ pnpm dev
 - **Documentation**: [docs.dashfoo.com](https://docs.dashfoo.com): [getting started](https://docs.dashfoo.com/getting-started), [the model](https://docs.dashfoo.com/the-model), [drag and dock](https://docs.dashfoo.com/drag-and-dock), [controlled mode & history](https://docs.dashfoo.com/controlled-and-history), [persistence](https://docs.dashfoo.com/persistence), [responsive layouts](https://docs.dashfoo.com/responsive), [theming](https://docs.dashfoo.com/theming), and the [API reference](https://docs.dashfoo.com/api-reference). The content lives in [`apps/docs/content/docs`](./apps/docs/content/docs), the single source for the guides.
 - **Package READMEs**: [`@dashfoo/core`](./packages/core/README.md), [`@dashfoo/react`](./packages/react/README.md), [`@dashfoo/theme`](./packages/theme/README.md); per-package API reference, also shown on npm.
 - **Architecture decisions**: `docs/adr/` (the record behind the headless engine, the one-XState-actor-system state model, and the pinned primitive choices).
-- **Design spec**: [`docs/superpowers/specs/2026-06-02-dashfoo-design.md`](./docs/superpowers/specs/2026-06-02-dashfoo-design.md), the full goals, non-goals, model, action set, machine map, and build sequence.
 
 ## Scripts
 

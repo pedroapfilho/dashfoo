@@ -31,7 +31,3 @@ Folder: [`docs/adr`](./adr)
 - [@dashfoo/core](../packages/core/README.md): the pure TypeScript engine (zod schema, pure reducer, geometry, undo/redo history, serialize)
 - [@dashfoo/react](../packages/react/README.md): `DashfooLayout`, the `Panel` helper, the `persist` prop, hooks, and the rrp / `@dnd-kit/dom` adapters; headless `data-dashfoo` markup
 - [@dashfoo/theme](../packages/theme/README.md): the opt-in default skin, framework-agnostic plain CSS over overridable `--dashfoo-*` tokens, light by default with an opt-in dark variant
-
-## Specs
-
-- [`docs/superpowers/specs`](./superpowers/specs)

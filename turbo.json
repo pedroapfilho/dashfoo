@@ -26,7 +26,7 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": []
     },
     "test:coverage": {
       "dependsOn": ["^build"],
@@ -37,7 +37,7 @@
     },
     "@dashfoo/theme#test": {
       "dependsOn": ["build", "^build"],
-      "outputs": ["coverage/**"]
+      "outputs": []
     }
   }
 }
