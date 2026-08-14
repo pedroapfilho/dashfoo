@@ -41,7 +41,7 @@
     "@xstate/react": "^6.0.0",
     "react-resizable-panels": "^4.12.1",
     "xstate": "^5.32.4",
-    "zustand": "^5.0.0"
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@repo/config-vitest": "workspace:*",
