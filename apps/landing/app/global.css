@@ -12,8 +12,6 @@
 
 :root {
   --dashfoo-font: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
-
-  /* A recessed well: one step off the canvas in either theme, never elevated. */
   --dashfoo-code-bg: var(--dashfoo-muted);
 }
 
@@ -29,6 +27,21 @@ html {
 }
 html[data-dashfoo-theme="dark"] {
   color-scheme: dark;
+}
+
+.landing-blueprint {
+  background-image:
+    linear-gradient(var(--dashfoo-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--dashfoo-border) 1px, transparent 1px);
+  background-size: 3rem 3rem;
+}
+
+.landing-glow {
+  background: radial-gradient(
+    circle at 78% 18%,
+    color-mix(in oklab, var(--dashfoo-primary) 16%, transparent),
+    transparent 30rem
+  );
 }
 
 @media (prefers-reduced-motion: no-preference) {
