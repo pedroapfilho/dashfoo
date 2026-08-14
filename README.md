@@ -249,7 +249,6 @@ pnpm dev
 - **Documentation**: [docs.dashfoo.com](https://docs.dashfoo.com): [getting started](https://docs.dashfoo.com/getting-started), [the model](https://docs.dashfoo.com/the-model), [drag and dock](https://docs.dashfoo.com/drag-and-dock), [controlled mode & history](https://docs.dashfoo.com/controlled-and-history), [persistence](https://docs.dashfoo.com/persistence), [responsive layouts](https://docs.dashfoo.com/responsive), [theming](https://docs.dashfoo.com/theming), and the [API reference](https://docs.dashfoo.com/api-reference). The content lives in [`apps/docs/content/docs`](./apps/docs/content/docs), the single source for the guides.
 - **Package READMEs**: [`@dashfoo/core`](./packages/core/README.md), [`@dashfoo/react`](./packages/react/README.md), [`@dashfoo/theme`](./packages/theme/README.md); per-package API reference, also shown on npm.
 - **Architecture decisions**: `docs/adr/` (the record behind the headless engine, the one-XState-actor-system state model, and the pinned primitive choices).
-- **Design spec**: [`docs/superpowers/specs/2026-06-02-dashfoo-design.md`](./docs/superpowers/specs/2026-06-02-dashfoo-design.md), the full goals, non-goals, model, action set, machine map, and build sequence.
 
 ## Scripts
 
