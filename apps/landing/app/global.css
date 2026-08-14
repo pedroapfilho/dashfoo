@@ -2,21 +2,45 @@
 @import "@dashfoo/theme/tailwind.css";
 
 @theme {
-  --font-sans: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @theme inline {
-  --color-dashfoo-code-bg: var(--dashfoo-code-bg);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
 
 :root {
+  --background: var(--dashfoo-background);
+  --foreground: var(--dashfoo-foreground);
+  --card: var(--dashfoo-card);
+  --card-foreground: var(--dashfoo-foreground);
+  --primary: var(--dashfoo-primary);
+  --primary-foreground: var(--dashfoo-background);
+  --secondary: var(--dashfoo-muted);
+  --secondary-foreground: var(--dashfoo-foreground);
+  --muted: var(--dashfoo-muted);
+  --muted-foreground: var(--dashfoo-muted-foreground);
+  --accent: var(--dashfoo-accent);
+  --accent-foreground: var(--dashfoo-accent-foreground);
+  --border: var(--dashfoo-border);
+  --input: var(--dashfoo-border);
+  --ring: var(--dashfoo-ring);
   --dashfoo-font: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --dashfoo-code-bg: var(--dashfoo-muted);
-}
-
-[data-dashfoo-theme="dark"] {
-  --dashfoo-code-bg: var(--dashfoo-card);
 }
 
 @custom-variant dark (&:where([data-dashfoo-theme="dark"], [data-dashfoo-theme="dark"] *));
@@ -31,15 +55,15 @@ html[data-dashfoo-theme="dark"] {
 
 .landing-blueprint {
   background-image:
-    linear-gradient(var(--dashfoo-border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--dashfoo-border) 1px, transparent 1px);
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
   background-size: 3rem 3rem;
 }
 
 .landing-glow {
   background: radial-gradient(
     circle at 78% 18%,
-    color-mix(in oklab, var(--dashfoo-primary) 16%, transparent),
+    color-mix(in oklab, var(--primary) 16%, transparent),
     transparent 30rem
   );
 }
@@ -54,8 +78,8 @@ html[data-dashfoo-theme="dark"] {
  * Shiki runs with `defaultColor: false`, so it inlines only --shiki-light and
  * --shiki-dark per token and no `color` at all. That is what lets these rules
  * win without !important, unlike the documented class-based dual-theme recipe.
- * Backgrounds are deliberately ignored: the block sits on --dashfoo-code-bg so
- * it stays on the dashfoo token scale rather than the syntax theme's.
+ * Backgrounds are deliberately ignored so the block stays on the semantic
+ * muted surface rather than the syntax theme's background.
  */
 .shiki,
 .shiki span {

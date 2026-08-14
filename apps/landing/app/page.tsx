@@ -13,7 +13,7 @@ const HomePage = (): ReactNode => (
     {/* A sticky header and a 480px interactive demo sit before any prose, so
         keyboard users get a way past both. */}
     <a
-      className="bg-dashfoo-primary text-dashfoo-background rounded-dashfoo focus:outline-dashfoo-ring sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-6 focus:z-20 focus:px-4 focus:py-2.5 focus:text-sm focus:font-medium focus:outline-2 focus:outline-offset-2"
+      className="rounded-dashfoo bg-primary text-primary-foreground focus:outline-ring sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-6 focus:z-20 focus:px-4 focus:py-2.5 focus:text-sm focus:font-medium focus:outline-2 focus:outline-offset-2"
       href="#main"
     >
       Skip to content

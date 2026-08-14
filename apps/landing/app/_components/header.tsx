@@ -8,14 +8,14 @@ import { EXTERNAL_LINKS, GITHUB_URL, SECTION_LINKS } from "./nav-links";
 import { ThemeToggle } from "./theme-toggle";
 
 const LINK_CLASS =
-  "text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm focus-visible:outline-dashfoo-ring px-3 py-2 font-medium focus-visible:outline-2 focus-visible:outline-offset-2";
+  "rounded-dashfoo-sm px-3 py-2 font-mono font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 const Header = (): ReactNode => (
-  <header className="border-dashfoo-border/70 bg-dashfoo-background/80 sticky top-0 z-10 border-b backdrop-blur">
+  <header className="border-border/70 bg-background/80 sticky top-0 z-10 border-b backdrop-blur">
     <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-3 lg:px-8">
       <Link
         aria-label="Homepage"
-        className="rounded-dashfoo-sm focus-visible:outline-dashfoo-ring shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="rounded-dashfoo-sm focus-visible:outline-ring shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2"
         href="/"
       >
         <Logo className="h-6 w-auto" />
@@ -43,7 +43,7 @@ const Header = (): ReactNode => (
       <div className="ml-auto flex items-center gap-1">
         <a
           aria-label="dashfoo on GitHub"
-          className="text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm focus-visible:outline-dashfoo-ring relative p-2 focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="rounded-dashfoo-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-ring relative p-2 focus-visible:outline-2 focus-visible:outline-offset-2"
           href={GITHUB_URL}
           rel="noopener noreferrer"
           target="_blank"

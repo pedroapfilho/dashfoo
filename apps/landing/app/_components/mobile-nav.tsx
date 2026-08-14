@@ -7,7 +7,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { EXTERNAL_LINKS, SECTION_LINKS } from "./nav-links";
 
 const LINK_CLASS =
-  "text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm focus-visible:outline-dashfoo-ring px-3 py-2.5 text-base font-medium focus-visible:outline-2 focus-visible:outline-offset-2";
+  "rounded-dashfoo-sm px-3 py-2.5 font-mono text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 const MobileNav = (): ReactNode => {
   const [open, setOpen] = useState(false);
@@ -48,7 +48,7 @@ const MobileNav = (): ReactNode => {
         aria-controls={panelId}
         aria-expanded={open}
         aria-label="Menu"
-        className="text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm focus-visible:outline-dashfoo-ring relative shrink-0 p-2 focus-visible:outline-2 focus-visible:outline-offset-2 lg:hidden"
+        className="rounded-dashfoo-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-ring relative shrink-0 p-2 focus-visible:outline-2 focus-visible:outline-offset-2 lg:hidden"
         onClick={handleToggle}
         ref={triggerRef}
         type="button"
@@ -71,7 +71,7 @@ const MobileNav = (): ReactNode => {
       {open ? (
         <nav
           aria-label="Mobile"
-          className="border-dashfoo-border/70 bg-dashfoo-background absolute inset-x-0 top-full flex flex-col border-b px-6 py-3 lg:hidden"
+          className="border-border/70 bg-background absolute inset-x-0 top-full flex flex-col border-b px-6 py-3 lg:hidden"
           id={panelId}
           ref={panelRef}
         >

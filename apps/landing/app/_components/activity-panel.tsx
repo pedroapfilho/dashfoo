@@ -14,8 +14,8 @@ const ActivityPanel = (): ReactNode => (
     <ul className="flex flex-col gap-2.5 text-xs">
       {ACTIVITY.map((line) => (
         <li className="flex items-center gap-2" key={line}>
-          <span className="bg-dashfoo-accent size-1.5 shrink-0 rounded-full" />
-          <span className="text-dashfoo-muted-foreground">{line}</span>
+          <span className="bg-accent size-1.5 shrink-0 rounded-full" />
+          <span className="text-muted-foreground">{line}</span>
         </li>
       ))}
     </ul>

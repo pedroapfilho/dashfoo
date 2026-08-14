@@ -46,45 +46,38 @@ const AGAINST: Array<{ content: ReactNode; key: string }> = [
 ];
 
 const When = (): ReactNode => (
-  <section className="border-dashfoo-border/70 scroll-mt-20 border-t py-16 sm:py-24" id="fit">
+  <section className="border-border/70 scroll-mt-20 border-t py-16 sm:py-24" id="fit">
     <div className="mx-auto max-w-6xl px-6 lg:px-8">
-      <h2 className="text-dashfoo-foreground max-w-[35ch] text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+      <h2 className="text-foreground max-w-[35ch] font-mono text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
         Is dashfoo the right fit?
       </h2>
-      <p className="text-dashfoo-muted-foreground mt-4 max-w-[56ch] text-base text-pretty">
+      <p className="text-muted-foreground mt-4 max-w-[56ch] text-base text-pretty">
         dashfoo is a split/tab tree, not a coordinate canvas. Popout windows, floating panels, and
         nested sub-layouts aren&rsquo;t in v1.
       </p>
       <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2">
         <div>
-          <h3 className="text-dashfoo-foreground text-base font-medium">Reach for dashfoo when…</h3>
+          <h3 className="text-foreground font-mono text-base font-medium">
+            Reach for dashfoo when…
+          </h3>
           <ul className="mt-5 flex flex-col gap-4">
             {FOR.map((item) => (
-              <li
-                className="text-dashfoo-foreground flex gap-3 text-base text-pretty"
-                key={item.key}
-              >
-                <Check
-                  className="stroke-dashfoo-foreground size-5 h-lh shrink-0"
-                  strokeWidth={1.75}
-                />
+              <li className="text-foreground flex gap-3 text-base text-pretty" key={item.key}>
+                <Check className="stroke-foreground size-5 h-lh shrink-0" strokeWidth={1.75} />
                 {item.content}
               </li>
             ))}
           </ul>
         </div>
         <div>
-          <h3 className="text-dashfoo-muted-foreground text-base font-medium">
+          <h3 className="text-muted-foreground font-mono text-base font-medium">
             Reach for something else when…
           </h3>
           <ul className="mt-5 flex flex-col gap-4">
             {AGAINST.map((item) => (
-              <li
-                className="text-dashfoo-muted-foreground flex gap-3 text-base text-pretty"
-                key={item.key}
-              >
+              <li className="text-muted-foreground flex gap-3 text-base text-pretty" key={item.key}>
                 <Minus
-                  className="stroke-dashfoo-muted-foreground size-5 h-lh shrink-0"
+                  className="stroke-muted-foreground size-5 h-lh shrink-0"
                   strokeWidth={1.75}
                 />
                 {item.content}

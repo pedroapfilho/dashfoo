@@ -38,7 +38,7 @@ const ThemeToggle = (): ReactNode => {
     <button
       aria-label="Dark theme"
       aria-pressed={dark}
-      className="text-dashfoo-muted-foreground hover:bg-dashfoo-muted hover:text-dashfoo-foreground rounded-dashfoo-sm focus-visible:outline-dashfoo-ring relative shrink-0 p-2 focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="rounded-dashfoo-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-ring relative shrink-0 p-2 focus-visible:outline-2 focus-visible:outline-offset-2"
       onClick={handleToggle}
       type="button"
     >
