@@ -52,11 +52,12 @@ const DockIndicator = ({
   actorRef: DragActor;
   getTabsetElement: (id: string) => HTMLElement | undefined;
 }): ReactNode => {
-  const intent = useSelector(actorRef, (snapshot) => snapshot.context.intent);
-  const draggedId = useSelector(actorRef, (snapshot) => snapshot.context.subject?.id);
-  if (!intent) {
+  const drag = useSelector(actorRef, (snapshot) => snapshot.context.drag);
+  if (drag.kind !== "dragging" || drag.drop === null) {
     return null;
   }
+  const { intent } = drag.drop;
+  const draggedId = drag.subject.id;
   const element = getTabsetElement(intent.targetId);
   if (!element) {
     return null;

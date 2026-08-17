@@ -87,6 +87,18 @@ describe("onAction veto", () => {
 
     expect(screen.getByRole("tab", { name: "Book" })).toBeInTheDocument();
   });
+
+  test("a vetoed close does not steal focus on the next unrelated action", () => {
+    render(<DashfooLayout components={components} defaultModel={model()} onAction={vetoDeletes} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Close Book" }));
+
+    const chart = screen.getByRole("tab", { name: "Chart" });
+    chart.focus();
+    fireEvent.click(chart);
+
+    expect(chart).toHaveFocus();
+  });
 });
 
 describe("derived callbacks", () => {

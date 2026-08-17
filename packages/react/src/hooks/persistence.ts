@@ -70,6 +70,11 @@ type Persistence = {
   save: (model: Dashfoo) => void;
 };
 
+type StoredLoad =
+  | { error: unknown; kind: "corrupt" }
+  | { kind: "absent" }
+  | { kind: "loaded"; model: Dashfoo };
+
 const usePersistence = (
   config: PersistConfig | null,
   defaultModel: Dashfoo | undefined,
@@ -79,38 +84,34 @@ const usePersistence = (
     configRef.current = config;
   });
 
-  const [initialModel] = useState<Dashfoo | undefined>(() => {
-    if (config === null || defaultModel === undefined) {
-      return defaultModel;
+  // Read and parsed once; the effect below acts on the outcome.
+  const [load] = useState<StoredLoad>(() => {
+    if (config === null) {
+      return { kind: "absent" };
     }
     const raw = config.storage.getItem(config.key);
     if (raw === null) {
-      return defaultModel;
+      return { kind: "absent" };
     }
     try {
-      return fromJSON(raw);
-    } catch {
-      return defaultModel;
+      return { kind: "loaded", model: fromJSON(raw) };
+    } catch (error) {
+      return { error, kind: "corrupt" };
     }
   });
 
+  const initialModel =
+    load.kind === "loaded" && defaultModel !== undefined ? load.model : defaultModel;
+
   useEffect(() => {
     const current = configRef.current;
-    if (current === null) {
+    if (current === null || load.kind !== "corrupt") {
       return;
     }
-    const raw = current.storage.getItem(current.key);
-    if (raw === null) {
-      return;
-    }
-    try {
-      fromJSON(raw);
-    } catch (error) {
-      // oxlint-disable-next-line no-console
-      console.warn("[dashfoo] discarding unreadable persisted layout", error);
-      current.storage.removeItem(current.key);
-    }
-  }, []);
+    // oxlint-disable-next-line no-console
+    console.warn("[dashfoo] discarding unreadable persisted layout", load.error);
+    current.storage.removeItem(current.key);
+  }, [load]);
 
   const loadedKey = useRef(config?.key);
   useEffect(() => {

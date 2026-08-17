@@ -8,7 +8,7 @@ import { describe, expect, test } from "vitest";
 import { SharedDragManagerContext } from "../hooks/drag-hooks";
 
 import { DashfooDragProvider } from "./dashfoo-drag-provider";
-import type { DashfooHandle, DashfooLayoutProps } from "./dashfoo-layout";
+import type { DashfooHandle, DashfooLayoutCommonProps } from "./dashfoo-layout";
 import { DashfooLayout } from "./dashfoo-layout";
 
 const model = (): Dashfoo => ({
@@ -49,7 +49,9 @@ const components = {
   trades: () => <div>TRADES</div>,
 };
 
-const renderLayout = (props?: Partial<DashfooLayoutProps>) =>
+type LayoutOverrides = Partial<DashfooLayoutCommonProps> & { defaultModel?: Dashfoo };
+
+const renderLayout = (props?: LayoutOverrides) =>
   render(<DashfooLayout components={components} defaultModel={model()} {...props} />);
 
 const splitterOf = (container: HTMLElement): HTMLElement | null =>
@@ -71,12 +73,12 @@ const ManagerProbe = ({
   return children;
 };
 
-const renderWithManager = (props?: Partial<DashfooLayoutProps>) => {
+const renderWithManager = (props?: LayoutOverrides) => {
   let manager: DragDropManager | null = null;
   const capture = (value: DragDropManager | null): void => {
     manager = value;
   };
-  const tree = (overrides?: Partial<DashfooLayoutProps>): ReactNode => (
+  const tree = (overrides?: LayoutOverrides): ReactNode => (
     <DashfooDragProvider>
       <ManagerProbe onManager={capture}>
         <DashfooLayout components={components} defaultModel={model()} {...props} {...overrides} />
@@ -86,7 +88,7 @@ const renderWithManager = (props?: Partial<DashfooLayoutProps>) => {
   const view = render(tree());
   return {
     manager: (): DragDropManager => manager!,
-    rerender: (overrides?: Partial<DashfooLayoutProps>): void => {
+    rerender: (overrides?: LayoutOverrides): void => {
       view.rerender(tree(overrides));
     },
     view,

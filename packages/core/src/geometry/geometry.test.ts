@@ -1,46 +1,39 @@
 import { describe, expect, test } from "vitest";
 
-import type { BandOptions, DockTarget, Point, Rect } from "./geometry";
+import type { BandOptions, Point, Rect } from "./geometry";
 import { dockZonePolygons, resolveDockTarget, zoneRect } from "./geometry";
 
 const rect: Rect = { height: 100, width: 200, x: 0, y: 0 };
 
 describe("resolveDockTarget", () => {
   test("returns a tab drop when the pointer is in the center region", () => {
-    expect(resolveDockTarget({ x: 100, y: 50 }, rect)).toEqual({ kind: "tab" });
+    expect(resolveDockTarget({ x: 100, y: 50 }, rect)).toBe("center");
   });
 
   test("returns a left split near the left edge", () => {
-    expect(resolveDockTarget({ x: 10, y: 50 }, rect)).toEqual({ edge: "left", kind: "split" });
+    expect(resolveDockTarget({ x: 10, y: 50 }, rect)).toBe("split-left");
   });
 
   test("returns a right split near the right edge", () => {
-    expect(resolveDockTarget({ x: 190, y: 50 }, rect)).toEqual({ edge: "right", kind: "split" });
+    expect(resolveDockTarget({ x: 190, y: 50 }, rect)).toBe("split-right");
   });
 
   test("returns a bottom split near the bottom edge", () => {
-    expect(resolveDockTarget({ x: 100, y: 95 }, rect)).toEqual({ edge: "bottom", kind: "split" });
+    expect(resolveDockTarget({ x: 100, y: 95 }, rect)).toBe("split-bottom");
   });
 
   test("in a corner, picks the closer edge", () => {
-    expect(resolveDockTarget({ x: 30, y: 5 }, rect)).toEqual({ edge: "top", kind: "split" });
+    expect(resolveDockTarget({ x: 30, y: 5 }, rect)).toBe("split-top");
   });
 
   test("honors a custom band fraction (smaller band keeps more of the area as tab)", () => {
-    expect(resolveDockTarget({ x: 30, y: 50 }, rect, { bandFraction: 0.1 })).toEqual({
-      kind: "tab",
-    });
+    expect(resolveDockTarget({ x: 30, y: 50 }, rect, { bandFraction: 0.1 })).toBe("center");
   });
 
   test("falls back to a tab drop for a zero-size rect", () => {
-    expect(resolveDockTarget({ x: 0, y: 0 }, { height: 0, width: 0, x: 0, y: 0 })).toEqual({
-      kind: "tab",
-    });
+    expect(resolveDockTarget({ x: 0, y: 0 }, { height: 0, width: 0, x: 0, y: 0 })).toBe("center");
   });
 });
-
-const locationOf = (target: DockTarget): string =>
-  target.kind === "tab" ? "center" : `split-${target.edge}`;
 
 const centroid = (points: ReadonlyArray<Point>): Point => ({
   x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
@@ -70,7 +63,7 @@ describe("dockZonePolygons", () => {
   test.each(rects)("every interior point agrees with resolveDockTarget (%j)", (r) => {
     for (const zone of dockZonePolygons(r)) {
       for (const point of interiorSamples(zone.points)) {
-        expect(locationOf(resolveDockTarget(point, r))).toBe(zone.location);
+        expect(resolveDockTarget(point, r)).toBe(zone.location);
       }
     }
   });
@@ -80,7 +73,7 @@ describe("dockZonePolygons", () => {
     const opts: BandOptions = { bandFraction: 0.1 };
     for (const zone of dockZonePolygons(r, opts)) {
       for (const point of interiorSamples(zone.points)) {
-        expect(locationOf(resolveDockTarget(point, r, opts))).toBe(zone.location);
+        expect(resolveDockTarget(point, r, opts)).toBe(zone.location);
       }
     }
   });

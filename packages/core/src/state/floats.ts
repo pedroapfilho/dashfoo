@@ -2,7 +2,7 @@ import { clampSelected } from "../lib/clamp-selected";
 import { createNodeId } from "../model/ids";
 import type { Dashfoo, FloatNode, Geometry, RowNode, TabsetNode } from "../model/schema";
 import { DEFAULT_WEIGHT } from "../model/schema";
-import { collectTabsetsInRow, findRootContaining } from "../model/tree";
+import { collectTabsetsInRow } from "../model/tree";
 
 import type { DockLocation } from "./actions";
 import {
@@ -54,15 +54,13 @@ const floatTabsetById = (
   tabsetId: string,
   geometry: Geometry | undefined,
   floatId: string | undefined,
-): void => {
-  const root = findRootContaining(draft, tabsetId);
-  if (!root) {
-    return;
+): boolean => {
+  const detached = removeTabsetReturning(draft, tabsetId);
+  if (!detached) {
+    return false;
   }
-  const detached = removeTabsetReturning(root, tabsetId);
-  if (detached) {
-    pushFloat(draft, wrapTabsetInLayout(detached), geometry, floatId);
-  }
+  pushFloat(draft, wrapTabsetInLayout(detached), geometry, floatId);
+  return true;
 };
 
 const resolveMainTarget = (
@@ -91,22 +89,18 @@ const dockFloat = (
   floatId: string,
   targetId: string | undefined,
   location: DockLocation | undefined,
-): void => {
-  const floats = draft.floats;
-  const index = floats.findIndex((float) => float.id === floatId);
-  if (index === -1) {
-    return;
-  }
-  const float = floats.splice(index, 1).at(0);
-  if (!float) {
-    return;
+): boolean => {
+  const index = draft.floats.findIndex((float) => float.id === floatId);
+  const float = draft.floats.at(index);
+  if (index === -1 || !float) {
+    return false;
   }
 
   const tabsets: Array<TabsetNode> = [];
   collectTabsetsInRow(float.layout, tabsets);
   const tabs = tabsets.flatMap((tabset) => tabset.children);
   if (tabs.length === 0) {
-    return;
+    return false;
   }
 
   const leadTabset = tabsets.at(0);
@@ -114,20 +108,22 @@ const dockFloat = (
     ? clampSelected(leadTabset.children.length, leadTabset.selected)
     : 0;
 
+  // Resolved before the float leaves `draft.floats`: nothing is removed until
+  // there is somewhere for its tabs to land.
   const target = resolveMainTarget(draft, targetId);
+  draft.floats.splice(index, 1);
+
   if (!target) {
     draft.layout = float.layout;
     draft.activeTabsetId = leadTabset?.id;
-    return;
+    return true;
   }
 
   if (location === "center") {
     mergeTabsInto(target, tabs, selectedOffset);
     draft.activeTabsetId = target.id;
-    return;
+    return true;
   }
-
-  const where = location ?? "split-right";
 
   const placed: TabsetNode =
     tabsets.length === 1 && leadTabset
@@ -139,7 +135,7 @@ const dockFloat = (
           type: "tabset",
           weight: DEFAULT_WEIGHT,
         };
-  placeBesideTarget(draft, placed, target.id, where);
+  return placeBesideTarget(draft, placed, target.id, location ?? "split-right");
 };
 
 export { dockFloat, floatTabsetById, pushFloat, uniqueFloatName };

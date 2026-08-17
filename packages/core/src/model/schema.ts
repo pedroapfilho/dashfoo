@@ -2,14 +2,7 @@ import { z } from "zod";
 
 import { clampSelected } from "../lib/clamp-selected";
 
-/**
- * Weights are relative shares, and every reader that rendered one already
- * treated a missing weight as a single share (`row-view` summed `weight ?? 1`),
- * so filling it in at the boundary changes nothing on screen. The one place that
- * read a missing weight as a percentage was `placeBesideTarget`, which is why
- * docking beside an unweighted target halved it to `50` and left its unweighted
- * siblings rendering as a sliver of the row.
- */
+/** Weights are relative shares of a row, not percentages. */
 const DEFAULT_WEIGHT = 1;
 
 type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };
@@ -52,11 +45,8 @@ const tabNodeSchema = z.object({
 });
 
 /**
- * The pre-transform object, kept separate so `node-attrs` can `.pick()` mutable
- * keys off it. Picking from the transformed schema is impossible (a pipe has no
- * `.pick`), and picking `weight` with its default attached would inject that
- * default: `.partial()` over a defaulted field still fills it in, which would
- * rewrite a tabset's weight on every unrelated attribute update.
+ * Kept pre-transform so `node-attrs` can `.pick()` from it: a pipe has no
+ * `.pick`, and `.partial()` over a defaulted field still fills the default in.
  */
 const tabsetNodeObjectSchema = z.object({
   children: z.array(tabNodeSchema),
@@ -76,40 +66,22 @@ const tabsetNodeSchema = tabsetNodeObjectSchema.transform((tabset) => ({
   selected: clampSelected(tabset.children.length, tabset.selected),
 }));
 
-type RowNode = {
-  children: Array<RowNode | z.infer<typeof tabsetNodeSchema>>;
-  id: string;
-  max?: z.infer<typeof dimensionSchema>;
-  min?: z.infer<typeof dimensionSchema>;
-  orientation: z.infer<typeof orientationSchema>;
-  snap?: z.infer<typeof snapSchema>;
-  type: "row";
-  weight: number;
-};
+/** The getter's explicit return type is required: without it, TS7023. */
+const rowNodeSchema = z.object({
+  get children(): z.ZodArray<z.ZodUnion<[typeof rowNodeSchema, typeof tabsetNodeSchema]>> {
+    return z.array(z.union([rowNodeSchema, tabsetNodeSchema]));
+  },
+  id: z.string(),
+  max: dimensionSchema.optional(),
+  min: dimensionSchema.optional(),
+  orientation: orientationSchema,
+  snap: snapSchema.optional(),
+  type: z.literal("row"),
+  weight: z.number().default(DEFAULT_WEIGHT),
+});
 
-type RowNodeInput = {
-  children: Array<RowNodeInput | z.input<typeof tabsetNodeSchema>>;
-  id: string;
-  max?: z.infer<typeof dimensionSchema>;
-  min?: z.infer<typeof dimensionSchema>;
-  orientation: z.infer<typeof orientationSchema>;
-  snap?: z.infer<typeof snapSchema>;
-  type: "row";
-  weight?: number;
-};
-
-const rowNodeSchema: z.ZodType<RowNode, RowNodeInput> = z.lazy(() =>
-  z.object({
-    children: z.array(z.union([rowNodeSchema, tabsetNodeSchema])),
-    id: z.string(),
-    max: dimensionSchema.optional(),
-    min: dimensionSchema.optional(),
-    orientation: orientationSchema,
-    snap: snapSchema.optional(),
-    type: z.literal("row"),
-    weight: z.number().default(DEFAULT_WEIGHT),
-  }),
-);
+type RowNode = z.infer<typeof rowNodeSchema>;
+type RowNodeInput = z.input<typeof rowNodeSchema>;
 
 const geometrySchema = z.object({
   height: z.number(),

@@ -183,10 +183,10 @@ getFirstTabset(model): TabsetNode | undefined;
 findTabset(model, tabsetId): TabsetNode | undefined;
 findTab(model, tabId): TabLocation | undefined; // searches tabsets
 findFloat(model, floatId): FloatNode | undefined;
-findRow(row, rowId): RowNode | undefined;       // pass a root (model.layout or a float's layout)
+findRow(model, rowId): RowNode | undefined;
 findRootContaining(model, nodeId): RowNode | undefined; // which root holds a node
 findAttributedNode(model, id): AttributedNode | undefined; // row, tabset, or tab
-findTabsetParent(row, tabsetId): { index: number; parent: RowNode } | undefined;
+findTabsetParent(model, tabsetId): { index: number; parent: RowNode } | undefined;
 findDuplicateIds(model): Array<string>;         // ids used more than once
 ```
 
@@ -225,14 +225,14 @@ indicator rect. The @dnd-kit adapter in `@dashfoo/react` feeds them rects; you c
 call them directly for custom drag logic.
 
 ```ts
-resolveDockTarget(pointer, rect, opts?): DockTarget;
+resolveDockTarget(pointer, rect, opts?): DockLocation;
 dockZonePolygons(rect, opts?): Array<DockZone>;
 zoneRect(rect, location): Rect;
 ```
 
-`resolveDockTarget` decides where a drag over a tabset should land: `{ kind: "tab" }`
-when the pointer is in the interior, or `{ kind: "split", edge }` when it is within
-an outer band of one of the four edges (default 22%; the closer edge wins in
+`resolveDockTarget` decides where a drag over a tabset should land: `"center"`
+when the pointer is in the interior, or `split-${edge}` when it is within an
+outer band of one of the four edges (default 22%; the closer edge wins in
 corners). It accepts `{ bandFraction }` to tune the band. `zoneRect` returns the
 region the dock indicator highlights for a `DockLocation`: the whole tabset for a
 `center` stack, the matching half for a split. `Point` and `Rect` are exported.
@@ -252,8 +252,9 @@ these arrays and supplies the dragged boundary index.
 
 ```ts
 resolveSnapTargets(config: SnapConfig, panelCount: number): number[]; // grid positions inside 0..100
-snapSizes(sizes: number[], boundaryIndex: number, config: SnapConfig): { sizes: number[]; snapped: boolean };
-snapEnabled(config: SnapConfig | null): boolean;
+resolveSnapGrid(config: SnapConfig | null, panelCount: number): SnapGrid;
+snapSizes(sizes: number[], boundaryIndex: number, grid: SnapGrid): { sizes: number[]; snapped: boolean };
+snapEnabled(grid: SnapGrid): boolean;
 ```
 
 `resolveSnapTargets` builds the grid for a row from its config and panel count: the
@@ -262,8 +263,14 @@ union of the `step` grid (multiples of a fixed percent) and the `divisions` grid
 the panel count). `snapSizes` snaps the boundary between panel `boundaryIndex` and
 the next onto the nearest target within `threshold` (default `4`), moving only that
 pair so siblings keep their size. It is a no-op when the grid is empty, the index
-is out of range, or the correction would drive a panel negative. `snapEnabled`
-reports whether a config produces any grid. `SnapConfig` is the
+is out of range, or the correction would drive a panel negative.
+
+`resolveSnapGrid` is the entry point: it resolves the targets once for a row and
+carries the threshold alongside them, and every other function takes that
+`SnapGrid`. `snapEnabled` is then just "does this grid have any target", which
+is why a config with no reachable target (`{ step: 100 }`, or
+`{ divisions: "panels" }` on a one-panel row) reports off rather than arming the
+per-move snap path. `SnapConfig` is the
 `{ step?, divisions?, threshold? }` shape carried by `global.snap` and
 `RowNode.snap`.
 
@@ -370,9 +377,9 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 types `AttributedNode`, `TabContainer`, `TabLocation`.
 
 `geometry`: `resolveDockTarget`, `dockZonePolygons`, `zoneRect`; types
-`DockTarget`, `DockZone`, `BandOptions`, `Point`, `Rect`.
+`DockZone`, `BandOptions`, `Point`, `Rect`.
 
-`snap`: `resolveSnapTargets`, `snapSizes`, `snapEnabled`, `DEFAULT_SNAP_THRESHOLD`;
+`snap`: `resolveSnapGrid`, `resolveSnapTargets`, `snapSizes`, `snapEnabled`, `DEFAULT_SNAP_THRESHOLD`;
 type `SnapResult`.
 
 `history`: `createHistory`, `dispatch`, `undo`, `redo`, `canUndo`, `canRedo`;

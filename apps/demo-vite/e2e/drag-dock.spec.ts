@@ -1,6 +1,8 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
+import { dragTabTo } from "./helpers/drag";
+
 const tabsByTabset = (page: Page): Promise<Array<Array<string | null>>> =>
   page.evaluate(() =>
     [...document.querySelectorAll('[data-dashfoo="tabset"]')].map((tabset) =>
@@ -11,19 +13,6 @@ const tabsByTabset = (page: Page): Promise<Array<Array<string | null>>> =>
 const tasksCount = async (page: Page): Promise<number> => {
   const tabs = await tabsByTabset(page);
   return tabs.flat().filter((label) => label === "Tasks").length;
-};
-
-const dragTabTo = async (page: Page, label: string, x: number, y: number): Promise<void> => {
-  const box = await page.getByRole("tab", { name: label }).boundingBox();
-  if (!box) {
-    throw new Error(`no bounding box for tab "${label}"`);
-  }
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
-  await page.mouse.move(x, y, { steps: 16 });
-  await page.mouse.move(x, y, { steps: 4 });
-  await page.mouse.up();
 };
 
 test.beforeEach(async ({ page }) => {

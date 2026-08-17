@@ -1,8 +1,5 @@
-/**
- * Lives in `lib/` rather than beside `normalize`, because both the parse
- * boundary (`tabsetNodeSchema`) and the tree walker that `normalize` uses need
- * it, and importing it from either one would close a module cycle.
- */
+/** In `lib/` because both the parse boundary and `normalize` need it, and
+ * importing it from either would close a module cycle. */
 const clampSelected = (length: number, selected: number): number => {
   if (length === 0) {
     return 0;

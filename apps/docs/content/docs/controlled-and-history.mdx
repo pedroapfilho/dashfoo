@@ -140,9 +140,16 @@ type DashfooHandle = {
 | `selectTab`         | Selects the tab at `index` in the given tabset.                                                                                                                                                     |
 
 The action-dispatching methods work in both modes. In controlled mode the
-resulting model arrives through `onModelChange` like any other edit.
-`undo`, `redo`, and `resetLayout` are uncontrolled-only; in controlled mode
-they are no-ops because the host owns history and the default model.
+resulting model arrives through `onModelChange` like any other edit, computed
+against the `model` prop you are currently rendering: an edit you choose not to
+apply is simply not applied, and the next one starts from the same place.
+`undo`, `redo`, and `resetLayout` are uncontrolled-only; in controlled mode they
+warn once and do nothing, because the host owns history and the default model.
+
+An action that changes nothing (clicking the already-selected tab, an unknown
+id) is not an edit at all: `reducer` returns the same model by reference, so
+`onModelChange` does not fire and, uncontrolled, no undo step is recorded and the
+redo stack survives.
 
 A worked runtime example that opens a tab from a button and adds undo/redo
 and reset:
@@ -268,7 +275,8 @@ actorRef.send({ model: normalize(controlledModel), type: "SET_MODEL" });
 ```
 
 `normalize` enforces the same structural invariants the reducer guarantees: no
-empty tabsets, no redundant single-child rows, a live `maximizedTabsetId`. Every
+empty tabsets, no redundant single-child rows, a `maximizedTabsetId` that is live
+and in the main layout. Every
 entry point holds a canonical model, so a host-supplied document satisfies
 the same rules as one the reducer produced. You don't have to hand-build a
 perfectly-formed tree. Pass something reasonable and the boundary cleans it.

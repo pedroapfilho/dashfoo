@@ -92,26 +92,27 @@ stacks; if it lands within the outer band (22% of the rect by default), it
 splits toward the closest edge:
 
 ```ts
-const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): DockTarget => {
+const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): DockLocation => {
   const band = opts?.bandFraction ?? DEFAULT_BAND_FRACTION; // 0.22
   // a zero-size tabset has no meaningful edges; dividing by its width/height
   // yields NaN distances that would silently resolve to a bogus split.
   if (rect.width <= 0 || rect.height <= 0) {
-    return { kind: "tab" };
+    return "center";
   }
   const distances = edgeDistances(pointer, rect);
   const min = Math.min(distances.left, distances.right, distances.top, distances.bottom);
 
   if (min > band) {
-    return { kind: "tab" };
+    return "center";
   }
-  return { edge: closestEdge(distances), kind: "split" };
+  return `split-${closestEdge(distances)}`;
 };
 ```
 
-In a corner, the nearer of the two edges wins. The adapter maps the result to a
-location: `kind: "tab"` becomes `"center"` (a stack at the end of the tabset),
-and `kind: "split"` becomes `split-${edge}`.
+In a corner, the nearer of the two edges wins. `"center"` stacks at the end of
+the tabset; `split-${edge}` splits toward that edge. The result is already a
+`DockLocation`, the same vocabulary `zoneRect` and `dockZonePolygons` speak, so
+nothing has to convert it.
 
 <DockLocations />
 
@@ -304,35 +305,42 @@ matches where the user released.
 
 ### 3. `dragDockMachine` runs the lifecycle
 
-The XState machine has two states, `idle` and `dragging`. `START` stashes the
-subject (its `kind` is `"tab"`, `"tabset"`, or `"external"`, the last carrying
-the `TabNode` to insert) and enters `dragging`. Each `OVER` assigns the live
-intent (the indicator reads it). `DROP` checks the `hasValidDrop` guard, which
-requires both a subject and an intent to be present, and when valid emits a
-`COMMIT`. The subject's kind picks the action:
+The XState machine has two states, `idle` and `dragging`, and its context is one
+`DragState` rather than a pair of independent nullables:
 
 ```ts
-emit(({ context }) => {
-  const { intent, subject } = requireDrop(context);
-  const action: Action =
-    subject.kind === "external"
-      ? {
-          index: intent.index,
-          location: intent.location,
-          tab: subject.tab,
-          targetId: intent.targetId,
-          type: "addNode",
-        }
-      : {
-          index: intent.index,
-          location: intent.location,
-          sourceId: subject.id,
-          targetId: intent.targetId,
-          type: subject.kind === "tabset" ? "moveTabset" : "moveNode",
-        };
-  return { action, type: "COMMIT" };
-});
+type DragState =
+  { kind: "idle" } | { drop: DropResolution | null; kind: "dragging"; subject: DragSubject };
 ```
+
+`START` stashes the subject (its `kind` is `"tab"`, `"tabset"`, or `"external"`,
+the last carrying the `TabNode` to insert) and enters `dragging`. Each `OVER`
+assigns the live `DropResolution` (`{ intent, scope }`, where `scope` names the
+layer that resolved it; the indicator reads the intent). A drop target with no
+subject is not expressible, so "is this drop valid" and "what does it do" are one
+total function:
+
+```ts
+const dropAction = (drag: DragState): { action: Action; scope: string } | null => {
+  if (drag.kind !== "dragging" || drag.drop === null) {
+    return null;
+  }
+  const { intent, scope } = drag.drop;
+  const { subject } = drag;
+  if (subject.kind === "external") {
+    return { action: { ...intent, tab: subject.tab, type: "addNode" }, scope };
+  }
+  if (subject.kind === "tabset") {
+    // no `index`: a tabset merges or docks beside, never into a strip slot
+    const { index, ...target } = intent;
+    return { action: { ...target, sourceId: subject.id, type: "moveTabset" }, scope };
+  }
+  return { action: { ...intent, sourceId: subject.id, type: "moveNode" }, scope };
+};
+```
+
+The `DROP` guard is `dropAction(context.drag) !== null`, and the emitted
+`COMMIT` carries the same result, so the guard and the action cannot disagree.
 
 `CANCEL` (or a canceled drop) returns to `idle` and clears the context. The
 machine never mutates the model; it only emits the action.
@@ -341,7 +349,7 @@ machine never mutates the model; it only emits the action.
 
 The provider subscribes to the machine's `COMMIT` emission and forwards the
 action (`moveNode` for a tab drag, `moveTabset` for a grip drag, `addNode` for
-an external source) to the layer that resolved the live intent, which sends it
+an external source) to the layer named by the emission's `scope`, which sends it
 to that layer's `onCommit` or, without one, to the `Layout.Root` above it.
 `DashfooLayout` wires that straight to `store.dispatch`.
 

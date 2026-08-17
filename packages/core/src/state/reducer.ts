@@ -1,16 +1,9 @@
 import { assertNever } from "../lib/assert-never";
 import { clampSelected } from "../lib/clamp-selected";
 import { normalize } from "../model/invariants";
-import type { Dashfoo } from "../model/schema";
+import type { Dashfoo, Geometry, GlobalAttributes } from "../model/schema";
 import type { AttributedNode } from "../model/tree";
-import {
-  findAttributedNode,
-  findFloat,
-  findRootContaining,
-  findRow,
-  findTab,
-  findTabset,
-} from "../model/tree";
+import { findAttributedNode, findFloat, findRow, findTab, findTabset } from "../model/tree";
 
 import type { Action, MutableNodeAttrs } from "./actions";
 import { dockFloat, floatTabsetById, pushFloat, uniqueFloatName } from "./floats";
@@ -24,7 +17,6 @@ import {
   insertTab,
   mergeTabsInto,
   placeBesideTarget,
-  removeTabset,
   removeTabsetReturning,
   wrapTabInLayout,
 } from "./surgery";
@@ -49,179 +41,210 @@ const parseNodeAttrs = (node: AttributedNode, attrs: MutableNodeAttrs): MutableN
   }
 };
 
-const applyAction = (draft: Dashfoo, action: Action): void => {
+const sameGeometry = (a: Geometry, b: Geometry): boolean =>
+  a.height === b.height && a.left === b.left && a.top === b.top && a.width === b.width;
+
+const alreadyApplied = (
+  target: AttributedNode | GlobalAttributes,
+  attrs: MutableNodeAttrs | Partial<GlobalAttributes>,
+): boolean => {
+  const current = new Map<string, unknown>(Object.entries(target));
+  return Object.entries(attrs).every(([key, value]) => Object.is(current.get(key), value));
+};
+
+/** Reports whether it changed anything, so `history.dispatch` can skip a no-op. */
+const applyAction = (draft: Dashfoo, action: Action): boolean => {
   switch (action.type) {
     case "addNode": {
-      insertTab(draft, action.tab, {
+      return insertTab(draft, action.tab, {
         id: action.targetId,
         index: action.index,
         location: action.location,
       });
-      return;
     }
     case "adjustSplit": {
-      const root = findRootContaining(draft, action.rowId) ?? draft.layout;
-      const row = findRow(root, action.rowId);
+      const row = findRow(draft, action.rowId);
       if (!row) {
-        return;
+        return false;
       }
+      let changed = false;
       for (let index = 0; index < action.weights.length; index++) {
         const child = row.children.at(index);
         const weight = action.weights[index];
-        if (!child || weight === undefined) {
+        if (!child || weight === undefined || child.weight === weight) {
           continue;
         }
         child.weight = weight;
+        changed = true;
       }
-      return;
+      return changed;
     }
     case "deleteTab": {
       const location = findTab(draft, action.tabId);
-      if (location) {
-        detachTab(location.container, location.index);
+      if (!location) {
+        return false;
       }
-      return;
+      detachTab(location.container, location.index);
+      return true;
     }
     case "deleteTabset": {
-      const root = findRootContaining(draft, action.tabsetId);
-      if (root) {
-        removeTabset(root, action.tabsetId);
-      }
-      return;
+      return removeTabsetReturning(draft, action.tabsetId) !== undefined;
     }
     case "dockFloat": {
-      dockFloat(draft, action.floatId, action.targetId, action.location);
-      return;
+      return dockFloat(draft, action.floatId, action.targetId, action.location);
     }
     case "floatTab": {
       const location = findTab(draft, action.tabId);
       if (!location) {
-        return;
+        return false;
       }
       const removed = detachTab(location.container, location.index);
-      if (removed) {
-        pushFloat(draft, wrapTabInLayout(removed), action.geometry, action.floatId);
+      if (!removed) {
+        return false;
       }
-      return;
+      pushFloat(draft, wrapTabInLayout(removed), action.geometry, action.floatId);
+      return true;
     }
     case "floatTabset": {
-      floatTabsetById(draft, action.tabsetId, action.geometry, action.floatId);
-      return;
+      return floatTabsetById(draft, action.tabsetId, action.geometry, action.floatId);
     }
     case "moveFloat": {
       const float = findFloat(draft, action.floatId);
-      if (float) {
-        float.geometry = action.geometry;
+      if (!float || sameGeometry(float.geometry, action.geometry)) {
+        return false;
       }
-      return;
+      float.geometry = action.geometry;
+      return true;
     }
     case "moveNode": {
       const source = findTab(draft, action.sourceId);
-      if (!source) {
-        return;
+      // Resolved before the tab leaves its container: nothing else holds it.
+      if (!source || !findTabset(draft, action.targetId)) {
+        return false;
       }
 
       const removed = detachTab(source.container, source.index);
       if (!removed) {
-        return;
+        return false;
       }
-      insertTab(draft, removed, {
+      return insertTab(draft, removed, {
         id: action.targetId,
         index: action.index,
         location: action.location,
       });
-      return;
     }
     case "moveTabset": {
       if (action.sourceId === action.targetId) {
-        return;
+        return false;
       }
       const source = findTabset(draft, action.sourceId);
-      if (!source) {
-        return;
+      const target = findTabset(draft, action.targetId);
+      if (!source || !target) {
+        return false;
       }
       if (action.location === "center") {
-        const target = findTabset(draft, action.targetId);
-        if (target) {
-          mergeTabsInto(
-            target,
-            source.children,
-            clampSelected(source.children.length, source.selected),
-          );
-          const sourceRoot = findRootContaining(draft, action.sourceId);
-          if (sourceRoot) {
-            removeTabset(sourceRoot, action.sourceId);
-          }
-        }
-        return;
+        mergeTabsInto(
+          target,
+          source.children,
+          clampSelected(source.children.length, source.selected),
+        );
+        removeTabsetReturning(draft, action.sourceId);
+        return true;
       }
 
-      const sourceRoot = findRootContaining(draft, action.sourceId);
-      const detached = sourceRoot ? removeTabsetReturning(sourceRoot, action.sourceId) : undefined;
-      if (detached) {
-        placeBesideTarget(draft, detached, action.targetId, action.location);
-      }
-      return;
+      const detached = removeTabsetReturning(draft, action.sourceId);
+      return detached
+        ? placeBesideTarget(draft, detached, action.targetId, action.location)
+        : false;
     }
     case "renameFloat": {
       const float = findFloat(draft, action.floatId);
-      if (float) {
-        const others = draft.floats.filter((other) => other.id !== action.floatId);
-        float.name = uniqueFloatName(action.name, others);
+      if (!float) {
+        return false;
       }
-      return;
+      const others = draft.floats.filter((other) => other.id !== action.floatId);
+      const name = uniqueFloatName(action.name, others);
+      if (float.name === name) {
+        return false;
+      }
+      float.name = name;
+      return true;
     }
     case "renameTab": {
       const location = findTab(draft, action.tabId);
-      if (location) {
-        location.tab.name = action.name;
+      if (!location || location.tab.name === action.name) {
+        return false;
       }
-      return;
+      location.tab.name = action.name;
+      return true;
     }
     case "selectTab": {
       const tabset = findTabset(draft, action.tabsetId);
-      if (tabset) {
-        tabset.selected = clampSelected(tabset.children.length, action.index);
+      if (!tabset) {
+        return false;
       }
-      return;
+      const selected = clampSelected(tabset.children.length, action.index);
+      if (tabset.selected === selected) {
+        return false;
+      }
+      tabset.selected = selected;
+      return true;
     }
     case "setActiveTabset": {
-      if (findTabset(draft, action.tabsetId)) {
-        draft.activeTabsetId = action.tabsetId;
+      if (draft.activeTabsetId === action.tabsetId || !findTabset(draft, action.tabsetId)) {
+        return false;
       }
-      return;
+      draft.activeTabsetId = action.tabsetId;
+      return true;
     }
     case "setFloatMinimized": {
       const float = findFloat(draft, action.floatId);
-      if (float) {
-        float.minimized = action.minimized;
+      if (!float || (float.minimized ?? false) === action.minimized) {
+        return false;
       }
-      return;
+      float.minimized = action.minimized;
+      return true;
     }
     case "setMaximizedTabset": {
-      draft.maximizedTabsetId = action.tabsetId ?? undefined;
-      return;
+      const next = action.tabsetId ?? undefined;
+      if (draft.maximizedTabsetId === next) {
+        return false;
+      }
+      draft.maximizedTabsetId = next;
+      return true;
     }
     case "updateGlobalAttributes": {
+      if (alreadyApplied(draft.global, action.attrs)) {
+        return false;
+      }
       Object.assign(draft.global, action.attrs);
-      return;
+      return true;
     }
     case "updateNodeAttributes": {
       const node = findAttributedNode(draft, action.nodeId);
-      if (node) {
-        Object.assign(node, parseNodeAttrs(node, action.attrs));
+      if (!node) {
+        return false;
       }
-      return;
+      const parsed = parseNodeAttrs(node, action.attrs);
+      if (alreadyApplied(node, parsed)) {
+        return false;
+      }
+      Object.assign(node, parsed);
+      return true;
     }
     default: {
-      assertNever(action);
+      return assertNever(action);
     }
   }
 };
 
+/** Identity-equal output means "no edit". A rejected action skips `normalize`, so
+ * pass a model that has already been through it. */
 const reducer = (model: Dashfoo, action: Action): Dashfoo => {
   const draft = structuredClone(model);
-  applyAction(draft, action);
+  if (!applyAction(draft, action)) {
+    return model;
+  }
   return normalize(draft);
 };
 

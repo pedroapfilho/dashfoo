@@ -51,4 +51,3 @@ const dashfooMachine = setup({
 });
 
 export { dashfooMachine };
-export type { DashfooContext, DashfooEvent, DashfooMachineInput };

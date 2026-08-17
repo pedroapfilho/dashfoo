@@ -3,11 +3,8 @@ import { tabNodeSchema } from "@dashfoo/core";
 
 const isTabFactory = (value: unknown): value is () => unknown => typeof value === "function";
 
-/**
- * Reads what a dnd-kit source represents. It lives beside the manager wiring
- * rather than in the layer adapter because `dragstart` fires once per gesture on
- * the shared manager, above any one layer.
- */
+/** Beside the manager wiring, not the layer adapter: `dragstart` fires once per
+ * gesture on the shared manager, above any one layer. */
 const subjectFor = (source: {
   data?: Record<string, unknown>;
   id: string | number;

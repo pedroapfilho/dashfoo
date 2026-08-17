@@ -1,20 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
-const tabsets = (page: Page): Locator => page.locator('[data-dashfoo="tabset"]');
+import { dragElementTo } from "./helpers/drag";
 
-const dragGripTo = async (page: Page, grip: Locator, x: number, y: number): Promise<void> => {
-  const box = await grip.boundingBox();
-  if (!box) {
-    throw new Error("no grip box");
-  }
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
-  await page.mouse.move(x, y, { steps: 16 });
-  await page.mouse.move(x, y, { steps: 4 });
-  await page.mouse.up();
-};
+const tabsets = (page: Page): Locator => page.locator('[data-dashfoo="tabset"]');
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/docking");
@@ -29,7 +18,7 @@ test("dragging a tabset grip onto another tabset merges their tabs", async ({ pa
   }
 
   const grip = tabsets(page).first().locator('[data-dashfoo="tabset-grip"]');
-  await dragGripTo(page, grip, target.x + target.width / 2, target.y + target.height / 2);
+  await dragElementTo(page, grip, target.x + target.width / 2, target.y + target.height / 2);
 
   await expect.poll(() => tabsets(page).count()).toBe(1);
   await expect(page.getByRole("tab", { name: "Canvas" })).toBeVisible();
@@ -46,7 +35,7 @@ test("dragging a tabset grip to an edge splits it beside the target", async ({ p
   await expect(page.locator('[data-separator][aria-orientation="horizontal"]')).toHaveCount(0);
 
   const grip = tabsets(page).first().locator('[data-dashfoo="tabset-grip"]');
-  await dragGripTo(page, grip, target.x + target.width / 2, target.y + target.height * 0.94);
+  await dragElementTo(page, grip, target.x + target.width / 2, target.y + target.height * 0.94);
 
   await expect.poll(() => tabsets(page).count()).toBe(2);
   await expect

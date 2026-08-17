@@ -299,6 +299,29 @@ describe("normalize with floats", () => {
     expect(next.floats[0]?.layout.children.map((child) => child.id)).toEqual(["fts"]);
   });
 
+  test("clears maximizedTabsetId when the id only resolves inside a float", () => {
+    const floated = reducer(
+      { ...baseModel(), maximizedTabsetId: "ts1" },
+      { tabsetId: "ts1", type: "floatTabset" },
+    );
+
+    expect(floatTabsets(floated).map((ts) => ts.id)).toEqual(["ts1"]);
+    expect(floated.maximizedTabsetId).toBeUndefined();
+  });
+
+  test("keeps maximizedTabsetId when the tabset is in the main layout", () => {
+    const next = normalize({ ...baseModel(), maximizedTabsetId: "ts2" });
+
+    expect(next.maximizedTabsetId).toBe("ts2");
+  });
+
+  test("still lets activeTabsetId point into a float", () => {
+    const floated = reducer(baseModel(), { tabsetId: "ts1", type: "floatTabset" });
+
+    expect(floated.activeTabsetId).toBe("ts1");
+    expect(mainTabsetIds(floated)).toEqual(["ts2"]);
+  });
+
   test("collectTabsets and findDuplicateIds span float roots", () => {
     const floated = reducer(baseModel(), { tabId: "t1", type: "floatTab" });
 
