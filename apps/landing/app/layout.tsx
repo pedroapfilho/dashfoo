@@ -63,7 +63,7 @@ const RootLayout = ({ children }: { children: ReactNode }) => (
       {/* oxlint-disable react/no-danger */}
       <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
     </head>
-    <body className="bg-dashfoo-background text-dashfoo-foreground font-dashfoo">{children}</body>
+    <body className="bg-background text-foreground font-sans">{children}</body>
   </html>
 );
 

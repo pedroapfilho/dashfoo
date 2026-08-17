@@ -10,15 +10,15 @@ const ORDERS = [
 const TablePanel = (): ReactNode => (
   <table className="w-full border-collapse text-[0.6875rem]">
     <thead>
-      <tr className="text-dashfoo-muted-foreground text-left">
+      <tr className="text-muted-foreground text-left">
         <th className="pb-2 font-medium">Order</th>
         <th className="pb-2 font-medium">Status</th>
         <th className="pb-2 text-right font-medium">Value</th>
       </tr>
     </thead>
-    <tbody className="text-dashfoo-foreground">
+    <tbody className="text-foreground">
       {ORDERS.map((o) => (
-        <tr className="border-dashfoo-border border-t" key={o.id}>
+        <tr className="border-border border-t" key={o.id}>
           <td className="py-1.5 font-mono">{o.id}</td>
           <td className="py-1.5">{o.status}</td>
           <td className="py-1.5 text-right tabular-nums">{o.value}</td>

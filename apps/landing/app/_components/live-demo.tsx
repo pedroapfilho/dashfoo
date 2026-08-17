@@ -22,10 +22,7 @@ const LiveDemo = (): ReactNode => {
 
   if (!isClient) {
     return (
-      <div
-        aria-hidden="true"
-        className="bg-dashfoo-muted size-full rounded-sm motion-safe:animate-pulse"
-      />
+      <div aria-hidden="true" className="bg-muted size-full rounded-sm motion-safe:animate-pulse" />
     );
   }
 

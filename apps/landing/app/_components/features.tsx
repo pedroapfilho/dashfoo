@@ -48,10 +48,10 @@ const Features = (): ReactNode => (
   <section className="scroll-mt-20 py-16 sm:py-24" id="features">
     <div className="mx-auto max-w-6xl px-6 lg:px-8">
       <div>
-        <h2 className="text-dashfoo-foreground max-w-[35ch] text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+        <h2 className="text-foreground max-w-[35ch] font-mono text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
           What dashfoo gives you
         </h2>
-        <p className="text-dashfoo-muted-foreground mt-4 max-w-[56ch] text-base text-pretty">
+        <p className="text-muted-foreground mt-4 max-w-[56ch] text-base text-pretty">
           dashfoo gives you FlexLayout&rsquo;s power without the chrome you can&rsquo;t restructure.
           State, mutations, and drag sit behind adapters you never touch.
         </p>
@@ -59,16 +59,14 @@ const Features = (): ReactNode => (
       <dl className="mt-12 grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map((feature) => (
           <div key={feature.title}>
-            <dt className="text-dashfoo-foreground flex items-center gap-2.5 text-base font-medium">
+            <dt className="text-foreground flex items-center gap-2.5 font-mono text-base font-medium">
               <feature.icon
-                className="stroke-dashfoo-muted-foreground size-5 h-lh shrink-0"
+                className="stroke-muted-foreground size-5 h-lh shrink-0"
                 strokeWidth={1.75}
               />
               {feature.title}
             </dt>
-            <dd className="text-dashfoo-muted-foreground mt-3 text-base text-pretty">
-              {feature.body}
-            </dd>
+            <dd className="text-muted-foreground mt-3 text-base text-pretty">{feature.body}</dd>
           </div>
         ))}
       </dl>

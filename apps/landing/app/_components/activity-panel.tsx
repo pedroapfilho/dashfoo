@@ -8,14 +8,18 @@ const ACTIVITY = [
 ] as const;
 
 const ActivityPanel = (): ReactNode => (
-  <ul className="flex flex-col gap-2.5 text-[0.6875rem]">
-    {ACTIVITY.map((line) => (
-      <li className="flex items-center gap-2" key={line}>
-        <span className="bg-dashfoo-accent size-1.5 shrink-0 rounded-full" />
-        <span className="text-dashfoo-muted-foreground">{line}</span>
-      </li>
-    ))}
-  </ul>
+  // Without a focus target, keyboard users cannot scroll overflow content.
+  // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+  <section aria-label="Recent layout activity" tabIndex={0}>
+    <ul className="flex flex-col gap-2.5 text-xs">
+      {ACTIVITY.map((line) => (
+        <li className="flex items-center gap-2" key={line}>
+          <span className="bg-accent size-1.5 shrink-0 rounded-full" />
+          <span className="text-muted-foreground">{line}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
 );
 
 export { ActivityPanel };
