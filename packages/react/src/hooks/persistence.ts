@@ -84,11 +84,7 @@ const usePersistence = (
     configRef.current = config;
   });
 
-  /**
-   * Read and parsed exactly once. The stored value used to be fetched twice on
-   * mount, and the two readers disagreed about an unparseable one: the
-   * initializer fell back silently, the effect warned and deleted it.
-   */
+  // Read and parsed once; the effect below acts on the outcome.
   const [load] = useState<StoredLoad>(() => {
     if (config === null) {
       return { kind: "absent" };

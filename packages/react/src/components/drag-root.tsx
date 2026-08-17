@@ -36,11 +36,8 @@ const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode =
     [scopes],
   );
 
-  /**
-   * One listener set and one actor for the whole tree. Attached per layer, a
-   * single pointer move fanned out to every float's actor, and each one that did
-   * not own the target resolved `intent: null` and then swallowed the drop.
-   */
+  // One listener set and one actor for the whole tree: per layer, a float that
+  // did not own the target resolved a null intent and swallowed the drop.
   useEffect(() => {
     const scopedTarget = (): ScopedTarget | null => {
       const target = manager.dragOperation.target;
@@ -85,12 +82,9 @@ const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode =
       actorRef.send({ subject, type: "START" });
     };
 
-    /**
-     * `dragmove` and `collision` both fire within a frame, and each resolution
-     * measures the target's tab strip, so running both doubles the layout work
-     * for one pointer position. The drop path stays synchronous: a deferred
-     * resolve would land after the actor had already been asked to commit.
-     */
+    // `dragmove` and `collision` both fire per frame and each resolve measures
+    // the target strip. The drop path stays synchronous: a deferred resolve
+    // would land after the actor had already been asked to commit.
     let frame: number | null = null;
     const scheduleResolve = (): void => {
       if (frame !== null) {

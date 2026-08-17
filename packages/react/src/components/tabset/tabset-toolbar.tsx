@@ -29,11 +29,8 @@ const TabsetToolbar = ({ style, ...props }: TabsetToolbarProps): ReactNode => (
 type TabsetChrome = { float: boolean; grip: boolean; maximize: boolean; overflow: boolean };
 
 /**
- * One answer per control, so the layout that decides whether to render a toolbar
- * at all and the controls that decide whether to render themselves cannot
- * disagree. They already did: only the float button knew about `hasFloatLayer`,
- * so a floatable tabset with no `<Layout.FloatLayer>` drew an empty toolbar that
- * the theme still pads.
+ * One answer per control, shared by the controls and by the layout deciding
+ * whether to render a toolbar at all, so the two cannot disagree.
  */
 const useTabsetChrome = (): TabsetChrome => {
   const draggableTabsets = useLayout((state) => state.draggableTabsets);

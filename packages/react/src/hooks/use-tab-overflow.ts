@@ -19,11 +19,8 @@ const useTabOverflow = (tablist: HTMLElement | null, signature: string): Array<s
   const [overflow, setOverflow] = useState<Array<string>>([]);
 
   useEffect(() => {
-    /**
-     * Scrolling an overflowing strip fires this on every frame, so an unchanged
-     * set has to keep its array identity: returning a fresh equal array would
-     * re-render the whole tabset for the length of the scroll.
-     */
+    // Fires per frame while an overflowing strip scrolls, so an unchanged set
+    // has to keep its array identity or the tabset re-renders throughout.
     const recompute = (): void => {
       setOverflow((previous) => {
         const next = tablist ? overflowingIds(tablist) : [];

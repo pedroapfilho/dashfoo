@@ -7,18 +7,10 @@ type DragSubject =
   | { id: string; kind: "tab" | "tabset" }
   | { id: string; kind: "external"; tab: TabNode };
 
-/**
- * `scope` is an opaque token naming whoever resolved the intent, echoed back on
- * `COMMIT` so the host routes the action to the same place instead of mirroring
- * that decision in a variable of its own.
- */
+/** `scope` names whoever resolved the intent, echoed back on `COMMIT` so the host can route the action. */
 type DropResolution = { intent: DropIntent; scope: string };
 
-/**
- * One value, not a pair of independent nullables: `subject` is never absent
- * mid-drag and `intent` legitimately is, yet as two context fields they were
- * indistinguishable and `{ subject: null, intent }` was expressible. See ADR 0002.
- */
+/** One value, so a drop target without a subject is unrepresentable. See ADR 0002. */
 type DragState =
   | { drop: DropResolution | null; kind: "dragging"; subject: DragSubject }
   | { kind: "idle" };
@@ -33,10 +25,7 @@ type DragEvent =
 
 type DragEmitted = { action: Action; scope: string; type: "COMMIT" };
 
-/**
- * Total: the single definition of both "is this drop valid" and "what does it
- * do", so the guard and the emitted action can no longer disagree.
- */
+/** One definition of both "is this drop valid" and "what does it do", so the guard and the emit agree. */
 const dropAction = (drag: DragState): { action: Action; scope: string } | null => {
   if (drag.kind !== "dragging" || drag.drop === null) {
     return null;

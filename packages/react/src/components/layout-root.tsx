@@ -114,10 +114,8 @@ type LayoutOverridesProps = {
 };
 
 /**
- * A nested subtree (a float) renders through the same components as the main
- * layout, minus a few capabilities. It republishes the parent store with the
- * overrides applied instead of re-deriving every flag from a synthetic model,
- * so anything the parent changes keeps flowing into the subtree.
+ * Republishes the parent store with overrides applied rather than re-deriving
+ * flags, so anything the parent changes keeps flowing into the subtree.
  */
 const LayoutOverrides = ({ children, overrides }: LayoutOverridesProps): ReactNode => {
   const parentState = useLayout((state) => state);

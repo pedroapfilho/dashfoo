@@ -93,12 +93,6 @@ type DashfooLayoutCommonProps = {
   snap?: SnapConfig;
 };
 
-/**
- * Controlled or uncontrolled, never both and never neither. `persist` and
- * `resetLayout` only mean anything against a `defaultModel`, so the union says
- * so rather than leaving three combinations that type-check and silently do
- * nothing.
- */
 type DashfooLayoutProps = DashfooLayoutCommonProps &
   (
     | { defaultModel: Dashfoo; model?: never; persist?: PersistInput }
@@ -222,11 +216,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
   const [containerRef, width] = useContainerWidth();
   const isCompact = responsive !== undefined && width <= responsive.maxWidth;
 
-  /**
-   * Everything the compact breakpoint changes, decided once. Re-derived per call
-   * site, maximize got missed: the button stayed live while `stackModel`
-   * stripped `maximizedTabsetId`, so it applied only once the container widened.
-   */
+  /** Everything the compact breakpoint changes, decided once. */
   const presentation = useMemo(
     () =>
       isCompact

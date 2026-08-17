@@ -38,12 +38,8 @@ type UseDashfooStoreOptions = {
   onModelChange?: (model: Dashfoo, action?: Action) => void;
 };
 
-/**
- * Two sources of truth, so the mode is latched on the first render and only one
- * is ever read. The machine used to run in both: a host that vetoed or ignored
- * an `onModelChange` left it holding a document the prop did not describe, and
- * the next dispatch was computed from that shadow copy.
- */
+/** The mode is latched on the first render; running both sources leaves the
+ * unread one describing a document nobody rendered. */
 const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
   const {
     defaultModel,

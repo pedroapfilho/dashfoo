@@ -19,11 +19,7 @@ const removeTabsetReturning = (model: Dashfoo, tabsetId: string): TabsetNode | u
   return removed?.type === "tabset" ? removed : undefined;
 };
 
-/**
- * Total over the split locations, so adding a sixth `DockLocation` is a compile
- * error here rather than a wrong default. Deriving it from geometry's nullable
- * `splitEdge` used to fold `center` into a silent split-bottom.
- */
+/** Total, so a sixth `DockLocation` is a compile error here rather than a wrong default. */
 const SPLIT_PLACEMENT = {
   "split-bottom": { before: false, orientation: "column" },
   "split-left": { before: true, orientation: "row" },
@@ -96,11 +92,7 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): boolean =>
   return placeBesideTarget(draft, newTabset, targetId, location);
 };
 
-/**
- * Removing a tab can leave `selected` past the end of the strip, so every
- * detach re-clamps its container rather than leaving the whole tree to be
- * re-walked afterwards.
- */
+/** Re-clamps here rather than leaving the whole tree to be re-walked afterwards. */
 const detachTab = (container: TabContainer, index: number): TabNode | undefined => {
   const removed = container.children.splice(index, 1).at(0);
   container.selected = clampSelected(container.children.length, container.selected);

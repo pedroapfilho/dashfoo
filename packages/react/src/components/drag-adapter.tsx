@@ -65,11 +65,7 @@ type DragProviderProps = {
   splitDock?: boolean;
 };
 
-/**
- * One drag layer: the main tree, or one float. It holds no drag state of its
- * own. It registers how its own tabsets turn a pointer into an intent and where
- * a committed action goes, then draws the indicator over its own droppables.
- */
+/** One drag layer (the main tree, or one float). Holds no drag state of its own. */
 const DragScope = ({ children, onCommit, splitDock }: DragProviderProps): ReactNode => {
   const root = useContext(DragRootContext);
   const layoutStore = useContext(LayoutStoreContext);
@@ -142,10 +138,8 @@ const DragScope = ({ children, onCommit, splitDock }: DragProviderProps): ReactN
 };
 
 /**
- * Mounts its own root when there is none above it, so a hand-composed
- * `Layout.DragLayer` still works standalone. The choice is made on the first
- * render, as it was for the manager this used to create itself: a root that
- * disappears later means a torn-down tree, which `DragScope` reports.
+ * Mounts its own root when there is none above it. Decided on the first render:
+ * a root that disappears later means a torn-down tree, which `DragScope` reports.
  */
 const DragProvider = (props: DragProviderProps): ReactNode => {
   const hasRoot = useContext(DragRootContext) !== null;

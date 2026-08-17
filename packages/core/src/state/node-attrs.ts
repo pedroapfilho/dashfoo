@@ -18,11 +18,7 @@ const mutableTabAttrsSchema = tabNodeSchema
   })
   .partial();
 
-/**
- * `weight` is re-declared instead of picked: `.partial()` over the schema's
- * defaulted `weight` still injects the default, so `{ name: "x" }` would arrive
- * at the reducer carrying a weight and silently resize the tabset.
- */
+/** `weight` is re-declared, not picked: `.partial()` over a defaulted field still injects the default. */
 const mutableTabsetAttrsSchema = tabsetNodeObjectSchema
   .pick({
     enableClose: true,
@@ -45,13 +41,8 @@ const mutableRowAttrsSchema = z
   .partial();
 
 /**
- * One all-optional object carrying every mutable key of every node kind, not a
- * union of the three: a union whose members are all fully optional matches on
- * its first member and strips the keys the others own, which erased every
- * tabset and row attribute at the parse boundary. The four keys that two kinds
- * share (`enableClose`, `max`, `min`, `weight`) declare the same type on both
- * sides, so merging widens nothing. Which keys are legal for a given node is
- * enforced by the reducer against that node's own schema.
+ * Merged, not a union: a union of all-optional members matches its first member
+ * and strips the rest. The reducer enforces which keys a given node accepts.
  */
 const mutableNodeAttrsSchema = mutableTabAttrsSchema
   .extend(mutableTabsetAttrsSchema.shape)

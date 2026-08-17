@@ -43,9 +43,7 @@ const TabsetTablist = ({
     if (count === 0) {
       return;
     }
-    // Stepped from the visual index, not the model's: while the selected tab is
-    // being dragged those differ, and the tab carrying `tabindex="0"` (so the
-    // one that has focus) is at the visual one.
+    // The visual index, not the model's: focus (`tabindex="0"`) sits at that one.
     const from = Math.max(visualSelected, 0);
     const targets: Record<string, number> = {
       ArrowLeft: (from - 1 + count) % count,

@@ -87,11 +87,8 @@ const TabsetRoot = ({
     store.setState({ overflowItems });
   }, [overflowItems, store]);
 
-  /**
-   * Every dispatch rebuilds `node.children`, so this runs for changes unrelated
-   * to a close. The pending id anchors it: a vetoed `deleteTab` leaves the tab
-   * in place, so focus stays where the user put it.
-   */
+  // Every dispatch rebuilds `node.children`, so this also runs for changes
+  // unrelated to a close; the pending id is what keeps a vetoed one from firing.
   useEffect(() => {
     const { pendingCloseTabId } = store.getState();
     if (pendingCloseTabId === null) {

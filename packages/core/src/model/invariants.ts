@@ -3,12 +3,9 @@ import type { Dashfoo, FloatNode, RowNode } from "./schema";
 type RowChild = RowNode["children"][number];
 
 /**
- * A row that collapses to a single child hands its slot in the parent to
- * that child, so the slot's sizing constraints have to travel with it.
- * Dropping them silently widens a pinned sidebar, and `normalize` runs on
- * load and on every persist, so the loss is permanent.
- *
- * `snap` only exists on rows, so it is carried only to a row survivor.
+ * The survivor takes over the collapsed row's slot, so it has to take the slot's
+ * sizing too: dropping it widens a pinned sidebar, permanently, since this runs
+ * on every persist. `snap` is row-only, so it travels only to a row survivor.
  */
 const inheritSlot = (row: RowNode, survivor: RowChild): RowChild => {
   const sized: RowChild = {
@@ -24,11 +21,7 @@ const inheritSlot = (row: RowNode, survivor: RowChild): RowChild => {
   return sized;
 };
 
-/**
- * Records the id of every tabset it keeps, in document order. Two later passes
- * used to re-derive that list, each a restatement of the rule applied here and
- * free to drift from it, so pruning now reports what it kept.
- */
+/** Records the id of every tabset it keeps, in document order. */
 const normalizeRowChildren = (
   children: RowNode["children"],
   keptTabsetIds: Array<string>,
@@ -44,8 +37,8 @@ const normalizeRowChildren = (
       continue;
     }
 
-    // An id is recorded only for a tabset that survives, and a surviving tabset
-    // keeps every ancestor row alive, so a dropped row never leaves ids behind.
+    // A recorded id implies a survivor, which keeps its ancestor rows alive, so
+    // a dropped row never leaves ids behind.
     const grandchildren = normalizeRowChildren(child.children, keptTabsetIds);
     if (grandchildren.length === 0) {
       continue;
@@ -101,11 +94,8 @@ const normalize = (model: Dashfoo): Dashfoo => {
       ? model.activeTabsetId
       : firstTabsetId;
 
-  /**
-   * Checked against the main layout only. A float opts out of maximize
-   * entirely, so a maximized id that has moved into one would be rendered
-   * twice: once as the main area's maximized view, once inside the float.
-   */
+  // Main layout only: floats opt out of maximize, so an id that moved into one
+  // would render twice, in the main area and inside the float.
   const maximizedTabsetId =
     model.maximizedTabsetId !== undefined && mainIds.has(model.maximizedTabsetId)
       ? model.maximizedTabsetId

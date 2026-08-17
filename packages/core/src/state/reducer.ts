@@ -52,11 +52,7 @@ const alreadyApplied = (
   return Object.entries(attrs).every(([key, value]) => Object.is(current.get(key), value));
 };
 
-/**
- * Reports whether it changed anything, which is what stops `history.dispatch`
- * spending an undo slot (and clearing the redo stack) on an action that did
- * nothing. Branches that assign unconditionally compare first.
- */
+/** Reports whether it changed anything, so `history.dispatch` can skip a no-op. */
 const applyAction = (draft: Dashfoo, action: Action): boolean => {
   switch (action.type) {
     case "addNode": {
@@ -122,9 +118,7 @@ const applyAction = (draft: Dashfoo, action: Action): boolean => {
     }
     case "moveNode": {
       const source = findTab(draft, action.sourceId);
-      // The destination is resolved before the tab leaves its container: the
-      // reducer holds the only reference to a detached tab, so an unresolvable
-      // target would destroy it.
+      // Resolved before the tab leaves its container: nothing else holds it.
       if (!source || !findTabset(draft, action.targetId)) {
         return false;
       }
@@ -244,11 +238,8 @@ const applyAction = (draft: Dashfoo, action: Action): boolean => {
   }
 };
 
-/**
- * Returns its input by reference when nothing changed, so identity equality
- * means "no edit" downstream. A rejected action skips `normalize`, so feed this
- * a model that has already been through it.
- */
+/** Identity-equal output means "no edit". A rejected action skips `normalize`, so
+ * pass a model that has already been through it. */
 const reducer = (model: Dashfoo, action: Action): Dashfoo => {
   const draft = structuredClone(model);
   if (!applyAction(draft, action)) {

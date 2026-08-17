@@ -40,11 +40,7 @@ const FloatOverlay = ({ floats }: { floats: Array<FloatNode> }): ReactNode => {
 type FloatLayerProps = {
   children: ReactNode;
   floats: Array<FloatNode>;
-  /**
-   * Accepted for backwards compatibility only. Floating panels now inherit
-   * every global-derived capability from the layout store above them, so this
-   * is no longer read; it disappears in the next major.
-   */
+  /** Unread: floats inherit every global-derived capability from the layout store above them. */
   global?: GlobalAttributes;
 };
 

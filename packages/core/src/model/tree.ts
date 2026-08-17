@@ -20,16 +20,9 @@ type Visit = {
 };
 
 /**
- * Depth-first pre-order over one root: the row itself, then each child in
- * order, descending into nested rows and into a tabset's tabs. Returning a
- * defined value from `visit` stops the walk and becomes the result, so one
- * traversal serves both find-first and collect-all.
- *
- * Every query below used to carry its own copy of this recursion, and they had
- * drifted in child order: some scanned a row's own tabsets before descending,
- * others interleaved. With unique ids all orders agree, so they now share this
- * one; a model with duplicate ids (which the builder and the parser both warn
- * about) can see a different duplicate win than it did before.
+ * Depth-first pre-order; a defined `visit` result stops the walk. With unique
+ * ids the order is immaterial, but a duplicate-id model (which the builder and
+ * the parser both warn about) resolves to whichever copy this reaches first.
  */
 const walk = <T>(
   row: RowNode,
@@ -73,11 +66,7 @@ const isRow = (node: AttributedNode): node is RowNode => node.type === "row";
 const isTab = (node: AttributedNode): node is TabNode => node.type === "tab";
 const isTabset = (node: AttributedNode): node is TabsetNode => node.type === "tabset";
 
-/**
- * Spans every root, so callers name a model rather than first discovering which
- * root holds the id. Matching is predicate-first: an id that also names a node
- * of another kind cannot make two finders disagree about which node wins.
- */
+/** Predicate-first, so an id shared across node kinds resolves the same way here as anywhere else. */
 const locate = <N extends AttributedNode>(
   model: Dashfoo,
   id: string,

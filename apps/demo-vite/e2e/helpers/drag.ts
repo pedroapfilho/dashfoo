@@ -1,10 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
-/**
- * dnd-kit's PointerSensor needs a nudge past its activation threshold, and its
- * collision pass needs a second move at the destination to settle before the
- * release. Both were copied into every spec that drags.
- */
+/** dnd-kit needs a nudge past the activation threshold, then a second move at
+ * the destination to let the collision pass settle before the release. */
 const dragElementTo = async (page: Page, source: Locator, x: number, y: number): Promise<void> => {
   const box = await source.boundingBox();
   if (!box) {

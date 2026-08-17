@@ -30,12 +30,6 @@ const resolveSnapTargets = (config: SnapConfig, panelCount: number): Array<numbe
   return [...targets].toSorted((a, b) => a - b);
 };
 
-/**
- * "Is snapping on" used to be a predicate over the raw config that could see
- * neither `panelCount` nor `addMultiples`' upper bound, so it answered yes for
- * configs with no reachable target (`{ step: 100 }`) and the layout then ran the
- * per-move snap path for a row that could never snap.
- */
 type SnapGrid = { targets: Array<number>; threshold: number };
 
 const resolveSnapGrid = (config: SnapConfig | null, panelCount: number): SnapGrid => ({

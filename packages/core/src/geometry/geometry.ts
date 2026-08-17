@@ -55,11 +55,6 @@ const splitEdge = (location: DockLocation): Edge | undefined => {
   }
 };
 
-/**
- * Answers in `DockLocation`, the vocabulary the rest of this module and every
- * consumer already speak. The two-case union it used to return was converted by
- * each caller, and the demo overlay had forked its own copy of that conversion.
- */
 const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): DockLocation => {
   const band = opts?.bandFraction ?? DEFAULT_BAND_FRACTION;
 

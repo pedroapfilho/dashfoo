@@ -12,11 +12,7 @@ const CHIP_SIZE: Size = { height: 34, width: 168 };
 
 const TAP_SLOP = 4;
 
-/**
- * `moved` and `latest` live here rather than in refs of their own: they only
- * mean anything while a gesture is in flight, and as separate refs a cancelled
- * gesture left `moved` set for the next one to clear.
- */
+/** `moved` and `latest` live here because they only mean anything mid-gesture. */
 type Gesture = {
   bounds: Size;
   edges: ResizeEdges | null;
@@ -49,11 +45,8 @@ type FloatGesture = {
   style: CSSProperties;
 };
 
-/**
- * Moving and resizing writes straight to the panel's inline style and only
- * dispatches on pointer-up: routing every pointermove through the model would
- * re-render the whole layout tree behind the float.
- */
+/** Writes inline style and dispatches only on pointer-up: routing every move
+ * through the model would re-render the whole tree behind the float. */
 const useFloatGesture = ({
   editable,
   geometry,

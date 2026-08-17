@@ -66,11 +66,8 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
   const globalSnap = useLayout((state) => state.snap);
 
   const effectiveSnap: SnapConfig | null = node.snap ?? globalSnap;
-  /**
-   * Resolved once per row rather than rebuilt inside every pointer-move
-   * decision, and it is the same value that decides whether the per-move
-   * listener is attached at all.
-   */
+  // Resolved once per row, and the same value decides whether the per-move
+  // listener is attached at all.
   const snapGrid = useMemo(
     () => resolveSnapGrid(effectiveSnap, node.children.length),
     [effectiveSnap, node.children.length],
