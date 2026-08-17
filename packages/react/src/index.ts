@@ -1,7 +1,7 @@
 "use client";
 
 export * from "./components/dashfoo-layout";
-export * from "./components/drag-root";
+export * from "./components/dashfoo-drag-provider";
 export * from "./components/layout";
 export * from "./components/panel";
 export { Tabset } from "./components/tabset/tabset";

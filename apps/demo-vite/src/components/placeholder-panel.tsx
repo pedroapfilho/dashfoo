@@ -2,7 +2,7 @@ import type { TabNode } from "@dashfoo/core";
 import { Panel } from "@dashfoo/react";
 import type { ReactNode } from "react";
 
-const PlaceholderPanel = ({ node }: { node: TabNode }): ReactNode => (
+const PlaceholderPanel = (node: TabNode): ReactNode => (
   <Panel.Root>
     <Panel.Header>
       <Panel.Title>{node.name}</Panel.Title>
@@ -20,6 +20,4 @@ const PlaceholderPanel = ({ node }: { node: TabNode }): ReactNode => (
   </Panel.Root>
 );
 
-const renderPanel = (tab: TabNode): ReactNode => <PlaceholderPanel node={tab} />;
-
-export { renderPanel };
+export { PlaceholderPanel };

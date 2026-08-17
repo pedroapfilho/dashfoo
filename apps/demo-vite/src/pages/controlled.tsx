@@ -5,8 +5,8 @@ import { Plus, Redo2, Undo2, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { renderPanel } from "../components/panels";
-import { Button, DemoStage } from "../components/ui";
+import { Button, DemoStage } from "../components/demo-stage";
+import { PlaceholderPanel } from "../components/placeholder-panel";
 import { playgroundModel } from "../models";
 import type { WidgetDefinition } from "../widgets";
 import { addTargetId, addWidget, closeActiveTab, WIDGETS } from "../widgets";
@@ -103,7 +103,7 @@ const ImperativeControlPage = (): ReactNode => {
         <div className="min-h-0 min-w-0 flex-1">
           <DashfooLayout
             defaultModel={initial}
-            factory={renderPanel}
+            factory={PlaceholderPanel}
             onModelChange={handleModelChange}
             ref={layout}
             responsive={{ maxWidth: 720 }}

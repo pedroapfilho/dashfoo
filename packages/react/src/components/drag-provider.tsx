@@ -11,8 +11,8 @@ import { LayoutStoreContext } from "../hooks/layout-store";
 import { insertionIndex, pointInRect, shouldAllowDrop } from "../lib/tab-insertion";
 import { warnOnce } from "../lib/warn-once";
 
-import { DockIndicator } from "./drag-overlays";
-import { DashfooDragProvider } from "./drag-root";
+import { DashfooDragProvider } from "./dashfoo-drag-provider";
+import { DockIndicator } from "./drag-preview-overlay";
 
 const MISSING_ROOT =
   "[dashfoo] DashfooDragProvider unmounted while its layout is still mounted; keep the provider above the layout or remount the layout";

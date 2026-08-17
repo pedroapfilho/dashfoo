@@ -14,8 +14,8 @@ import {
   useDropIntent,
 } from "../hooks/drag-hooks";
 
-import { DragProvider } from "./drag-adapter";
-import { DashfooDragProvider } from "./drag-root";
+import { DashfooDragProvider } from "./dashfoo-drag-provider";
+import { DragProvider } from "./drag-provider";
 
 const isManagerLive = (manager: DragDropManager): boolean =>
   manager.registry.sensors.values.length > 0;
