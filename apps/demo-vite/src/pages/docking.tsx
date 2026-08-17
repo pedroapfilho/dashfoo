@@ -5,9 +5,9 @@ import { Grid2x2, GripVertical, Plus, RotateCcw } from "lucide-react";
 import type { ChangeEvent, ReactNode } from "react";
 import { useRef, useState } from "react";
 
+import { Button, DemoStage } from "../components/demo-stage";
 import { DropZoneOverlay } from "../components/drop-zone-overlay";
-import { renderPanel } from "../components/panels";
-import { Button, DemoStage } from "../components/ui";
+import { PlaceholderPanel } from "../components/placeholder-panel";
 import { dockingModel } from "../models";
 import type { WidgetDefinition } from "../widgets";
 import { addWidget, createWidgetTab, WIDGETS } from "../widgets";
@@ -121,7 +121,7 @@ const DockingPage = (): ReactNode => {
           <div className="min-h-0 min-w-0 flex-1" ref={layoutContainer}>
             <DashfooLayout
               defaultModel={dockingModel()}
-              factory={renderPanel}
+              factory={PlaceholderPanel}
               ref={layout}
               responsive={{ maxWidth: 720 }}
               snap={SNAP_CONFIGS[snapKey]}

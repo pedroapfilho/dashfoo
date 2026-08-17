@@ -8,7 +8,7 @@ import { useLayout } from "../../hooks/layout-store";
 import { mergeRefs } from "../../lib/merge-refs";
 import { panelDomId, tabDomId } from "../../lib/tab-ids";
 import { warnOnce } from "../../lib/warn-once";
-import { useDragSubject, useTabDraggable } from "../drag-adapter";
+import { useDragSubject, useTabDraggable } from "../drag-provider";
 
 import { TabContext, TabsetStoreContext, useTab, useTabset } from "./tabset-store";
 

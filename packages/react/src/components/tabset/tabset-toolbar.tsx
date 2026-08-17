@@ -7,9 +7,9 @@ import { useLayout } from "../../hooks/layout-store";
 import { measureFloatRect } from "../../lib/float-geometry";
 import { mergeRefs } from "../../lib/merge-refs";
 import { warnOnce } from "../../lib/warn-once";
-import { useTabsetDraggable } from "../drag-adapter";
+import { FloatIcon, GripIcon, MaximizeIcon } from "../close-icon";
+import { useTabsetDraggable } from "../drag-provider";
 import { useHasFloatLayer } from "../float-context";
-import { FloatIcon, GripIcon, MaximizeIcon } from "../tabset-icons";
 
 import { useTabset } from "./tabset-store";
 

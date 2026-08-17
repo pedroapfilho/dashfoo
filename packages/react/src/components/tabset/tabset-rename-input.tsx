@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { useInlineRename } from "../../hooks/use-inline-rename";
 import { mergeRefs } from "../../lib/merge-refs";
-import { CloseIcon } from "../tabset-icons";
+import { CloseIcon } from "../close-icon";
 
 import { useTab, useTabset } from "./tabset-store";
 

@@ -4,8 +4,8 @@ import { Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useRef } from "react";
 
-import { renderPanel } from "../components/panels";
-import { Button, DemoStage } from "../components/ui";
+import { Button, DemoStage } from "../components/demo-stage";
+import { PlaceholderPanel } from "../components/placeholder-panel";
 import { overviewModel } from "../models";
 
 const OverviewPage = (): ReactNode => {
@@ -25,7 +25,7 @@ const OverviewPage = (): ReactNode => {
     >
       <DashfooLayout
         defaultModel={defaultModel}
-        factory={renderPanel}
+        factory={PlaceholderPanel}
         floatable
         persist="dashfoo:demo:overview"
         ref={layout}
