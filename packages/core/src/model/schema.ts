@@ -76,40 +76,27 @@ const tabsetNodeSchema = tabsetNodeObjectSchema.transform((tabset) => ({
   selected: clampSelected(tabset.children.length, tabset.selected),
 }));
 
-type RowNode = {
-  children: Array<RowNode | z.infer<typeof tabsetNodeSchema>>;
-  id: string;
-  max?: z.infer<typeof dimensionSchema>;
-  min?: z.infer<typeof dimensionSchema>;
-  orientation: z.infer<typeof orientationSchema>;
-  snap?: z.infer<typeof snapSchema>;
-  type: "row";
-  weight: number;
-};
+/**
+ * Declared once and inferred, rather than hand-written as `RowNode`,
+ * `RowNodeInput` and a `z.lazy` body behind a `z.ZodType<...>` annotation that
+ * erased `ZodObject` and accepted extra properties. The getter's explicit return
+ * type is required: without it a self-referential getter is TS7023.
+ */
+const rowNodeSchema = z.object({
+  get children(): z.ZodArray<z.ZodUnion<[typeof rowNodeSchema, typeof tabsetNodeSchema]>> {
+    return z.array(z.union([rowNodeSchema, tabsetNodeSchema]));
+  },
+  id: z.string(),
+  max: dimensionSchema.optional(),
+  min: dimensionSchema.optional(),
+  orientation: orientationSchema,
+  snap: snapSchema.optional(),
+  type: z.literal("row"),
+  weight: z.number().default(DEFAULT_WEIGHT),
+});
 
-type RowNodeInput = {
-  children: Array<RowNodeInput | z.input<typeof tabsetNodeSchema>>;
-  id: string;
-  max?: z.infer<typeof dimensionSchema>;
-  min?: z.infer<typeof dimensionSchema>;
-  orientation: z.infer<typeof orientationSchema>;
-  snap?: z.infer<typeof snapSchema>;
-  type: "row";
-  weight?: number;
-};
-
-const rowNodeSchema: z.ZodType<RowNode, RowNodeInput> = z.lazy(() =>
-  z.object({
-    children: z.array(z.union([rowNodeSchema, tabsetNodeSchema])),
-    id: z.string(),
-    max: dimensionSchema.optional(),
-    min: dimensionSchema.optional(),
-    orientation: orientationSchema,
-    snap: snapSchema.optional(),
-    type: z.literal("row"),
-    weight: z.number().default(DEFAULT_WEIGHT),
-  }),
-);
+type RowNode = z.infer<typeof rowNodeSchema>;
+type RowNodeInput = z.input<typeof rowNodeSchema>;
 
 const geometrySchema = z.object({
   height: z.number(),

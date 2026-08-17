@@ -1,9 +1,9 @@
 "use client";
 
 import type { Dimension, RowNode, SnapConfig, TabsetNode } from "@dashfoo/core";
-import { snapEnabled } from "@dashfoo/core";
+import { resolveSnapGrid, snapEnabled } from "@dashfoo/core";
 import type { CSSProperties, ReactNode } from "react";
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 import type { Orientation } from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
@@ -66,7 +66,16 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
   const globalSnap = useLayout((state) => state.snap);
 
   const effectiveSnap: SnapConfig | null = node.snap ?? globalSnap;
-  const snapActive = snapEnabled(effectiveSnap);
+  /**
+   * Resolved once per row rather than rebuilt inside every pointer-move
+   * decision, and it is the same value that decides whether the per-move
+   * listener is attached at all.
+   */
+  const snapGrid = useMemo(
+    () => resolveSnapGrid(effectiveSnap, node.children.length),
+    [effectiveSnap, node.children.length],
+  );
+  const snapActive = snapEnabled(snapGrid);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
   const total = node.children.reduce((sum, child) => sum + child.weight, 0);
 
@@ -77,7 +86,7 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
         dispatch({ rowId: node.id, type: "adjustSplit", weights });
       },
       resizableSplits,
-      snap: effectiveSnap,
+      snap: snapGrid,
     });
 
   return (

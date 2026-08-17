@@ -139,18 +139,18 @@ describe("findTab", () => {
 
 describe("findRow", () => {
   test("locates a row nested two levels deep", () => {
-    const found = findRow(deepModel.layout, "r3");
+    const found = findRow(deepModel, "r3");
 
     expect(found?.id).toBe("r3");
     expect(found?.orientation).toBe("row");
   });
 
   test("returns the root when its own id is requested", () => {
-    expect(findRow(deepModel.layout, "root")?.id).toBe("root");
+    expect(findRow(deepModel, "root")?.id).toBe("root");
   });
 
   test("returns undefined for an unknown id", () => {
-    expect(findRow(deepModel.layout, "nope")).toBeUndefined();
+    expect(findRow(deepModel, "nope")).toBeUndefined();
   });
 });
 
@@ -183,13 +183,13 @@ describe("findAttributedNode", () => {
 
 describe("findTabsetParent", () => {
   test("returns the parent row and index for a deeply nested tabset", () => {
-    const found = findTabsetParent(deepModel.layout, "ts3");
+    const found = findTabsetParent(deepModel, "ts3");
 
     expect(found?.parent.id).toBe("r3");
     expect(found?.index).toBe(1);
   });
 
   test("returns undefined for an unknown id", () => {
-    expect(findTabsetParent(deepModel.layout, "nope")).toBeUndefined();
+    expect(findTabsetParent(deepModel, "nope")).toBeUndefined();
   });
 });

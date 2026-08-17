@@ -29,8 +29,9 @@ const actionSchema = z.discriminatedUnion("type", [
     targetId: z.string(),
     type: z.literal("moveNode"),
   }),
+  // No `index`: a tabset docks beside or merges into its target, so there is no
+  // slot in a tab strip to land at.
   z.object({
-    index: z.number().int().optional(),
     location: dockLocationSchema,
     sourceId: z.string(),
     targetId: z.string(),

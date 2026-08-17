@@ -2,6 +2,7 @@ import type { Dashfoo } from "@dashfoo/core";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 
+import type { DashfooLayoutCommonProps } from "./dashfoo-layout";
 import { DashfooLayout } from "./dashfoo-layout";
 
 const model = (): Dashfoo => ({
@@ -42,7 +43,7 @@ const components = {
   trades: () => <div>TRADES</div>,
 };
 
-const renderLayout = (props?: Partial<Parameters<typeof DashfooLayout>[0]>) =>
+const renderLayout = (props?: Partial<DashfooLayoutCommonProps>) =>
   render(<DashfooLayout components={components} defaultModel={model()} {...props} />);
 
 describe("tab close", () => {

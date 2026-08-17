@@ -1,20 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
-const tabsets = (page: Page): Locator => page.locator('[data-dashfoo="tabset"]');
+import { dragElementTo } from "./helpers/drag";
 
-const dragCardTo = async (page: Page, card: Locator, x: number, y: number): Promise<void> => {
-  const box = await card.boundingBox();
-  if (!box) {
-    throw new Error("no card box");
-  }
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
-  await page.mouse.move(x, y, { steps: 16 });
-  await page.mouse.move(x, y, { steps: 4 });
-  await page.mouse.up();
-};
+const tabsets = (page: Page): Locator => page.locator('[data-dashfoo="tabset"]');
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/docking");
@@ -27,7 +16,7 @@ test("dragging a widget card into a tabset adds it as a tab", async ({ page }) =
     throw new Error("no target box");
   }
 
-  await dragCardTo(
+  await dragElementTo(
     page,
     page.getByTestId("widget-reports"),
     target.x + target.width / 2,
@@ -45,7 +34,7 @@ test("dragging a widget card to a tabset edge splits the layout", async ({ page 
     throw new Error("no target box");
   }
 
-  await dragCardTo(
+  await dragElementTo(
     page,
     page.getByTestId("widget-metrics"),
     target.x + target.width / 2,
@@ -70,7 +59,7 @@ test("a drop outside any tabset is a no-op", async ({ page }) => {
     throw new Error("no card box");
   }
 
-  await dragCardTo(page, card, box.x + box.width / 2, box.y + box.height / 2 + 40);
+  await dragElementTo(page, card, box.x + box.width / 2, box.y + box.height / 2 + 40);
 
   await expect(page.getByRole("tab", { name: "Alerts" })).toHaveCount(0);
   await expect(tabsets(page)).toHaveCount(2);

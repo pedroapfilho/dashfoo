@@ -53,8 +53,6 @@ const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode =
       return { element, scope, tabsetId: data.tabsetId };
     };
 
-    let intentLayerId: string | null = null;
-
     const syncIntent = (): void => {
       const operation = manager.dragOperation;
       const found = scopedTarget();
@@ -68,8 +66,10 @@ const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode =
               operation.position.current,
               draggedId,
             );
-      intentLayerId = intent === null || found === null ? null : found.scope.layerId;
-      actorRef.send({ intent, type: "OVER" });
+      actorRef.send({
+        drop: intent === null || found === null ? null : { intent, scope: found.scope.layerId },
+        type: "OVER",
+      });
     };
 
     const handleStart = (event: DragStartEvent): void => {
@@ -82,18 +82,34 @@ const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode =
         manager.actions.stop({ canceled: true });
         return;
       }
-      intentLayerId = null;
       actorRef.send({ subject, type: "START" });
     };
 
-    const handleMove = (): void => {
-      syncIntent();
+    /**
+     * `dragmove` and `collision` both fire within a frame, and each resolution
+     * measures the target's tab strip, so running both doubles the layout work
+     * for one pointer position. The drop path stays synchronous: a deferred
+     * resolve would land after the actor had already been asked to commit.
+     */
+    let frame: number | null = null;
+    const scheduleResolve = (): void => {
+      if (frame !== null) {
+        return;
+      }
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        syncIntent();
+      });
     };
-    const handleCollision = (): void => {
-      syncIntent();
+    const cancelPendingResolve = (): void => {
+      if (frame !== null) {
+        cancelAnimationFrame(frame);
+        frame = null;
+      }
     };
 
     const handleEnd = (event: DragEndEvent): void => {
+      cancelPendingResolve();
       if (event.canceled) {
         actorRef.send({ type: "CANCEL" });
         return;
@@ -103,14 +119,14 @@ const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode =
     };
 
     const commitSubscription = actorRef.on("COMMIT", (emitted) => {
-      const scope = intentLayerId === null ? undefined : scopes.get(intentLayerId);
-      scope?.commit(emitted.action);
+      scopes.get(emitted.scope)?.commit(emitted.action);
     });
     const offStart = manager.monitor.addEventListener("dragstart", handleStart);
-    const offMove = manager.monitor.addEventListener("dragmove", handleMove);
-    const offCollision = manager.monitor.addEventListener("collision", handleCollision);
+    const offMove = manager.monitor.addEventListener("dragmove", scheduleResolve);
+    const offCollision = manager.monitor.addEventListener("collision", scheduleResolve);
     const offEnd = manager.monitor.addEventListener("dragend", handleEnd);
     return () => {
+      cancelPendingResolve();
       commitSubscription.unsubscribe();
       offStart();
       offMove();

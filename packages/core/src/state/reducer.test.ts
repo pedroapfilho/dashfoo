@@ -213,3 +213,109 @@ describe("reducer", () => {
     expect(tabsetById(input, "ts1")?.children[0]?.name).toBe("t1");
   });
 });
+
+describe("reducer rejects an action rather than losing the node", () => {
+  test("moveNode keeps the tab when the target does not resolve", () => {
+    const input = baseModel();
+    const next = reducer(input, {
+      location: "center",
+      sourceId: "t1",
+      targetId: "ghost",
+      type: "moveNode",
+    });
+
+    expect(next).toBe(input);
+    expect(tabsetById(next, "ts1")?.children.map((child) => child.id)).toEqual(["t1", "t2"]);
+  });
+
+  test("moveNode keeps the tab when a split target does not resolve", () => {
+    const input = baseModel();
+    const next = reducer(input, {
+      location: "split-right",
+      sourceId: "t1",
+      targetId: "ghost",
+      type: "moveNode",
+    });
+
+    expect(next).toBe(input);
+  });
+
+  test("moveTabset keeps the tabset when a split target does not resolve", () => {
+    const input = baseModel();
+    const next = reducer(input, {
+      location: "split-right",
+      sourceId: "ts1",
+      targetId: "ghost",
+      type: "moveTabset",
+    });
+
+    expect(next).toBe(input);
+    expect(tabsetById(next, "ts1")?.children).toHaveLength(2);
+  });
+
+  test("moveTabset keeps the tabset when a center target does not resolve", () => {
+    const input = baseModel();
+
+    expect(
+      reducer(input, {
+        location: "center",
+        sourceId: "ts1",
+        targetId: "ghost",
+        type: "moveTabset",
+      }),
+    ).toBe(input);
+  });
+});
+
+describe("reducer reports no change by identity", () => {
+  test("selecting the already-selected tab returns the same model", () => {
+    const input = baseModel();
+
+    expect(reducer(input, { index: 0, tabsetId: "ts1", type: "selectTab" })).toBe(input);
+  });
+
+  test("clamping to the already-selected index returns the same model", () => {
+    const selected = reducer(baseModel(), { index: 1, tabsetId: "ts1", type: "selectTab" });
+
+    expect(reducer(selected, { index: 9, tabsetId: "ts1", type: "selectTab" })).toBe(selected);
+  });
+
+  test("moveTabset onto itself returns the same model", () => {
+    const input = baseModel();
+
+    expect(
+      reducer(input, { location: "center", sourceId: "ts1", targetId: "ts1", type: "moveTabset" }),
+    ).toBe(input);
+  });
+
+  test("an unknown id returns the same model", () => {
+    const input = baseModel();
+
+    expect(reducer(input, { tabId: "ghost", type: "deleteTab" })).toBe(input);
+    expect(reducer(input, { name: "x", tabId: "ghost", type: "renameTab" })).toBe(input);
+    expect(reducer(input, { tabsetId: "ghost", type: "deleteTabset" })).toBe(input);
+    expect(reducer(input, { tabsetId: "ghost", type: "setActiveTabset" })).toBe(input);
+  });
+
+  test("re-setting an identical attribute returns the same model", () => {
+    const input = baseModel();
+
+    expect(reducer(input, { attrs: { tabLocation: "top" }, type: "updateGlobalAttributes" })).toBe(
+      input,
+    );
+    expect(reducer(input, { tabsetId: "ts1", type: "setActiveTabset" })).toBe(input);
+    expect(reducer(input, { tabsetId: null, type: "setMaximizedTabset" })).toBe(input);
+  });
+
+  test("adjustSplit with the current weights returns the same model", () => {
+    const input = baseModel();
+
+    expect(reducer(input, { rowId: "root", type: "adjustSplit", weights: [60, 40] })).toBe(input);
+  });
+
+  test("a real edit still returns a new model", () => {
+    const input = baseModel();
+
+    expect(reducer(input, { index: 1, tabsetId: "ts1", type: "selectTab" })).not.toBe(input);
+  });
+});

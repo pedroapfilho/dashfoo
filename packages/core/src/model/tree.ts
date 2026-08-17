@@ -63,8 +63,36 @@ const walk = <T>(
   return undefined;
 };
 
-const locate = (row: RowNode, id: string): Visit | undefined =>
-  walk(row, (found) => (found.node.id === id ? found : undefined));
+type Located<N extends AttributedNode> = {
+  index: number;
+  node: N;
+  parent: RowNode | TabsetNode | undefined;
+};
+
+const isRow = (node: AttributedNode): node is RowNode => node.type === "row";
+const isTab = (node: AttributedNode): node is TabNode => node.type === "tab";
+const isTabset = (node: AttributedNode): node is TabsetNode => node.type === "tabset";
+
+/**
+ * Spans every root, so callers name a model rather than first discovering which
+ * root holds the id. Matching is predicate-first: an id that also names a node
+ * of another kind cannot make two finders disagree about which node wins.
+ */
+const locate = <N extends AttributedNode>(
+  model: Dashfoo,
+  id: string,
+  is: (node: AttributedNode) => node is N,
+): Located<N> | undefined => {
+  for (const root of collectRoots(model)) {
+    const found = walk(root, ({ index, node, parent }) =>
+      node.id === id && is(node) ? { index, node, parent } : undefined,
+    );
+    if (found) {
+      return found;
+    }
+  }
+  return undefined;
+};
 
 const collectTabsetsInRow = (row: RowNode, acc: Array<TabsetNode>): void => {
   walk(row, ({ node }) => {
@@ -86,44 +114,20 @@ const collectTabsets = (model: Dashfoo): Array<TabsetNode> => {
 const getFirstTabset = (model: Dashfoo): TabsetNode | undefined => collectTabsets(model)[0];
 
 const findTabset = (model: Dashfoo, tabsetId: string): TabsetNode | undefined =>
-  collectTabsets(model).find((tabset) => tabset.id === tabsetId);
-
-const findTabInContainer = (container: TabContainer, tabId: string): TabLocation | undefined => {
-  const index = container.children.findIndex((tab) => tab.id === tabId);
-  if (index === -1) {
-    return undefined;
-  }
-
-  const tab = container.children.at(index);
-  if (!tab) {
-    return undefined;
-  }
-
-  return { container, index, tab };
-};
+  locate(model, tabsetId, isTabset)?.node;
 
 const findTab = (model: Dashfoo, tabId: string): TabLocation | undefined => {
-  for (const tabset of collectTabsets(model)) {
-    const found = findTabInContainer(tabset, tabId);
-    if (found) {
-      return found;
-    }
-  }
-
-  return undefined;
+  const found = locate(model, tabId, isTab);
+  return found?.parent?.type === "tabset"
+    ? { container: found.parent, index: found.index, tab: found.node }
+    : undefined;
 };
 
-const findRow = (row: RowNode, id: string): RowNode | undefined => {
-  const found = locate(row, id)?.node;
-  return found?.type === "row" ? found : undefined;
-};
-
-const findAttributedNodeInRow = (row: RowNode, id: string): AttributedNode | undefined =>
-  locate(row, id)?.node;
+const findRow = (model: Dashfoo, id: string): RowNode | undefined => locate(model, id, isRow)?.node;
 
 const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefined => {
   for (const root of collectRoots(model)) {
-    const found = findAttributedNodeInRow(root, id);
+    const found = walk(root, ({ node }) => (node.id === id ? node : undefined));
     if (found) {
       return found;
     }
@@ -133,7 +137,8 @@ const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefi
 
 const findRootContaining = (model: Dashfoo, nodeId: string): RowNode | undefined => {
   for (const root of collectRoots(model)) {
-    if (findAttributedNodeInRow(root, nodeId)) {
+    const hit = walk(root, ({ node }) => (node.id === nodeId ? true : undefined));
+    if (hit) {
       return root;
     }
   }
@@ -141,13 +146,11 @@ const findRootContaining = (model: Dashfoo, nodeId: string): RowNode | undefined
 };
 
 const findTabsetParent = (
-  row: RowNode,
+  model: Dashfoo,
   tabsetId: string,
 ): { index: number; parent: RowNode } | undefined => {
-  const found = locate(row, tabsetId);
-  return found?.node.type === "tabset" && found.parent?.type === "row"
-    ? { index: found.index, parent: found.parent }
-    : undefined;
+  const found = locate(model, tabsetId, isTabset);
+  return found?.parent?.type === "row" ? { index: found.index, parent: found.parent } : undefined;
 };
 
 const collectIdsInRow = (row: RowNode, acc: Array<string>): void => {

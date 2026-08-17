@@ -1,6 +1,6 @@
 "use client";
 
-import type { RowNode, SnapConfig } from "@dashfoo/core";
+import type { RowNode, SnapGrid } from "@dashfoo/core";
 import { decideSnap, settleSnap } from "@dashfoo/core";
 import type { RefObject } from "react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -61,7 +61,7 @@ type SnapResizeOptions = {
   children: RowChildren;
   onWeightsSettled: (weights: Array<number>) => void;
   resizableSplits: boolean;
-  snap: SnapConfig | null;
+  snap: SnapGrid;
 };
 
 type SnapResize = {

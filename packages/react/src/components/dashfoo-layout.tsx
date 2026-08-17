@@ -26,11 +26,8 @@ const DEFAULT_PERSIST_DEBOUNCE_MS = 300;
 
 type PersistInput = string | { debounceMs?: number; key: string; storage?: StorageAdapter };
 
-const resolvePersist = (
-  persist: PersistInput | undefined,
-  hasDefaultModel: boolean,
-): PersistConfig | null => {
-  if (persist === undefined || !hasDefaultModel) {
+const resolvePersist = (persist: PersistInput | undefined): PersistConfig | null => {
+  if (persist === undefined) {
     return null;
   }
   if (typeof persist === "string") {
@@ -70,10 +67,9 @@ type DashfooHandle = {
   undo: () => void;
 };
 
-type DashfooLayoutProps = {
+type DashfooLayoutCommonProps = {
   closableTabs?: boolean;
   components?: Record<string, TabComponent>;
-  defaultModel?: Dashfoo;
   draggableTabs?: boolean;
   draggableTabsets?: boolean;
 
@@ -83,12 +79,10 @@ type DashfooLayoutProps = {
   floatable?: boolean;
   keepMounted?: boolean;
   maximizable?: boolean;
-  model?: Dashfoo;
   onAction?: (action: Action) => Action | null;
   onActiveTabsetChange?: (tabsetId: string | undefined) => void;
   onMaximizedTabsetChange?: (tabsetId: string | undefined) => void;
   onModelChange?: (model: Dashfoo, action?: Action) => void;
-  persist?: PersistInput;
   renamableTabs?: boolean;
   renderTabLabel?: (tab: TabNode) => ReactNode;
   renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
@@ -98,6 +92,18 @@ type DashfooLayoutProps = {
 
   snap?: SnapConfig;
 };
+
+/**
+ * Controlled or uncontrolled, never both and never neither. `persist` and
+ * `resetLayout` only mean anything against a `defaultModel`, so the union says
+ * so rather than leaving three combinations that type-check and silently do
+ * nothing.
+ */
+type DashfooLayoutProps = DashfooLayoutCommonProps &
+  (
+    | { defaultModel: Dashfoo; model?: never; persist?: PersistInput }
+    | { defaultModel?: never; model: Dashfoo; persist?: never }
+  );
 
 const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref): ReactNode => {
   const {
@@ -125,10 +131,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     snap,
   } = props;
 
-  const persistConfig = useMemo(
-    () => resolvePersist(persist, defaultModel !== undefined),
-    [persist, defaultModel],
-  );
+  const persistConfig = useMemo(() => resolvePersist(persist), [persist]);
   const persistence = usePersistence(persistConfig, defaultModel);
 
   const handleModelChange = useCallback(
@@ -218,16 +221,30 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
 
   const [containerRef, width] = useContainerWidth();
   const isCompact = responsive !== undefined && width <= responsive.maxWidth;
-  const view = useMemo(
-    () => (isCompact ? stackModel(store.model, responsive?.orientation) : store.model),
-    [isCompact, responsive?.orientation, store.model],
+
+  /**
+   * Everything the compact breakpoint changes, decided once. Re-derived per call
+   * site, maximize got missed: the button stayed live while `stackModel`
+   * stripped `maximizedTabsetId`, so it applied only once the container widened.
+   */
+  const presentation = useMemo(
+    () =>
+      isCompact
+        ? {
+            maximizable: false,
+            model: stackModel(store.model, responsive?.orientation),
+            restructurable: false,
+          }
+        : { maximizable, model: store.model, restructurable: true },
+    [isCompact, maximizable, responsive?.orientation, store.model],
   );
+  const view = presentation.model;
 
   const maximized =
     view.maximizedTabsetId === undefined ? undefined : findTabset(view, view.maximizedTabsetId);
 
   const tree = (
-    <Layout.FloatLayer floats={store.model.floats}>
+    <Layout.FloatLayer floats={view.floats}>
       <Layout.DragLayer>
         {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={view.layout} />}
       </Layout.DragLayer>
@@ -243,14 +260,14 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       editable={editable}
       floatable={floatable}
       keepMounted={keepMounted}
-      maximizable={maximizable}
+      maximizable={presentation.maximizable}
       model={view}
       renamableTabs={renamableTabs}
       renderTab={renderTab}
       renderTabLabel={renderTabLabel}
       renderTabsetToolbar={renderTabsetToolbar}
       resizableSplits={resizableSplits}
-      restructurable={!isCompact}
+      restructurable={presentation.restructurable}
       rootRef={containerRef}
       snap={snap}
     >
@@ -262,4 +279,4 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
 DashfooLayout.displayName = "DashfooLayout";
 
 export { DashfooLayout };
-export type { DashfooHandle, DashfooLayoutProps, TabComponent };
+export type { DashfooHandle, DashfooLayoutCommonProps, DashfooLayoutProps, TabComponent };

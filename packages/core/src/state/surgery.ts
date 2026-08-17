@@ -1,15 +1,17 @@
-import { splitEdge } from "../geometry/geometry";
 import { clampSelected } from "../lib/clamp-selected";
 import { createNodeId } from "../model/ids";
 import type { Dashfoo, Orientation, RowNode, TabNode, TabsetNode } from "../model/schema";
 import { DEFAULT_WEIGHT } from "../model/schema";
 import type { TabContainer } from "../model/tree";
-import { findRootContaining, findTabset, findTabsetParent } from "../model/tree";
+import { findTabset, findTabsetParent } from "../model/tree";
 
 import type { DockLocation } from "./actions";
 
-const removeTabsetReturning = (row: RowNode, tabsetId: string): TabsetNode | undefined => {
-  const found = findTabsetParent(row, tabsetId);
+/** The four locations that produce a split. `center` merges instead, so it is not one of them. */
+type SplitLocation = Exclude<DockLocation, "center">;
+
+const removeTabsetReturning = (model: Dashfoo, tabsetId: string): TabsetNode | undefined => {
+  const found = findTabsetParent(model, tabsetId);
   if (!found) {
     return undefined;
   }
@@ -17,32 +19,31 @@ const removeTabsetReturning = (row: RowNode, tabsetId: string): TabsetNode | und
   return removed?.type === "tabset" ? removed : undefined;
 };
 
-const removeTabset = (row: RowNode, tabsetId: string): boolean =>
-  removeTabsetReturning(row, tabsetId) !== undefined;
-
-const splitPlacement = (location: DockLocation): { before: boolean; orientation: Orientation } => {
-  const edge = splitEdge(location);
-  return {
-    before: edge === "left" || edge === "top",
-    orientation: edge === "left" || edge === "right" ? "row" : "column",
-  };
-};
+/**
+ * Total over the split locations, so adding a sixth `DockLocation` is a compile
+ * error here rather than a wrong default. Deriving it from geometry's nullable
+ * `splitEdge` used to fold `center` into a silent split-bottom.
+ */
+const SPLIT_PLACEMENT = {
+  "split-bottom": { before: false, orientation: "column" },
+  "split-left": { before: true, orientation: "row" },
+  "split-right": { before: false, orientation: "row" },
+  "split-top": { before: true, orientation: "column" },
+} as const satisfies Record<SplitLocation, { before: boolean; orientation: Orientation }>;
 
 const placeBesideTarget = (
   draft: Dashfoo,
   placed: TabsetNode,
   targetId: string,
-  location: DockLocation,
-): void => {
+  location: SplitLocation,
+): boolean => {
   const targetTabset = findTabset(draft, targetId);
-
-  const targetRoot = findRootContaining(draft, targetId) ?? draft.layout;
-  const found = findTabsetParent(targetRoot, targetId);
+  const found = findTabsetParent(draft, targetId);
   if (!targetTabset || !found) {
-    return;
+    return false;
   }
 
-  const { before, orientation } = splitPlacement(location);
+  const { before, orientation } = SPLIT_PLACEMENT[location];
 
   if (found.parent.orientation === orientation) {
     const half = targetTabset.weight / 2;
@@ -63,15 +64,16 @@ const placeBesideTarget = (
   }
 
   draft.activeTabsetId = placed.id;
+  return true;
 };
 
 type DropTarget = { id: string; index?: number; location: DockLocation };
 
-const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
+const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): boolean => {
   const { id: targetId, index, location } = target;
   const targetTabset = findTabset(draft, targetId);
   if (!targetTabset) {
-    return;
+    return false;
   }
 
   if (location === "center") {
@@ -81,7 +83,7 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
     );
     targetTabset.children.splice(at, 0, tab);
     targetTabset.selected = at;
-    return;
+    return true;
   }
 
   const newTabset: TabsetNode = {
@@ -91,7 +93,7 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): void => {
     type: "tabset",
     weight: DEFAULT_WEIGHT,
   };
-  placeBesideTarget(draft, newTabset, targetId, location);
+  return placeBesideTarget(draft, newTabset, targetId, location);
 };
 
 /**
@@ -140,9 +142,8 @@ export {
   insertTab,
   mergeTabsInto,
   placeBesideTarget,
-  removeTabset,
   removeTabsetReturning,
   wrapTabInLayout,
   wrapTabsetInLayout,
 };
-export type { DropTarget };
+export type { DropTarget, SplitLocation };

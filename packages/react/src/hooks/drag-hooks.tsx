@@ -246,12 +246,22 @@ const useExternalTabSource = ({
  */
 const useDragSubject = (): DragSubject | null => {
   const actorRef = useContext(DragRootContext)?.actorRef;
-  return useSelector(actorRef, (snapshot) => snapshot?.context.subject ?? null);
+  return useSelector(actorRef, (snapshot) => {
+    const drag = snapshot?.context.drag;
+    return drag?.kind === "dragging" ? drag.subject : null;
+  });
 };
 
 const useDropIntent = (): DropIntent | null => {
   const actorRef = useContext(DragRootContext)?.actorRef;
-  return useSelector(actorRef, (snapshot) => snapshot?.context.intent ?? null, sameDropIntent);
+  return useSelector(
+    actorRef,
+    (snapshot) => {
+      const drag = snapshot?.context.drag;
+      return drag?.kind === "dragging" ? (drag.drop?.intent ?? null) : null;
+    },
+    sameDropIntent,
+  );
 };
 
 export type {
