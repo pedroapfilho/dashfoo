@@ -1,5 +1,11 @@
 # @dashfoo/react
 
+## 0.7.1
+
+### Patch Changes
+
+- 8cbbcae: Raise the zustand dependency floor to 5.0.15.
+
 ## 0.7.0
 
 ### Minor Changes
