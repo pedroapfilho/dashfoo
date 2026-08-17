@@ -1,14 +1,23 @@
 "use client";
 
 import type { Action, Dashfoo } from "@dashfoo/core";
-import { canRedo, canUndo, dashfooMachine, normalize } from "@dashfoo/core";
+import { canRedo, canUndo, dashfooMachine, normalize, reducer } from "@dashfoo/core";
 import { useActorRef, useSelector } from "@xstate/react";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { warnOnce } from "../lib/warn-once";
 
 const CONTROLLED_HISTORY_MESSAGE =
   "undo/redo are unavailable while `model` is controlled; keep the history in the state you own and drive it through onModelChange";
+
+const CONTROLLED_SET_MODEL_MESSAGE =
+  "setModel (and resetLayout) do nothing while `model` is controlled; set the model you own instead";
+
+const CONTROLLED_MODE_SWITCH_MESSAGE =
+  "`model` was added or removed after mount; a layout is controlled or uncontrolled for its whole life, so the first render wins. Remount (key=…) to switch";
+
+const CONTROLLED_WITH_DEFAULT_MESSAGE =
+  "`model` and `defaultModel` were both passed; `model` wins and `defaultModel` (and `persist`) are ignored";
 
 type DashfooStore = {
   canRedo: () => boolean;
@@ -29,6 +38,8 @@ type UseDashfooStoreOptions = {
   onModelChange?: (model: Dashfoo, action?: Action) => void;
 };
 
+/** The mode is latched on the first render; running both sources leaves the
+ * unread one describing a document nobody rendered. */
 const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
   const {
     defaultModel,
@@ -43,16 +54,21 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
     throw new Error("useDashfooStore requires either a `model` or a `defaultModel`.");
   }
 
+  const [controlled] = useState(() => controlledModel !== undefined);
+  if (controlled !== (controlledModel !== undefined)) {
+    warnOnce("controlled-mode-switch", CONTROLLED_MODE_SWITCH_MESSAGE);
+  }
+  if (controlled && defaultModel !== undefined) {
+    warnOnce("controlled-with-default", CONTROLLED_WITH_DEFAULT_MESSAGE);
+  }
+
   const actorRef = useActorRef(dashfooMachine, { input: { model: normalize(initialModel) } });
   const history = useSelector(actorRef, (snapshot) => snapshot.context.history);
 
-  useEffect(() => {
-    if (controlledModel !== undefined) {
-      actorRef.send({ model: normalize(controlledModel), type: "SET_MODEL" });
-    }
-  }, [actorRef, controlledModel]);
-
-  const model = controlledModel ?? history.present;
+  const model = useMemo(
+    () => (controlledModel === undefined ? history.present : normalize(controlledModel)),
+    [controlledModel, history.present],
+  );
 
   const notify = useCallback(
     (before: Dashfoo, after: Dashfoo, action?: Action) => {
@@ -77,55 +93,60 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
         return;
       }
 
+      if (controlled) {
+        notify(model, reducer(model, resolved), resolved);
+        return;
+      }
+
       const before = actorRef.getSnapshot().context.history.present;
       actorRef.send({ action: resolved, type: "DISPATCH" });
       notify(before, actorRef.getSnapshot().context.history.present, resolved);
     },
-    [actorRef, notify, onAction],
+    [actorRef, controlled, model, notify, onAction],
   );
 
   const undo = useCallback(() => {
-    if (controlledModel !== undefined) {
+    if (controlled) {
       warnOnce("controlled-undo", CONTROLLED_HISTORY_MESSAGE);
       return;
     }
     const before = actorRef.getSnapshot().context.history.present;
     actorRef.send({ type: "UNDO" });
-    const after = actorRef.getSnapshot().context.history.present;
-    notify(before, after);
-  }, [actorRef, controlledModel, notify]);
+    notify(before, actorRef.getSnapshot().context.history.present);
+  }, [actorRef, controlled, notify]);
 
   const redo = useCallback(() => {
-    if (controlledModel !== undefined) {
+    if (controlled) {
       warnOnce("controlled-redo", CONTROLLED_HISTORY_MESSAGE);
       return;
     }
     const before = actorRef.getSnapshot().context.history.present;
     actorRef.send({ type: "REDO" });
-    const after = actorRef.getSnapshot().context.history.present;
-    notify(before, after);
-  }, [actorRef, controlledModel, notify]);
+    notify(before, actorRef.getSnapshot().context.history.present);
+  }, [actorRef, controlled, notify]);
 
   const setModel = useCallback(
     (next: Dashfoo) => {
+      if (controlled) {
+        warnOnce("controlled-set-model", CONTROLLED_SET_MODEL_MESSAGE);
+        return;
+      }
       actorRef.send({ model: normalize(next), type: "SET_MODEL" });
     },
-    [actorRef],
+    [actorRef, controlled],
   );
 
   return useMemo(
     () => ({
-      canRedo: () =>
-        controlledModel === undefined && canRedo(actorRef.getSnapshot().context.history),
-      canUndo: () =>
-        controlledModel === undefined && canUndo(actorRef.getSnapshot().context.history),
+      canRedo: () => !controlled && canRedo(actorRef.getSnapshot().context.history),
+      canUndo: () => !controlled && canUndo(actorRef.getSnapshot().context.history),
       dispatch,
       model,
       redo,
       setModel,
       undo,
     }),
-    [actorRef, controlledModel, dispatch, model, redo, setModel, undo],
+    [actorRef, controlled, dispatch, model, redo, setModel, undo],
   );
 };
 

@@ -38,7 +38,7 @@ and debounce:
 persist={{ key: "dashfoo:my-app", storage: sessionStorage, debounceMs: 500 }}
 ```
 
-It works in **uncontrolled** mode (you pass `defaultModel`). In controlled mode,
+It is part of the **uncontrolled** half of the props union (you pass `defaultModel`), so passing it with `model` does not compile. In controlled mode,
 where you pass `model` + `onModelChange` and already own the state, skip `persist`
 and save the model yourself in `onModelChange`.
 

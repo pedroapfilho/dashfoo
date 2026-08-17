@@ -1,6 +1,6 @@
 "use client";
 
-import type { RowNode, SnapConfig } from "@dashfoo/core";
+import type { RowNode, SnapGrid } from "@dashfoo/core";
 import { decideSnap, settleSnap } from "@dashfoo/core";
 import type { RefObject } from "react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -10,11 +10,8 @@ const WEIGHT_EPSILON = 0.01;
 
 type RowChildren = RowNode["children"];
 
-/**
- * A resize gesture is in exactly one of these states. `syncing` covers every write this hook makes
- * to the group itself: the group echoes an imperative `setLayout` back through `onLayoutChange`
- * synchronously, and that echo must not be mistaken for user input.
- */
+/** `syncing` covers this hook's own writes: the group echoes an imperative
+ * `setLayout` back synchronously, and that echo is not user input. */
 type ResizeState =
   | { kind: "idle" }
   | { kind: "syncing" }
@@ -61,7 +58,7 @@ type SnapResizeOptions = {
   children: RowChildren;
   onWeightsSettled: (weights: Array<number>) => void;
   resizableSplits: boolean;
-  snap: SnapConfig | null;
+  snap: SnapGrid;
 };
 
 type SnapResize = {

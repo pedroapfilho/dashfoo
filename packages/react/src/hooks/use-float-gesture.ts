@@ -12,9 +12,12 @@ const CHIP_SIZE: Size = { height: 34, width: 168 };
 
 const TAP_SLOP = 4;
 
+/** `moved` and `latest` live here because they only mean anything mid-gesture. */
 type Gesture = {
   bounds: Size;
   edges: ResizeEdges | null;
+  latest: Geometry;
+  moved: boolean;
   pointerId: number;
   start: Geometry;
   startX: number;
@@ -42,11 +45,8 @@ type FloatGesture = {
   style: CSSProperties;
 };
 
-/**
- * Moving and resizing writes straight to the panel's inline style and only
- * dispatches on pointer-up: routing every pointermove through the model would
- * re-render the whole layout tree behind the float.
- */
+/** Writes inline style and dispatches only on pointer-up: routing every move
+ * through the model would re-render the whole tree behind the float. */
 const useFloatGesture = ({
   editable,
   geometry,
@@ -56,8 +56,6 @@ const useFloatGesture = ({
 }: FloatGestureOptions): FloatGesture => {
   const panelRef = useRef<HTMLElement | null>(null);
   const gestureRef = useRef<Gesture | null>(null);
-  const latestRef = useRef<Geometry>(geometry);
-  const movedRef = useRef(false);
 
   const setPanel = (element: HTMLElement | null): void => {
     panelRef.current = element;
@@ -74,20 +72,20 @@ const useFloatGesture = ({
     if (prior && panel.hasPointerCapture?.(prior.pointerId)) {
       panel.releasePointerCapture(prior.pointerId);
     }
-    movedRef.current = false;
     const edgeKey = event.currentTarget.dataset.edge;
 
     const parent = panel.offsetParent instanceof HTMLElement ? panel.offsetParent : null;
     const gesture: Gesture = {
       bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
       edges: edgeKey === undefined ? null : (EDGE_BY_KEY.get(edgeKey) ?? null),
+      latest: geometry,
+      moved: false,
       pointerId: event.pointerId,
       start: geometry,
       startX: event.clientX,
       startY: event.clientY,
     };
     gestureRef.current = gesture;
-    latestRef.current = geometry;
 
     if (gesture.edges) {
       panel.setPointerCapture(event.pointerId);
@@ -106,11 +104,11 @@ const useFloatGesture = ({
       panel.releasePointerCapture(event.pointerId);
     }
 
-    if (!movedRef.current) {
+    if (!gesture.moved) {
       onTap();
       return;
     }
-    onCommit(latestRef.current);
+    onCommit(gesture.latest);
   };
 
   const handlePointerMove = (event: ReactPointerEvent): void => {
@@ -126,11 +124,11 @@ const useFloatGesture = ({
     }
     const dx = event.clientX - gesture.startX;
     const dy = event.clientY - gesture.startY;
-    if (!movedRef.current) {
+    if (!gesture.moved) {
       if (Math.hypot(dx, dy) <= TAP_SLOP) {
         return;
       }
-      movedRef.current = true;
+      gesture.moved = true;
 
       if (!gesture.edges) {
         panel.setPointerCapture(gesture.pointerId);
@@ -144,7 +142,7 @@ const useFloatGesture = ({
           minimized ? CHIP_SIZE : undefined,
         );
 
-    latestRef.current = next;
+    gesture.latest = next;
     panel.style.left = `${next.left}px`;
     panel.style.top = `${next.top}px`;
 
@@ -164,7 +162,7 @@ const useFloatGesture = ({
     if (panel.hasPointerCapture?.(event.pointerId)) {
       panel.releasePointerCapture(event.pointerId);
     }
-    if (!movedRef.current) {
+    if (!gesture.moved) {
       return;
     }
     panel.style.left = `${gesture.start.left}px`;

@@ -87,11 +87,17 @@ const TabsetRoot = ({
     store.setState({ overflowItems });
   }, [overflowItems, store]);
 
+  // Every dispatch rebuilds `node.children`, so this also runs for changes
+  // unrelated to a close; the pending id is what keeps a vetoed one from firing.
   useEffect(() => {
-    if (!store.getState().restoreFocus) {
+    const { pendingCloseTabId } = store.getState();
+    if (pendingCloseTabId === null) {
       return;
     }
-    store.setState({ restoreFocus: false });
+    store.setState({ pendingCloseTabId: null });
+    if (node.children.some((tab) => tab.id === pendingCloseTabId)) {
+      return;
+    }
     const activeTabId = node.children[node.selected]?.id;
     if (activeTabId) {
       tabsetRef.current

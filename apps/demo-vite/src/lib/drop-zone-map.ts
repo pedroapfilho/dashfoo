@@ -67,12 +67,7 @@ const activeCellAt = (tabsets: Array<TabsetMeasurement>, point: Point): ActiveCe
       tabsetIndex,
     };
   }
-  const target = resolveDockTarget(point, tabset.rect);
-  return {
-    kind: "dock",
-    location: target.kind === "tab" ? "center" : `split-${target.edge}`,
-    tabsetIndex,
-  };
+  return { kind: "dock", location: resolveDockTarget(point, tabset.rect), tabsetIndex };
 };
 
 const cellKey = (cell: ActiveCell | ZoneCell): string =>

@@ -121,6 +121,28 @@ describe("history", () => {
     expect(canUndo(history)).toBe(false);
   });
 
+  test("an action that changes nothing records no undo step", () => {
+    const history = dispatch(createHistory(model()), {
+      index: 0,
+      tabsetId: "ts1",
+      type: "selectTab",
+    });
+
+    expect(history.past).toHaveLength(0);
+    expect(canUndo(history)).toBe(false);
+  });
+
+  test("an action that changes nothing preserves the redo stack", () => {
+    let history = createHistory(model());
+    history = dispatch(history, { name: "renamed", tabId: "t1", type: "renameTab" });
+    history = undo(history);
+    expect(canRedo(history)).toBe(true);
+
+    history = dispatch(history, { index: 0, tabsetId: "ts1", type: "selectTab" });
+
+    expect(canRedo(history)).toBe(true);
+  });
+
   test("redo respects the cap", () => {
     let history = createHistory(model());
     for (let i = 0; i < HISTORY_LIMIT; i++) {

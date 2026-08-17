@@ -26,18 +26,45 @@ const TabsetToolbar = ({ style, ...props }: TabsetToolbarProps): ReactNode => (
   <div {...props} data-dashfoo="tabset-toolbar" style={{ ...toolbarStyle, ...style }} />
 );
 
+type TabsetChrome = { float: boolean; grip: boolean; maximize: boolean; overflow: boolean };
+
+/**
+ * One answer per control, shared by the controls and by the layout deciding
+ * whether to render a toolbar at all, so the two cannot disagree.
+ */
+const useTabsetChrome = (): TabsetChrome => {
+  const draggableTabsets = useLayout((state) => state.draggableTabsets);
+  const floatable = useLayout((state) => state.floatable);
+  const isMaximized = useTabset((state) => state.isMaximized);
+  const overflowCount = useTabset((state) => state.overflowItems.length);
+  const showMaximize = useTabset((state) => state.showMaximize);
+  const hasFloatLayer = useHasFloatLayer();
+
+  if (floatable && !isMaximized && !hasFloatLayer) {
+    warnOnce(
+      "float-no-layer",
+      "Tabset.FloatButton needs a <Layout.FloatLayer> around the layout (DashfooLayout adds one); the float control is hidden",
+    );
+  }
+
+  return {
+    float: floatable && !isMaximized && hasFloatLayer,
+    grip: draggableTabsets && !isMaximized,
+    maximize: showMaximize,
+    overflow: overflowCount > 0,
+  };
+};
+
 type TabsetGripProps = ComponentProps<"button">;
 
 const TabsetGrip = ({ children, ref: userRef, ...props }: TabsetGripProps): ReactNode => {
   const activeTabName = useTabset((state) => state.activeTab?.name ?? "");
-  const isMaximized = useTabset((state) => state.isMaximized);
   const node = useTabset((state) => state.node);
-  const draggableTabsets = useLayout((state) => state.draggableTabsets);
-  const hidden = !draggableTabsets || isMaximized;
-  const { ref } = useTabsetDraggable(node.id, hidden, activeTabName);
+  const { grip } = useTabsetChrome();
+  const { ref } = useTabsetDraggable(node.id, !grip, activeTabName);
   const refCallback = useMemo(() => mergeRefs<HTMLButtonElement>(ref, userRef), [ref, userRef]);
 
-  if (hidden) {
+  if (!grip) {
     return null;
   }
 
@@ -63,10 +90,10 @@ const TabsetMaximizeButton = ({
   ...props
 }: TabsetMaximizeButtonProps): ReactNode => {
   const isMaximized = useTabset((state) => state.isMaximized);
-  const showMaximize = useTabset((state) => state.showMaximize);
   const toggleMaximize = useTabset((state) => state.toggleMaximize);
+  const { maximize } = useTabsetChrome();
 
-  if (!showMaximize) {
+  if (!maximize) {
     return null;
   }
 
@@ -93,21 +120,11 @@ const TabsetMaximizeButton = ({
 type TabsetFloatButtonProps = ComponentProps<"button">;
 
 const TabsetFloatButton = ({ children, onClick, ...props }: TabsetFloatButtonProps): ReactNode => {
-  const floatable = useLayout((state) => state.floatable);
   const dispatch = useLayout((state) => state.dispatch);
-  const isMaximized = useTabset((state) => state.isMaximized);
   const node = useTabset((state) => state.node);
-  const hasFloatLayer = useHasFloatLayer();
+  const { float } = useTabsetChrome();
 
-  if (!floatable || isMaximized) {
-    return null;
-  }
-
-  if (!hasFloatLayer) {
-    warnOnce(
-      "float-no-layer",
-      "Tabset.FloatButton needs a <Layout.FloatLayer> around the layout (DashfooLayout adds one); the float control is hidden",
-    );
+  if (!float) {
     return null;
   }
 
@@ -131,8 +148,9 @@ const TabsetFloatButton = ({ children, onClick, ...props }: TabsetFloatButtonPro
   );
 };
 
-export { TabsetFloatButton, TabsetGrip, TabsetMaximizeButton, TabsetToolbar };
+export { TabsetFloatButton, TabsetGrip, TabsetMaximizeButton, TabsetToolbar, useTabsetChrome };
 export type {
+  TabsetChrome,
   TabsetFloatButtonProps,
   TabsetGripProps,
   TabsetMaximizeButtonProps,

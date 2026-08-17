@@ -12,14 +12,19 @@ const overflowingIds = (tablist: Element): Array<string> => {
   });
 };
 
+const sameIds = (a: Array<string>, b: Array<string>): boolean =>
+  a.length === b.length && a.every((id, index) => id === b[index]);
+
 const useTabOverflow = (tablist: HTMLElement | null, signature: string): Array<string> => {
   const [overflow, setOverflow] = useState<Array<string>>([]);
 
   useEffect(() => {
+    // Fires per frame while an overflowing strip scrolls, so an unchanged set
+    // has to keep its array identity or the tabset re-renders throughout.
     const recompute = (): void => {
       setOverflow((previous) => {
         const next = tablist ? overflowingIds(tablist) : [];
-        return next.length === 0 && previous.length === 0 ? previous : next;
+        return sameIds(previous, next) ? previous : next;
       });
     };
     recompute();

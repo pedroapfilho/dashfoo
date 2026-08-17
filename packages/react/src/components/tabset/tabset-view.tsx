@@ -17,27 +17,19 @@ import {
   TabsetGrip,
   TabsetMaximizeButton,
   TabsetToolbar,
+  useTabsetChrome,
 } from "./tabset-toolbar";
 
 const tabsetContent = <TabsetContent />;
 
 const DefaultTabsetLayout = (): ReactNode => {
-  const draggableTabsets = useLayout((state) => state.draggableTabsets);
-  const floatable = useLayout((state) => state.floatable);
   const renderTabsetToolbar = useLayout((state) => state.renderTabsetToolbar);
   const tabLocation = useLayout((state) => state.tabLocation);
   const tabStripEnabled = useLayout((state) => state.tabStripEnabled);
-  const isMaximized = useTabset((state) => state.isMaximized);
   const node = useTabset((state) => state.node);
-  const overflowCount = useTabset((state) => state.overflowItems.length);
-  const showMaximize = useTabset((state) => state.showMaximize);
+  const chrome = useTabsetChrome();
 
-  const showToolbar =
-    showMaximize ||
-    renderTabsetToolbar !== undefined ||
-    overflowCount > 0 ||
-    (floatable && !isMaximized) ||
-    (draggableTabsets && !isMaximized);
+  const showToolbar = renderTabsetToolbar !== undefined || Object.values(chrome).some(Boolean);
 
   const strip = tabStripEnabled ? (
     <TabsetTabStrip>
