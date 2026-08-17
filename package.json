@@ -26,10 +26,10 @@
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.0",
-    "fallow": "^3.15.0",
+    "fallow": "^3.14.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
-    "oxfmt": "^0.63.0",
+    "oxfmt": "^0.62.0",
     "oxlint": "^1.78.0",
     "oxlint-config-awesomeness": "^3.4.2",
     "oxlint-tsgolint": "^7.0.2001",
