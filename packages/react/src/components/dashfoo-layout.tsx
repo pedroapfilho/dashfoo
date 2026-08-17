@@ -19,7 +19,7 @@ import { localStorageAdapter, usePersistence } from "../hooks/persistence";
 import { useContainerWidth } from "../hooks/responsive";
 import { useDashfooStore } from "../hooks/store";
 
-import { DashfooDragProvider } from "./drag-root";
+import { DashfooDragProvider } from "./dashfoo-drag-provider";
 import { Layout } from "./layout";
 
 const DEFAULT_PERSIST_DEBOUNCE_MS = 300;

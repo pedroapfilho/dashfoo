@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import { TabOverflowMenu } from "../tab-overflow";
+import { TabOverflowMenu } from "../tab-overflow-menu";
 
 import { useTabset } from "./tabset-store";
 

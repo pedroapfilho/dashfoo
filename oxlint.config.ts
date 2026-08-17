@@ -27,8 +27,8 @@ export default defineConfig({
 
     {
       files: [
-        "packages/react/src/components/drag-overlays.tsx",
-        "packages/react/src/components/drag-root.tsx",
+        "packages/react/src/components/dashfoo-drag-provider.tsx",
+        "packages/react/src/components/drag-preview-overlay.tsx",
         "packages/react/src/hooks/responsive.ts",
       ],
       rules: {

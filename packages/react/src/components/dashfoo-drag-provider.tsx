@@ -10,7 +10,7 @@ import type { DragRootContextValue, DragScope } from "../hooks/drag-hooks";
 import { createDragManager, DragRootContext, SharedDragManagerContext } from "../hooks/drag-hooks";
 import { subjectFor } from "../lib/drag-subject";
 
-import { DragPreviewOverlay } from "./drag-overlays";
+import { DragPreviewOverlay } from "./drag-preview-overlay";
 
 type ScopedTarget = { element: HTMLElement; scope: DragScope; tabsetId: string };
 

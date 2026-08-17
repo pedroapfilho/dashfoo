@@ -7,9 +7,9 @@ import { describe, expect, test } from "vitest";
 
 import { SharedDragManagerContext } from "../hooks/drag-hooks";
 
+import { DashfooDragProvider } from "./dashfoo-drag-provider";
 import type { DashfooHandle, DashfooLayoutCommonProps } from "./dashfoo-layout";
 import { DashfooLayout } from "./dashfoo-layout";
-import { DashfooDragProvider } from "./drag-root";
 
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",

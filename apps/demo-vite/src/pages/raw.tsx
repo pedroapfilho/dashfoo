@@ -12,8 +12,8 @@ import { Redo2, Undo2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo } from "react";
 
-import { renderPanel } from "../components/panels";
-import { Button, DemoStage } from "../components/ui";
+import { Button, DemoStage } from "../components/demo-stage";
+import { PlaceholderPanel } from "../components/placeholder-panel";
 import { dockingModel } from "../models";
 
 const RawTabLabel = (): ReactNode => {
@@ -109,7 +109,7 @@ const RawPage = (): ReactNode => {
         draggableTabs={!isCompact}
         draggableTabsets={!isCompact}
         model={view}
-        renderTab={renderPanel}
+        renderTab={PlaceholderPanel}
         resizableSplits={!isCompact}
         rootRef={containerRef}
       >

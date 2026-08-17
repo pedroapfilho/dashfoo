@@ -9,7 +9,7 @@ import { useLayout } from "../../hooks/layout-store";
 import { useTabOverflow } from "../../hooks/use-tab-overflow";
 import { tabDomId } from "../../lib/tab-ids";
 import { fallbackSelectedIndex } from "../../lib/tab-selection";
-import { useDragSubject, useTabsetDroppable } from "../drag-adapter";
+import { useDragSubject, useTabsetDroppable } from "../drag-provider";
 
 import type { TabsetSnapshot } from "./tabset-store";
 import { createTabsetStore, TabsetStoreContext } from "./tabset-store";
