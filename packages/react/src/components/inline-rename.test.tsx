@@ -3,8 +3,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 
 import { FloatTitleEditor } from "./float-panel";
+import { RenameEditor } from "./tabset/tabset-rename-input";
 import { createTabsetStore, TabContext, TabsetStoreContext } from "./tabset/tabset-store";
-import { RenameEditor } from "./tabset/tabset-tab-controls";
 
 const CURRENT_NAME = "Chart";
 

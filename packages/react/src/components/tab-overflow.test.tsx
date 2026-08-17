@@ -3,7 +3,7 @@ import { describe, expect, test, vi } from "vitest";
 
 import { overflowingIds } from "../hooks/use-tab-overflow";
 
-import { TabOverflowMenu } from "./tab-overflow";
+import { TabOverflowMenu } from "./tab-overflow-menu";
 
 const makeTablist = (tabs: Array<[string, number]>, rightEdge: number): HTMLElement => {
   const tablist = document.createElement("div");

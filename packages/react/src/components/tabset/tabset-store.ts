@@ -7,7 +7,7 @@ import { createStore, useStore } from "zustand";
 
 import { tabDomId } from "../../lib/tab-ids";
 import { warnOnce } from "../../lib/warn-once";
-import type { OverflowItem } from "../tab-overflow";
+import type { OverflowItem } from "../tab-overflow-menu";
 
 type TabsetState = {
   activeTab: TabNode | undefined;

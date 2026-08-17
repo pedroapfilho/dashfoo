@@ -3,8 +3,8 @@ import { Lock, LockOpen } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
-import { renderPanel } from "../components/panels";
-import { Button, DemoStage } from "../components/ui";
+import { Button, DemoStage } from "../components/demo-stage";
+import { PlaceholderPanel } from "../components/placeholder-panel";
 import { overviewModel } from "../models";
 
 const StaticLayoutPage = (): ReactNode => {
@@ -31,7 +31,7 @@ const StaticLayoutPage = (): ReactNode => {
       <DashfooLayout
         defaultModel={defaultModel}
         editable={editable}
-        factory={renderPanel}
+        factory={PlaceholderPanel}
         responsive={{ maxWidth: 720 }}
       />
     </DemoStage>

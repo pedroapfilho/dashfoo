@@ -6,11 +6,11 @@ import type { ReactNode } from "react";
 import { useLayout } from "../../hooks/layout-store";
 
 import { TabsetContent } from "./tabset-content";
-import { TabsetOverflowMenu } from "./tabset-overflow";
+import { TabsetOverflowMenu } from "./tabset-overflow-menu";
+import { TabsetCloseButton, TabsetRenameInput } from "./tabset-rename-input";
 import { TabsetRoot } from "./tabset-root";
 import { useTabset } from "./tabset-store";
 import { TabsetTab, TabsetTrigger } from "./tabset-tab";
-import { TabsetCloseButton, TabsetRenameInput } from "./tabset-tab-controls";
 import { TabsetTablist, TabsetTabStrip } from "./tabset-tablist";
 import {
   TabsetFloatButton,

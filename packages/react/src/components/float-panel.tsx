@@ -9,11 +9,11 @@ import { useLayout } from "../hooks/layout-store";
 import { useFloatGesture } from "../hooks/use-float-gesture";
 import { useInlineRename } from "../hooks/use-inline-rename";
 
-import { DragProvider } from "./drag-adapter";
+import { DockIcon, FloatIcon, GripIcon, MinimizeIcon } from "./close-icon";
+import { DragProvider } from "./drag-provider";
 import { RESIZE_HANDLES } from "./float-resize-handles";
 import { LayoutOverrides } from "./layout-root";
 import { RowView } from "./row-view";
-import { DockIcon, FloatIcon, GripIcon, MinimizeIcon } from "./tabset-icons";
 
 const floatTitle = (node: FloatNode): string => node.name ?? "Panel";
 
