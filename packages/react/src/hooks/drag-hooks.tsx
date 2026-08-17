@@ -53,11 +53,9 @@ const createDragManager = (): DragDropManager =>
 type DragActor = ActorRefFrom<typeof dragDockMachine>;
 
 /**
- * One scope per rendered layer (the main tree, then one per float). The manager
- * and the drag actor are shared above them; a scope only says how to turn a
- * pointer over one of *its* tabsets into an intent, and where a committed action
- * goes. `layerId` is what namespaces its droppable registrations, so two layers
- * can hold a tabset with the same model id.
+ * One per rendered layer (the main tree, then one per float); the manager and
+ * actor are shared above them. `layerId` namespaces droppable registrations, so
+ * two layers can hold a tabset with the same model id.
  */
 type DragScope = {
   commit: (action: Action) => void;
@@ -90,11 +88,7 @@ const DragContext = createContext<DragContextValue | null>(null);
 const SharedDragManagerContext: Context<DragDropManager | null> =
   createContext<DragDropManager | null>(null);
 
-/**
- * The actor assigns a freshly built intent on every pointer move, so selecting
- * `context.intent` by reference would re-render every reader of `useDropIntent`
- * for each move that resolved to the same slot.
- */
+/** The intent is rebuilt every pointer move, so readers compare by value. */
 const sameDropIntent = (a: DropIntent | null, b: DropIntent | null): boolean =>
   a === b ||
   (a !== null &&
@@ -238,20 +232,28 @@ const useExternalTabSource = ({
 };
 
 /**
- * Both drag readers are documented as working anywhere under the provider, which
- * includes a custom overlay mounted beside the layout rather than inside a drag
- * layer, so they read the root's actor. Outside a provider entirely there is no
- * actor to read and they report the empty state instead of throwing: a component
- * that renders both inside and outside a layout should not crash in one of them.
+ * Reads the root's actor, so it works from an overlay mounted beside the layout
+ * rather than inside a drag layer. Outside a provider it reports the empty state
+ * instead of throwing.
  */
 const useDragSubject = (): DragSubject | null => {
   const actorRef = useContext(DragRootContext)?.actorRef;
-  return useSelector(actorRef, (snapshot) => snapshot?.context.subject ?? null);
+  return useSelector(actorRef, (snapshot) => {
+    const drag = snapshot?.context.drag;
+    return drag?.kind === "dragging" ? drag.subject : null;
+  });
 };
 
 const useDropIntent = (): DropIntent | null => {
   const actorRef = useContext(DragRootContext)?.actorRef;
-  return useSelector(actorRef, (snapshot) => snapshot?.context.intent ?? null, sameDropIntent);
+  return useSelector(
+    actorRef,
+    (snapshot) => {
+      const drag = snapshot?.context.drag;
+      return drag?.kind === "dragging" ? (drag.drop?.intent ?? null) : null;
+    },
+    sameDropIntent,
+  );
 };
 
 export type {

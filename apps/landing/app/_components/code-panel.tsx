@@ -7,9 +7,11 @@ const SNIPPET = `<DashfooLayout
 />`;
 
 const CodePanel = (): ReactNode => (
-  <pre className="text-dashfoo-muted-foreground overflow-auto font-mono text-[0.6875rem]/4">
-    {SNIPPET}
-  </pre>
+  // Without a focus target, keyboard users cannot scroll overflow content.
+  // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+  <section aria-label="Dashfoo layout example" className="overflow-auto" tabIndex={0}>
+    <pre className="text-muted-foreground font-mono text-xs/4">{SNIPPET}</pre>
+  </section>
 );
 
 export { CodePanel };

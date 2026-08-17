@@ -4,7 +4,6 @@ import type { DockLocation } from "../state/actions";
 
 type Point = { x: number; y: number };
 type Rect = { height: number; width: number; x: number; y: number };
-type DockTarget = { kind: "tab" } | { edge: Edge; kind: "split" };
 type BandOptions = { bandFraction?: number };
 type DockZone = { location: DockLocation; points: Array<Point> };
 
@@ -33,20 +32,6 @@ const closestEdge = (d: { bottom: number; left: number; right: number; top: numb
   return "bottom";
 };
 
-const dockLocationFor = (target: DockTarget): DockLocation => {
-  switch (target.kind) {
-    case "split": {
-      return `split-${target.edge}`;
-    }
-    case "tab": {
-      return "center";
-    }
-    default: {
-      return assertNever(target);
-    }
-  }
-};
-
 const splitEdge = (location: DockLocation): Edge | undefined => {
   switch (location) {
     case "center": {
@@ -70,19 +55,19 @@ const splitEdge = (location: DockLocation): Edge | undefined => {
   }
 };
 
-const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): DockTarget => {
+const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): DockLocation => {
   const band = opts?.bandFraction ?? DEFAULT_BAND_FRACTION;
 
   if (rect.width <= 0 || rect.height <= 0) {
-    return { kind: "tab" };
+    return "center";
   }
   const distances = edgeDistances(pointer, rect);
   const min = Math.min(distances.left, distances.right, distances.top, distances.bottom);
 
   if (min > band) {
-    return { kind: "tab" };
+    return "center";
   }
-  return { edge: closestEdge(distances), kind: "split" };
+  return `split-${closestEdge(distances)}`;
 };
 
 const dockZonePolygons = (rect: Rect, opts?: BandOptions): Array<DockZone> => {
@@ -135,5 +120,5 @@ const zoneRect = (rect: Rect, location: DockLocation): Rect => {
   }
 };
 
-export { dockLocationFor, dockZonePolygons, resolveDockTarget, splitEdge, zoneRect };
-export type { BandOptions, DockTarget, DockZone, Point, Rect };
+export { dockZonePolygons, resolveDockTarget, splitEdge, zoneRect };
+export type { BandOptions, DockZone, Point, Rect };

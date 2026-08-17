@@ -202,4 +202,39 @@ describe("useDashfooStore (controlled)", () => {
     expect(onModelChange).not.toHaveBeenCalled();
     expect(result.current.model.activeTabsetId).toBe("ts1");
   });
+
+  test("a change the host does not apply does not accumulate into the next one", () => {
+    const onModelChange = vi.fn<(model: Dashfoo) => void>();
+    const { result } = renderHook(
+      ({ current }) => useDashfooStore({ model: current, onModelChange }),
+      { initialProps: { current: model() } },
+    );
+
+    act(() => {
+      result.current.dispatch({ name: "ignored", tabId: "t1", type: "renameTab" });
+    });
+    act(() => {
+      result.current.dispatch({ tabsetId: "ts2", type: "setActiveTabset" });
+    });
+
+    const second = onModelChange.mock.calls[1]?.[0];
+    expect(second?.activeTabsetId).toBe("ts2");
+    expect(second?.layout.children[0]).toMatchObject({
+      children: [expect.objectContaining({ name: "T1" })],
+    });
+  });
+
+  test("an action that changes nothing does not fire onModelChange", () => {
+    const onModelChange = vi.fn<(model: Dashfoo) => void>();
+    const { result } = renderHook(
+      ({ current }) => useDashfooStore({ model: current, onModelChange }),
+      { initialProps: { current: model() } },
+    );
+
+    act(() => {
+      result.current.dispatch({ tabsetId: "ts1", type: "setActiveTabset" });
+    });
+
+    expect(onModelChange).not.toHaveBeenCalled();
+  });
 });

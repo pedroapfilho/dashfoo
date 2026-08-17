@@ -1,7 +1,7 @@
 "use client";
 
 import type { Action, DropIntent, Point } from "@dashfoo/core";
-import { dockLocationFor, resolveDockTarget, splitEdge } from "@dashfoo/core";
+import { resolveDockTarget, splitEdge } from "@dashfoo/core";
 import type { ReactNode } from "react";
 import { useCallback, useContext, useEffect, useId, useMemo, useState } from "react";
 
@@ -17,28 +17,42 @@ import { DockIndicator } from "./drag-preview-overlay";
 const MISSING_ROOT =
   "[dashfoo] DashfooDragProvider unmounted while its layout is still mounted; keep the provider above the layout or remount the layout";
 
-const tabRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
-  [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].flatMap((tab) =>
-    tab.dataset.tabId === excludeId ? [] : [tab.getBoundingClientRect()],
-  );
+type StripMeasurement = { rect: DOMRect; tabIds: Array<string>; tabRects: Array<DOMRect> };
+
+/** One DOM pass per pointer move, where resolving a drop used to run three. */
+const measureStrip = (element: HTMLElement, excludeId?: string): StripMeasurement | null => {
+  const strip = element.querySelector('[data-dashfoo="tabstrip"]');
+  if (!strip) {
+    return null;
+  }
+  const tabIds: Array<string> = [];
+  const tabRects: Array<DOMRect> = [];
+  for (const tab of strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')) {
+    const tabId = tab.dataset.tabId ?? "";
+    tabIds.push(tabId);
+    if (tabId !== excludeId) {
+      tabRects.push(tab.getBoundingClientRect());
+    }
+  }
+  return { rect: strip.getBoundingClientRect(), tabIds, tabRects };
+};
 
 const intentForTabset = (
   id: string,
   element: HTMLElement,
   point: Point,
-  draggedId?: string,
+  strip: StripMeasurement | null,
 ): DropIntent => {
-  const strip = element.querySelector('[data-dashfoo="tabstrip"]');
-  if (strip && pointInRect(point, strip.getBoundingClientRect())) {
+  if (strip && pointInRect(point, strip.rect)) {
     return {
-      index: insertionIndex(tabRects(strip, draggedId), point.x),
+      index: insertionIndex(strip.tabRects, point.x),
       location: "center",
       targetId: id,
     };
   }
-  const location = dockLocationFor(resolveDockTarget(point, element.getBoundingClientRect()));
+  const location = resolveDockTarget(point, element.getBoundingClientRect());
   if (location === "center" && strip) {
-    return { index: tabRects(strip, draggedId).length, location, targetId: id };
+    return { index: strip.tabRects.length, location, targetId: id };
   }
   return { location, targetId: id };
 };
@@ -51,11 +65,7 @@ type DragProviderProps = {
   splitDock?: boolean;
 };
 
-/**
- * One drag layer: the main tree, or one float. It holds no drag state of its
- * own. It registers how its own tabsets turn a pointer into an intent and where
- * a committed action goes, then draws the indicator over its own droppables.
- */
+/** One drag layer (the main tree, or one float). Holds no drag state of its own. */
 const DragScope = ({ children, onCommit, splitDock }: DragProviderProps): ReactNode => {
   const root = useContext(DragRootContext);
   const layoutStore = useContext(LayoutStoreContext);
@@ -91,13 +101,11 @@ const DragScope = ({ children, onCommit, splitDock }: DragProviderProps): ReactN
         if (layoutStore?.getState().editable === false) {
           return null;
         }
-        const tabIds = [...element.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].map(
-          (tab) => tab.dataset.tabId ?? "",
-        );
-        if (!shouldAllowDrop(draggedId, targetId, tabIds)) {
+        const strip = measureStrip(element, draggedId);
+        if (!shouldAllowDrop(draggedId, targetId, strip?.tabIds ?? [])) {
           return null;
         }
-        const intent = intentForTabset(targetId, element, point, draggedId);
+        const intent = intentForTabset(targetId, element, point, strip);
 
         const splitDockResolved = splitDock ?? layoutStore?.getState().splitDock ?? true;
         if (!splitDockResolved && splitEdge(intent.location) !== undefined) {
@@ -130,10 +138,8 @@ const DragScope = ({ children, onCommit, splitDock }: DragProviderProps): ReactN
 };
 
 /**
- * Mounts its own root when there is none above it, so a hand-composed
- * `Layout.DragLayer` still works standalone. The choice is made on the first
- * render, as it was for the manager this used to create itself: a root that
- * disappears later means a torn-down tree, which `DragScope` reports.
+ * Mounts its own root when there is none above it. Decided on the first render:
+ * a root that disappears later means a torn-down tree, which `DragScope` reports.
  */
 const DragProvider = (props: DragProviderProps): ReactNode => {
   const hasRoot = useContext(DragRootContext) !== null;

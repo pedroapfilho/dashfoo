@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 const BASE =
-  "rounded-dashfoo focus-visible:outline-dashfoo-ring inline-flex items-center gap-2 py-2.5 text-base font-medium focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm";
+  "rounded-dashfoo inline-flex items-center gap-2 py-2.5 font-mono text-base font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:text-sm";
 
 const ICON_PADDING = {
   leading: "pr-5 pl-2.5",
@@ -10,8 +10,8 @@ const ICON_PADDING = {
 } as const;
 
 const VARIANTS = {
-  primary: "bg-dashfoo-primary text-dashfoo-background transition-opacity hover:opacity-90",
-  secondary: "border-dashfoo-border text-dashfoo-foreground hover:bg-dashfoo-muted border",
+  primary: "bg-primary text-primary-foreground transition-opacity hover:opacity-90",
+  secondary: "border border-border text-foreground hover:bg-muted",
 } as const;
 
 type ButtonLinkProps = {

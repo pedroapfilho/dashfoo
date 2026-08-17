@@ -20,8 +20,16 @@ const createHistory = (present: Dashfoo): History => ({
 const canUndo = (history: History): boolean => history.past.length > 0;
 const canRedo = (history: History): boolean => history.future.length > 0;
 
+/**
+ * An action that changed nothing is not an edit: recording it would spend an
+ * undo slot and clear a redo stack the user just built. Not coalescing (ADR
+ * 0002): two distinct edits are still two entries.
+ */
 const dispatch = (history: History, action: Action): History => {
   const present = reducer(history.present, action);
+  if (Object.is(present, history.present)) {
+    return history;
+  }
   return { future: [], past: [...history.past, history.present].slice(-HISTORY_LIMIT), present };
 };
 

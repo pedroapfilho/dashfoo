@@ -6,20 +6,29 @@ const showcaseModel = (): Dashfoo =>
     row(
       [
         tabset([tab("chart", "Overview"), tab("table", "Orders")], {
-          id: "main",
+          enableClose: false,
+          id: "primary",
           weight: 2,
         }),
         row(
           [
-            tabset([tab("activity", "Activity")], { id: "side-top", weight: 1 }),
-            tabset([tab("code", "Snippet")], { id: "side-bottom", weight: 1 }),
+            tabset([tab("activity", "Activity")], {
+              enableClose: false,
+              id: "side-top",
+              weight: 1,
+            }),
+            tabset([tab("code", "Snippet")], {
+              enableClose: false,
+              id: "side-bottom",
+              weight: 1,
+            }),
           ],
           { id: "side", orientation: "column", weight: 1 },
         ),
       ],
       { id: "root" },
     ),
-    { activeTabsetId: "main" },
+    { activeTabsetId: "primary" },
   );
 
 export { showcaseModel };

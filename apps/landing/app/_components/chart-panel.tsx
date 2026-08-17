@@ -5,13 +5,13 @@ const CHART_BARS = [42, 68, 55, 80, 47, 92, 61, 74, 38, 86, 70, 58] as const;
 const ChartPanel = (): ReactNode => (
   <div className="flex h-full flex-col gap-3">
     <div className="flex items-baseline justify-between">
-      <p className="text-dashfoo-foreground text-lg font-semibold tabular-nums">$48,210</p>
-      <p className="text-dashfoo-muted-foreground text-[0.6875rem]">last 12 weeks</p>
+      <p className="text-foreground text-lg font-semibold tabular-nums">$48,210</p>
+      <p className="text-muted-foreground text-[0.6875rem]">last 12 weeks</p>
     </div>
     <div className="flex min-h-0 flex-1 items-end gap-1.5">
       {CHART_BARS.map((h, i) => (
         <div
-          className="bg-dashfoo-accent flex-1 rounded-t-sm"
+          className="bg-accent flex-1 rounded-t-sm"
           // eslint-disable-next-line react/no-array-index-key
           key={i}
           style={{ height: `${h}%` }}

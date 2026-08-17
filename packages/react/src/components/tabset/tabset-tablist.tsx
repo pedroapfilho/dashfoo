@@ -28,6 +28,7 @@ const TabsetTablist = ({
   const node = useTabset((state) => state.node);
   const registerTablist = useTabset((state) => state.registerTablist);
   const selectTab = useTabset((state) => state.selectTab);
+  const visualSelected = useTabset((state) => state.visualSelected);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
     onKeyDown?.(event);
@@ -42,9 +43,11 @@ const TabsetTablist = ({
     if (count === 0) {
       return;
     }
+    // The visual index, not the model's: focus (`tabindex="0"`) sits at that one.
+    const from = Math.max(visualSelected, 0);
     const targets: Record<string, number> = {
-      ArrowLeft: (node.selected - 1 + count) % count,
-      ArrowRight: (node.selected + 1) % count,
+      ArrowLeft: (from - 1 + count) % count,
+      ArrowRight: (from + 1) % count,
       End: count - 1,
       Home: 0,
     };

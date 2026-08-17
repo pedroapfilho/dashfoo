@@ -30,11 +30,14 @@ const resolveSnapTargets = (config: SnapConfig, panelCount: number): Array<numbe
   return [...targets].toSorted((a, b) => a - b);
 };
 
-const snapEnabled = (config: SnapConfig | null): boolean =>
-  config !== null &&
-  ((config.step ?? 0) > 0 ||
-    config.divisions === "panels" ||
-    (typeof config.divisions === "number" && config.divisions >= 2));
+type SnapGrid = { targets: Array<number>; threshold: number };
+
+const resolveSnapGrid = (config: SnapConfig | null, panelCount: number): SnapGrid => ({
+  targets: config === null ? [] : resolveSnapTargets(config, panelCount),
+  threshold: config?.threshold ?? DEFAULT_SNAP_THRESHOLD,
+});
+
+const snapEnabled = (grid: SnapGrid): boolean => grid.targets.length > 0;
 
 const nearestTarget = (position: number, targets: Array<number>): number | undefined =>
   targets.reduce<number | undefined>((best, target) => {
@@ -46,16 +49,11 @@ const nearestTarget = (position: number, targets: Array<number>): number | undef
 
 type SnapResult = { sizes: Array<number>; snapped: boolean };
 
-const snapSizes = (sizes: Array<number>, boundaryIndex: number, config: SnapConfig): SnapResult => {
-  const threshold = config.threshold ?? DEFAULT_SNAP_THRESHOLD;
+const snapSizes = (sizes: Array<number>, boundaryIndex: number, grid: SnapGrid): SnapResult => {
+  const { targets, threshold } = grid;
   const left = sizes[boundaryIndex];
   const right = sizes[boundaryIndex + 1];
-  if (boundaryIndex < 0 || left === undefined || right === undefined) {
-    return { sizes, snapped: false };
-  }
-
-  const targets = resolveSnapTargets(config, sizes.length);
-  if (targets.length === 0) {
+  if (boundaryIndex < 0 || left === undefined || right === undefined || targets.length === 0) {
     return { sizes, snapped: false };
   }
 
@@ -88,30 +86,31 @@ type SnapDecision =
 const decideSnap = (
   sizes: Array<number>,
   boundaryIndex: number | null,
-  config: SnapConfig | null,
+  grid: SnapGrid,
 ): SnapDecision => {
-  if (boundaryIndex === null || config === null || !snapEnabled(config)) {
+  if (boundaryIndex === null || !snapEnabled(grid)) {
     return { kind: "inactive" };
   }
-  const { sizes: snappedSizes, snapped } = snapSizes(sizes, boundaryIndex, config);
+  const { sizes: snappedSizes, snapped } = snapSizes(sizes, boundaryIndex, grid);
   return snapped ? { kind: "engage", sizes: snappedSizes } : { kind: "clear" };
 };
 
 const settleSnap = (
   sizes: Array<number>,
   boundaryIndex: number | null,
-  config: SnapConfig | null,
+  grid: SnapGrid,
 ): Array<number> => {
-  const decision = decideSnap(sizes, boundaryIndex, config);
+  const decision = decideSnap(sizes, boundaryIndex, grid);
   return decision.kind === "engage" ? decision.sizes : sizes;
 };
 
 export {
   DEFAULT_SNAP_THRESHOLD,
   decideSnap,
+  resolveSnapGrid,
   resolveSnapTargets,
   settleSnap,
   snapEnabled,
   snapSizes,
 };
-export type { SnapDecision, SnapResult };
+export type { SnapDecision, SnapGrid, SnapResult };

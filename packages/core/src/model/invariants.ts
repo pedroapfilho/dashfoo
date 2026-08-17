@@ -1,15 +1,11 @@
 import type { Dashfoo, FloatNode, RowNode } from "./schema";
-import { collectTabsets } from "./tree";
 
 type RowChild = RowNode["children"][number];
 
 /**
- * A row that collapses to a single child hands its slot in the parent to
- * that child, so the slot's sizing constraints have to travel with it.
- * Dropping them silently widens a pinned sidebar, and `normalize` runs on
- * load and on every persist, so the loss is permanent.
- *
- * `snap` only exists on rows, so it is carried only to a row survivor.
+ * The survivor takes over the collapsed row's slot, so it has to take the slot's
+ * sizing too: dropping it widens a pinned sidebar, permanently, since this runs
+ * on every persist. `snap` is row-only, so it travels only to a row survivor.
  */
 const inheritSlot = (row: RowNode, survivor: RowChild): RowChild => {
   const sized: RowChild = {
@@ -25,18 +21,25 @@ const inheritSlot = (row: RowNode, survivor: RowChild): RowChild => {
   return sized;
 };
 
-const normalizeRowChildren = (children: RowNode["children"]): RowNode["children"] => {
+/** Records the id of every tabset it keeps, in document order. */
+const normalizeRowChildren = (
+  children: RowNode["children"],
+  keptTabsetIds: Array<string>,
+): RowNode["children"] => {
   const out: RowNode["children"] = [];
 
   for (const child of children) {
     if (child.type === "tabset") {
       if (child.children.length > 0) {
         out.push(child);
+        keptTabsetIds.push(child.id);
       }
       continue;
     }
 
-    const grandchildren = normalizeRowChildren(child.children);
+    // A recorded id implies a survivor, which keeps its ancestor rows alive, so
+    // a dropped row never leaves ids behind.
+    const grandchildren = normalizeRowChildren(child.children, keptTabsetIds);
     if (grandchildren.length === 0) {
       continue;
     }
@@ -53,11 +56,8 @@ const normalizeRowChildren = (children: RowNode["children"]): RowNode["children"
   return out;
 };
 
-const rowContainsTabset = (row: RowNode): boolean =>
-  row.children.some((child) => (child.type === "tabset" ? true : rowContainsTabset(child)));
-
-const normalizeLayout = (root: RowNode): RowNode => {
-  let children = normalizeRowChildren(root.children);
+const normalizeLayout = (root: RowNode, keptTabsetIds: Array<string>): RowNode => {
+  let children = normalizeRowChildren(root.children, keptTabsetIds);
   let orientation = root.orientation;
 
   let inner = children[0];
@@ -71,33 +71,37 @@ const normalizeLayout = (root: RowNode): RowNode => {
 };
 
 const normalize = (model: Dashfoo): Dashfoo => {
-  const layout = normalizeLayout(model.layout);
+  const mainTabsetIds: Array<string> = [];
+  const layout = normalizeLayout(model.layout, mainTabsetIds);
 
   const floats: Array<FloatNode> = [];
+  const floatTabsetIds: Array<string> = [];
   for (const float of model.floats) {
-    const floatLayout = normalizeLayout(float.layout);
-    if (rowContainsTabset(floatLayout)) {
+    const ownTabsetIds: Array<string> = [];
+    const floatLayout = normalizeLayout(float.layout, ownTabsetIds);
+    if (floatLayout.children.length > 0) {
       floats.push({ ...float, layout: floatLayout });
+      floatTabsetIds.push(...ownTabsetIds);
     }
   }
 
-  const withRoots: Dashfoo = { ...model, floats, layout };
-
-  const tabsets = collectTabsets(withRoots);
-  const tabsetIds = new Set(tabsets.map((tabset) => tabset.id));
-  const firstTabsetId = tabsets[0]?.id;
+  const mainIds = new Set(mainTabsetIds);
+  const liveIds = new Set([...mainTabsetIds, ...floatTabsetIds]);
+  const firstTabsetId = mainTabsetIds[0] ?? floatTabsetIds[0];
 
   const activeTabsetId =
-    model.activeTabsetId !== undefined && tabsetIds.has(model.activeTabsetId)
+    model.activeTabsetId !== undefined && liveIds.has(model.activeTabsetId)
       ? model.activeTabsetId
       : firstTabsetId;
 
+  // Main layout only: floats opt out of maximize, so an id that moved into one
+  // would render twice, in the main area and inside the float.
   const maximizedTabsetId =
-    model.maximizedTabsetId !== undefined && tabsetIds.has(model.maximizedTabsetId)
+    model.maximizedTabsetId !== undefined && mainIds.has(model.maximizedTabsetId)
       ? model.maximizedTabsetId
       : undefined;
 
-  return { ...withRoots, activeTabsetId, maximizedTabsetId };
+  return { ...model, activeTabsetId, floats, layout, maximizedTabsetId };
 };
 
 export { normalize };

@@ -19,11 +19,12 @@ type TabsetState = {
   isMaximized: boolean;
   node: TabsetNode;
   overflowItems: Array<OverflowItem>;
+  /** The tab a `closeTab` is waiting on, so a vetoed close cannot restore focus. */
+  pendingCloseTabId: string | null;
   registerRenameInput: () => () => void;
   registerTablist: (element: HTMLDivElement | null) => void;
   renameInputCount: number;
   renameTab: (tabId: string, name: string) => void;
-  restoreFocus: boolean;
   selectOverflowTab: (tabId: string) => void;
   selectTab: (index: number, options?: { focus?: boolean }) => void;
   showMaximize: boolean;
@@ -63,7 +64,7 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
       set({ editingTabId: null });
     },
     closeTab: (tabId) => {
-      set({ restoreFocus: true });
+      set({ pendingCloseTabId: tabId });
       get().dispatch({ tabId, type: "deleteTab" });
     },
     commitRename: (tabId, value) => {
@@ -77,6 +78,7 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
     },
     editingTabId: null,
     overflowItems: [],
+    pendingCloseTabId: null,
     registerRenameInput: () => {
       set((state) => ({ renameInputCount: state.renameInputCount + 1 }));
       return () => {
@@ -101,7 +103,6 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
     renameTab: (tabId, name) => {
       get().dispatch({ name, tabId, type: "renameTab" });
     },
-    restoreFocus: false,
     selectOverflowTab: (tabId) => {
       const { dispatch, node, tablistElement } = get();
       const index = node.children.findIndex((tab) => tab.id === tabId);
