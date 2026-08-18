@@ -1,30 +1,11 @@
 "use client";
 
-import type { ComponentProps, ReactNode } from "react";
-
-type PanelRootProps = ComponentProps<"div">;
-type PanelHeaderProps = ComponentProps<"div">;
-type PanelBodyProps = ComponentProps<"div">;
-type PanelTitleProps = ComponentProps<"span">;
-type PanelIconProps = ComponentProps<"span">;
-type PanelBadgeProps = ComponentProps<"span">;
-
-const PanelRoot = (props: PanelRootProps): ReactNode => <div {...props} data-dashfoo="panel" />;
-const PanelHeader = (props: PanelHeaderProps): ReactNode => (
-  <div {...props} data-dashfoo="panel-header" />
-);
-const PanelBody = (props: PanelBodyProps): ReactNode => (
-  <div {...props} data-dashfoo="panel-body" />
-);
-const PanelTitle = (props: PanelTitleProps): ReactNode => (
-  <span {...props} data-dashfoo="panel-title" />
-);
-const PanelIcon = (props: PanelIconProps): ReactNode => (
-  <span {...props} data-dashfoo="panel-icon" />
-);
-const PanelBadge = (props: PanelBadgeProps): ReactNode => (
-  <span {...props} data-dashfoo="panel-badge" />
-);
+import { PanelBadge } from "./panel-badge";
+import { PanelBody } from "./panel-body";
+import { PanelHeader } from "./panel-header";
+import { PanelIcon } from "./panel-icon";
+import { PanelRoot } from "./panel-root";
+import { PanelTitle } from "./panel-title";
 
 const Panel = {
   Badge: PanelBadge,
@@ -36,11 +17,9 @@ const Panel = {
 } as const;
 
 export { Panel };
-export type {
-  PanelBadgeProps,
-  PanelBodyProps,
-  PanelHeaderProps,
-  PanelIconProps,
-  PanelRootProps,
-  PanelTitleProps,
-};
+export type { PanelBadgeProps } from "./panel-badge";
+export type { PanelBodyProps } from "./panel-body";
+export type { PanelHeaderProps } from "./panel-header";
+export type { PanelIconProps } from "./panel-icon";
+export type { PanelRootProps } from "./panel-root";
+export type { PanelTitleProps } from "./panel-title";

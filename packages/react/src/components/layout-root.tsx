@@ -25,9 +25,7 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
   maximizable?: boolean;
   model: Dashfoo;
   renamableTabs?: boolean;
-  renderTab: (tab: TabNode) => ReactNode;
-  renderTabLabel?: (tab: TabNode) => ReactNode;
-  renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
+  renderers: LayoutRenderers;
   resizableSplits?: boolean;
 
   /** When false, the tree itself is frozen: no dragging, splitting or floating. Tabs stay closable and renamable. */
@@ -37,6 +35,14 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
 
   snap?: SnapConfig;
 };
+
+type LayoutRenderers = {
+  tab: (tab: TabNode) => ReactNode;
+  tabLabel?: (tab: TabNode) => ReactNode;
+  tabsetToolbar?: (tabset: TabsetNode) => ReactNode;
+};
+
+type LayoutStyle = CSSProperties & { "--dashfoo-splitter-size"?: string };
 
 const LayoutRoot = ({
   children,
@@ -50,9 +56,7 @@ const LayoutRoot = ({
   maximizable = true,
   model,
   renamableTabs = true,
-  renderTab,
-  renderTabLabel,
-  renderTabsetToolbar,
+  renderers,
   resizableSplits = true,
   restructurable = true,
   rootRef,
@@ -72,9 +76,9 @@ const LayoutRoot = ({
     maximizable: maximizable && global.tabSetEnableMaximize !== false,
     maximizedTabsetId: model.maximizedTabsetId,
     renamableTabs: editable && renamableTabs && global.tabEnableRename !== false,
-    renderTab,
-    renderTabLabel,
-    renderTabsetToolbar,
+    renderTab: renderers.tab,
+    renderTabLabel: renderers.tabLabel,
+    renderTabsetToolbar: renderers.tabsetToolbar,
     resizableSplits:
       editable && restructurable && resizableSplits && global.enableSplitResize !== false,
     snap: snap ?? global.snap ?? null,
@@ -90,14 +94,10 @@ const LayoutRoot = ({
     store.setState(snapshot);
   });
 
-  const layoutStyle: CSSProperties =
-    global.splitterSize === undefined
-      ? { ...rootStyle, ...style }
-      : ({
-          ...rootStyle,
-          "--dashfoo-splitter-size": `${global.splitterSize}px`,
-          ...style,
-        } as CSSProperties);
+  const layoutStyle: LayoutStyle = { ...rootStyle, ...style };
+  if (global.splitterSize !== undefined) {
+    layoutStyle["--dashfoo-splitter-size"] = `${global.splitterSize}px`;
+  }
 
   return (
     <LayoutStoreContext.Provider value={store}>
@@ -137,4 +137,4 @@ const LayoutOverrides = ({ children, overrides }: LayoutOverridesProps): ReactNo
 };
 
 export { LayoutOverrides, LayoutRoot };
-export type { LayoutOverridesProps, LayoutRootProps };
+export type { LayoutOverridesProps, LayoutRenderers, LayoutRootProps };

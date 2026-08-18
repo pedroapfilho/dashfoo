@@ -7,15 +7,15 @@ import { ChartPanel } from "./chart-panel";
 import { CodePanel } from "./code-panel";
 import { TablePanel } from "./table-panel";
 
-const PANELS: Record<string, () => ReactNode> = {
-  activity: ActivityPanel,
-  chart: ChartPanel,
-  code: CodePanel,
-  table: TablePanel,
-};
+const PANELS = new Map<string, () => ReactNode>([
+  ["activity", ActivityPanel],
+  ["chart", ChartPanel],
+  ["code", CodePanel],
+  ["table", TablePanel],
+]);
 
 const renderPanel = (node: TabNode): ReactNode => {
-  const Body = PANELS[node.component] ?? ChartPanel;
+  const Body = PANELS.get(node.component) ?? ChartPanel;
   return (
     <Panel.Root>
       <Panel.Header>

@@ -45,13 +45,13 @@ const TabsetTablist = ({
     }
     // The visual index, not the model's: focus (`tabindex="0"`) sits at that one.
     const from = Math.max(visualSelected, 0);
-    const targets: Record<string, number> = {
-      ArrowLeft: (from - 1 + count) % count,
-      ArrowRight: (from + 1) % count,
-      End: count - 1,
-      Home: 0,
-    };
-    const next = targets[event.key];
+    const targets = new Map([
+      ["ArrowLeft", (from - 1 + count) % count],
+      ["ArrowRight", (from + 1) % count],
+      ["End", count - 1],
+      ["Home", 0],
+    ]);
+    const next = targets.get(event.key);
     if (next === undefined) {
       return;
     }

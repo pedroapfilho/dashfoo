@@ -2,13 +2,14 @@
 
 import type { Point } from "@dashfoo/core";
 import { zoneRect } from "@dashfoo/core";
-import type { DragDropManager } from "@dnd-kit/dom";
 import { Feedback } from "@dnd-kit/dom";
+import type { DragStartEvent } from "@dnd-kit/dom";
 import { useSelector } from "@xstate/react";
 import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 
-import type { DragActor } from "../hooks/drag-hooks";
+import type { DashfooDragManager, DragActor } from "../hooks/drag-hooks";
+import type { DragSource } from "../lib/drag-subject";
 import type { Zone } from "../lib/tab-insertion";
 import { insertionLineRect } from "../lib/tab-insertion";
 
@@ -81,18 +82,20 @@ const DockIndicator = ({
 
 const PREVIEW_OFFSET: Point = { x: 12, y: 8 };
 
-const labelOf = (source: { data?: Record<string, unknown> } | null): string => {
-  const raw = source?.data?.label;
-  return typeof raw === "string" ? raw : "";
+const labelOf = (source: DragSource | null): string => {
+  if (typeof source?.data.label !== "string") {
+    return "";
+  }
+  return source.data.label;
 };
 
 type ChipState = { label: string; x: number; y: number };
 
-const DragPreviewOverlay = ({ manager }: { manager: DragDropManager }): ReactNode => {
+const DragPreviewOverlay = ({ manager }: { manager: DashfooDragManager }): ReactNode => {
   const [chip, setChip] = useState<ChipState | null>(null);
 
   useEffect(() => {
-    const offStart = manager.monitor.addEventListener("dragstart", (event) => {
+    const handleStart = (event: DragStartEvent): void => {
       const source = event.operation.source;
       if (!source) {
         return;
@@ -104,13 +107,15 @@ const DragPreviewOverlay = ({ manager }: { manager: DragDropManager }): ReactNod
         x: PREVIEW_OFFSET.x + (rect ? point.x - rect.left : 0),
         y: PREVIEW_OFFSET.y + (rect ? point.y - rect.top : 0),
       });
-    });
-    const offEnd = manager.monitor.addEventListener("dragend", () => {
+    };
+    const handleEnd = (): void => {
       setChip(null);
-    });
+    };
+    manager.monitor.addEventListener("dragstart", handleStart);
+    manager.monitor.addEventListener("dragend", handleEnd);
     return () => {
-      offStart();
-      offEnd();
+      manager.monitor.removeEventListener("dragstart", handleStart);
+      manager.monitor.removeEventListener("dragend", handleEnd);
     };
   }, [manager]);
 

@@ -17,6 +17,6 @@ const Layout = {
 export { Layout };
 export type { DragProviderProps as LayoutDragLayerProps } from "./drag-provider";
 export type { FloatLayerProps as LayoutFloatLayerProps } from "./float-layer";
-export type { LayoutRootProps } from "./layout-root";
+export type { LayoutRenderers, LayoutRootProps } from "./layout-root";
 export type { RowViewProps as LayoutRowsProps } from "./row-view";
 export type { TabsetViewProps as LayoutTabsetProps } from "./tabset/tabset-view";

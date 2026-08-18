@@ -1,25 +1,31 @@
-import type { DragSubject } from "@dashfoo/core";
+import type { DragSubject, TabNode } from "@dashfoo/core";
 import { tabNodeSchema } from "@dashfoo/core";
+import type { Data } from "@dnd-kit/abstract";
+import type { Draggable } from "@dnd-kit/dom";
 
-const isTabFactory = (value: unknown): value is () => unknown => typeof value === "function";
+type DashfooDragData =
+  | { label?: string; type: "tab" }
+  | { label?: string; layerId?: string; tabsetId: string; type: "tabset" }
+  | { createTab: () => TabNode; label?: string; type: "external" };
+
+type DragSource = Pick<Draggable, "data" | "id">;
+
+const isTabFactory = (value: Data[string]): value is () => TabNode => typeof value === "function";
 
 /** Beside the manager wiring, not the layer adapter: `dragstart` fires once per
  * gesture on the shared manager, above any one layer. */
-const subjectFor = (source: {
-  data?: Record<string, unknown>;
-  id: string | number;
-}): DragSubject | null => {
+const subjectFor = (source: DragSource): DragSubject | null => {
   const data = source.data;
-  if (data?.type === "tabset") {
+  if (data.type === "tabset") {
     return { id: String(data.tabsetId), kind: "tabset" };
   }
-  if (data?.type === "external") {
+  if (data.type === "external") {
     if (!isTabFactory(data.createTab)) {
       // oxlint-disable-next-line no-console
       console.warn("[dashfoo] external drag source is missing its createTab function");
       return null;
     }
-    let candidate: unknown;
+    let candidate: ReturnType<typeof data.createTab>;
     try {
       candidate = data.createTab();
     } catch (error) {
@@ -39,3 +45,4 @@ const subjectFor = (source: {
 };
 
 export { subjectFor };
+export type { DashfooDragData, DragSource };

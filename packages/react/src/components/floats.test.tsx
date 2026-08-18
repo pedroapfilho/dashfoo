@@ -266,7 +266,7 @@ describe("floating panels", () => {
     const m = model();
 
     render(
-      <Layout.Root dispatch={() => {}} floatable model={m} renderTab={() => <div>X</div>}>
+      <Layout.Root dispatch={() => {}} floatable model={m} renderers={{ tab: () => <div>X</div> }}>
         <Layout.Rows node={m.layout} />
       </Layout.Root>,
     );

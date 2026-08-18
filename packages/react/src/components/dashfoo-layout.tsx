@@ -212,6 +212,10 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     },
     [components, factory],
   );
+  const renderers = useMemo(
+    () => ({ tab: renderTab, tabLabel: renderTabLabel, tabsetToolbar: renderTabsetToolbar }),
+    [renderTab, renderTabLabel, renderTabsetToolbar],
+  );
 
   const [containerRef, width] = useContainerWidth();
   const isCompact = responsive !== undefined && width <= responsive.maxWidth;
@@ -253,9 +257,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       maximizable={presentation.maximizable}
       model={view}
       renamableTabs={renamableTabs}
-      renderTab={renderTab}
-      renderTabLabel={renderTabLabel}
-      renderTabsetToolbar={renderTabsetToolbar}
+      renderers={renderers}
       resizableSplits={resizableSplits}
       restructurable={presentation.restructurable}
       rootRef={containerRef}

@@ -33,7 +33,7 @@ const RawTabLabel = (): ReactNode => {
 const TabCountBadge = (): ReactNode => {
   const count = useTabset((state) => state.node.children.length);
   return (
-    <span className="px-1.5 text-[10px] text-neutral-400 tabular-nums dark:text-neutral-500">
+    <span className="px-1.5 text-xs text-neutral-400 tabular-nums dark:text-neutral-500">
       {count}&nbsp;tabs
     </span>
   );
@@ -109,7 +109,7 @@ const RawPage = (): ReactNode => {
         draggableTabs={!isCompact}
         draggableTabsets={!isCompact}
         model={view}
-        renderTab={PlaceholderPanel}
+        renderers={{ tab: PlaceholderPanel }}
         resizableSplits={!isCompact}
         rootRef={containerRef}
       >

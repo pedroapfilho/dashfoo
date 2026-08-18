@@ -141,7 +141,11 @@ const CustomLayout = ({
     <Layout.Rows node={store.model.layout} renderTabset={(node) => <CustomTabset node={node} />} />
   );
   return (
-    <Layout.Root dispatch={store.dispatch} model={store.model} renderTab={renderTabContent}>
+    <Layout.Root
+      dispatch={store.dispatch}
+      model={store.model}
+      renderers={{ tab: renderTabContent }}
+    >
       {withDrag ? <Layout.DragLayer>{tree}</Layout.DragLayer> : tree}
     </Layout.Root>
   );
@@ -238,7 +242,11 @@ describe("misuse", () => {
     const TwoTablists = (): ReactNode => {
       const store = useDashfooStore({ defaultModel: model() });
       return (
-        <Layout.Root dispatch={store.dispatch} model={store.model} renderTab={renderTabContent}>
+        <Layout.Root
+          dispatch={store.dispatch}
+          model={store.model}
+          renderers={{ tab: renderTabContent }}
+        >
           <Tabset.Root node={node}>
             <Tabset.Tablist data-testid="first" />
             <Tabset.Tablist data-testid="second" />
@@ -260,7 +268,11 @@ describe("misuse", () => {
     const OrphanTab = (): ReactNode => {
       const store = useDashfooStore({ defaultModel: model() });
       return (
-        <Layout.Root dispatch={store.dispatch} model={store.model} renderTab={renderTabContent}>
+        <Layout.Root
+          dispatch={store.dispatch}
+          model={store.model}
+          renderers={{ tab: renderTabContent }}
+        >
           <Tabset.Root node={node}>
             <Tabset.Tablist>
               <Tabset.Tab tab={ghost}>
@@ -287,7 +299,11 @@ describe("misuse", () => {
         store.dispatch({ location: "center", sourceId: "t1", targetId: "ts2", type: "moveNode" });
       };
       return (
-        <Layout.Root dispatch={store.dispatch} model={store.model} renderTab={renderTabContent}>
+        <Layout.Root
+          dispatch={store.dispatch}
+          model={store.model}
+          renderers={{ tab: renderTabContent }}
+        >
           <button onClick={handleMove} type="button">
             move chart
           </button>
