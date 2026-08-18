@@ -1,9 +1,11 @@
+import { cacheLife } from "next/cache";
+
 import { getLLMText } from "@/lib/get-llm-text";
 import { source } from "@/lib/source";
 
-export const revalidate = false;
-
-export const GET = async () => {
+const getLlmsFull = async () => {
+  "use cache";
+  cacheLife("max");
   const pages = source.getPages();
   const results = await Promise.allSettled(pages.map(getLLMText));
   const scanned = results.flatMap((result, index) => {
@@ -18,5 +20,9 @@ export const GET = async () => {
     throw new Error("llms-full.txt: every page conversion failed");
   }
 
-  return new Response(scanned.join("\n\n"));
+  return scanned.join("\n\n");
 };
+
+const GET = async () => new Response(await getLlmsFull());
+
+export { GET };
