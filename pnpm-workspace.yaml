@@ -20,6 +20,12 @@ ignoredBuiltDependencies:
   - "@parcel/watcher"
 
 minimumReleaseAgeExclude:
+  - "@dashfoo/*"
+  - "@easeia/*"
+  - "@usebutr/*"
+  - "@walletwright/*"
+  - astro-awesomeness
+  - oxlint-config-awesomeness
   - cnfast@0.1.0
   - "@oxlint-tsgolint/darwin-arm64@7.0.2001"
   - "@oxlint-tsgolint/darwin-x64@7.0.2001"
@@ -28,5 +34,4 @@ minimumReleaseAgeExclude:
   - "@oxlint-tsgolint/win32-arm64@7.0.2001"
   - "@oxlint-tsgolint/win32-x64@7.0.2001"
   - oxlint-tsgolint@7.0.2001
-  - oxlint-config-awesomeness@3.4.2
   - oxlint-plugin-react-doctor@0.9.6
