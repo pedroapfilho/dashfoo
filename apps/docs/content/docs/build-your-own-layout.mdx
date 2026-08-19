@@ -16,7 +16,7 @@ A hand-built layout wires three things:
 1. **A store.** `useDashfooStore({ defaultModel })` owns the model, dispatch,
    and undo/redo, the same state `DashfooLayout` uses internally.
 2. **The `Layout` frame.** `Layout.Root` takes `model`, `dispatch`, and
-   `renderTab`, and provides the layout store every part below reads through
+   `renderers`, and provides the layout store every part below reads through
    selectors. `Layout.DragLayer` opts the tree into drag-dock (omit it and the
    layout still works without dragging). `Layout.Rows` renders the split
    tree on the resize adapter.
@@ -31,7 +31,7 @@ const App = () => {
   const store = useDashfooStore({ defaultModel });
 
   return (
-    <Layout.Root dispatch={store.dispatch} model={store.model} renderTab={renderTab}>
+    <Layout.Root dispatch={store.dispatch} model={store.model} renderers={{ tab: renderTab }}>
       <Layout.DragLayer>
         <Layout.Rows node={store.model.layout} renderTabset={(node) => <MyTabset node={node} />} />
       </Layout.DragLayer>
@@ -164,7 +164,7 @@ const App = () => {
       draggableTabs={!isCompact}
       draggableTabsets={!isCompact}
       model={view}
-      renderTab={renderTab}
+      renderers={{ tab: renderTab }}
       resizableSplits={!isCompact}
       rootRef={containerRef}
     >

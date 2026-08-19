@@ -518,7 +518,7 @@ pattern as `Panel`:
 
 | Part                    | Element                                  | Role                                                                                                                        |
 | ----------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `Layout.Root`           | `div[data-dashfoo="layout"]`             | Creates the layout store. Takes `model`, `dispatch`, `renderTab`, and the chrome flags `DashfooLayout` accepts.             |
+| `Layout.Root`           | `div[data-dashfoo="layout"]`             | Creates the layout store. Takes `model`, `dispatch`, `renderers`, and the chrome flags `DashfooLayout` accepts.             |
 | `Layout.DragLayer`      | none (overlays)                          | Opts the tree into drag-dock. Omit it and everything else still works, just without dragging.                               |
 | `Layout.Rows`           | rrp split tree                           | Renders a `RowNode` recursively. `renderTabset` swaps in a custom tabset composition at every leaf.                         |
 | `Layout.Tabset`         | the stock `Tabset.*` composition         | The stock tabset composition, for leaves that don't need custom chrome.                                                     |
@@ -530,7 +530,7 @@ pattern as `Panel`:
 | `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: select on click, rename on double-click, draggable. Children override the label.                            |
 | `Tabset.RenameInput`    | `input[data-dashfoo="tab-rename"]`       | Inline rename editor; renders only while its tab is being renamed.                                                          |
 | `Tabset.CloseButton`    | `button[data-dashfoo="tab-close"]`       | Closes the tab with focus restore; hides when the tab isn't closable.                                                       |
-| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted`. Children render-prop overrides `renderTab`.                            |
+| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted`. Children render-prop overrides `renderers.tab`.                        |
 | `Tabset.Toolbar`        | `div[data-dashfoo="tabset-toolbar"]`     | Trailing toolbar container.                                                                                                 |
 | `Tabset.OverflowMenu`   | menu button                              | Lists clipped tabs; hides when nothing overflows.                                                                           |
 | `Tabset.Grip`           | `button[data-dashfoo="tabset-grip"]`     | Drag handle for the whole tabset; hides when tabset dragging is off.                                                        |
@@ -571,7 +571,7 @@ const MyTabset = ({ node }: { node: TabsetNode }) => (
 const MyLayout = () => {
   const store = useDashfooStore({ defaultModel });
   return (
-    <Layout.Root dispatch={store.dispatch} model={store.model} renderTab={renderTab}>
+    <Layout.Root dispatch={store.dispatch} model={store.model} renderers={{ tab: renderTab }}>
       <Layout.DragLayer>
         <Layout.Rows node={store.model.layout} renderTabset={(node) => <MyTabset node={node} />} />
       </Layout.DragLayer>
@@ -613,6 +613,7 @@ type PanelTitleProps;
 // Layout primitives (build your own layout)
 Layout; // Layout.Root / Layout.DragLayer / Layout.Rows / Layout.Tabset
 type LayoutRootProps;
+type LayoutRenderers;
 type LayoutDragLayerProps;
 type LayoutRowsProps;
 type LayoutTabsetProps;

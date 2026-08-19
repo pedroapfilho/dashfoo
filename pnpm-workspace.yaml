@@ -2,6 +2,13 @@ packages:
   - apps/*
   - packages/*
 
+peerDependencyRules:
+  allowedVersions:
+    "@typescript-eslint/project-service>typescript": "7"
+    "@typescript-eslint/tsconfig-utils>typescript": "7"
+    "@typescript-eslint/typescript-estree>typescript": "7"
+    "@typescript-eslint/utils>typescript": "7"
+
 allowBuilds:
   # Prebuilt binaries ship via optionalDependencies; the build script is only
   # a node-gyp fallback and the watcher is only used by `tailwindcss --watch`.
@@ -34,4 +41,25 @@ minimumReleaseAgeExclude:
   - "@oxlint-tsgolint/win32-arm64@7.0.2001"
   - "@oxlint-tsgolint/win32-x64@7.0.2001"
   - oxlint-tsgolint@7.0.2001
-  - oxlint-plugin-react-doctor@0.9.6
+  - oxlint-plugin-react-doctor@0.9.12
+  - "@oxlint/binding-android-arm-eabi@1.79.0"
+  - "@oxlint/binding-android-arm64@1.79.0"
+  - "@oxlint/binding-darwin-arm64@1.79.0"
+  - "@oxlint/binding-darwin-x64@1.79.0"
+  - "@oxlint/binding-freebsd-x64@1.79.0"
+  - "@oxlint/binding-linux-arm-gnueabihf@1.79.0"
+  - "@oxlint/binding-linux-arm-musleabihf@1.79.0"
+  - "@oxlint/binding-linux-arm64-gnu@1.79.0"
+  - "@oxlint/binding-linux-arm64-musl@1.79.0"
+  - "@oxlint/binding-linux-ppc64-gnu@1.79.0"
+  - "@oxlint/binding-linux-riscv64-gnu@1.79.0"
+  - "@oxlint/binding-linux-riscv64-musl@1.79.0"
+  - "@oxlint/binding-linux-s390x-gnu@1.79.0"
+  - "@oxlint/binding-linux-x64-gnu@1.79.0"
+  - "@oxlint/binding-linux-x64-musl@1.79.0"
+  - "@oxlint/binding-openharmony-arm64@1.79.0"
+  - "@oxlint/binding-win32-arm64-msvc@1.79.0"
+  - "@oxlint/binding-win32-ia32-msvc@1.79.0"
+  - "@oxlint/binding-win32-x64-msvc@1.79.0"
+  - "@oxlint/plugins@1.79.0"
+  - oxlint@1.79.0

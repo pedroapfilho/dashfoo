@@ -48,13 +48,13 @@ const WidgetCard = ({
   );
 };
 
-const SNAP_CONFIGS: Record<string, SnapConfig | undefined> = {
-  "25%": { step: 25 },
-  "50%": { step: 50 },
-  Even: { divisions: "panels" },
-  Off: undefined,
-  Thirds: { divisions: 3 },
-};
+const SNAP_CONFIGS = new Map<string, SnapConfig | undefined>([
+  ["25%", { step: 25 }],
+  ["50%", { step: 50 }],
+  ["Even", { divisions: "panels" }],
+  ["Off", undefined],
+  ["Thirds", { divisions: 3 }],
+]);
 const SNAP_KEYS = ["Off", "Even", "Thirds", "25%", "50%"] as const;
 
 const DockingPage = (): ReactNode => {
@@ -86,7 +86,7 @@ const DockingPage = (): ReactNode => {
           <label className="inline-flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
             Snap
             <select
-              className="rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-xs text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
+              className="rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-base text-neutral-700 sm:text-xs dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
               onChange={handleSnapChange}
               value={snapKey}
             >
@@ -124,7 +124,7 @@ const DockingPage = (): ReactNode => {
               factory={PlaceholderPanel}
               ref={layout}
               responsive={{ maxWidth: 720 }}
-              snap={SNAP_CONFIGS[snapKey]}
+              snap={SNAP_CONFIGS.get(snapKey)}
             />
           </div>
         </div>

@@ -12,7 +12,7 @@ const PlaceholderPanel = (node: TabNode): ReactNode => (
         <div className="bg-dashfoo-muted h-2 w-4/5 rounded-full" />
         <div className="bg-dashfoo-muted h-2 w-3/5 rounded-full" />
         <div className="bg-dashfoo-muted h-2 w-2/5 rounded-full" />
-        <p className="text-dashfoo-muted-foreground mt-2 text-[11px]">
+        <p className="text-dashfoo-muted-foreground mt-2 text-xs">
           Placeholder panel; drag this tab to rearrange the layout.
         </p>
       </div>

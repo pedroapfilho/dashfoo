@@ -8,7 +8,8 @@ const ORDERS = [
 ] as const;
 
 const TablePanel = (): ReactNode => (
-  <table className="w-full border-collapse text-[0.6875rem]">
+  <table className="w-full border-collapse text-xs">
+    <caption className="sr-only">Recent orders</caption>
     <thead>
       <tr className="text-muted-foreground text-left">
         <th className="pb-2 font-medium">Order</th>

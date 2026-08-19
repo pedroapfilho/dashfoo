@@ -6,19 +6,17 @@ type Point = { x: number; y: number };
 type Rect = { height: number; width: number; x: number; y: number };
 type BandOptions = { bandFraction?: number };
 type DockZone = { location: DockLocation; points: Array<Point> };
+type EdgeDistances = { bottom: number; left: number; right: number; top: number };
 
 const DEFAULT_BAND_FRACTION = 0.22;
 
-const edgeDistances = (
-  pointer: Point,
-  rect: Rect,
-): { bottom: number; left: number; right: number; top: number } => {
+const edgeDistances = (pointer: Point, rect: Rect): EdgeDistances => {
   const fx = (pointer.x - rect.x) / rect.width;
   const fy = (pointer.y - rect.y) / rect.height;
   return { bottom: 1 - fy, left: fx, right: 1 - fx, top: fy };
 };
 
-const closestEdge = (d: { bottom: number; left: number; right: number; top: number }): Edge => {
+const closestEdge = (d: EdgeDistances): Edge => {
   const min = Math.min(d.left, d.right, d.top, d.bottom);
   if (min === d.left) {
     return "left";

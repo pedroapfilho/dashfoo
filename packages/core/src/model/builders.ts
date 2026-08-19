@@ -48,16 +48,21 @@ type TabsetOptions = {
 
 const tabset = (children: Array<TabNode>, options: TabsetOptions = {}): TabsetNode => {
   const { max, min, ...rest } = options;
-  return {
+  const built: TabsetNode = {
     children,
     type: "tabset",
     ...rest,
-    ...(max === undefined ? {} : { max: toDimension(max) }),
-    ...(min === undefined ? {} : { min: toDimension(min) }),
     id: options.id ?? createNodeId("tabset"),
     selected: clampSelected(children.length, options.selected ?? 0),
     weight: options.weight ?? DEFAULT_WEIGHT,
   };
+  if (max !== undefined) {
+    built.max = toDimension(max);
+  }
+  if (min !== undefined) {
+    built.min = toDimension(min);
+  }
+  return built;
 };
 
 type RowOptions = {
@@ -71,16 +76,21 @@ type RowOptions = {
 
 const row = (children: RowNode["children"], options: RowOptions = {}): RowNode => {
   const { max, min, ...rest } = options;
-  return {
+  const built: RowNode = {
     children,
     type: "row",
     ...rest,
-    ...(max === undefined ? {} : { max: toDimension(max) }),
-    ...(min === undefined ? {} : { min: toDimension(min) }),
     id: options.id ?? createNodeId("row"),
     orientation: options.orientation ?? "row",
     weight: options.weight ?? DEFAULT_WEIGHT,
   };
+  if (max !== undefined) {
+    built.max = toDimension(max);
+  }
+  if (min !== undefined) {
+    built.min = toDimension(min);
+  }
+  return built;
 };
 
 type FloatOptions = {

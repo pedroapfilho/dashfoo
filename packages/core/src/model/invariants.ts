@@ -11,9 +11,14 @@ const inheritSlot = (row: RowNode, survivor: RowChild): RowChild => {
   const sized: RowChild = {
     ...survivor,
     weight: row.weight,
-    ...(row.min === undefined ? {} : { min: row.min }),
-    ...(row.max === undefined ? {} : { max: row.max }),
   };
+
+  if (row.min !== undefined) {
+    sized.min = row.min;
+  }
+  if (row.max !== undefined) {
+    sized.max = row.max;
+  }
 
   if (sized.type === "row" && row.snap !== undefined) {
     return { ...sized, snap: row.snap };

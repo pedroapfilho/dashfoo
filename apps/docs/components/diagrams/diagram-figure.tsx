@@ -27,7 +27,7 @@ type MarkerProps = {
 const Marker = ({ className, n }: MarkerProps) => (
   <span
     className={cn(
-      "bg-fd-primary text-fd-primary-foreground inline-flex size-4.5 shrink-0 items-center justify-center rounded-full font-mono text-[10px] font-semibold",
+      "bg-fd-primary text-fd-primary-foreground inline-flex size-5 shrink-0 items-center justify-center rounded-full font-mono text-xs font-semibold",
       className,
     )}
   >
@@ -43,7 +43,7 @@ type IdChipProps = {
 const IdChip = ({ children, className }: IdChipProps) => (
   <span
     className={cn(
-      "bg-fd-muted text-fd-muted-foreground rounded border px-1 font-mono text-[9px] leading-4 whitespace-nowrap",
+      "bg-fd-muted text-fd-muted-foreground rounded border px-1 font-mono text-xs leading-4 whitespace-nowrap",
       className,
     )}
   >
@@ -59,12 +59,12 @@ type MockTabProps = {
 const MockTab = ({ name, selected }: MockTabProps) => (
   <span
     className={cn(
-      "flex items-center gap-1 rounded-t px-1.5 py-0.5 text-[10px] whitespace-nowrap",
+      "flex items-center gap-1 rounded-t px-1.5 py-0.5 text-xs whitespace-nowrap",
       selected === true ? "bg-fd-background text-fd-foreground" : "text-fd-muted-foreground",
     )}
   >
     {name}
-    <span className="text-[8px] opacity-60">×</span>
+    <span className="text-xs opacity-60">×</span>
   </span>
 );
 

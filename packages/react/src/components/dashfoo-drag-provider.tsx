@@ -1,6 +1,7 @@
 "use client";
 
 import { dragDockMachine } from "@dashfoo/core";
+import type { Data } from "@dnd-kit/abstract";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/dom";
 import { useActorRef } from "@xstate/react";
 import type { ReactNode } from "react";
@@ -13,6 +14,10 @@ import { subjectFor } from "../lib/drag-subject";
 import { DragPreviewOverlay } from "./drag-preview-overlay";
 
 type ScopedTarget = { element: HTMLElement; scope: DragScope; tabsetId: string };
+type ScopedTargetData = Data & { layerId: string; tabsetId: string };
+
+const isScopedTargetData = (data: Data): data is ScopedTargetData =>
+  typeof data.layerId === "string" && typeof data.tabsetId === "string";
 
 const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode => {
   const [manager] = useState(createDragManager);
@@ -41,10 +46,10 @@ const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode =
   useEffect(() => {
     const scopedTarget = (): ScopedTarget | null => {
       const target = manager.dragOperation.target;
-      const data = target?.data as { layerId?: string; tabsetId?: string } | undefined;
-      const scope = data?.layerId === undefined ? undefined : scopes.get(data.layerId);
+      const data = target?.data;
+      const scope = data && isScopedTargetData(data) ? scopes.get(data.layerId) : undefined;
       const element = target?.element;
-      if (!scope || data?.tabsetId === undefined || !(element instanceof HTMLElement)) {
+      if (!scope || !data || !isScopedTargetData(data) || !(element instanceof HTMLElement)) {
         return null;
       }
       return { element, scope, tabsetId: data.tabsetId };
@@ -115,17 +120,17 @@ const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode =
     const commitSubscription = actorRef.on("COMMIT", (emitted) => {
       scopes.get(emitted.scope)?.commit(emitted.action);
     });
-    const offStart = manager.monitor.addEventListener("dragstart", handleStart);
-    const offMove = manager.monitor.addEventListener("dragmove", scheduleResolve);
-    const offCollision = manager.monitor.addEventListener("collision", scheduleResolve);
-    const offEnd = manager.monitor.addEventListener("dragend", handleEnd);
+    manager.monitor.addEventListener("dragstart", handleStart);
+    manager.monitor.addEventListener("dragmove", scheduleResolve);
+    manager.monitor.addEventListener("collision", scheduleResolve);
+    manager.monitor.addEventListener("dragend", handleEnd);
     return () => {
       cancelPendingResolve();
       commitSubscription.unsubscribe();
-      offStart();
-      offMove();
-      offCollision();
-      offEnd();
+      manager.monitor.removeEventListener("dragstart", handleStart);
+      manager.monitor.removeEventListener("dragmove", scheduleResolve);
+      manager.monitor.removeEventListener("collision", scheduleResolve);
+      manager.monitor.removeEventListener("dragend", handleEnd);
     };
   }, [actorRef, manager, scopes]);
 

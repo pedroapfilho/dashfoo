@@ -109,7 +109,12 @@ If you compose the `Layout.*` primitives yourself, wrap the layout's content wit
 as an overlay over the rows, and add `Tabset.FloatButton` to your tabset toolbar.
 
 ```tsx
-<Layout.Root dispatch={store.dispatch} floatable model={store.model} renderTab={renderPanel}>
+<Layout.Root
+  dispatch={store.dispatch}
+  floatable
+  model={store.model}
+  renderers={{ tab: renderPanel }}
+>
   <Layout.FloatLayer floats={store.model.floats} global={store.model.global}>
     <Layout.DragLayer>
       <Layout.Rows node={store.model.layout} />

@@ -1,4 +1,5 @@
 import type { Dashfoo, SnapConfig } from "@dashfoo/core";
+import { snapSchema } from "@dashfoo/core";
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, test } from "vitest";
@@ -26,13 +27,18 @@ const SnapProbe = (): ReactNode => {
   return <span data-testid="snap">{JSON.stringify(snap)}</span>;
 };
 
-const resolvedSnap = (props: { model: Dashfoo; snap?: SnapConfig }): unknown => {
+const resolvedSnap = (props: { model: Dashfoo; snap?: SnapConfig }): SnapConfig | null => {
   render(
-    <Layout.Root dispatch={() => {}} model={props.model} renderTab={() => null} snap={props.snap}>
+    <Layout.Root
+      dispatch={() => {}}
+      model={props.model}
+      renderers={{ tab: () => null }}
+      snap={props.snap}
+    >
       <SnapProbe />
     </Layout.Root>,
   );
-  return JSON.parse(screen.getByTestId("snap").textContent ?? "null");
+  return snapSchema.nullable().parse(JSON.parse(screen.getByTestId("snap").textContent ?? "null"));
 };
 
 describe("LayoutRoot snap resolution", () => {

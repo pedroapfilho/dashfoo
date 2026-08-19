@@ -1,4 +1,4 @@
-import type { DragSubject, DropIntent, Point } from "@dashfoo/core";
+import type { DragSubject, DropIntent, Point, Rect } from "@dashfoo/core";
 import { useDragSubject, useDropIntent } from "@dashfoo/react";
 import type { ReactNode, RefObject } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import type { ActiveCell, TabsetMeasurement, ZoneCell } from "../lib/drop-zone-map";
 import { activeCellAt, buildZoneMap, cellKey } from "../lib/drop-zone-map";
 
-const DOCK_LABELS: Record<string, string> = {
+const DOCK_LABELS = {
   center: "stack",
   "split-bottom": "split ↓",
   "split-left": "split ←",
@@ -15,7 +15,7 @@ const DOCK_LABELS: Record<string, string> = {
   "split-top": "split ↑",
 };
 
-const toRect = (rect: DOMRect): { height: number; width: number; x: number; y: number } => ({
+const toRect = (rect: DOMRect): Rect => ({
   height: rect.height,
   width: rect.width,
   x: rect.x,
@@ -170,7 +170,7 @@ const DropZoneOverlay = ({
   const tabsets = measured !== null && measured.subject === subject ? measured.list : null;
   const cells = useMemo(() => (tabsets ? buildZoneMap(tabsets) : []), [tabsets]);
 
-  if (!dragging || !tabsets) {
+  if (!dragging || !tabsets || typeof document === "undefined") {
     return null;
   }
 

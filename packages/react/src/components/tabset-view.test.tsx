@@ -68,7 +68,7 @@ const DraggedSoleTabset = ({ keepMounted }: { keepMounted: boolean }): ReactNode
         dispatch={store.dispatch}
         keepMounted={keepMounted}
         model={store.model}
-        renderTab={renderTabContent}
+        renderers={{ tab: renderTabContent }}
       >
         <Tabset.Root node={tabset}>
           <Tabset.Content />

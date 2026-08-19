@@ -5,7 +5,7 @@ import { cn } from "../../lib/cn";
 import { DiagramFigure, MockTabStrip } from "./diagram-figure";
 
 const ZONE_CLASS =
-  "flex items-center justify-center rounded-sm border border-dashed bg-fd-muted/50 font-mono text-[10px] text-fd-muted-foreground";
+  "flex items-center justify-center rounded-sm border border-dashed bg-fd-muted/50 font-mono text-xs text-fd-muted-foreground";
 
 type ThumbProps = {
   children: ReactNode;
@@ -17,7 +17,7 @@ const Thumb = ({ children, label }: ThumbProps) => (
     <div className="bg-fd-background flex aspect-[16/10] w-full overflow-hidden rounded border">
       {children}
     </div>
-    <span className="text-fd-muted-foreground font-mono text-[10px]">{label}</span>
+    <span className="text-fd-muted-foreground font-mono text-xs">{label}</span>
   </li>
 );
 
@@ -43,13 +43,13 @@ const DockLocations = () => (
   >
     <div className="mx-auto max-w-md min-w-72">
       <MockTabStrip tabs={[{ name: "Canvas", selected: true }, { name: "Detail" }]} />
-      <div className="bg-fd-background grid aspect-[16/10] grid-cols-[1fr_2.2fr_1fr] grid-rows-[1fr_2fr_1fr] gap-1 rounded-b-md border border-t-0 p-1">
+      <div className="bg-fd-background grid aspect-[16/10] grid-cols-[1fr_2.2fr_1fr] grid-rows-[1fr_2fr_1fr] gap-1 rounded-b-md border border-t-0 p-2">
         <div className={cn(ZONE_CLASS, "row-span-3")}>split-left</div>
         <div className={ZONE_CLASS}>split-top</div>
         <div className={cn(ZONE_CLASS, "row-span-3")}>split-right</div>
         <div className="flex flex-col items-center justify-center gap-0.5 rounded-sm">
-          <span className="font-mono text-[11px]">center</span>
-          <span className="text-fd-muted-foreground text-[10px]">stack into the tab strip</span>
+          <span className="font-mono text-xs">center</span>
+          <span className="text-fd-muted-foreground text-xs">stack into the tab strip</span>
         </div>
         <div className={ZONE_CLASS}>split-bottom</div>
       </div>

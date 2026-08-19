@@ -6,7 +6,7 @@ const ChartPanel = (): ReactNode => (
   <div className="flex h-full flex-col gap-3">
     <div className="flex items-baseline justify-between">
       <p className="text-foreground text-lg font-semibold tabular-nums">$48,210</p>
-      <p className="text-muted-foreground text-[0.6875rem]">last 12 weeks</p>
+      <p className="text-muted-foreground text-xs">last 12 weeks</p>
     </div>
     <div className="flex min-h-0 flex-1 items-end gap-1.5">
       {CHART_BARS.map((h, i) => (

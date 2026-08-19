@@ -5,7 +5,7 @@ import { DiagramFigure, Gutter } from "./diagram-figure";
 const MiniPane = ({ label }: { label: string }) => (
   <div className="bg-fd-background flex grow basis-0 flex-col overflow-hidden rounded-sm border">
     <div className="bg-fd-muted h-2.5 shrink-0 border-b" />
-    <div className="text-fd-muted-foreground flex grow items-center justify-center font-mono text-[11px]">
+    <div className="text-fd-muted-foreground flex grow items-center justify-center font-mono text-xs">
       {label}
     </div>
   </div>
@@ -27,7 +27,7 @@ const Variant = ({ children, detail, orientation }: VariantProps) => (
     >
       {children}
     </div>
-    <p className="text-fd-foreground mt-2 text-center font-mono text-[11px]">
+    <p className="text-fd-foreground mt-2 text-center font-mono text-xs">
       orientation: &quot;{orientation}&quot;
     </p>
     <p className="text-fd-muted-foreground text-center text-xs">{detail}</p>

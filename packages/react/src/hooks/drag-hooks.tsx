@@ -21,6 +21,7 @@ import type { Context } from "react";
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";
 import type { ActorRefFrom } from "xstate";
 
+import type { DashfooDragData } from "../lib/drag-subject";
 import { topmostPointerIntersection } from "../lib/topmost-collision";
 
 const INTERACTIVE_SELECTOR = `
@@ -41,7 +42,10 @@ const preventActivation = (event: PointerEvent, source: Draggable): boolean => {
   return interactive !== null && interactive !== source.element;
 };
 
-const createDragManager = (): DragDropManager =>
+type DashfooDragManager = DragDropManager;
+type DashfooDraggable = Draggable;
+
+const createDragManager = (): DashfooDragManager =>
   new DragDropManager({
     plugins: (defaults) => [
       ...defaults.filter((plugin) => plugin !== Accessibility && plugin !== Feedback),
@@ -70,7 +74,7 @@ type DragScope = {
 
 type DragRootContextValue = {
   actorRef: DragActor;
-  manager: DragDropManager;
+  manager: DashfooDragManager;
   registerScope: (scope: DragScope) => () => void;
 };
 
@@ -80,13 +84,13 @@ const DragRootContext: Context<DragRootContextValue | null> =
 type DragContextValue = {
   actorRef: DragActor;
   layerId: string;
-  manager: DragDropManager;
+  manager: DashfooDragManager;
 };
 
 const DragContext = createContext<DragContextValue | null>(null);
 
-const SharedDragManagerContext: Context<DragDropManager | null> =
-  createContext<DragDropManager | null>(null);
+const SharedDragManagerContext: Context<DashfooDragManager | null> =
+  createContext<DashfooDragManager | null>(null);
 
 /** The intent is rebuilt every pointer move, so readers compare by value. */
 const sameDropIntent = (a: DropIntent | null, b: DropIntent | null): boolean =>
@@ -98,14 +102,14 @@ const sameDropIntent = (a: DropIntent | null, b: DropIntent | null): boolean =>
     a.targetId === b.targetId);
 
 type DraggableHandle = {
-  draggableRef: { current: Draggable | null };
+  draggableRef: { current: DashfooDraggable | null };
   elementRef: { current: Element | null };
   ref: (element: Element | null) => void;
 };
 
 const useDraggableHandle = (): DraggableHandle => {
   const elementRef = useRef<Element | null>(null);
-  const draggableRef = useRef<Draggable | null>(null);
+  const draggableRef = useRef<DashfooDraggable | null>(null);
   const ref = useCallback((element: Element | null): void => {
     elementRef.current = element;
     if (draggableRef.current) {
@@ -115,7 +119,7 @@ const useDraggableHandle = (): DraggableHandle => {
   return { draggableRef, elementRef, ref };
 };
 
-type DraggableDescriptor = { data: Record<string, unknown>; id: string };
+type DraggableDescriptor = { data: DashfooDragData; id: string };
 
 const useDraggableEntity = (
   descriptor: DraggableDescriptor,
@@ -157,7 +161,7 @@ const useTabDraggable = (
   disabled = false,
   label = "",
 ): { ref: (element: Element | null) => void } => {
-  const data = useMemo(() => ({ type: "tab" }), []);
+  const data = useMemo(() => ({ type: "tab" }) satisfies DashfooDragData, []);
   return useDraggableEntity({ data, id: tabId }, disabled, label);
 };
 
@@ -166,7 +170,7 @@ const useTabsetDraggable = (
   disabled = false,
   label = "",
 ): { ref: (element: Element | null) => void } => {
-  const data = useMemo(() => ({ tabsetId, type: "tabset" }), [tabsetId]);
+  const data = useMemo(() => ({ tabsetId, type: "tabset" }) satisfies DashfooDragData, [tabsetId]);
   return useDraggableEntity({ data, id: `grip-${tabsetId}` }, disabled, label);
 };
 
@@ -225,7 +229,11 @@ const useExternalTabSource = ({
     createTabRef.current = createTab;
   });
   const data = useMemo(
-    () => ({ createTab: (): TabNode => createTabRef.current(), type: "external" }),
+    () =>
+      ({
+        createTab: (): TabNode => createTabRef.current(),
+        type: "external",
+      }) satisfies DashfooDragData,
     [],
   );
   return useDraggableEntity({ data, id: `external-${id}` }, disabled, label);
@@ -259,6 +267,7 @@ const useDropIntent = (): DropIntent | null => {
 export type {
   DragActor,
   DragContextValue,
+  DashfooDragManager,
   DragRootContextValue,
   DragScope,
   ExternalTabSourceOptions,

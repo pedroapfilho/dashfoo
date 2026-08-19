@@ -11,7 +11,7 @@ import {
   Sun,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 
 const NAV = [
   { exact: true, icon: LayoutDashboard, label: "Overview", to: "/" },
@@ -33,12 +33,24 @@ const EXTERNAL = [
 
 const THEME_KEY = "dashfoo:demo:theme";
 
+const subscribeTheme = (handleStoreChange: () => void): (() => void) => {
+  const observer = new MutationObserver(handleStoreChange);
+  observer.observe(document.documentElement, {
+    attributeFilter: ["data-dashfoo-theme"],
+    attributes: true,
+  });
+  return () => {
+    observer.disconnect();
+  };
+};
+
+const getThemeSnapshot = (): boolean => document.documentElement.dataset.dashfooTheme === "dark";
+
 const ThemeToggle = (): ReactNode => {
-  const [dark, setDark] = useState(() => document.documentElement.dataset.dashfooTheme === "dark");
+  const dark = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => false);
 
   const handleToggle = (): void => {
     const next = !dark;
-    setDark(next);
     if (next) {
       document.documentElement.dataset.dashfooTheme = "dark";
     } else {
