@@ -2,8 +2,21 @@ import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
 
 const withMDX = createMDX();
+const exposeTestingApi = process.env.EXPOSE_TESTING_API === "1";
+
+if (exposeTestingApi) {
+  process.emitWarning("The Next.js testing API is enabled. Never deploy this build to production.");
+}
 
 const config: NextConfig = {
+  cacheComponents: true,
+  experimental: {
+    exposeTestingApiInProductionBuild: exposeTestingApi,
+    instantInsights: {
+      validationLevel: "manual-warning",
+    },
+  },
+  partialPrefetching: true,
   reactStrictMode: true,
   rewrites() {
     return [

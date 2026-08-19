@@ -1,7 +1,17 @@
 import { createFromSource } from "fumadocs-core/search/server";
+import { cacheLife } from "next/cache";
 
 import { source } from "@/lib/source";
 
-export const revalidate = false;
+const search = createFromSource(source);
 
-export const { staticGET: GET } = createFromSource(source);
+const getSearchIndex = async () => {
+  "use cache";
+  cacheLife("max");
+  const index = await search.export();
+  return index;
+};
+
+const GET = async () => Response.json(await getSearchIndex());
+
+export { GET };
