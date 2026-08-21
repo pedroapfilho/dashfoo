@@ -10,12 +10,7 @@ const ChartPanel = (): ReactNode => (
     </div>
     <div className="flex min-h-0 flex-1 items-end gap-1.5">
       {CHART_BARS.map((h, i) => (
-        <div
-          className="bg-accent flex-1 rounded-t-sm"
-          // eslint-disable-next-line react/no-array-index-key
-          key={i}
-          style={{ height: `${h}%` }}
-        />
+        <div className="bg-accent flex-1 rounded-t-sm" key={i} style={{ height: `${h}%` }} />
       ))}
     </div>
   </div>
