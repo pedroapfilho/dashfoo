@@ -22,6 +22,15 @@ export default defineConfig({
     },
 
     {
+      // demo-vite is a Vite app: next/image does not exist there, so the Next-specific
+      // img ban cannot be satisfied.
+      files: ["apps/demo-vite/**/*.tsx"],
+      rules: {
+        "nextjs/no-img-element": "off",
+      },
+    },
+
+    {
       files: ["packages/react/src/hooks/responsive.ts"],
       rules: {
         "react-doctor/effect-needs-cleanup": "off",

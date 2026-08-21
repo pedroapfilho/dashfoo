@@ -81,7 +81,6 @@ const RootLayout = (): ReactNode => (
   <div className="flex h-dvh w-full flex-col overflow-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
     <header className="flex shrink-0 items-center gap-3 border-b border-neutral-200 bg-white px-3 py-1.5 sm:px-4 dark:border-neutral-800 dark:bg-neutral-900">
       <Link aria-label="Homepage" className="shrink-0 pr-1" to="/">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           alt="dashfoo"
           className="block h-5 w-auto dark:hidden"
@@ -89,7 +88,6 @@ const RootLayout = (): ReactNode => (
           src="/dashfoo-logo-light.svg"
           width={105}
         />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           alt="dashfoo"
           className="hidden h-5 w-auto dark:block"

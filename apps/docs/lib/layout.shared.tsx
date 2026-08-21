@@ -1,4 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
+import Image from "next/image";
 
 const GITHUB_URL = "https://github.com/pedroapfilho/dashfoo";
 
@@ -21,20 +22,20 @@ export const baseOptions = (): BaseLayoutProps => ({
   nav: {
     title: (
       <>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           alt="dashfoo"
           className="block h-5 w-auto dark:hidden"
           height={20}
           src="/dashfoo-logo-light.svg"
+          unoptimized
           width={105}
         />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           alt="dashfoo"
           className="hidden h-5 w-auto dark:block"
           height={20}
           src="/dashfoo-logo-dark.svg"
+          unoptimized
           width={105}
         />
       </>
