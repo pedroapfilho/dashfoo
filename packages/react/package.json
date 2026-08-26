@@ -39,7 +39,7 @@
     "@dnd-kit/abstract": "^0.5.0",
     "@dnd-kit/dom": "^0.5.0",
     "@xstate/react": "^6.0.0",
-    "react-resizable-panels": "^4.12.1",
+    "react-resizable-panels": "^4.12.3",
     "xstate": "^5.32.4",
     "zustand": "^5.0.15"
   },
@@ -54,7 +54,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.0.0",

@@ -18,8 +18,8 @@
     "@dashfoo/theme": "workspace:*",
     "@fontsource-variable/geist-mono": "^5.2.8",
     "@tailwindcss/vite": "^4.3.2",
-    "@tanstack/react-router": "^1.170.27",
-    "lucide-react": "^1.31.0",
+    "@tanstack/react-router": "^1.170.31",
+    "lucide-react": "^1.33.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwindcss": "^4.3.2"
@@ -29,10 +29,10 @@
     "@repo/typescript-config": "workspace:*",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.3",
+    "@vitejs/plugin-react": "^6.1.0",
     "typescript": "^7.0.2",
-    "vite": "^8.1.4",
+    "vite": "^8.2.2",
     "zod": "^4.4.3",
-    "zod-compiler": "^1.27.0"
+    "zod-compiler": "^1.28.0"
   }
 }
