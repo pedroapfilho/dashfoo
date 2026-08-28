@@ -69,7 +69,7 @@ const ManagerProbe = ({
   const manager = useContext(SharedDragManagerContext);
   useEffect(() => {
     onManager(manager);
-  });
+  }, [manager, onManager]);
   return children;
 };
 
