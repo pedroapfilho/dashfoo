@@ -5,7 +5,7 @@ import { ButtonLink } from "./button-link";
 import { GitHubIcon } from "./github-icon";
 import { LiveDemo } from "./live-demo";
 
-const DOCS_URL = "https://docs.dashfoo.com";
+const DOCS_URL = process.env.NEXT_PUBLIC_DOCS_URL ?? "https://docs.dashfoo.com";
 const GITHUB_URL = "https://github.com/pedroapfilho/dashfoo";
 
 const Hero = (): ReactNode => (

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { ButtonLink } from "./button-link";
 import { GitHubIcon } from "./github-icon";
 
-const DOCS_URL = "https://docs.dashfoo.com";
+const DOCS_URL = process.env.NEXT_PUBLIC_DOCS_URL ?? "https://docs.dashfoo.com";
 const GITHUB_URL = "https://github.com/pedroapfilho/dashfoo";
 
 const Cta = (): ReactNode => (

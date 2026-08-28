@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { CodeBlock } from "./code-block";
 
-const DOCS_URL = "https://docs.dashfoo.com";
+const DOCS_URL = process.env.NEXT_PUBLIC_DOCS_URL ?? "https://docs.dashfoo.com";
 
 const INSTALL = "pnpm add @dashfoo/core @dashfoo/react";
 
