@@ -227,7 +227,7 @@ const useExternalTabSource = ({
 
   useEffect(() => {
     createTabRef.current = createTab;
-  });
+  }, [createTab]);
   const data = useMemo(
     () =>
       ({

@@ -82,7 +82,7 @@ const usePersistence = (
   const configRef = useRef(config);
   useEffect(() => {
     configRef.current = config;
-  });
+  }, [config]);
 
   // Read and parsed once; the effect below acts on the outcome.
   const [load] = useState<StoredLoad>(() => {
