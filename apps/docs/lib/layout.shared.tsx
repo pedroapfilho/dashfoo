@@ -2,6 +2,8 @@ import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import Image from "next/image";
 
 const GITHUB_URL = "https://github.com/pedroapfilho/dashfoo";
+const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://dashfoo.com";
+const DEMO_URL = process.env.NEXT_PUBLIC_DEMO_URL ?? "https://demo.dashfoo.com";
 
 export const baseOptions = (): BaseLayoutProps => ({
   githubUrl: GITHUB_URL,
@@ -10,13 +12,13 @@ export const baseOptions = (): BaseLayoutProps => ({
       external: true,
       text: "Home",
       type: "button",
-      url: "https://dashfoo.com",
+      url: WEB_URL,
     },
     {
       external: true,
       text: "Demo",
       type: "button",
-      url: "https://demo.dashfoo.com",
+      url: DEMO_URL,
     },
   ],
   nav: {

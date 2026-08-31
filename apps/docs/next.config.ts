@@ -9,6 +9,7 @@ if (exposeTestingApi) {
 }
 
 const config: NextConfig = {
+  allowedDevOrigins: ["dashfoo.docs.localhost", "*.dashfoo.docs.localhost"],
   cacheComponents: true,
   experimental: {
     exposeTestingApiInProductionBuild: exposeTestingApi,
