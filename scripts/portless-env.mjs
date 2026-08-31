@@ -1,24 +1,29 @@
 import { execFileSync } from "node:child_process";
 
-const portlessUrl = (name) =>
-  execFileSync("portless", ["get", name], {
+const portless = (...args) =>
+  execFileSync("portless", args, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "inherit"],
   }).trim();
 
-const applyPortlessUrls = (portlessNamesByEnvKey, options = {}) => {
-  const env = options.env ?? process.env;
-  const resolveUrl = options.resolveUrl ?? portlessUrl;
+const urls = new Map();
 
-  for (const [envKey, portlessNames] of Object.entries(portlessNamesByEnvKey)) {
+const resolve = (name) => {
+  if (!urls.has(name)) {
+    urls.set(name, portless("get", name));
+  }
+  return urls.get(name);
+};
+
+export const applyPortlessUrls = (mapping, env = process.env) => {
+  portless("proxy", "start");
+
+  for (const [envKey, names] of Object.entries(mapping)) {
     if (env[envKey]) {
       continue;
     }
-    const names = Array.isArray(portlessNames) ? portlessNames : [portlessNames];
-    env[envKey] = names.map((name) => resolveUrl(name)).join(",");
+    env[envKey] = names.map(resolve).join(",");
   }
 
   return env;
 };
-
-export { applyPortlessUrls };
