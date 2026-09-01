@@ -5,6 +5,7 @@
   "globalEnv": ["NODE_ENV"],
   "tasks": {
     "build": {
+      "env": ["EXPOSE_TESTING_API"],
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", ".output/**"]
     },
