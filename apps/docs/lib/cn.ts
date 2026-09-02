@@ -1,1 +1,1 @@
-export { twMerge as cn } from "cnfast";
+export { cn } from "cn";
