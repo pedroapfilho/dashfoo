@@ -33,7 +33,7 @@ minimumReleaseAgeExclude:
   - "@walletwright/*"
   - astro-awesomeness
   - oxlint-config-awesomeness
-  - cnfast@0.1.0
+  - cn@0.2.4
   - "@oxlint-tsgolint/darwin-arm64@7.0.2001"
   - "@oxlint-tsgolint/darwin-x64@7.0.2001"
   - "@oxlint-tsgolint/linux-arm64@7.0.2001"
