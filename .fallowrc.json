@@ -11,6 +11,18 @@
     "apps/docs/source.config.ts"
   ],
   "ignorePatterns": ["apps/docs/content/**", "apps/docs/next-env.d.ts"],
-  "ignoreExports": [{ "file": "apps/docs/app/**/route.ts", "exports": ["generateStaticParams"] }],
-  "ignoreDependencies": ["@vitest/coverage-v8", "jsdom"]
+  "ignoreExports": [
+    {
+      "file": "apps/docs/app/**/route.ts",
+      "exports": ["generateStaticParams"]
+    }
+  ],
+  "ignoreDependencies": ["@vitest/coverage-v8", "jsdom"],
+  "typeAware": {
+    "enabled": true,
+    "require": "best-effort"
+  },
+  "rules": {
+    "private-type-leaks": "off"
+  }
 }
