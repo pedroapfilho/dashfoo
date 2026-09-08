@@ -33,6 +33,6 @@
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
     "zod": "^4.5.4",
-    "zod-compiler": "^1.28.0"
+    "zod-compiler": "^2.0.3"
   }
 }
