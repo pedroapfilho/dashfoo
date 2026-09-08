@@ -1,8 +1,13 @@
 import type { Dashfoo } from "@dashfoo/core";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { activeBreakpoint, matchBreakpoint, useResponsiveModel } from "./responsive";
+import {
+  activeBreakpoint,
+  matchBreakpoint,
+  useContainerWidth,
+  useResponsiveModel,
+} from "./responsive";
 
 const model = (name: string): Dashfoo => ({
   activeTabsetId: "ts1",
@@ -113,5 +118,73 @@ describe("useResponsiveModel", () => {
     expect(result.current.draggableTabs).toBe(false);
     expect(result.current.draggableTabsets).toBe(false);
     expect(result.current.resizableSplits).toBe(false);
+  });
+});
+
+describe("responsive subscription cleanup", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test("disconnects the previous container on replacement, detach and unmount", () => {
+    const observers: Array<{
+      disconnect: ReturnType<typeof vi.fn>;
+      observe: ReturnType<typeof vi.fn>;
+    }> = [];
+    class MockResizeObserver {
+      disconnect = vi.fn();
+      observe = vi.fn();
+
+      constructor() {
+        observers.push(this);
+      }
+    }
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    const { result, unmount } = renderHook(useContainerWidth);
+    const first = document.createElement("div");
+    const second = document.createElement("div");
+
+    act(() => {
+      result.current[0](first);
+    });
+    expect(observers[0]?.observe).toHaveBeenCalledWith(first);
+    act(() => {
+      result.current[0](second);
+    });
+    expect(observers[0]?.disconnect).toHaveBeenCalledOnce();
+    expect(observers[1]?.observe).toHaveBeenCalledWith(second);
+    act(() => {
+      result.current[0](null);
+    });
+    expect(observers[1]?.disconnect).toHaveBeenCalledOnce();
+    act(() => {
+      result.current[0](first);
+    });
+    unmount();
+    expect(observers[2]?.disconnect).toHaveBeenCalledOnce();
+  });
+
+  test("removes every media listener on breakpoint replacement and unmount", () => {
+    const narrow = { addEventListener: vi.fn(), matches: false, removeEventListener: vi.fn() };
+    const dark = { addEventListener: vi.fn(), matches: false, removeEventListener: vi.fn() };
+    vi.stubGlobal("matchMedia", (query: string) =>
+      query === "(max-width: 640px)" ? narrow : dark,
+    );
+    const breakpoints = [
+      { id: "mobile", model: MOBILE, query: { media: "(max-width: 640px)" } },
+      { id: "dark", model: DESKTOP, query: { media: "(prefers-color-scheme: dark)" } },
+    ];
+    const { rerender, unmount } = renderHook(useResponsiveModel, { initialProps: { breakpoints } });
+    const firstHandler = narrow.addEventListener.mock.calls[0]?.[1];
+
+    rerender({ breakpoints: breakpoints.slice(1) });
+    expect(narrow.removeEventListener).toHaveBeenCalledWith("change", firstHandler);
+    expect(dark.removeEventListener).toHaveBeenCalledWith("change", firstHandler);
+    unmount();
+    expect(narrow.removeEventListener).toHaveBeenCalledOnce();
+    expect(dark.removeEventListener).toHaveBeenCalledTimes(2);
+    expect(dark.removeEventListener.mock.calls[1]?.[1]).toBe(
+      dark.addEventListener.mock.calls[1]?.[1],
+    );
   });
 });

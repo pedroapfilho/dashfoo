@@ -44,6 +44,26 @@ const activeBreakpoint = (breakpoints: Array<Breakpoint>, width: number): Breakp
   return breakpoints.find((breakpoint) => matchBreakpoint(breakpoint, width)) ?? fallback;
 };
 
+const observeWidth = (element: HTMLElement, onWidth: (width: number) => void): (() => void) => {
+  const observer = new ResizeObserver((entries) => {
+    const entry = entries.at(0);
+    if (entry) {
+      onWidth(entry.contentRect.width);
+    }
+  });
+  observer.observe(element);
+  return () => {
+    observer.disconnect();
+  };
+};
+
+const listenToMedia = (list: MediaQueryList, handleChange: () => void): (() => void) => {
+  list.addEventListener("change", handleChange);
+  return () => {
+    list.removeEventListener("change", handleChange);
+  };
+};
+
 const useContainerWidth = (): [(element: HTMLElement | null) => void, number] => {
   const [width, setWidth] = useState<number>(Number.POSITIVE_INFINITY);
   const [container, setContainer] = useState<HTMLElement | null>(null);
@@ -54,16 +74,7 @@ const useContainerWidth = (): [(element: HTMLElement | null) => void, number] =>
     }
     // React 18 replays effects without replaying callback refs in StrictMode.
     // Create and disconnect the observer in the same lifecycle.
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries.at(0);
-      if (entry) {
-        setWidth(entry.contentRect.width);
-      }
-    });
-    observer.observe(container);
-    return () => {
-      observer.disconnect();
-    };
+    return observeWidth(container, setWidth);
   }, [container]);
 
   return [setContainer, width];
@@ -88,12 +99,10 @@ const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): Respons
     const handleChange = (): void => {
       setMediaTick((tick) => tick + 1);
     };
-    for (const list of lists) {
-      list.addEventListener("change", handleChange);
-    }
+    const cleanups = lists.map((list) => listenToMedia(list, handleChange));
     return () => {
-      for (const list of lists) {
-        list.removeEventListener("change", handleChange);
+      for (const cleanup of cleanups) {
+        cleanup();
       }
     };
   }, [breakpoints]);

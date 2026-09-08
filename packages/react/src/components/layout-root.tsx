@@ -44,6 +44,34 @@ type LayoutRenderers = {
 
 type LayoutStyle = CSSProperties & { "--dashfoo-splitter-size"?: string };
 
+type CapabilityOptions = Required<
+  Pick<
+    LayoutRootProps,
+    | "closableTabs"
+    | "draggableTabs"
+    | "draggableTabsets"
+    | "editable"
+    | "floatable"
+    | "maximizable"
+    | "renamableTabs"
+    | "resizableSplits"
+    | "restructurable"
+  >
+>;
+
+const resolveCapabilities = (global: Dashfoo["global"], options: CapabilityOptions) => {
+  const structural = options.editable && options.restructurable;
+  return {
+    closableTabs: options.editable && options.closableTabs && global.tabEnableClose !== false,
+    draggableTabs: structural && options.draggableTabs && global.tabEnableDrag !== false,
+    draggableTabsets: structural && options.draggableTabsets,
+    floatable: structural && options.floatable,
+    maximizable: options.maximizable && global.tabSetEnableMaximize !== false,
+    renamableTabs: options.editable && options.renamableTabs && global.tabEnableRename !== false,
+    resizableSplits: structural && options.resizableSplits && global.enableSplitResize !== false,
+  };
+};
+
 const LayoutRoot = ({
   children,
   closableTabs = true,
@@ -66,21 +94,24 @@ const LayoutRoot = ({
 }: LayoutRootProps): ReactNode => {
   const global = model.global;
   const snapshot: LayoutState = {
-    closableTabs: editable && closableTabs && global.tabEnableClose !== false,
+    ...resolveCapabilities(global, {
+      closableTabs,
+      draggableTabs,
+      draggableTabsets,
+      editable,
+      floatable,
+      maximizable,
+      renamableTabs,
+      resizableSplits,
+      restructurable,
+    }),
     dispatch,
-    draggableTabs: editable && restructurable && draggableTabs && global.tabEnableDrag !== false,
-    draggableTabsets: editable && restructurable && draggableTabsets,
     editable,
-    floatable: editable && restructurable && floatable,
     keepMounted,
-    maximizable: maximizable && global.tabSetEnableMaximize !== false,
     maximizedTabsetId: model.maximizedTabsetId,
-    renamableTabs: editable && renamableTabs && global.tabEnableRename !== false,
     renderTab: renderers.tab,
     renderTabLabel: renderers.tabLabel,
     renderTabsetToolbar: renderers.tabsetToolbar,
-    resizableSplits:
-      editable && restructurable && resizableSplits && global.enableSplitResize !== false,
     snap: snap ?? global.snap ?? null,
     splitDock: global.enableSplitDock !== false,
     tabLocation: global.tabLocation ?? "top",
