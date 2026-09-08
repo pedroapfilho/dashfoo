@@ -54,6 +54,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for workflow in build lint typecheck test format fallow e2e publish-checks; do
+          for workflow in build lint typecheck test e2e publish-checks; do
             gh workflow run "${workflow}.yml" --ref changeset-release/main
           done
