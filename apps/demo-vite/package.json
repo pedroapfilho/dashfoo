@@ -19,7 +19,7 @@
     "@fontsource-variable/geist-mono": "^5.2.8",
     "@tailwindcss/vite": "^4.3.2",
     "@tanstack/react-router": "^1.170.32",
-    "lucide-react": "^1.34.0",
+    "lucide-react": "^1.40.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwindcss": "^4.3.2"
@@ -29,10 +29,10 @@
     "@repo/typescript-config": "workspace:*",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.5",
-    "@vitejs/plugin-react": "^6.1.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
-    "zod": "^4.4.3",
+    "zod": "^4.5.4",
     "zod-compiler": "^1.28.0"
   }
 }
