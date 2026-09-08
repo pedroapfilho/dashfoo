@@ -14,6 +14,7 @@ A **headless React docking-layout library** (tabs, tabsets, splits, drag-dock) �
 - `packages/config-typescript` + `packages/config-vitest` — `@repo/*` internal presets (tsconfig + vitest), never published or renamed.
 - `apps/demo-vite` — Vite + TanStack Router demo; Playwright e2e in `e2e/`.
 - `apps/docs` — Next + fumadocs at `https://dashfoo.docs.localhost` (portless); `apps/docs/content/docs/*.mdx` is the canonical guide set. Package READMEs are the full API reference — update both when the API changes.
+- `apps/landing` — Next 16 marketing site at `https://dashfoo.localhost` (portless).
 
 ## Verify
 
@@ -51,7 +52,7 @@ Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (c
 
 ## Gotchas
 
-- @dnd-kit DragDropManager must be created in a `useState` initializer and destroyed in a `useInsertionEffect` cleanup (NOT `useEffect`) — StrictMode double-fires effect cleanups and a destroyed manager silently stops emitting drag events. See `packages/react/src/components/drag-adapter.tsx`.
+- @dnd-kit DragDropManager must be created in a `useState` initializer and destroyed in a `useInsertionEffect` cleanup (NOT `useEffect`) — StrictMode double-fires effect cleanups and a destroyed manager silently stops emitting drag events. See `packages/react/src/components/dashfoo-drag-provider.tsx`.
 - The dnd-kit Feedback plugin runs in overlay mode only: the chip element is assigned to `Feedback.overlay` at mount (`DragPreviewOverlay` in `drag-overlays.tsx`), before any drag — Feedback's render effect fires synchronously at drag start, so a placeholder clone or a promoted source tab means the assignment came too late.
 - dnd-kit's CollisionObserver only computes collisions while `dragOperation.shape` is set, and the ONLY code in the library that sets it is the Feedback plugin — filtering Feedback out silently kills all droppable targeting (no indicator, no drops). Tabset droppables use dashfoo's occlusion-aware detector (`lib/topmost-collision.ts`); never a built-in geometric one, which would hit tabsets covered by floats.
 - react-resizable-panels v4 puts `aria-orientation` on the Separator and gives it no intrinsic size — themes must set width/height or the gutter collapses.
