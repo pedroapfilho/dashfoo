@@ -44,28 +44,39 @@ const activeBreakpoint = (breakpoints: Array<Breakpoint>, width: number): Breakp
   return breakpoints.find((breakpoint) => matchBreakpoint(breakpoint, width)) ?? fallback;
 };
 
+const observeWidth = (element: HTMLElement, onWidth: (width: number) => void): (() => void) => {
+  const observer = new ResizeObserver((entries) => {
+    const entry = entries.at(0);
+    if (entry) {
+      onWidth(entry.contentRect.width);
+    }
+  });
+  observer.observe(element);
+  return () => {
+    observer.disconnect();
+  };
+};
+
+const listenToMedia = (list: MediaQueryList, handleChange: () => void): (() => void) => {
+  list.addEventListener("change", handleChange);
+  return () => {
+    list.removeEventListener("change", handleChange);
+  };
+};
+
 const useContainerWidth = (): [(element: HTMLElement | null) => void, number] => {
   const [width, setWidth] = useState<number>(Number.POSITIVE_INFINITY);
-  const observerRef = useRef<ResizeObserver | null>(null);
+  const cleanupRef = useRef<(() => void) | undefined>(undefined);
 
   const containerRef = useCallback((element: HTMLElement | null): void => {
-    observerRef.current?.disconnect();
-    if (!element) {
-      return;
-    }
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries.at(0);
-      if (entry) {
-        setWidth(entry.contentRect.width);
-      }
-    });
-    observer.observe(element);
-    observerRef.current = observer;
+    cleanupRef.current?.();
+    cleanupRef.current = element ? observeWidth(element, setWidth) : undefined;
   }, []);
 
   useEffect(
     () => () => {
-      observerRef.current?.disconnect();
+      cleanupRef.current?.();
+      cleanupRef.current = undefined;
     },
     [],
   );
@@ -92,12 +103,10 @@ const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): Respons
     const handleChange = (): void => {
       setMediaTick((tick) => tick + 1);
     };
-    for (const list of lists) {
-      list.addEventListener("change", handleChange);
-    }
+    const cleanups = lists.map((list) => listenToMedia(list, handleChange));
     return () => {
-      for (const list of lists) {
-        list.removeEventListener("change", handleChange);
+      for (const cleanup of cleanups) {
+        cleanup();
       }
     };
   }, [breakpoints]);
