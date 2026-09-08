@@ -109,18 +109,8 @@ const ZonePolygon = ({
 
 type Measured = { list: Array<TabsetMeasurement>; subject: DragSubject };
 
-const DropZoneOverlay = ({
-  containerRef,
-  enabled,
-}: {
-  containerRef: RefObject<HTMLElement | null>;
-  enabled: boolean;
-}): ReactNode => {
-  const subject = useDragSubject();
-  const intent = useDropIntent();
+const useDragPointer = (dragging: boolean): Point | null => {
   const [pointer, setPointer] = useState<Point | null>(null);
-  const [measured, setMeasured] = useState<Measured | null>(null);
-  const dragging = enabled && subject !== null;
 
   useEffect(() => {
     if (!dragging) {
@@ -147,8 +137,17 @@ const DropZoneOverlay = ({
     };
   }, [dragging]);
 
+  return pointer;
+};
+
+const useMeasuredTabsets = (
+  containerRef: RefObject<HTMLElement | null>,
+  subject: DragSubject | null,
+): Array<TabsetMeasurement> | null => {
+  const [measured, setMeasured] = useState<Measured | null>(null);
+
   useEffect(() => {
-    if (!dragging) {
+    if (subject === null) {
       return undefined;
     }
     const container = containerRef.current;
@@ -165,15 +164,22 @@ const DropZoneOverlay = ({
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", measure);
     };
-  }, [containerRef, dragging, subject]);
+  }, [containerRef, subject]);
 
-  const tabsets = measured !== null && measured.subject === subject ? measured.list : null;
-  const cells = useMemo(() => (tabsets ? buildZoneMap(tabsets) : []), [tabsets]);
+  return measured !== null && measured.subject === subject ? measured.list : null;
+};
 
-  if (!dragging || !tabsets || typeof document === "undefined") {
-    return null;
-  }
-
+const DropZoneDrawing = ({
+  cells,
+  intent,
+  pointer,
+  tabsets,
+}: {
+  cells: Array<ZoneCell>;
+  intent: DropIntent | null;
+  pointer: Point | null;
+  tabsets: Array<TabsetMeasurement>;
+}): ReactNode => {
   const activeCell = pointer ? activeCellAt(tabsets, pointer) : null;
   const activeKey = activeCell ? cellKey(activeCell) : null;
   const activePolygon =
@@ -183,7 +189,7 @@ const DropZoneOverlay = ({
   const chip = chipText(intent, activeCell);
   const lineColor = noop ? "hsl(0 0% 50% / 0.6)" : "hsl(210 80% 55% / 0.6)";
 
-  return createPortal(
+  return (
     <svg
       aria-hidden
       className="pointer-events-none fixed inset-0 z-9998 h-full w-full"
@@ -227,7 +233,30 @@ const DropZoneOverlay = ({
           {chip}
         </text>
       ) : null}
-    </svg>,
+    </svg>
+  );
+};
+
+const DropZoneOverlay = ({
+  containerRef,
+  enabled,
+}: {
+  containerRef: RefObject<HTMLElement | null>;
+  enabled: boolean;
+}): ReactNode => {
+  const subject = useDragSubject();
+  const intent = useDropIntent();
+  const dragging = enabled && subject !== null;
+  const pointer = useDragPointer(dragging);
+  const tabsets = useMeasuredTabsets(containerRef, enabled ? subject : null);
+  const cells = useMemo(() => (tabsets ? buildZoneMap(tabsets) : []), [tabsets]);
+
+  if (!dragging || !tabsets || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
+    <DropZoneDrawing cells={cells} intent={intent} pointer={pointer} tabsets={tabsets} />,
     document.body,
   );
 };
