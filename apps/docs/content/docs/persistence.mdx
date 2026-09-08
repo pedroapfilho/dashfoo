@@ -73,7 +73,7 @@ The default, and SSR-safe by construction. Every method guards
 - On the server, `getItem` returns `null` (so you load `defaultModel`) and
   writes are no-ops.
 - In the browser, a read that throws (private mode, blocked storage)
-  returns `null` rather than crashing.
+  warns and returns `null` rather than crashing.
 - A write that throws (quota exceeded, private mode) is not swallowed
   silently: it logs `console.warn("[dashfoo] failed to persist layout", …)`.
   The layout keeps working; only persistence is degraded.
@@ -123,7 +123,7 @@ Two things happen in order:
 (without throwing) when it finds any, since duplicates corrupt React keys.
 
 A `fromJSON` that throws is caught and the model falls back to `defaultModel`. A
-corrupt entry is also pruned: a mount effect re-reads the stored value, and if it
+corrupt entry is also pruned: the mount effect reads the stored value once, and if it
 fails to parse, calls `storage.removeItem(key)` so the bad payload does not sit
 there failing on every load. A user with a broken saved layout gets the default
 and a clean slate, not a crash.
@@ -202,8 +202,8 @@ import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooLayout } from "@dashfoo/react";
 import { useMemo, useRef } from "react";
 
-import { renderPanel } from "../components/panels";
-import { Button, DemoStage } from "../components/ui";
+import { renderOverviewPanel } from "../components/overview-panels";
+import { Button, DemoStage } from "../components/demo-stage";
 import { overviewModel } from "../models";
 
 const OverviewPage = () => {
@@ -218,7 +218,7 @@ const OverviewPage = () => {
     >
       <DashfooLayout
         defaultModel={defaultModel}
-        factory={renderPanel}
+        factory={renderOverviewPanel}
         persist="dashfoo:demo:overview"
         ref={layout}
       />
@@ -241,7 +241,9 @@ Points worth copying:
 The default adapter is already SSR-safe, so the hook does not crash during a
 server render: `getItem` returns `null`, you load `defaultModel`, and the
 server and the first client render agree. The browser then loads the saved
-model after mount.
+model after mount, applies it without an undo entry, and does not save the seed
+over the restored data. Custom adapter read, write, and remove failures also
+warn without taking down the layout.
 
 If you want each request to start from an isolated store (no shared module
 state between requests), pass a per-request `memoryStorageAdapter()` and
@@ -257,3 +259,14 @@ wiring.
   for `fromJSON` / `toJSON` and `parseModel`.
 - [`apps/demo-vite/src/pages/overview.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/overview.tsx)
   for the end-to-end worked example.
+
+## Using the hook directly
+
+`usePersistence` returns `{ initialModel, save, clear }`. `initialModel` starts
+as the seed and changes after mount when valid storage is restored. A host
+that creates a store once must apply that restored snapshot with `setModel`
+in an effect; passing it only as the store's `defaultModel` will not update an
+already mounted store. Prefer the `persist` prop, which handles this sequence.
+Changing a mounted persistence key warns; remount with a React `key` to load
+another arrangement. `StorageAdapter` is synchronous; backend synchronization
+belongs in controlled mode rather than returning promises from this adapter.

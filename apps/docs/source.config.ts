@@ -8,6 +8,9 @@ export const docs = defineDocs({
 
 export default defineConfig({
   mdxOptions: {
+    rehypeCodeOptions: {
+      themes: { dark: "github-dark-high-contrast", light: "github-light-high-contrast" },
+    },
     remarkNpmOptions: {
       persist: { id: "package-manager" },
     },

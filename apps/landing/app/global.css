@@ -53,21 +53,6 @@ html[data-dashfoo-theme="dark"] {
   color-scheme: dark;
 }
 
-.landing-blueprint {
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 3rem 3rem;
-}
-
-.landing-glow {
-  background: radial-gradient(
-    circle at 78% 18%,
-    color-mix(in oklab, var(--primary) 16%, transparent),
-    transparent 30rem
-  );
-}
-
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
@@ -91,4 +76,9 @@ html[data-dashfoo-theme="dark"] {
 [data-dashfoo-theme="dark"] .shiki span {
   color: var(--shiki-dark);
   font-style: var(--shiki-dark-font-style, normal);
+}
+
+::selection {
+  background: var(--foreground);
+  color: var(--background);
 }

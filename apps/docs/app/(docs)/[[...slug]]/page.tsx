@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { MarkdownCopyButton, ViewOptionsPopover } from "@/components/ai/page-actions";
+import { MobileToc } from "@/components/mobile-toc";
 import { source } from "@/lib/source";
 import { getMDXComponents } from "@/mdx-components";
 
@@ -24,19 +25,25 @@ const Page = async ({ params }: PageProps) => {
   const githubUrl = `${GITHUB_DOCS_BASE}/${page.path}`;
 
   return (
-    <main className="contents" data-testid="docs-shell">
-      <DocsPage full={page.data.full} toc={page.data.toc}>
+    <div className="contents" data-testid="docs-shell">
+      <DocsPage
+        full={page.data.full}
+        tableOfContent={{ container: { "aria-label": "On this page", role: "navigation" } }}
+        tableOfContentPopover={{ enabled: false }}
+        toc={page.data.toc}
+      >
         <DocsTitle>{page.data.title}</DocsTitle>
         <DocsDescription>{page.data.description}</DocsDescription>
         <div className="flex flex-row items-center gap-2 border-b pt-2 pb-6">
           <MarkdownCopyButton markdownUrl={markdownUrl} />
           <ViewOptionsPopover githubUrl={githubUrl} markdownUrl={markdownUrl} />
         </div>
+        <MobileToc items={page.data.toc} />
         <DocsBody>
           <MDXContent components={getMDXComponents()} />
         </DocsBody>
       </DocsPage>
-    </main>
+    </div>
   );
 };
 
@@ -50,6 +57,7 @@ export const generateMetadata = async ({ params }: PageProps): Promise<Metadata>
   }
 
   return {
+    alternates: { canonical: page.url },
     description: page.data.description,
     title: page.data.title,
   };

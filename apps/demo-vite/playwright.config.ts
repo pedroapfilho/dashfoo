@@ -5,13 +5,17 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   fullyParallel: false,
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    { grep: /@smoke/v, name: "firefox", use: { ...devices["Desktop Firefox"] } },
+    { grep: /@smoke/v, name: "webkit", use: { ...devices["Desktop Safari"] } },
+  ],
   reporter: [["list"]],
   retries: 0,
   testDir: "./e2e",
   use: {
     baseURL: BASE_URL,
-    trace: "on-first-retry",
+    trace: "retain-on-failure",
   },
   webServer: {
     command: `pnpm exec vite --port ${PORT} --strictPort`,

@@ -18,7 +18,7 @@ Source: [`packages/react/src`](https://github.com/pedroapfilho/dashfoo/tree/main
 
 ### `DashfooLayout` props
 
-All 18 props. The props are a union: pass **either** `model` (controlled)
+The component props. The props are a union: pass **either** `model` (controlled)
 **or** `defaultModel` (uncontrolled), never both and never neither. `persist`
 only exists on the `defaultModel` side. All three rules are enforced by the
 type, so the combinations that used to type-check and silently do nothing no
@@ -239,6 +239,10 @@ visualizations.
 
 The load/save half behind the `persist` prop, usable standalone.
 `usePersistence(config: PersistConfig | null, defaultModel: Dashfoo | undefined)`
+
+`initialModel` starts as the seed, then updates after mount when storage is restored.
+Hosts that create a store once must apply that update with `setModel`; `persist`
+on `DashfooLayout` already does this without a history entry or a save.
 loads the saved model once (validated; falls back to `defaultModel` on miss or
 corruption, pruning corrupt values with a warning), debounce-saves every change,
 and flushes a pending save on page hide (`pagehide` /

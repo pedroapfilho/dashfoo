@@ -21,7 +21,7 @@ committed model change, and the gates that turn each outcome on or off.
 The geometry lives in `@dashfoo/core`
 ([`resolveDockTarget`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/geometry/geometry.ts))
 and `@dashfoo/react`
-(the [drag adapter](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/drag-adapter.tsx)).
+(the [drag adapter](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/drag-provider.tsx)).
 The drag adapter is the only module in the library that touches `@dnd-kit`.
 It drives the framework-agnostic `@dnd-kit/dom` core imperatively (no
 React bindings). Everything it touches downstream is pure and unit-tested.
@@ -484,7 +484,7 @@ voronoi-style visualization of every candidate region this way.
 - [`tab-insertion.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/lib/tab-insertion.ts)
   in `@dashfoo/react` for the insertion index, the insertion line, and the
   no-op drop filter.
-- [`drag-adapter.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/drag-adapter.tsx)
+- [`drag-adapter.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/drag-provider.tsx)
   in `@dashfoo/react` for the manager, the hit-testing, and the indicator.
 - [`dragDockMachine`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/machines/drag-dock-machine.ts)
   in `@dashfoo/core` for the interaction lifecycle.

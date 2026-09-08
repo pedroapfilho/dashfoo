@@ -194,3 +194,13 @@ The demo's **Raw primitives** page (`apps/demo-vite/src/pages/raw.tsx`) builds
 a complete layout this way (custom labels, a tab counter, reordered toolbar,
 undo/redo buttons wired to the store) with no `DashfooLayout` anywhere, and
 its Playwright suite drags, renames, and maximizes against it.
+
+### Closable tab semantics and refs
+
+`data-dashfoo="tablist"` identifies the scrolling viewport. Inside it, a
+semantic `role="tablist"` owns the tab triggers by id using `aria-owns`.
+Close buttons and inline rename inputs are siblings in the accessibility tree,
+so they remain independently accessible without becoming invalid tablist children.
+Keep `Tabset.Trigger` inside `Tabset.Tab` and use the parts together; avoid
+styling the internal semantic marker. Native compound parts forward refs on
+React 18.3 and React 19. Docking itself remains pointer-only.

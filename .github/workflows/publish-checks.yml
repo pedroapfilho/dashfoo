@@ -14,7 +14,7 @@ permissions:
 jobs:
   packaging:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -31,6 +31,7 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref_name }}-
             turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-push-main-
+      - run: pnpm exec changeset status
       - run: pnpm typecheck
       - run: pnpm build --filter="./packages/*"
       # Packaging hygiene for the published packages (ESM-only, "use client").
@@ -42,3 +43,6 @@ jobs:
           (cd packages/react && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only)
           # dashfoo.css, tailwind.css, and tokens.css are CSS-only exports with no types/JS for attw to resolve.
           (cd packages/theme && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only --exclude-entrypoints ./dashfoo.css ./tailwind.css ./tokens.css)
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Standalone consumers (React 18 and 19, npm and pnpm)
+        run: pnpm test:consumers

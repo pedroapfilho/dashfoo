@@ -1,0 +1,18 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  font-family: system-ui, sans-serif;
+}
+[data-dashfoo="tabcontent"] {
+  padding: 16px;
+}
+textarea {
+  display: block;
+  width: 90%;
+  min-height: 120px;
+  margin-top: 12px;
+}

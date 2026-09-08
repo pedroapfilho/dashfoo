@@ -1,0 +1,61 @@
+{
+  "arch": "arm64",
+  "cpu": "Apple M5 Max",
+  "node": "v24.20.0",
+  "platform": "darwin",
+  "results": [
+    {
+      "dock": {
+        "medianMs": 0.007707999999993831,
+        "p95Ms": 0.014875000000003524
+      },
+      "movableTabs": 9,
+      "rename": {
+        "medianMs": 0.005124999999999602,
+        "p95Ms": 0.0057910000000021
+      },
+      "roundTrip": {
+        "medianMs": 0.034708000000009065,
+        "p95Ms": 0.0895840000000021
+      },
+      "serializedBytes": 938,
+      "tabs": 10
+    },
+    {
+      "dock": {
+        "medianMs": 0.01983300000000554,
+        "p95Ms": 0.039042000000009125
+      },
+      "movableTabs": 49,
+      "rename": {
+        "medianMs": 0.015583000000006564,
+        "p95Ms": 0.016374999999996476
+      },
+      "roundTrip": {
+        "medianMs": 0.10829200000000583,
+        "p95Ms": 0.20249999999998636
+      },
+      "serializedBytes": 3815,
+      "tabs": 50
+    },
+    {
+      "dock": {
+        "medianMs": 0.03412499999998886,
+        "p95Ms": 0.04116700000000151
+      },
+      "movableTabs": 99,
+      "rename": {
+        "medianMs": 0.028582999999997583,
+        "p95Ms": 0.029541999999992186
+      },
+      "roundTrip": {
+        "medianMs": 0.24091699999996763,
+        "p95Ms": 0.5275829999999928
+      },
+      "serializedBytes": 7415,
+      "tabs": 100
+    }
+  ],
+  "samples": 500,
+  "warmup": 100
+}

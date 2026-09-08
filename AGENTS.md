@@ -10,7 +10,7 @@ A **headless React docking-layout library** (tabs, tabsets, splits, drag-dock) �
 
 - `packages/core` — framework-free engine: zod schemas, pure reducer (structuredClone + normalize), xstate v5 machines, tree/geometry/history/serialize. Published, ESM-only.
 - `packages/react` — `@dashfoo/react`: DashfooLayout on react-resizable-panels v4 + @dnd-kit/dom (`^0.5.0`, pre-1.0 — bump deliberately, the drag adapter is the only touch point). Published, ESM-only, "use client".
-- `packages/theme` — plain-CSS theme. Published, changesets-ignored.
+- `packages/theme` — opt-in theme with prebuilt CSS and a Tailwind v4 source entry. Published through changesets.
 - `packages/config-typescript` + `packages/config-vitest` — `@repo/*` internal presets (tsconfig + vitest), never published or renamed.
 - `apps/demo-vite` — Vite + TanStack Router demo; Playwright e2e in `e2e/`.
 - `apps/docs` — Next + fumadocs at `https://dashfoo.docs.localhost` (portless); `apps/docs/content/docs/*.mdx` is the canonical guide set. Package READMEs are the full API reference — update both when the API changes.
@@ -19,7 +19,7 @@ A **headless React docking-layout library** (tabs, tabsets, splits, drag-dock) �
 ## Verify
 
 - `pnpm verify` — lint + typecheck + test + build via turbo. Run before every handoff.
-- E2E: one-time `pnpm --filter demo-vite exec playwright install --with-deps chromium`, then `pnpm --filter demo-vite test:e2e` (Playwright boots its own Vite server on :5174).
+- E2E: one-time `pnpm --filter demo-vite exec playwright install --with-deps chromium firefox webkit`, then `pnpm --filter demo-vite test:e2e` (Playwright boots its own Vite server on :5174).
 - `pnpm format:check` (oxfmt) and `pnpm fallow:dead` — CI-enforced; pre-commit runs husky → lint-staged (oxlint + oxfmt).
 
 ## Conventions
@@ -41,14 +41,14 @@ re-exports. Just change it, update docs/READMEs/changesets, and move on.
 
 Every publishable package keeps the same shape:
 
-- `exports: { ".": { types, default } }`, `files: ["dist"]`, `sideEffects: false`, `publishConfig.access: public`, MIT (`@dashfoo/theme` adds `./dashfoo.css` + `./tokens.css` exports and `sideEffects: ["*.css"]`)
+- `exports: { ".": { types, default } }`, `files: ["dist"]` (the theme also ships its Tailwind source), `sideEffects: false`, `publishConfig.access: public`, MIT (`@dashfoo/theme` adds `./dashfoo.css` + `./tailwind.css` + `./tokens.css` exports and `sideEffects: ["*.css"]`)
 - tsdown build: ESM-only, bundled `.d.ts`, source maps, tree-shaking
 - `prepack`/`prepare` run the build; `typecheck` is `tsc --noEmit` against `@repo/typescript-config/{library,react-library}.json` and covers test files
 - Tests: vitest via `@repo/config-vitest/{node,react}` — node for the core engine, jsdom for the React layer
 
 ## Publishing
 
-Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (changesets/action) opens the Version Packages PR and publishes with npm provenance. `@repo/*` packages stay `private: true` at version `0.0.0`; `@dashfoo/theme` is in the changesets `ignore` list.
+Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (changesets/action) opens the Version Packages PR and publishes with npm provenance. `@repo/*` packages stay `private: true` at version `0.0.0`; `@dashfoo/theme` is versioned with the public packages.
 
 ## Gotchas
 
@@ -61,7 +61,7 @@ Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (c
 
 ## Notable decisions
 
-- Primitives stay internal: `react-resizable-panels`, `@dnd-kit/dom` `^0.5.0`, and XState are bundled dependencies behind adapters, never peers and never in the public API.
+- Primitives stay internal: `react-resizable-panels`, `@dnd-kit/dom` `^0.5.0`, and XState are installed dependencies behind the React adapters, never peers. Core currently exports its framework-free XState machines; application integrations should prefer the reducer and React store.
 - The model is the single source of truth: plain JSON-serializable object, invariants self-heal after every action.
 - Unlike the library template, this repo keeps Playwright e2e (extra `e2e.yml` workflow) — dnd-kit drag behavior is untestable in jsdom. `publish-checks.yml` adds typecheck + publint + @arethetypeswrong on the published packages.
 - This repo follows the fleet's `library` profile (template: `~/dev/acme-package`, verified by `~/dev/orchestrator`).

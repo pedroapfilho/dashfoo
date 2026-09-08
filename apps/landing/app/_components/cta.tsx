@@ -14,10 +14,10 @@ const Cta = (): ReactNode => (
         Build the dashboard your product needs
       </h2>
       <p className="text-muted-foreground mx-auto mt-4 max-w-[56ch] text-base text-pretty">
-        Install two packages, style the chrome yourself, and ship.
+        Start with the default theme, then make the chrome your own.
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-        <ButtonLink href={DOCS_URL} icon="trailing" variant="primary">
+        <ButtonLink href={`${DOCS_URL}/getting-started`} icon="trailing" variant="primary">
           Get started
           <ArrowRight className="size-4 h-lh shrink-0" strokeWidth={2} />
         </ButtonLink>

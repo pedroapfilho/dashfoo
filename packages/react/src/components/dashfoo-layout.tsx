@@ -9,15 +9,24 @@ import type {
   TabNode,
   TabsetNode,
 } from "@dashfoo/core";
-import { findTabset, stackModel } from "@dashfoo/core";
+import { findTabset } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
-import { forwardRef, useCallback, useContext, useImperativeHandle, useMemo } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from "react";
 
 import { SharedDragManagerContext } from "../hooks/drag-hooks";
 import type { PersistConfig, StorageAdapter } from "../hooks/persistence";
 import { localStorageAdapter, usePersistence } from "../hooks/persistence";
 import { useContainerWidth } from "../hooks/responsive";
 import { useDashfooStore } from "../hooks/store";
+import { compactModel } from "../lib/compact-model";
 
 import { DashfooDragProvider } from "./dashfoo-drag-provider";
 import { Layout } from "./layout";
@@ -125,7 +134,10 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     snap,
   } = props;
 
-  const persistConfig = useMemo(() => resolvePersist(persist), [persist]);
+  const persistConfig = useMemo(
+    () => (model === undefined ? resolvePersist(persist) : null),
+    [model, persist],
+  );
   const persistence = usePersistence(persistConfig, defaultModel);
 
   const handleModelChange = useCallback(
@@ -144,6 +156,20 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     onMaximizedTabsetChange,
     onModelChange: handleModelChange,
   });
+
+  const { setModel } = store;
+  const appliedInitialModel = useRef(persistence.initialModel);
+  useEffect(() => {
+    if (
+      persistence.initialModel !== undefined &&
+      persistence.initialModel !== appliedInitialModel.current
+    ) {
+      appliedInitialModel.current = persistence.initialModel;
+      // Restoration must happen after hydration, without an action or undo entry.
+      // oxlint-disable-next-line react-doctor/no-pass-data-to-parent
+      setModel(persistence.initialModel);
+    }
+  }, [persistence.initialModel, setModel]);
 
   const hasSharedManager = useContext(SharedDragManagerContext) !== null;
 
@@ -226,7 +252,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       isCompact
         ? {
             maximizable: false,
-            model: stackModel(store.model, responsive?.orientation),
+            model: compactModel(store.model, responsive?.orientation),
             restructurable: false,
           }
         : { maximizable, model: store.model, restructurable: true },

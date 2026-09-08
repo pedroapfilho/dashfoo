@@ -1,0 +1,24 @@
+{
+  "name": "dashfoo-next-starter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@dashfoo/core": "^1.1.0",
+    "@dashfoo/react": "^0.8.0",
+    "@dashfoo/theme": "^0.2.2",
+    "next": "16.3.4",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^7.0.2"
+  }
+}

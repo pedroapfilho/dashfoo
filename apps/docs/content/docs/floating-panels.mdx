@@ -127,3 +127,5 @@ as an overlay over the rows, and add `Tabset.FloatButton` to your tabset toolbar
 so a floated panel can never end up with nowhere to render.
 
 See also: [The layout model](/the-model) · [Persisting layouts](/persistence).
+
+Saved float bounds are projected into the current viewport, so restoring a desktop layout on a narrow screen keeps title-bar controls reachable. This projection does not create history or overwrite the saved size; widening restores the saved geometry. A subsequent move or resize commits the geometry visible at that time.

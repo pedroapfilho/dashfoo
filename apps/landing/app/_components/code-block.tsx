@@ -11,11 +11,11 @@ const CodeBlock = async ({ code, lang = "tsx" }: CodeBlockProps) => {
   const hast = await codeToHast(code, {
     defaultColor: false,
     lang,
-    themes: { dark: "vitesse-dark", light: "vitesse-light" },
+    themes: { dark: "github-dark-high-contrast", light: "github-light-high-contrast" },
   });
 
   return (
-    <div className="rounded-dashfoo border-border bg-muted [&_pre]:focus-visible:outline-ring overflow-hidden border text-base/7 sm:text-sm/6 [&_pre]:overflow-x-auto [&_pre]:p-5 [&_pre]:focus-visible:outline-2 [&_pre]:focus-visible:outline-offset-2">
+    <div className="rounded-dashfoo border-border bg-background [&_pre]:focus-visible:outline-ring overflow-hidden border text-base/7 sm:text-sm/6 [&_pre]:overflow-x-auto [&_pre]:p-5 [&_pre]:focus-visible:outline-2 [&_pre]:focus-visible:outline-offset-2">
       {toJsxRuntime(hast, { Fragment, jsx, jsxs })}
     </div>
   );

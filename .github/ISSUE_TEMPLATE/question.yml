@@ -1,0 +1,10 @@
+name: Question
+description: Ask about integration, behavior, or a documented limitation.
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: What would you like to understand?
+      description: Include your package version and relevant code or documentation link.
+    validations:
+      required: true

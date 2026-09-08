@@ -1,25 +1,27 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { createContext, useContext } from "react";
 
-const ACTIVITY = [
-  "Layout saved to localStorage",
-  "Tab “Orders” docked right",
-  "Splitter resized → 62 / 38",
-  "Panel “Activity” maximized",
-] as const;
+const ActivityContext = createContext<ReadonlyArray<string>>([]);
 
-const ActivityPanel = (): ReactNode => (
-  // Without a focus target, keyboard users cannot scroll overflow content.
-  // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-  <section aria-label="Recent layout activity" tabIndex={0}>
-    <ul className="flex flex-col gap-2.5 text-xs">
-      {ACTIVITY.map((line) => (
-        <li className="flex items-center gap-2" key={line}>
-          <span className="bg-accent size-1.5 shrink-0 rounded-full" />
-          <span className="text-muted-foreground">{line}</span>
-        </li>
-      ))}
-    </ul>
-  </section>
-);
+const ActivityPanel = (): ReactNode => {
+  const activity = useContext(ActivityContext);
+  return (
+    <section aria-label="Recent layout activity">
+      <ul aria-live="polite" className="flex flex-col gap-2.5 text-xs">
+        {activity.length === 0 ? (
+          <li>Try moving a tab or resizing a panel.</li>
+        ) : (
+          activity.map((line, index) => (
+            <li className="text-muted-foreground" key={`${index}:${line}`}>
+              {line}
+            </li>
+          ))
+        )}
+      </ul>
+    </section>
+  );
+};
 
-export { ActivityPanel };
+export { ActivityContext, ActivityPanel };

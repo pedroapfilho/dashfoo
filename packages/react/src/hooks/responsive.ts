@@ -1,7 +1,7 @@
 "use client";
 
 import type { Dashfoo } from "@dashfoo/core";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Breakpoint = {
   compact?: boolean;
@@ -46,31 +46,27 @@ const activeBreakpoint = (breakpoints: Array<Breakpoint>, width: number): Breakp
 
 const useContainerWidth = (): [(element: HTMLElement | null) => void, number] => {
   const [width, setWidth] = useState<number>(Number.POSITIVE_INFINITY);
-  const observerRef = useRef<ResizeObserver | null>(null);
+  const [container, setContainer] = useState<HTMLElement | null>(null);
 
-  const containerRef = useCallback((element: HTMLElement | null): void => {
-    observerRef.current?.disconnect();
-    if (!element) {
-      return;
+  useEffect(() => {
+    if (!container) {
+      return undefined;
     }
+    // React 18 replays effects without replaying callback refs in StrictMode.
+    // Create and disconnect the observer in the same lifecycle.
     const observer = new ResizeObserver((entries) => {
       const entry = entries.at(0);
       if (entry) {
         setWidth(entry.contentRect.width);
       }
     });
-    observer.observe(element);
-    observerRef.current = observer;
-  }, []);
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+    };
+  }, [container]);
 
-  useEffect(
-    () => () => {
-      observerRef.current?.disconnect();
-    },
-    [],
-  );
-
-  return [containerRef, width];
+  return [setContainer, width];
 };
 
 const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): ResponsiveModel => {

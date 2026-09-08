@@ -1,0 +1,37 @@
+{
+  "browser": "151.0.7922.34",
+  "keepMounted": true,
+  "results": [
+    {
+      "mountCommitMs": 18,
+      "selectCommit": {
+        "medianMs": 0.8000000007450581,
+        "p95Ms": 1.1000000014901161
+      },
+      "tabs": 10
+    },
+    {
+      "mountCommitMs": 7.200000002980232,
+      "selectCommit": {
+        "medianMs": 1.9000000022351742,
+        "p95Ms": 2.400000002235174
+      },
+      "tabs": 50
+    },
+    {
+      "mountCommitMs": 9.600000001490116,
+      "selectCommit": {
+        "medianMs": 3,
+        "p95Ms": 3.699999999254942
+      },
+      "tabs": 100
+    }
+  ],
+  "samples": 100,
+  "tabsets": 5,
+  "viewport": {
+    "height": 800,
+    "width": 1280
+  },
+  "warmup": 20
+}

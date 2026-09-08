@@ -16,7 +16,7 @@ test("closing a tab removes it", async ({ page }) => {
 
 test("double-clicking a tab renames it inline", async ({ page }) => {
   await page.getByRole("tab", { name: "Canvas" }).dblclick();
-  const input = page.getByRole("textbox");
+  const input = page.locator('[data-dashfoo="tab-rename"]');
   await input.fill("Board");
   await input.press("Enter");
 
@@ -26,7 +26,7 @@ test("double-clicking a tab renames it inline", async ({ page }) => {
 
 test("Escape cancels a rename", async ({ page }) => {
   await page.getByRole("tab", { name: "Detail" }).dblclick();
-  const input = page.getByRole("textbox");
+  const input = page.locator('[data-dashfoo="tab-rename"]');
   await input.fill("Renamed");
   await input.press("Escape");
 

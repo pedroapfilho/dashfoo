@@ -5,6 +5,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { memoryStorageAdapter, usePersistence } from "./persistence";
 
+const fail = (): never => {
+  throw new Error("Storage unavailable");
+};
+
 const modelWith = (tabName: string): Dashfoo => ({
   activeTabsetId: "ts1",
   floats: [],
@@ -243,5 +247,26 @@ describe("usePersistence", () => {
       result.current.clear();
     });
     expect(storage.getItem("layout")).toBe(toJSON(modelWith("Saved")));
+  });
+  test("storage read, write and remove failures warn without breaking the layout", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const storage = { getItem: fail, removeItem: fail, setItem: fail };
+    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
+    expect(firstTabName(result.current.initialModel)).toBe("Default");
+    act(() => {
+      result.current.save(modelWith("Edited"));
+      vi.advanceTimersByTime(300);
+      result.current.clear();
+    });
+    expect(warn).toHaveBeenCalledWith(
+      "[dashfoo] failed to load persisted layout",
+      expect.any(Error),
+    );
+    expect(warn).toHaveBeenCalledWith("[dashfoo] failed to persist layout", expect.any(Error));
+    expect(warn).toHaveBeenCalledWith(
+      "[dashfoo] failed to clear persisted layout",
+      expect.any(Error),
+    );
+    warn.mockRestore();
   });
 });

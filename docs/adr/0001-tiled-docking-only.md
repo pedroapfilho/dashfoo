@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted · 2026-06-02
+Partially superseded · 2026-09-08
+
+The original decision below is retained as history. In-app floating panels now
+ship as `FloatNode` trees in `Dashfoo.floats`. Native-window popouts and freeform
+grids remain outside the release. The current [floating panel guide](https://docs.dashfoo.com/floating-panels)
+and schema are authoritative.
 
 ## Context
 

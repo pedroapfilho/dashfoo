@@ -6,7 +6,7 @@ import { DNDKIT_URL, LibLink, RRP_URL, XSTATE_URL, ZOD_URL } from "./lib-link";
 
 const FEATURES: Array<{ body: ReactNode; icon: LucideIcon; title: string }> = [
   {
-    body: "The engine renders markup tagged with data-dashfoo attributes and applies no CSS. Style the chrome to match your product.",
+    body: "The engine renders markup tagged with data-dashfoo attributes and leaves the visual theme to you. Style the chrome to match your product.",
     icon: Paintbrush,
     title: "Headless by design",
   },
@@ -21,7 +21,7 @@ const FEATURES: Array<{ body: ReactNode; icon: LucideIcon; title: string }> = [
     title: "Real drag-docking",
   },
   {
-    body: "Undo and redo come for free, and tree invariants self-heal after every action, so the model never drifts into an invalid state.",
+    body: "Undo and redo come for free, and tree invariants self-heal after every action, to keep the layout tree consistent.",
     icon: History,
     title: "Undo/redo & self-healing",
   },
@@ -36,11 +36,12 @@ const FEATURES: Array<{ body: ReactNode; icon: LucideIcon; title: string }> = [
         <LibLink href={RRP_URL}>react-resizable-panels</LibLink>,{" "}
         <LibLink href={DNDKIT_URL}>@dnd-kit/dom</LibLink>,{" "}
         <LibLink href={XSTATE_URL}>XState v5</LibLink>, and <LibLink href={ZOD_URL}>zod</LibLink>{" "}
-        sit behind adapters. They stay bundled and hidden, so you never import them.
+        sit behind adapters. They are installed as dependencies; application code works with
+        dashfoo’s components and model.
       </>
     ),
     icon: Layers,
-    title: "Primitives, hidden",
+    title: "Familiar foundations",
   },
 ];
 
@@ -52,8 +53,8 @@ const Features = (): ReactNode => (
           What dashfoo gives you
         </h2>
         <p className="text-muted-foreground mt-4 max-w-[56ch] text-base text-pretty">
-          dashfoo gives you FlexLayout&rsquo;s power without the chrome you can&rsquo;t restructure.
-          State, mutations, and drag sit behind adapters you never touch.
+          Start with DashfooLayout, or compose Layout and Tabset parts into your own chrome. In-app
+          floating panels use the same model, history, and drag-docking.
         </p>
       </div>
       <dl className="mt-12 grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
