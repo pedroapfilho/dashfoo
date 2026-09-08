@@ -1,5 +1,11 @@
 # @dashfoo/react
 
+## 0.8.1
+
+### Patch Changes
+
+- f63fe7f: Make responsive subscription ownership explicit and separate layout capability resolution from rendering while preserving interaction behavior.
+
 ## 0.8.0
 
 ### Minor Changes
