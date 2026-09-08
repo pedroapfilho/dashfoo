@@ -1,7 +1,7 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-import { dragElementTo } from "./helpers/drag";
+import { dragElementOver } from "./helpers/drag";
 
 test("@smoke docking, split resizing, floats, persistence and keyboard focus", async ({ page }) => {
   await page.goto("/");
@@ -44,7 +44,25 @@ test("@smoke docking, split resizing, floats, persistence and keyboard focus", a
   if (!targetBox) {
     throw new Error("Missing target tabstrip");
   }
-  await dragElementTo(page, canvas, targetBox.x + 80, targetBox.y + targetBox.height / 2);
+  await dragElementOver(page, canvas, targetBox.x + 80, targetBox.y + targetBox.height / 2);
+  // WebKit can deliver pointer moves before the collision observer catches up.
+  // Releasing against the old target reorders Canvas in its original tabset.
+  await expect
+    .poll(
+      async () => {
+        const indicator = await page.locator('[data-dashfoo="dock-indicator"]').boundingBox();
+        return (
+          indicator !== null &&
+          indicator.x >= targetBox.x &&
+          indicator.x + indicator.width <= targetBox.x + targetBox.width &&
+          Math.abs(indicator.y - targetBox.y) <= 1 &&
+          indicator.width <= 6
+        );
+      },
+      { message: "Docking indicator reaches the destination tab strip before release" },
+    )
+    .toBe(true);
+  await page.mouse.up();
   await expect(target.getByRole("tab", { exact: true, name: "Canvas" })).toBeVisible();
 
   await page.getByRole("button", { exact: true, name: "Float panel" }).first().click();

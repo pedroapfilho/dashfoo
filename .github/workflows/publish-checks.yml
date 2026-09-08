@@ -18,6 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
         with:
@@ -31,7 +32,7 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref_name }}-
             turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-push-main-
-      - run: pnpm exec changeset status
+      - run: pnpm exec changeset status --since=origin/main
       - run: pnpm typecheck
       - run: pnpm build --filter="./packages/*"
       # Packaging hygiene for the published packages (ESM-only, "use client").
