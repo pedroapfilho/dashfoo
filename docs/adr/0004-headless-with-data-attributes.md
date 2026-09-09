@@ -4,6 +4,12 @@
 
 Accepted · 2026-06-02
 
+The decision remains current. The markup table below is historical: compound
+components and accessible tab ownership now split the scrolling viewport from
+the semantic tablist. Use the React package README for the current selectors.
+“Zero CSS” here means no stylesheet in the React package; structural inline
+positioning and sizing styles are still required and shipped.
+
 ## Context
 
 FlexLayout (the library dashfoo descends from) renders complete, painted

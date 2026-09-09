@@ -1,0 +1,52 @@
+{
+  "arch": "arm64",
+  "artifacts": {
+    "core": {
+      "filename": "dashfoo-core-1.1.0.tgz",
+      "sha256": "3809a859a41fd63973d3354307a2a27d3ee908c9ad00880f53d95db7866f5f30"
+    },
+    "react": {
+      "filename": "dashfoo-react-0.8.0.tgz",
+      "sha256": "0a10bc2811fca2e5906eae5a28b62f4f9f8471215e144af3a6eb4162da47156c"
+    },
+    "theme": {
+      "filename": "dashfoo-theme-0.2.2.tgz",
+      "sha256": "9985a7f4d3e487d94d40791087ba896dc9383b43b230e3132708cc87fd46bf88"
+    }
+  },
+  "node": "v24.20.0",
+  "platform": "darwin",
+  "results": [
+    {
+      "browser": "passed",
+      "build": "passed",
+      "framework": "vite",
+      "manager": "npm",
+      "react": "18.3.1",
+      "runtime": "passed",
+      "fullAppJsGzipBytes": 140056,
+      "reactBaselineJsGzipBytes": 45078,
+      "incrementalJsGzipBytes": 94978
+    },
+    {
+      "browser": "passed",
+      "build": "passed",
+      "framework": "vite",
+      "manager": "pnpm",
+      "react": "19.2.7",
+      "runtime": "passed",
+      "fullAppJsGzipBytes": 155182,
+      "reactBaselineJsGzipBytes": 59241,
+      "incrementalJsGzipBytes": 95941,
+      "tailwindTheme": "passed"
+    },
+    {
+      "browser": "passed",
+      "build": "passed",
+      "framework": "next",
+      "manager": "npm",
+      "react": "19.2.7",
+      "runtime": "passed"
+    }
+  ]
+}

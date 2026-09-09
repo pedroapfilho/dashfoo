@@ -1,7 +1,7 @@
 "use client";
 
 import type { Dashfoo } from "@dashfoo/core";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Breakpoint = {
   compact?: boolean;
@@ -66,22 +66,18 @@ const listenToMedia = (list: MediaQueryList, handleChange: () => void): (() => v
 
 const useContainerWidth = (): [(element: HTMLElement | null) => void, number] => {
   const [width, setWidth] = useState<number>(Number.POSITIVE_INFINITY);
-  const cleanupRef = useRef<(() => void) | undefined>(undefined);
+  const [container, setContainer] = useState<HTMLElement | null>(null);
 
-  const containerRef = useCallback((element: HTMLElement | null): void => {
-    cleanupRef.current?.();
-    cleanupRef.current = element ? observeWidth(element, setWidth) : undefined;
-  }, []);
+  useEffect(() => {
+    if (!container) {
+      return undefined;
+    }
+    // React 18 replays effects without replaying callback refs in StrictMode.
+    // Create and disconnect the observer in the same lifecycle.
+    return observeWidth(container, setWidth);
+  }, [container]);
 
-  useEffect(
-    () => () => {
-      cleanupRef.current?.();
-      cleanupRef.current = undefined;
-    },
-    [],
-  );
-
-  return [containerRef, width];
+  return [setContainer, width];
 };
 
 const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): ResponsiveModel => {

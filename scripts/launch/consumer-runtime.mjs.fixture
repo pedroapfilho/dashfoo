@@ -1,0 +1,190 @@
+// oxlint-disable unicorn/max-nested-calls -- This standalone smoke fixture uses createElement to avoid requiring a JSX transpiler in consumers.
+// oxlint-disable require-await, typescript/require-await -- Async act flushes hydration and passive effects in both supported React versions.
+import assert from "node:assert/strict";
+
+import { model, row, tab, tabset } from "@dashfoo/core";
+import { JSDOM } from "jsdom";
+import { createElement as h, createRef, StrictMode, act } from "react";
+
+const dom = new JSDOM('<div id="root"></div>', { url: "https://consumer.test" });
+for (const key of [
+  "AbortController",
+  "AbortSignal",
+  "Event",
+  "EventTarget",
+  "Document",
+  "ShadowRoot",
+  "SVGElement",
+  "HTMLInputElement",
+  "HTMLButtonElement",
+  "window",
+  "document",
+  "HTMLElement",
+  "Element",
+  "Node",
+  "MutationObserver",
+  "getComputedStyle",
+]) {
+  globalThis[key] = dom.window[key];
+}
+for (const key of Object.getOwnPropertyNames(dom.window)) {
+  if (!(key in globalThis)) {
+    Object.defineProperty(globalThis, key, {
+      configurable: true,
+      value: dom.window[key],
+      writable: true,
+    });
+  }
+}
+const observed = new Set();
+globalThis.ResizeObserver = class {
+  elements = new Set();
+  observe(element) {
+    this.elements.add(element);
+    observed.add(element);
+  }
+  unobserve(element) {
+    this.elements.delete(element);
+    observed.delete(element);
+  }
+  disconnect() {
+    for (const element of this.elements) {
+      observed.delete(element);
+    }
+    this.elements.clear();
+  }
+};
+dom.window.ResizeObserver = globalThis.ResizeObserver;
+globalThis.CSS = { escape: (text) => text.replaceAll(":", String.raw`\:`) };
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+const { DashfooLayout, Layout, memoryStorageAdapter, Panel, Tabset } =
+  await import("@dashfoo/react");
+const { createRoot, hydrateRoot } = await import("react-dom/client");
+const { renderToString } = await import("react-dom/server");
+
+const seed = model(
+  row([tabset([tab("a", "Alpha"), tab("b", "Beta")], { id: "main" })], { id: "root" }),
+);
+const storage = memoryStorageAdapter();
+const handle = createRef();
+const view = h(
+  StrictMode,
+  null,
+  h(DashfooLayout, {
+    defaultModel: seed,
+    factory: (node) => h("p", null, node.name),
+    persist: { key: "consumer", storage },
+    ref: handle,
+  }),
+);
+const html = renderToString(view);
+const restored = JSON.stringify(seed).replace("Alpha", "Restored");
+storage.setItem("consumer", restored);
+const failures = [];
+const container = document.querySelector("#root");
+container.innerHTML = html;
+const roots = [];
+await act(async () => {
+  roots.push(
+    hydrateRoot(container, view, {
+      onRecoverableError: (error) => {
+        failures.push(error.message);
+      },
+    }),
+  );
+});
+assert.deepEqual(failures, [], "SSR and hydration must agree");
+assert.ok(container.textContent.includes("Restored"));
+assert.equal(handle.current.canUndo(), false);
+assert.ok(
+  [...observed].some((element) => element.dataset.dashfoo === "layout"),
+  "StrictMode keeps container measurement registered",
+);
+await act(async () => {
+  handle.current.renameTab("a", "Renamed");
+});
+assert.ok(container.textContent.includes("Renamed"));
+assert.equal(handle.current.canUndo(), true);
+await act(async () => {
+  handle.current.undo();
+});
+assert.ok(container.textContent.includes("Restored"));
+await act(async () => {
+  roots.pop().unmount();
+});
+
+const refs = Object.fromEntries(
+  [
+    "root",
+    "strip",
+    "list",
+    "tab",
+    "trigger",
+    "close",
+    "toolbar",
+    "maximize",
+    "content",
+    "panel",
+    "body",
+    "header",
+    "title",
+    "badge",
+    "icon",
+  ].map((name) => [name, createRef()]),
+);
+const node = seed.layout.children[0];
+const composed = h(
+  Layout.Root,
+  { dispatch: () => {}, keepMounted: true, model: seed, renderers: { tab: (t) => h("p", null, t.name) } },
+  h(
+    Tabset.Root,
+    { node, ref: refs.root },
+    h(
+      Tabset.TabStrip,
+      { ref: refs.strip },
+      h(
+        Tabset.Tablist,
+        { ref: refs.list },
+        node.children.map((t, index) =>
+          h(
+            Tabset.Tab,
+            { key: t.id, ref: index === 0 ? refs.tab : undefined, tab: t },
+            h(Tabset.Trigger, { ref: index === 0 ? refs.trigger : undefined }),
+            h(Tabset.RenameInput),
+            h(Tabset.CloseButton, { ref: index === 0 ? refs.close : undefined }),
+          ),
+        ),
+      ),
+      h(Tabset.Toolbar, { ref: refs.toolbar }, h(Tabset.MaximizeButton, { ref: refs.maximize })),
+    ),
+    h(Tabset.Content, { ref: refs.content }),
+  ),
+  h(
+    Panel.Root,
+    { ref: refs.panel },
+    h(
+      Panel.Header,
+      { ref: refs.header },
+      h(Panel.Title, { ref: refs.title }, "Title"),
+      h(Panel.Icon, { ref: refs.icon }, "Icon"),
+      h(Panel.Badge, { ref: refs.badge }, "Badge"),
+    ),
+    h(Panel.Body, { ref: refs.body }, "Body"),
+  ),
+);
+const root = createRoot(container);
+await act(async () => {
+  root.render(h(StrictMode, null, composed));
+});
+for (const [name, ref] of Object.entries(refs)) {
+  assert.ok(ref.current instanceof HTMLElement, `${name} forwards a DOM ref`);
+}
+assert.equal(refs.content.current.getAttribute("role"), "tabpanel", "content ref points to the active panel with keepMounted");
+await act(async () => {
+  root.unmount();
+});
+for (const [name, ref] of Object.entries(refs)) {
+  assert.equal(ref.current, null, `${name} clears its ref`);
+}
+dom.window.close();
+console.log("Consumer hydration, history, composition and DOM refs passed");

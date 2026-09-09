@@ -1,5 +1,5 @@
 import type { Dashfoo } from "@dashfoo/core";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
@@ -144,14 +144,22 @@ describe("responsive subscription cleanup", () => {
     const first = document.createElement("div");
     const second = document.createElement("div");
 
-    result.current[0](first);
+    act(() => {
+      result.current[0](first);
+    });
     expect(observers[0]?.observe).toHaveBeenCalledWith(first);
-    result.current[0](second);
+    act(() => {
+      result.current[0](second);
+    });
     expect(observers[0]?.disconnect).toHaveBeenCalledOnce();
     expect(observers[1]?.observe).toHaveBeenCalledWith(second);
-    result.current[0](null);
+    act(() => {
+      result.current[0](null);
+    });
     expect(observers[1]?.disconnect).toHaveBeenCalledOnce();
-    result.current[0](first);
+    act(() => {
+      result.current[0](first);
+    });
     unmount();
     expect(observers[2]?.disconnect).toHaveBeenCalledOnce();
   });

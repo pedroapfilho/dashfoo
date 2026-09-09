@@ -1,0 +1,22 @@
+name: Bug report
+description: A reproducible problem with a layout, package, or documentation.
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Link to a small example or paste the model and relevant component code.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Dashfoo, React, browser, and OS versions
+    validations:
+      required: true

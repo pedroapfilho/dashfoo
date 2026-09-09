@@ -238,11 +238,13 @@ describe("floating panels", () => {
     panel.setPointerCapture = () => {};
     panel.releasePointerCapture = () => {};
     const titleBar = panel.querySelector('[data-dashfoo="float-titlebar"]')!;
+    const startLeft = panel.style.left;
+    const startTop = panel.style.top;
     fireEvent.pointerDown(titleBar, { clientX: 0, clientY: 0, pointerId: 1 });
     fireEvent.pointerMove(panel, { clientX: 60, clientY: 50, pointerId: 1 });
     fireEvent.pointerUp(panel, { clientX: 60, clientY: 50, pointerId: 1 });
-    expect(panel.style.left).toBe("40px");
-    expect(panel.style.top).toBe("40px");
+    expect(panel.style.left).toBe(startLeft);
+    expect(panel.style.top).toBe(startTop);
   });
 
   test("clicking a float's body raises it above the others", () => {

@@ -11,7 +11,7 @@ grabbing a splitter is too cramped.
 
 The `responsive` prop handles that case. Below a width it renders the layout as
 one stacked column and **locks every structural interaction** (tab and tabset
-drag, split resize), leaving tap-to-switch and maximize. VS Code makes the same
+drag, split resize), leaving tap-to-switch. VS Code makes the same
 call: docking is a desktop interaction, so mobile gets a read-only, navigable
 view rather than a cramped one.
 
@@ -57,11 +57,10 @@ often lives inside a sidebar or split, so it reacts to its own width.
 ## State is preserved across the breakpoint
 
 The stacked view is a **derived projection** of your model, not a replacement:
-the canonical model in the store is never mutated while compact. Because every
-structural edit is locked on mobile, there is nothing to map back, so widening
-past `maxWidth` restores the desktop arrangement exactly, and the layout is
-**never remounted**. Undo history, persistence, tab selection, and mounted panel
-content all survive the breakpoint cross. Tap-to-select still works because the
+the projection does not replace the canonical model. Widening past `maxWidth`
+restores its desktop arrangement, and the row hierarchy stays mounted. Tab
+selection, closing and renaming still update that canonical model. Undo history, persistence, tab selection, and mounted panel
+content survive the breakpoint cross. Tap-to-select still works because the
 projection preserves tabset and tab ids, so a tap routes to the same tabset in
 the canonical model.
 
@@ -164,3 +163,7 @@ flip to `false`. Feed the model to `model` (controlled) rather than `defaultMode
 so swaps take effect without a remount.
 
 See also: [The layout model](/the-model) · [Persisting layouts](/persistence).
+
+The built-in compact projection retains nested row identities so mounted widget state survives ordinary breakpoint changes. Entering compact mode from a maximized view, moving a tab between tabsets, or supplying a different tree can remount content; keep durable application state outside panel components. The lower-level `stackModel` helper flattens the tree, so hand-composed layouts using it can also remount nested panels.
+
+Existing floats remain overlays in compact mode. Their displayed bounds fit the viewport without changing saved geometry; float controls remain available to minimize or dock them back.

@@ -1,0 +1,15 @@
+name: Feature request
+description: Explain the workflow you want dashfoo to support.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you building, and what is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior and alternatives considered
+    validations:
+      required: true

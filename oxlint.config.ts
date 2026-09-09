@@ -3,6 +3,9 @@ import awesomeness from "oxlint-config-awesomeness";
 
 export default defineConfig({
   extends: [awesomeness],
+  // Standalone starters have no workspace dependencies; lint:examples handles
+  // their syntax, and test:consumers checks types after isolated installation.
+  ignorePatterns: ["examples/**"],
   overrides: [
     {
       files: ["**/__tests__/**/*.ts", "**/__tests__/**/*.tsx", "**/*.test.ts", "**/*.test.tsx"],

@@ -12,7 +12,7 @@ const Button = ({
   onClick: () => void;
 }): ReactNode => (
   <button
-    className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-700 transition-colors hover:border-neutral-300 disabled:cursor-not-allowed disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-600"
+    className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-700 transition-colors hover:border-neutral-300 disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-600"
     disabled={disabled}
     onClick={onClick}
     type="button"
@@ -30,7 +30,7 @@ const DemoStage = ({
 }: {
   actions?: ReactNode;
   children: ReactNode;
-  description: string;
+  description: ReactNode;
   title: string;
 }): ReactNode => (
   <div className="flex h-full min-h-0 flex-col">

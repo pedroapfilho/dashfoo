@@ -5,23 +5,23 @@ import { CodeBlock } from "./code-block";
 
 const DOCS_URL = process.env.NEXT_PUBLIC_DOCS_URL ?? "https://docs.dashfoo.com";
 
-const INSTALL = "pnpm add @dashfoo/core @dashfoo/react";
+const INSTALL = "pnpm add @dashfoo/core @dashfoo/react @dashfoo/theme";
 
 const USAGE = `import { model, row, tabset, tab } from "@dashfoo/core";
 import { DashfooLayout } from "@dashfoo/react";
+import "@dashfoo/theme/dashfoo.css";
 
-const layout = model(
-  row([
-    tabset([tab("chart", "Chart"), tab("depth", "Depth")], { weight: 2 }),
-    tabset([tab("book", "Order Book")], { weight: 1 }),
-  ]),
-);
+const layout = model(row([
+  tabset([tab("chart", "Chart"), tab("notes", "Notes")]),
+]));
 
 export const Dashboard = () => (
-  <DashfooLayout
-    defaultModel={layout}
-    factory={(t) => <Panel node={t} />}
-  />
+  <div style={{ height: "70vh" }}>
+    <DashfooLayout
+      defaultModel={layout}
+      factory={(node) => <p>{node.name} content</p>}
+    />
+  </div>
 );`;
 
 const Quickstart = (): ReactNode => (
@@ -38,7 +38,7 @@ const Quickstart = (): ReactNode => (
         </p>
         <a
           className="text-foreground hover:text-muted-foreground focus-visible:outline-ring mt-6 inline-flex items-center gap-1.5 font-mono text-base font-medium focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm"
-          href={DOCS_URL}
+          href={`${DOCS_URL}/getting-started`}
         >
           Read the full guide
           <ArrowRight className="size-4 h-lh shrink-0" strokeWidth={2} />

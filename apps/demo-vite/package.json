@@ -25,6 +25,7 @@
     "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.62.1",
     "@repo/typescript-config": "workspace:*",
     "@types/react": "^19.2.17",

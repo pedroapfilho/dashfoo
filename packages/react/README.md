@@ -265,20 +265,16 @@ _restructure_ on small screens, give `DashfooLayout` a `responsive` prop:
 ```
 
 At or below `maxWidth` (measured on the layout's own container, not the viewport),
-the layout renders as a single stacked column and **locks every structural
-interaction** (tab/tabset drag, split resize), leaving tap-to-switch and
-maximize. This mirrors VS Code: docking is a desktop interaction, so narrow
-screens get a read-only, navigable view instead of unusable hit targets.
+the layout renders as a single stacked column and **locks docking and split resizing** (tab/tabset drag, split resize), leaving tap-to-switch. Tabs remain selectable, closable and renamable; existing float controls remain available.
 
-The stacked view is a **derived projection**: the model in the store is never
-mutated, so the layout is never remounted and widening past `maxWidth` restores
+The stacked view is a **derived projection**: the projection does not replace the model in the store, and the row hierarchy stays mounted and widening past `maxWidth` restores
 the desktop arrangement exactly. Undo history, persistence, selection, and
 mounted panels all survive the breakpoint cross. The theme grows tab hit targets
 to 44px under `@media (pointer: coarse)` so tap-to-switch stays usable.
 
-Hand-built layouts (the `Layout.*` primitives) get the same behavior with
+Hand-built layouts (the `Layout.*` primitives) can compose a stacked view with
 `useContainerWidth` + `stackModel`; for _distinct_ per-breakpoint models, use
-`useResponsiveModel`. Both feed reactive props with no `key`/remount.
+`useResponsiveModel`. Both feed reactive props; changing the tree hierarchy can remount nested panels.
 
 ## Floating panels
 
@@ -665,3 +661,19 @@ from `@dashfoo/core`.
 ## License
 
 MIT
+
+### Closable tab semantics and refs
+
+`data-dashfoo="tablist"` identifies the scrolling viewport. Inside it, a
+semantic `role="tablist"` owns the tab triggers by id using `aria-owns`.
+Close buttons and inline rename inputs are siblings in the accessibility tree,
+so they remain independently accessible without becoming invalid tablist children.
+Keep `Tabset.Trigger` inside `Tabset.Tab` and use the parts together; avoid
+styling the internal semantic marker. Native compound parts forward refs on
+React 18.3 and React 19. Docking itself remains pointer-only.
+
+The built-in compact projection retains nested row identities so mounted widget state survives ordinary breakpoint changes. Entering compact mode from a maximized view, moving a tab between tabsets, or supplying a different tree can remount content; keep durable application state outside panel components. The lower-level `stackModel` helper flattens the tree, so hand-composed layouts using it can also remount nested panels.
+
+`Tabset.Content` forwards its ref to the active panel, including when inactive panels are retained with `keepMounted`.
+
+Existing floats remain overlays in compact mode. Their displayed bounds fit the viewport without changing saved geometry; float controls remain available to minimize or dock them back.

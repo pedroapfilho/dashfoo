@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps, CSSProperties, MouseEvent, ReactNode } from "react";
-import { useMemo } from "react";
+import { forwardRef, useMemo } from "react";
 
 import { useLayout } from "../../hooks/layout-store";
 import { measureFloatRect } from "../../lib/float-geometry";
@@ -22,9 +22,13 @@ const toolbarStyle: CSSProperties = {
 
 type TabsetToolbarProps = ComponentProps<"div">;
 
-const TabsetToolbar = ({ style, ...props }: TabsetToolbarProps): ReactNode => (
-  <div {...props} data-dashfoo="tabset-toolbar" style={{ ...toolbarStyle, ...style }} />
+const TabsetToolbar = forwardRef<HTMLDivElement, TabsetToolbarProps>(
+  ({ style, ...props }, ref): ReactNode => (
+    <div {...props} data-dashfoo="tabset-toolbar" ref={ref} style={{ ...toolbarStyle, ...style }} />
+  ),
 );
+
+TabsetToolbar.displayName = "TabsetToolbar";
 
 type TabsetChrome = { float: boolean; grip: boolean; maximize: boolean; overflow: boolean };
 
@@ -57,96 +61,106 @@ const useTabsetChrome = (): TabsetChrome => {
 
 type TabsetGripProps = ComponentProps<"button">;
 
-const TabsetGrip = ({ children, ref: userRef, ...props }: TabsetGripProps): ReactNode => {
-  const activeTabName = useTabset((state) => state.activeTab?.name ?? "");
-  const node = useTabset((state) => state.node);
-  const { grip } = useTabsetChrome();
-  const { ref } = useTabsetDraggable(node.id, !grip, activeTabName);
-  const refCallback = useMemo(() => mergeRefs<HTMLButtonElement>(ref, userRef), [ref, userRef]);
+const TabsetGrip = forwardRef<HTMLButtonElement, TabsetGripProps>(
+  ({ children, ...props }, userRef): ReactNode => {
+    const activeTabName = useTabset((state) => state.activeTab?.name ?? "");
+    const node = useTabset((state) => state.node);
+    const { grip } = useTabsetChrome();
+    const { ref } = useTabsetDraggable(node.id, !grip, activeTabName);
+    const refCallback = useMemo(() => mergeRefs<HTMLButtonElement>(ref, userRef), [ref, userRef]);
 
-  if (!grip) {
-    return null;
-  }
+    if (!grip) {
+      return null;
+    }
 
-  return (
-    <button
-      aria-label="Move tabset"
-      title="Move tabset"
-      {...props}
-      data-dashfoo="tabset-grip"
-      ref={refCallback}
-      type="button"
-    >
-      {children ?? <GripIcon />}
-    </button>
-  );
-};
+    return (
+      <button
+        aria-label="Move tabset"
+        title="Move tabset"
+        {...props}
+        data-dashfoo="tabset-grip"
+        ref={refCallback}
+        type="button"
+      >
+        {children ?? <GripIcon />}
+      </button>
+    );
+  },
+);
+
+TabsetGrip.displayName = "TabsetGrip";
 
 type TabsetMaximizeButtonProps = ComponentProps<"button">;
 
-const TabsetMaximizeButton = ({
-  children,
-  onClick,
-  ...props
-}: TabsetMaximizeButtonProps): ReactNode => {
-  const isMaximized = useTabset((state) => state.isMaximized);
-  const toggleMaximize = useTabset((state) => state.toggleMaximize);
-  const { maximize } = useTabsetChrome();
+const TabsetMaximizeButton = forwardRef<HTMLButtonElement, TabsetMaximizeButtonProps>(
+  ({ children, onClick, ...props }, ref): ReactNode => {
+    const isMaximized = useTabset((state) => state.isMaximized);
+    const toggleMaximize = useTabset((state) => state.toggleMaximize);
+    const { maximize } = useTabsetChrome();
 
-  if (!maximize) {
-    return null;
-  }
+    if (!maximize) {
+      return null;
+    }
 
-  const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
-    onClick?.(event);
-    toggleMaximize();
-  };
+    const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
+      onClick?.(event);
+      toggleMaximize();
+    };
 
-  return (
-    <button
-      aria-label={isMaximized ? "Restore" : "Maximize"}
-      title={isMaximized ? "Restore tabset" : "Maximize tabset"}
-      {...props}
-      aria-pressed={isMaximized}
-      data-dashfoo="tabset-maximize"
-      onClick={handleClick}
-      type="button"
-    >
-      {children ?? <MaximizeIcon maximized={isMaximized} />}
-    </button>
-  );
-};
+    return (
+      <button
+        aria-label={isMaximized ? "Restore" : "Maximize"}
+        title={isMaximized ? "Restore tabset" : "Maximize tabset"}
+        {...props}
+        aria-pressed={isMaximized}
+        data-dashfoo="tabset-maximize"
+        onClick={handleClick}
+        ref={ref}
+        type="button"
+      >
+        {children ?? <MaximizeIcon maximized={isMaximized} />}
+      </button>
+    );
+  },
+);
+
+TabsetMaximizeButton.displayName = "TabsetMaximizeButton";
 
 type TabsetFloatButtonProps = ComponentProps<"button">;
 
-const TabsetFloatButton = ({ children, onClick, ...props }: TabsetFloatButtonProps): ReactNode => {
-  const dispatch = useLayout((state) => state.dispatch);
-  const node = useTabset((state) => state.node);
-  const { float } = useTabsetChrome();
+const TabsetFloatButton = forwardRef<HTMLButtonElement, TabsetFloatButtonProps>(
+  ({ children, onClick, ...props }, ref): ReactNode => {
+    const dispatch = useLayout((state) => state.dispatch);
+    const node = useTabset((state) => state.node);
+    const { float } = useTabsetChrome();
 
-  if (!float) {
-    return null;
-  }
+    if (!float) {
+      return null;
+    }
 
-  const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
-    onClick?.(event);
-    const geometry = measureFloatRect(event.currentTarget);
-    dispatch({ geometry, tabsetId: node.id, type: "floatTabset" });
-  };
+    const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
+      onClick?.(event);
+      const geometry = measureFloatRect(event.currentTarget);
+      dispatch({ geometry, tabsetId: node.id, type: "floatTabset" });
+    };
 
-  return (
-    <button
-      aria-label="Float panel"
-      title="Float panel"
-      {...props}
-      data-dashfoo="tabset-float"
-      onClick={handleClick}
-      type="button"
-    >
-      {children ?? <FloatIcon />}
-    </button>
-  );
-};
+    return (
+      <button
+        aria-label="Float panel"
+        title="Float panel"
+        {...props}
+        data-dashfoo="tabset-float"
+        onClick={handleClick}
+        ref={ref}
+        type="button"
+      >
+        {children ?? <FloatIcon />}
+      </button>
+    );
+  },
+);
+
+TabsetFloatButton.displayName = "TabsetFloatButton";
 
 export { TabsetFloatButton, TabsetGrip, TabsetMaximizeButton, TabsetToolbar, useTabsetChrome };
 export type {

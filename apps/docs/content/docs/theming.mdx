@@ -537,6 +537,16 @@ you can target is the attribute and state tables above.
 
 - [`packages/theme/src/css/skin.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/src/css/skin.css) for the complete worked skin, and [`packages/theme/src/css/tokens.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/src/css/tokens.css) for the token defaults + dark overrides.
 - [`apps/demo-vite/src/index.css`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/index.css) for how the demo imports the theme.
-- [`packages/react/src/components/tabset-view.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/tabset-view.tsx) for the tabset markup and ARIA wiring.
+- [`packages/react/src/components/tabset/tabset-view.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/tabset/tabset-view.tsx) for the tabset markup and ARIA wiring.
 - [`packages/react/src/components/row-view.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/row-view.tsx) for the splitter (`<Separator data-dashfoo="splitter">`).
-- [`packages/react/src/components/drag-adapter.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/drag-adapter.tsx) for the dock indicator and the `--dashfoo-dock-*` fallbacks.
+- [`packages/react/src/components/drag-provider.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/drag-provider.tsx) for the dock indicator and the `--dashfoo-dock-*` fallbacks.
+
+### Closable tab semantics and refs
+
+`data-dashfoo="tablist"` identifies the scrolling viewport. Inside it, a
+semantic `role="tablist"` owns the tab triggers by id using `aria-owns`.
+Close buttons and inline rename inputs are siblings in the accessibility tree,
+so they remain independently accessible without becoming invalid tablist children.
+Keep `Tabset.Trigger` inside `Tabset.Tab` and use the parts together; avoid
+styling the internal semantic marker. Native compound parts forward refs on
+React 18.3 and React 19. Docking itself remains pointer-only.

@@ -2,7 +2,13 @@
 
 ## Status
 
-Accepted · 2026-06-02 · **Amended 2026-06** (see update below)
+Partially superseded · originally accepted 2026-06-02
+
+Current implementation: `@dnd-kit/dom` **^0.5.0** with registered droppables,
+the Feedback overlay plugin, and occlusion-aware collision detection. Feedback
+is required to provide the drag shape; removing it breaks collision targeting.
+The historical 0.4 update below describes an earlier adapter and is superseded.
+`react-resizable-panels` remains v4, and docking remains pointer-only.
 
 > **Update (2026-06).** The drag layer was re-architected off the `@dnd-kit/react`
 > bindings onto the framework-agnostic **`@dnd-kit/dom` 0.4 core**, driven

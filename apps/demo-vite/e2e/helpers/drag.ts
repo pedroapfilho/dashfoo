@@ -2,7 +2,12 @@ import type { Locator, Page } from "@playwright/test";
 
 /** dnd-kit needs a nudge past the activation threshold, then a second move at
  * the destination to let the collision pass settle before the release. */
-const dragElementTo = async (page: Page, source: Locator, x: number, y: number): Promise<void> => {
+const dragElementOver = async (
+  page: Page,
+  source: Locator,
+  x: number,
+  y: number,
+): Promise<void> => {
   const box = await source.boundingBox();
   if (!box) {
     throw new Error("no bounding box for the drag source");
@@ -15,10 +20,14 @@ const dragElementTo = async (page: Page, source: Locator, x: number, y: number):
   await page.mouse.move(fromX + 8, fromY + 8);
   await page.mouse.move(x, y, { steps: 16 });
   await page.mouse.move(x, y, { steps: 4 });
+};
+
+const dragElementTo = async (page: Page, source: Locator, x: number, y: number): Promise<void> => {
+  await dragElementOver(page, source, x, y);
   await page.mouse.up();
 };
 
 const dragTabTo = (page: Page, label: string, x: number, y: number): Promise<void> =>
   dragElementTo(page, page.getByRole("tab", { name: label }), x, y);
 
-export { dragElementTo, dragTabTo };
+export { dragElementOver, dragElementTo, dragTabTo };

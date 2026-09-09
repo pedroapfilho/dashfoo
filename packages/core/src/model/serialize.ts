@@ -1,9 +1,9 @@
 import { normalize } from "./invariants";
-import type { Dashfoo, Json } from "./schema";
+import type { Dashfoo } from "./schema";
 import { dashfooSchema, jsonValueSchema } from "./schema";
 import { findDuplicateIds } from "./tree";
 
-const parseModel = (value: Json): Dashfoo => {
+const parseModel = (value: unknown): Dashfoo => {
   const model = normalize(dashfooSchema.parse(value));
   const duplicates = findDuplicateIds(model);
   if (duplicates.length > 0) {

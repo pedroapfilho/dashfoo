@@ -1,13 +1,15 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import Image from "next/image";
 
+import { GitHubIcon } from "@/components/ai/provider-icons";
+
 const GITHUB_URL = "https://github.com/pedroapfilho/dashfoo";
-const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://dashfoo.com";
+const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://www.dashfoo.com";
 const DEMO_URL = process.env.NEXT_PUBLIC_DEMO_URL ?? "https://demo.dashfoo.com";
 
 export const baseOptions = (): BaseLayoutProps => ({
-  githubUrl: GITHUB_URL,
   links: [
+    { external: true, icon: <GitHubIcon />, text: "GitHub", url: GITHUB_URL },
     {
       external: true,
       text: "Home",

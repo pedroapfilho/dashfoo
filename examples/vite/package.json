@@ -1,0 +1,22 @@
+{
+  "name": "dashfoo-vite-starter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build"
+  },
+  "dependencies": {
+    "@dashfoo/core": "^1.1.0",
+    "@dashfoo/react": "^0.8.0",
+    "@dashfoo/theme": "^0.2.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  }
+}

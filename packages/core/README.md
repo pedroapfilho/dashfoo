@@ -24,12 +24,12 @@ slipped into `config` fails parsing instead of corrupting a saved layout.
 
 ```ts
 type Dashfoo = {
-  version: number;
+  version: 1;
   global: GlobalAttributes;
   layout: RowNode; // the root is always a row
   activeTabsetId?: string;
   maximizedTabsetId?: string;
-  floats?: FloatNode[]; // floating panels, each its own layout subtree
+  floats: FloatNode[]; // floating panels, each its own layout subtree
 };
 ```
 
@@ -164,7 +164,7 @@ tree canonical so downstream code never has to defend against degenerate shapes:
 - simplifies a single-child row by lifting its lone child (which inherits the
   lifted row's weight, so sizing is preserved)
 - absorbs a root that reduces to a single nested row
-- clamps every `selected` index into range
+- preserves schema-normalized selection and weights (`parseModel` supplies defaults and clamps selection)
 - forces `activeTabsetId` / `maximizedTabsetId` to point at a tabset that exists
   (falling back to the first tabset, or clearing)
 - heals each floating panel's own layout and drops a float once it empties
@@ -210,8 +210,8 @@ import { reducer } from "@dashfoo/core";
 const floated = reducer(model, { type: "floatTabset", tabsetId: "left" });
 floated.floats; // [{ type: "float", id, layout: RowNode, geometry }]
 
-// Dock it back into the active main tabset (center) and drop the float.
-const docked = reducer(floated, { type: "dockFloat", floatId: floated.floats![0].id });
+// Dock it back as its own panel and drop the float.
+const docked = reducer(floated, { type: "dockFloat", floatId: floated.floats[0].id });
 ```
 
 `normalize` runs over each float's layout too and drops a float once its last
@@ -251,13 +251,13 @@ it stays framework-free; the React adapter maps rrp's id-keyed layout to/from
 these arrays and supplies the dragged boundary index.
 
 ```ts
-resolveSnapTargets(config: SnapConfig, panelCount: number): number[]; // grid positions inside 0..100
+// resolveSnapGrid(config, panelCount).targets contains positions inside 0..100
 resolveSnapGrid(config: SnapConfig | null, panelCount: number): SnapGrid;
 snapSizes(sizes: number[], boundaryIndex: number, grid: SnapGrid): { sizes: number[]; snapped: boolean };
 snapEnabled(grid: SnapGrid): boolean;
 ```
 
-`resolveSnapTargets` builds the grid for a row from its config and panel count: the
+`resolveSnapGrid` builds the grid for a row from its config and panel count: the
 union of the `step` grid (multiples of a fixed percent) and the `divisions` grid
 (even splits: multiples of `100/d`, where `d` is the number or, for `"panels"`,
 the panel count). `snapSizes` snaps the boundary between panel `boundaryIndex` and
@@ -337,7 +337,7 @@ const current = actor.getSnapshot().context.history.present;
 ### dragDockMachine
 
 The drag/dock interaction lifecycle (`idle` → `dragging` → `idle`), driven by
-abstract events the dnd-kit adapter maps from pointer and keyboard input. It owns
+abstract events the dnd-kit adapter maps from pointer input. It owns
 transient drag state only and never touches the document. On a valid `DROP` it
 **emits** a `COMMIT` carrying a `moveNode` action (the drag subject is a tab), a
 `moveTabset` action (the subject is a whole tabset, dragged by its grip), or an
@@ -357,7 +357,7 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 `schema`: `dashfooSchema`, `rowNodeSchema`, `tabsetNodeSchema`, `tabNodeSchema`,
 `floatNodeSchema`, `geometrySchema`, `dimensionSchema`, `snapSchema`, `edgeSchema`,
 `unitSchema`, `orientationSchema`, `globalAttributesSchema`,
-`jsonValueSchema`; types `Dashfoo`, `RowNode`, `TabsetNode`, `TabNode`,
+`jsonValueSchema`, `tabsetNodeObjectSchema`; types `Dashfoo`, `DashfooInput`, `RowNodeInput`, `RowNode`, `TabsetNode`, `TabNode`,
 `FloatNode`, `Geometry`, `Dimension`, `SnapConfig`, `Edge`, `Unit`, `Orientation`,
 `GlobalAttributes`, `Node`, `Json`.
 
@@ -379,8 +379,8 @@ types `AttributedNode`, `TabContainer`, `TabLocation`.
 `geometry`: `resolveDockTarget`, `dockZonePolygons`, `zoneRect`; types
 `DockZone`, `BandOptions`, `Point`, `Rect`.
 
-`snap`: `resolveSnapGrid`, `resolveSnapTargets`, `snapSizes`, `snapEnabled`, `DEFAULT_SNAP_THRESHOLD`;
-type `SnapResult`.
+`snap`: `resolveSnapGrid`, `decideSnap`, `settleSnap`, `snapSizes`, `snapEnabled`, `DEFAULT_SNAP_THRESHOLD`;
+types `SnapResult`, `SnapGrid`, `SnapDecision`.
 
 `history`: `createHistory`, `dispatch`, `undo`, `redo`, `canUndo`, `canRedo`;
 type `History`.
@@ -391,7 +391,7 @@ type `History`.
 tabsets, the building block for a narrow-screen breakpoint).
 
 `machines`: `dashfooMachine`, `dragDockMachine`; types `DashfooContext`,
-`DashfooEvent`, `DashfooInput`, `DragContext`, `DragEvent`, `DragSubject`,
+`DashfooEvent`, `DragContext`, `DragEvent`, `DragSubject`,
 `DragEmitted`.
 
 ## License

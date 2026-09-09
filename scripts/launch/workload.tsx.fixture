@@ -1,0 +1,69 @@
+import "@dashfoo/theme/dashfoo.css";
+
+import { model, row, tab, tabset } from "@dashfoo/core";
+import type { DashfooHandle } from "@dashfoo/react";
+import { DashfooLayout } from "@dashfoo/react";
+import { createRef } from "react";
+import { flushSync } from "react-dom";
+import { createRoot } from "react-dom/client";
+
+type Timing = { medianMs: number; p95Ms: number };
+type Workload = { mountCommitMs: number; selectCommit: Timing; tabs: number };
+declare global {
+  // This fixture runs only in a temporary consumer, never in the public demo.
+  var runWorkloads: () => Array<Workload>;
+}
+const container = document.querySelector<HTMLElement>("#root");
+if (!container) {
+  throw new Error("Missing root");
+}
+container.style.height = "800px";
+const root = createRoot(container);
+const handle = createRef<DashfooHandle>();
+const samples = 100;
+const summarize = (times: Array<number>): Timing => {
+  const sorted = [...times].sort((left, right) => left - right);
+  return { medianMs: sorted[Math.floor(samples / 2)] ?? 0, p95Ms: sorted[Math.floor(samples * 0.95)] ?? 0 };
+};
+globalThis.runWorkloads = (): Array<Workload> =>
+  [10, 50, 100].map((count) => {
+    const groups = Array.from({ length: 5 }, (_, group) => {
+      const tabs = Array.from({ length: count / 5 }, (_item, index) =>
+        tab(`tab-${group}-${index}`, `Panel ${group}-${index}`),
+      );
+      return tabset(tabs, { id: `group-${group}` });
+    });
+    const seed = model(row(groups, { id: "root" }));
+    const start = performance.now();
+    flushSync(() => {
+      root.render(
+        <DashfooLayout
+          defaultModel={seed}
+          factory={(node) => (
+            <label>
+              {node.name}
+              <input defaultValue="Sample state" />
+            </label>
+          )}
+          keepMounted
+          key={count}
+          ref={handle}
+        />,
+      );
+    });
+    const mountCommitMs = performance.now() - start;
+    const select = (index: number): void => {
+      flushSync(() => {
+        handle.current?.selectTab("group-0", index % (count / 5));
+      });
+    };
+    for (let index = 0; index < 20; index++) {
+      select(index);
+    }
+    const times = Array.from({ length: samples }, (_item, index) => {
+      const begin = performance.now();
+      select(index);
+      return performance.now() - begin;
+    });
+    return { mountCommitMs, selectCommit: summarize(times), tabs: count };
+  });

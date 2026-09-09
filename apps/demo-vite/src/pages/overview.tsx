@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { useMemo, useRef } from "react";
 
 import { Button, DemoStage } from "../components/demo-stage";
-import { PlaceholderPanel } from "../components/placeholder-panel";
+import { renderOverviewPanel } from "../components/overview-panels";
 import { overviewModel } from "../models";
 
 const OverviewPage = (): ReactNode => {
@@ -20,13 +20,25 @@ const OverviewPage = (): ReactNode => {
           Clear saved layout
         </Button>
       }
-      description="A composite layout. Drag tabs to restack or split, drag splitters to resize, double-click to rename, maximize to focus, or float a panel into a movable, resizable overlay. Every change is saved to localStorage; reload and your arrangement survives. Clear it to return to the default."
+      description={
+        <>
+          <span className="min-[721px]:hidden">
+            Tap tabs in the stacked workspace. Open Detail for notes that survive tab switches.{" "}
+          </span>
+          <span className="hidden min-[721px]:inline">
+            Drag tabs, resize splits, or float a panel. Open Detail for notes that survive tab
+            switches.{" "}
+          </span>
+          Sample data; your layout saves in this browser.
+        </>
+      }
       title="Overview"
     >
       <DashfooLayout
         defaultModel={defaultModel}
-        factory={PlaceholderPanel}
+        factory={renderOverviewPanel}
         floatable
+        keepMounted
         persist="dashfoo:demo:overview"
         ref={layout}
         responsive={{ maxWidth: 720 }}

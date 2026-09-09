@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted · 2026-06-02
+Partially superseded · originally accepted 2026-06-02
+
+XState still drives the document/history and drag lifecycle. React composition
+now uses Zustand selector stores for layout and tabset context. The historical
+“not zustand” and “for everything” wording no longer describes all state.
+The no-coalescing amendment below remains current.
 
 ## Context
 

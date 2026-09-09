@@ -30,7 +30,9 @@ const localStorageAdapter: StorageAdapter = {
     }
     try {
       return window.localStorage.getItem(key);
-    } catch {
+    } catch (error) {
+      // oxlint-disable-next-line no-console
+      console.warn("[dashfoo] failed to load persisted layout", error);
       return null;
     }
   },
@@ -40,8 +42,9 @@ const localStorageAdapter: StorageAdapter = {
     }
     try {
       window.localStorage.removeItem(key);
-    } catch {
-      void 0;
+    } catch (error) {
+      // oxlint-disable-next-line no-console
+      console.warn("[dashfoo] failed to clear persisted layout", error);
     }
   },
   setItem: (key, value) => {
@@ -63,17 +66,21 @@ type PersistConfig = {
   storage: StorageAdapter;
 };
 
+const removeStoredLayout = ({ key, storage }: PersistConfig): void => {
+  try {
+    storage.removeItem(key);
+  } catch (error) {
+    // oxlint-disable-next-line no-console
+    console.warn("[dashfoo] failed to clear persisted layout", error);
+  }
+};
+
 type Persistence = {
   clear: () => void;
 
   initialModel: Dashfoo | undefined;
   save: (model: Dashfoo) => void;
 };
-
-type StoredLoad =
-  | { error: unknown; kind: "corrupt" }
-  | { kind: "absent" }
-  | { kind: "loaded"; model: Dashfoo };
 
 const usePersistence = (
   config: PersistConfig | null,
@@ -84,34 +91,37 @@ const usePersistence = (
     configRef.current = config;
   }, [config]);
 
-  // Read and parsed once; the effect below acts on the outcome.
-  const [load] = useState<StoredLoad>(() => {
-    if (config === null) {
-      return { kind: "absent" };
-    }
-    const raw = config.storage.getItem(config.key);
-    if (raw === null) {
-      return { kind: "absent" };
-    }
-    try {
-      return { kind: "loaded", model: fromJSON(raw) };
-    } catch (error) {
-      return { error, kind: "corrupt" };
-    }
-  });
-
-  const initialModel =
-    load.kind === "loaded" && defaultModel !== undefined ? load.model : defaultModel;
-
+  const [initialModel, setInitialModel] = useState(defaultModel);
+  const loaded = useRef(false);
   useEffect(() => {
-    const current = configRef.current;
-    if (current === null || load.kind !== "corrupt") {
+    // A browser-only read during render disagrees with SSR. Load once after
+    // hydration; the layout applies this snapshot without recording an action.
+    if (loaded.current) {
       return;
     }
-    // oxlint-disable-next-line no-console
-    console.warn("[dashfoo] discarding unreadable persisted layout", load.error);
-    current.storage.removeItem(current.key);
-  }, [load]);
+    loaded.current = true;
+    const current = configRef.current;
+    if (current === null || defaultModel === undefined) {
+      return;
+    }
+    try {
+      const raw = current.storage.getItem(current.key);
+      if (raw === null) {
+        return;
+      }
+      try {
+        const restored = fromJSON(raw);
+        setInitialModel(restored);
+      } catch (error) {
+        // oxlint-disable-next-line no-console
+        console.warn("[dashfoo] discarding unreadable persisted layout", error);
+        removeStoredLayout(current);
+      }
+    } catch (error) {
+      // oxlint-disable-next-line no-console
+      console.warn("[dashfoo] failed to load persisted layout", error);
+    }
+  }, [defaultModel]);
 
   const loadedKey = useRef(config?.key);
   useEffect(() => {
@@ -134,8 +144,14 @@ const usePersistence = (
       timer.current = null;
     }
     if (pending.current !== null) {
-      pending.current.storage.setItem(pending.current.key, pending.current.value);
+      const write = pending.current;
       pending.current = null;
+      try {
+        write.storage.setItem(write.key, write.value);
+      } catch (error) {
+        // oxlint-disable-next-line no-console
+        console.warn("[dashfoo] failed to persist layout", error);
+      }
     }
   }, []);
 
@@ -180,7 +196,7 @@ const usePersistence = (
     pending.current = null;
     const current = configRef.current;
     if (current !== null) {
-      current.storage.removeItem(current.key);
+      removeStoredLayout(current);
     }
   }, []);
 

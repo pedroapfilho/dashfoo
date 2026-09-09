@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     "serializable layout",
     "dashfoo",
   ],
-  metadataBase: new URL("https://dashfoo.com"),
+  metadataBase: new URL("https://www.dashfoo.com"),
   openGraph: {
     description: DESCRIPTION,
     locale: "en_US",

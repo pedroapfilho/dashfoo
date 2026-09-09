@@ -16,6 +16,7 @@ const TAP_SLOP = 4;
 type Gesture = {
   bounds: Size;
   edges: ResizeEdges | null;
+  initialStyle: Pick<CSSProperties, "height" | "left" | "top" | "width">;
   latest: Geometry;
   moved: boolean;
   pointerId: number;
@@ -75,13 +76,26 @@ const useFloatGesture = ({
     const edgeKey = event.currentTarget.dataset.edge;
 
     const parent = panel.offsetParent instanceof HTMLElement ? panel.offsetParent : null;
+    const rect = panel.getBoundingClientRect();
+    const visibleGeometry = {
+      height: minimized ? geometry.height : rect.height,
+      left: rect.left,
+      top: rect.top,
+      width: minimized ? geometry.width : rect.width,
+    };
     const gesture: Gesture = {
       bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
       edges: edgeKey === undefined ? null : (EDGE_BY_KEY.get(edgeKey) ?? null),
-      latest: geometry,
+      initialStyle: {
+        height: panel.style.height,
+        left: panel.style.left,
+        top: panel.style.top,
+        width: panel.style.width,
+      },
+      latest: visibleGeometry,
       moved: false,
       pointerId: event.pointerId,
-      start: geometry,
+      start: visibleGeometry,
       startX: event.clientX,
       startY: event.clientY,
     };
@@ -165,12 +179,7 @@ const useFloatGesture = ({
     if (!gesture.moved) {
       return;
     }
-    panel.style.left = `${gesture.start.left}px`;
-    panel.style.top = `${gesture.start.top}px`;
-    if (!minimized) {
-      panel.style.width = `${gesture.start.width}px`;
-      panel.style.height = `${gesture.start.height}px`;
-    }
+    Object.assign(panel.style, gesture.initialStyle);
   };
 
   return {
@@ -181,14 +190,14 @@ const useFloatGesture = ({
       onPointerUp: handlePointerUp,
     },
     ref: setPanel,
-    style: minimized
-      ? { left: geometry.left, top: geometry.top }
-      : {
-          height: geometry.height,
-          left: geometry.left,
-          top: geometry.top,
-          width: geometry.width,
-        },
+    // CSS projects saved desktop geometry into the current viewport without
+    // a resize effect, hydration divergence, storage write or history entry.
+    style: {
+      height: minimized ? undefined : `min(${geometry.height}px, 100dvh)`,
+      left: `clamp(0px, ${geometry.left}px, calc(100vw - min(${minimized ? CHIP_SIZE.width : geometry.width}px, 100vw)))`,
+      top: `clamp(0px, ${geometry.top}px, calc(100dvh - min(${minimized ? CHIP_SIZE.height : geometry.height}px, 100dvh)))`,
+      width: minimized ? undefined : `min(${geometry.width}px, 100vw)`,
+    },
   };
 };
 

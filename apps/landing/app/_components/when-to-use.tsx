@@ -29,7 +29,10 @@ const AGAINST: Array<{ content: ReactNode; key: string }> = [
     ),
     key: "grid",
   },
-  { content: "You want a turnkey, fully-styled panel UI out of the box.", key: "turnkey" },
+  {
+    content: "You need a complete dashboard product, including its widgets and data.",
+    key: "turnkey",
+  },
   {
     content: (
       <>
@@ -40,7 +43,7 @@ const AGAINST: Array<{ content: ReactNode; key: string }> = [
     key: "split",
   },
   {
-    content: "You need panels that detach into native windows or float over the layout.",
+    content: "You need panels that detach into separate browser windows.",
     key: "detach",
   },
 ];
@@ -52,8 +55,8 @@ const When = (): ReactNode => (
         Is dashfoo the right fit?
       </h2>
       <p className="text-muted-foreground mt-4 max-w-[56ch] text-base text-pretty">
-        dashfoo is a split/tab tree, not a coordinate canvas. Popout windows, floating panels, and
-        nested sub-layouts aren&rsquo;t in v1.
+        dashfoo combines a split/tab tree with in-app floating panels. Native browser-window popouts
+        and a freeform widget grid are outside its scope.
       </p>
       <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2">
         <div>
