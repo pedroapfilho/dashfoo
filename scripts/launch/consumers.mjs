@@ -84,10 +84,12 @@ try {
     if (manager === "npm") {
       pkg.overrides = packed;
     } else {
-      pkg.pnpm = { overrides: packed };
+      const overrides = Object.entries(packed)
+        .map(([name, specifier]) => `  "${name}": "${specifier}"\n`)
+        .join("");
       await writeFile(
         path.join(target, "pnpm-workspace.yaml"),
-        'allowBuilds:\n  "@parcel/watcher": false\n',
+        `allowBuilds:\n  "@parcel/watcher": false\noverrides:\n${overrides}`,
       );
     }
     await writeFile(path.join(target, "package.json"), JSON.stringify(pkg, null, 2));
