@@ -46,11 +46,28 @@ jobs:
       # merge and publish to npm on the feature PR's CI alone, and changesets
       # rewrites every version and internal dependency range in the workspace.
       # workflow_dispatch is exempt from that approval gate.
+      #
+      # A gate is any workflow carrying both triggers, derived here rather than
+      # listed: a hand-maintained list silently skips a gate added later, and
+      # merging this PR publishes to npm. Advisory workflows stay out of the set
+      # by not declaring workflow_dispatch.
       - name: Run gates on the version PR
         if: steps.changesets.outputs.pr-number
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for workflow in build lint typecheck test e2e publish-checks; do
-            gh workflow run "${workflow}.yml" --ref changeset-release/main
+          set -euo pipefail
+          gates=""
+          for file in .github/workflows/*.yml; do
+            grep -q '^  pull_request:' "$file" || continue
+            grep -q '^  workflow_dispatch:' "$file" || continue
+            gates="$gates $(basename "$file")"
+          done
+          if [ -z "$gates" ]; then
+            echo "::error::found no dispatchable gate workflows"
+            exit 1
+          fi
+          echo "dispatching:$gates"
+          for workflow in $gates; do
+            gh workflow run "$workflow" --ref changeset-release/main
           done
