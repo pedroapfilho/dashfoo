@@ -9,7 +9,7 @@ concurrency: release-${{ github.ref }}
 permissions:
   contents: write # push the version commit and git tags
   pull-requests: write # open/update the "Version Packages" PR
-  id-token: write # npm publish provenance
+  id-token: write # OIDC exchange for npm trusted publishing
   actions: write # dispatch the gate workflows onto the version branch
 
 jobs:
@@ -40,9 +40,6 @@ jobs:
           pr-title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # actions/setup-node generates an .npmrc that reads NODE_AUTH_TOKEN; must match.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
 
       # The version PR is authored by GITHUB_TOKEN, so its pull_request runs are
       # created in `action_required` and never execute: without this the PR would
