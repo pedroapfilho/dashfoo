@@ -7,7 +7,7 @@ const Notes = (): ReactNode => {
   const [notes, setNotes] = useState("");
   return (
     <label className="flex h-full flex-col gap-3 text-sm">
-      Notes — switch tabs and come back; your text stays here.
+      Notes: switch tabs and come back; your text stays here.
       <textarea
         aria-label="Workspace notes"
         className="min-h-24 flex-1 resize-y rounded-md border border-neutral-300 bg-transparent p-3 dark:border-neutral-600"
@@ -74,7 +74,7 @@ const renderOverviewBody = (node: TabNode): ReactNode => {
   );
 };
 
-const renderOverviewPanel = (node: TabNode): ReactNode => (
+const OverviewPanel = (node: TabNode): ReactNode => (
   <Panel.Root>
     <Panel.Header>
       <Panel.Title>{node.name}</Panel.Title>
@@ -83,4 +83,4 @@ const renderOverviewPanel = (node: TabNode): ReactNode => (
   </Panel.Root>
 );
 
-export { renderOverviewPanel };
+export { OverviewPanel };

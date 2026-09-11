@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { useMemo, useRef } from "react";
 
 import { Button, DemoStage } from "../components/demo-stage";
-import { renderOverviewPanel } from "../components/overview-panels";
+import { OverviewPanel } from "../components/overview-panel";
 import { overviewModel } from "../models";
 
 const OverviewPage = (): ReactNode => {
@@ -36,7 +36,7 @@ const OverviewPage = (): ReactNode => {
     >
       <DashfooLayout
         defaultModel={defaultModel}
-        factory={renderOverviewPanel}
+        factory={OverviewPanel}
         floatable
         keepMounted
         persist="dashfoo:demo:overview"
