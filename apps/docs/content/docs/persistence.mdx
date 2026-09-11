@@ -202,7 +202,7 @@ import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooLayout } from "@dashfoo/react";
 import { useMemo, useRef } from "react";
 
-import { renderOverviewPanel } from "../components/overview-panels";
+import { OverviewPanel } from "../components/overview-panel";
 import { Button, DemoStage } from "../components/demo-stage";
 import { overviewModel } from "../models";
 
@@ -218,7 +218,7 @@ const OverviewPage = () => {
     >
       <DashfooLayout
         defaultModel={defaultModel}
-        factory={renderOverviewPanel}
+        factory={OverviewPanel}
         persist="dashfoo:demo:overview"
         ref={layout}
       />
