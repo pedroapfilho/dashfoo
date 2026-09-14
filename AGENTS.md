@@ -65,3 +65,9 @@ Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (c
 - The model is the single source of truth: plain JSON-serializable object, invariants self-heal after every action.
 - Unlike the library template, this repo keeps Playwright e2e (extra `e2e.yml` workflow) — dnd-kit drag behavior is untestable in jsdom. `publish-checks.yml` adds typecheck + publint + @arethetypeswrong on the published packages.
 - This repo follows the fleet's `library` profile (template: `~/dev/acme-package`, verified by `~/dev/orchestrator`).
+
+## Design-system linting
+
+Run `pnpm lint` after changes and fix every error. `oxlint.config.ts` registers `@shadcn/lint` and enforces component contracts, known Tailwind classes, and readable component class names. Use component variants for appearance and layout classes at call sites. The config lists the primitive directories that own their internal styles; unknown-class checking stays enabled there. Keep theme discovery local to each app. Exact class-merging fixture allowances apply only to the named test files.
+
+`not-prose` is supplied by Fumadocs typography selectors and is allowed only in the docs app. The `shell` and `body` classes in `panel.test.tsx` test class forwarding. Popover triggers accept button color and size props; keep variant evaluation inside the primitive.
