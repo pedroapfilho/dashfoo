@@ -1,5 +1,11 @@
 # @dashfoo/core
 
+## 1.1.2
+
+### Patch Changes
+
+- 360e984: Bump runtime dependency ranges to the current non-major line.
+
 ## 1.1.1
 
 ### Patch Changes

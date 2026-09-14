@@ -1,5 +1,11 @@
 # @dashfoo/theme
 
+## 0.2.4
+
+### Patch Changes
+
+- 360e984: Bump runtime dependency ranges to the current non-major line.
+
 ## 0.2.3
 
 ### Patch Changes
