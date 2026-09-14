@@ -44,7 +44,7 @@ const PopoverTrigger = ({
       type="button"
       {...props}
       className={cn(
-        "[anchor-name:--fd-popover-anchor]",
+        "popover-anchor",
         (color ?? size) && buttonVariants({ color, size }),
         className,
       )}
@@ -69,9 +69,9 @@ const PopoverContent = ({ children, className, ref, ...props }: PopoverContentPr
       className={cn(
         "m-0 [&:not(:popover-open)]:hidden",
 
-        "bg-fd-popover/60 text-fd-popover-foreground z-50 max-w-[98vw] min-w-[240px] overflow-y-auto rounded-xl border p-2 text-sm shadow-lg backdrop-blur-lg",
+        "bg-fd-popover/60 text-fd-popover-foreground max-w-popover-viewport z-50 min-w-60 overflow-y-auto rounded-xl border p-2 text-sm shadow-lg backdrop-blur-lg",
 
-        "mt-1 [position-anchor:--fd-popover-anchor] [position-area:block-end_span-inline] [position-try-fallbacks:flip-block]",
+        "popover-position-anchor popover-position-area popover-position-flip mt-1",
         className,
       )}
       id={ctx.popoverId}

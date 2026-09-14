@@ -23,7 +23,7 @@ const RawTabLabel = (): ReactNode => {
     <span className="inline-flex items-center gap-1.5">
       <span
         aria-hidden="true"
-        className={`size-1.5 rounded-full ${selected ? "bg-emerald-500" : "bg-neutral-300 dark:bg-neutral-600"}`}
+        className={`size-1.5 rounded-full ${selected ? "bg-success-indicator" : "bg-surface-disabled dark:bg-surface-dim"}`}
       />
       {tab.name}
     </span>
@@ -33,7 +33,7 @@ const RawTabLabel = (): ReactNode => {
 const TabCountBadge = (): ReactNode => {
   const count = useTabset((state) => state.node.children.length);
   return (
-    <span className="px-1.5 text-xs text-neutral-400 tabular-nums dark:text-neutral-500">
+    <span className="text-foreground-disabled dark:text-foreground-muted px-1.5 text-xs tabular-nums">
       {count}&nbsp;tabs
     </span>
   );

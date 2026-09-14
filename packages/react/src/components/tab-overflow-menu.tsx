@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, FocusEvent, KeyboardEvent, ReactNode } from "react";
+import type { FocusEvent, KeyboardEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 
 const OverflowIcon = (): ReactNode => (
@@ -10,13 +10,6 @@ const OverflowIcon = (): ReactNode => (
     <circle cx="8" cy="5" r="1" />
   </svg>
 );
-
-const menuStyle: CSSProperties = {
-  position: "absolute",
-  right: 0,
-  top: "100%",
-  zIndex: 10,
-};
 
 type OverflowItem = { id: string; name: string };
 
@@ -119,7 +112,7 @@ const TabOverflowMenu = ({
   };
 
   return (
-    <div data-dashfoo="tab-overflow-root" ref={rootRef} style={{ position: "relative" }}>
+    <div data-dashfoo="tab-overflow-root" ref={rootRef}>
       <button
         aria-expanded={open}
         aria-haspopup="menu"
@@ -138,7 +131,6 @@ const TabOverflowMenu = ({
           onBlur={handleFocusOut}
           onKeyDown={handleMenuKeyDown}
           role="menu"
-          style={menuStyle}
           tabIndex={-1}
         >
           {items.map((item, index) => (

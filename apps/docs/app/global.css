@@ -39,3 +39,35 @@ html {
 :root:not(.dark) {
   --color-fd-muted-foreground: oklch(0.5 0 0);
 }
+
+@utility grid-cols-dock-zones {
+  grid-template-columns: 1fr 2.2fr 1fr;
+}
+
+@utility grid-rows-dock-zones {
+  grid-template-rows: 1fr 2fr 1fr;
+}
+
+@utility popover-anchor {
+  anchor-name: --fd-popover-anchor;
+}
+
+@utility max-w-popover-viewport {
+  max-width: 98vw;
+}
+
+@utility popover-position-anchor {
+  position-anchor: --fd-popover-anchor;
+}
+
+@utility popover-position-area {
+  position-area: block-end span-inline;
+}
+
+@utility popover-position-flip {
+  position-try-fallbacks: flip-block;
+}
+
+@utility reading-progress-range {
+  animation-range: 0% 100%;
+}

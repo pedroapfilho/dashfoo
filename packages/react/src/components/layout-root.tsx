@@ -1,7 +1,7 @@
 "use client";
 
 import type { Action, Dashfoo, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
-import type { ComponentProps, CSSProperties, ReactNode, Ref } from "react";
+import type { ComponentProps, ReactNode, Ref } from "react";
 import { useLayoutEffect, useState } from "react";
 
 import type { LayoutState } from "../hooks/layout-store";
@@ -9,9 +9,7 @@ import { createLayoutStore, LayoutStoreContext, useLayout } from "../hooks/layou
 
 const DEFAULT_TABSET_MIN_SIZE = 320;
 
-const rootStyle = { display: "flex", height: "100%", position: "relative", width: "100%" } as const;
-
-type LayoutRootProps = Omit<ComponentProps<"div">, "children"> & {
+type LayoutRootProps = Omit<ComponentProps<"div">, "children" | "style"> & {
   children: ReactNode;
   closableTabs?: boolean;
   dispatch: (action: Action) => void;
@@ -41,8 +39,6 @@ type LayoutRenderers = {
   tabLabel?: (tab: TabNode) => ReactNode;
   tabsetToolbar?: (tabset: TabsetNode) => ReactNode;
 };
-
-type LayoutStyle = CSSProperties & { "--dashfoo-splitter-size"?: string };
 
 type CapabilityOptions = Required<
   Pick<
@@ -89,7 +85,6 @@ const LayoutRoot = ({
   restructurable = true,
   rootRef,
   snap,
-  style,
   ...props
 }: LayoutRootProps): ReactNode => {
   const global = model.global;
@@ -125,14 +120,17 @@ const LayoutRoot = ({
     store.setState(snapshot);
   });
 
-  const layoutStyle: LayoutStyle = { ...rootStyle, ...style };
-  if (global.splitterSize !== undefined) {
-    layoutStyle["--dashfoo-splitter-size"] = `${global.splitterSize}px`;
-  }
-
   return (
     <LayoutStoreContext.Provider value={store}>
-      <div {...props} data-dashfoo="layout" ref={rootRef} style={layoutStyle}>
+      <div
+        {...props}
+        data-dashfoo="layout"
+        ref={rootRef}
+        style={{
+          "--dashfoo-splitter-size":
+            global.splitterSize === undefined ? undefined : `${global.splitterSize}px`,
+        }}
+      >
         {children}
       </div>
     </LayoutStoreContext.Provider>
@@ -160,9 +158,7 @@ const LayoutOverrides = ({ children, overrides }: LayoutOverridesProps): ReactNo
 
   return (
     <LayoutStoreContext.Provider value={store}>
-      <div data-dashfoo="layout" style={rootStyle}>
-        {children}
-      </div>
+      <div data-dashfoo="layout">{children}</div>
     </LayoutStoreContext.Provider>
   );
 };

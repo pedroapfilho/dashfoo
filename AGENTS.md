@@ -41,7 +41,7 @@ re-exports. Just change it, update docs/READMEs/changesets, and move on.
 
 Every publishable package keeps the same shape:
 
-- `exports: { ".": { types, default } }`, `files: ["dist"]` (the theme also ships its Tailwind source), `sideEffects: false`, `publishConfig.access: public`, MIT (`@dashfoo/theme` adds `./dashfoo.css` + `./tailwind.css` + `./tokens.css` exports and `sideEffects: ["*.css"]`)
+- `exports: { ".": { types, default } }`, `files: ["dist"]` (the theme also ships its Tailwind source), `sideEffects: false`, `publishConfig.access: public`, MIT (`@dashfoo/react` adds `./styles.css` and `sideEffects: ["*.css"]`; `@dashfoo/theme` adds `./dashfoo.css` + `./tailwind.css` + `./tokens.css` exports and `sideEffects: ["*.css"]`)
 - tsdown build: ESM-only, bundled `.d.ts`, source maps, tree-shaking
 - `prepack`/`prepare` run the build; `typecheck` is `tsc --noEmit` against `@repo/typescript-config/{library,react-library}.json` and covers test files
 - Tests: vitest via `@repo/config-vitest/{node,react}` — node for the core engine, jsdom for the React layer
@@ -68,6 +68,6 @@ Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (c
 
 ## Design-system linting
 
-Run `pnpm lint` after changes and fix every error. `oxlint.config.ts` registers `@shadcn/lint` and enforces component contracts, known Tailwind classes, and readable component class names. Use component variants for appearance and layout classes at call sites. The config lists the primitive directories that own their internal styles; unknown-class checking stays enabled there. Keep theme discovery local to each app. Exact class-merging fixture allowances apply only to the named test files.
+Run `pnpm lint` after changes and fix every error. `oxlint.config.ts` registers `@shadcn/lint` and enforces all six rules as errors: component contracts, known Tailwind classes, static component class names, semantic colors, theme or scale values, and class-based styling. Use CSS custom properties for runtime geometry and named theme tokens for custom values. Use component variants for appearance and layout classes at call sites. The config lists the primitive directories that own their internal styles; unknown-class checking stays enabled there. Keep theme discovery local to each app. Exact class-merging fixture allowances apply only to the named test files.
 
 `not-prose` is supplied by Fumadocs typography selectors and is allowed only in the docs app. The `shell` and `body` classes in `panel.test.tsx` test class forwarding. Popover triggers accept button color and size props; keep variant evaluation inside the primitive.

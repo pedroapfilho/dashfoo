@@ -82,3 +82,28 @@ html[data-dashfoo-theme="dark"] {
   background: var(--foreground);
   color: var(--background);
 }
+
+@theme {
+  --container-measure-35: 35ch;
+}
+
+@theme {
+  --container-measure-56: 56ch;
+}
+
+@utility size-touch-target {
+  width: max(100%, 3rem);
+  height: max(100%, 3rem);
+}
+
+@theme {
+  --container-measure-24: 24ch;
+}
+
+@theme {
+  --container-measure-65: 65ch;
+}
+
+@theme {
+  --container-measure-36: 36ch;
+}

@@ -2,6 +2,7 @@ import { defineConfig } from "tsdown";
 
 export default defineConfig({
   clean: false,
+  copy: ["src/styles.css"],
   dts: true,
   entry: ["src/index.ts"],
   format: "esm",

@@ -16,7 +16,7 @@ const TAP_SLOP = 4;
 type Gesture = {
   bounds: Size;
   edges: ResizeEdges | null;
-  initialStyle: Pick<CSSProperties, "height" | "left" | "top" | "width">;
+  initialStyle: Record<string, string>;
   latest: Geometry;
   moved: boolean;
   pointerId: number;
@@ -46,8 +46,6 @@ type FloatGesture = {
   style: CSSProperties;
 };
 
-/** Writes inline style and dispatches only on pointer-up: routing every move
- * through the model would re-render the whole tree behind the float. */
 const useFloatGesture = ({
   editable,
   geometry,
@@ -87,10 +85,10 @@ const useFloatGesture = ({
       bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
       edges: edgeKey === undefined ? null : (EDGE_BY_KEY.get(edgeKey) ?? null),
       initialStyle: {
-        height: panel.style.height,
-        left: panel.style.left,
-        top: panel.style.top,
-        width: panel.style.width,
+        "--dashfoo-float-height": panel.style.getPropertyValue("--dashfoo-float-height"),
+        "--dashfoo-float-left": panel.style.getPropertyValue("--dashfoo-float-left"),
+        "--dashfoo-float-top": panel.style.getPropertyValue("--dashfoo-float-top"),
+        "--dashfoo-float-width": panel.style.getPropertyValue("--dashfoo-float-width"),
       },
       latest: visibleGeometry,
       moved: false,
@@ -157,12 +155,12 @@ const useFloatGesture = ({
         );
 
     gesture.latest = next;
-    panel.style.left = `${next.left}px`;
-    panel.style.top = `${next.top}px`;
+    panel.style.setProperty("--dashfoo-float-left", `${next.left}px`);
+    panel.style.setProperty("--dashfoo-float-top", `${next.top}px`);
 
     if (!minimized) {
-      panel.style.width = `${next.width}px`;
-      panel.style.height = `${next.height}px`;
+      panel.style.setProperty("--dashfoo-float-width", `${next.width}px`);
+      panel.style.setProperty("--dashfoo-float-height", `${next.height}px`);
     }
   };
 
@@ -179,7 +177,9 @@ const useFloatGesture = ({
     if (!gesture.moved) {
       return;
     }
-    Object.assign(panel.style, gesture.initialStyle);
+    for (const [property, value] of Object.entries(gesture.initialStyle)) {
+      panel.style.setProperty(property, value);
+    }
   };
 
   return {
@@ -190,13 +190,11 @@ const useFloatGesture = ({
       onPointerUp: handlePointerUp,
     },
     ref: setPanel,
-    // CSS projects saved desktop geometry into the current viewport without
-    // a resize effect, hydration divergence, storage write or history entry.
     style: {
-      height: minimized ? undefined : `min(${geometry.height}px, 100dvh)`,
-      left: `clamp(0px, ${geometry.left}px, calc(100vw - min(${minimized ? CHIP_SIZE.width : geometry.width}px, 100vw)))`,
-      top: `clamp(0px, ${geometry.top}px, calc(100dvh - min(${minimized ? CHIP_SIZE.height : geometry.height}px, 100dvh)))`,
-      width: minimized ? undefined : `min(${geometry.width}px, 100vw)`,
+      "--dashfoo-float-height": `${geometry.height}px`,
+      "--dashfoo-float-left": `${geometry.left}px`,
+      "--dashfoo-float-top": `${geometry.top}px`,
+      "--dashfoo-float-width": `${geometry.width}px`,
     },
   };
 };

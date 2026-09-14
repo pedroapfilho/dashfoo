@@ -1,7 +1,7 @@
 "use client";
 
 import type { TabsetNode } from "@dashfoo/core";
-import type { ComponentProps, CSSProperties, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { forwardRef, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 
@@ -13,15 +13,6 @@ import { useDragSubject, useTabsetDroppable } from "../drag-provider";
 
 import type { TabsetSnapshot } from "./tabset-store";
 import { createTabsetStore, TabsetStoreContext } from "./tabset-store";
-
-const tabsetStyle: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  height: "100%",
-  minHeight: 0,
-  minWidth: 0,
-  width: "100%",
-};
 
 type TabsetRootProps = ComponentProps<"div"> & { node: TabsetNode };
 
@@ -130,7 +121,7 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
               userRef.current = element;
             }
           }}
-          style={{ ...tabsetStyle, ...style }}
+          style={style}
           tabIndex={-1}
         >
           {children}

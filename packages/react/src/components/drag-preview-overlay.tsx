@@ -5,7 +5,7 @@ import { zoneRect } from "@dashfoo/core";
 import { Feedback } from "@dnd-kit/dom";
 import type { DragStartEvent } from "@dnd-kit/dom";
 import { useSelector } from "@xstate/react";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 
 import type { DashfooDragManager, DragActor } from "../hooks/drag-hooks";
@@ -13,31 +13,27 @@ import type { DragSource } from "../lib/drag-subject";
 import type { Zone } from "../lib/tab-insertion";
 import { insertionLineRect } from "../lib/tab-insertion";
 
-const overlayBase: CSSProperties = {
-  boxSizing: "border-box",
-  pointerEvents: "none",
-  position: "fixed",
-
-  transition: "var(--dashfoo-dock-transition, left 60ms, top 60ms, width 60ms, height 60ms)",
-  zIndex: 9999,
-};
-
-const paneStyle = (zone: Zone): CSSProperties => ({
-  ...overlayBase,
-  background: "var(--dashfoo-dock-fill, oklch(0.556 0 0 / 0.18))",
-  border:
-    "var(--dashfoo-dock-border-width, 1px) solid var(--dashfoo-dock-border, oklch(0.708 0 0 / 0.75))",
-  borderRadius: "var(--dashfoo-dock-radius, 6px)",
-  height: zone.height,
-  left: zone.x,
-  top: zone.y,
-  width: zone.width,
-});
-
-const lineStyle = (zone: Zone): CSSProperties => ({
-  ...paneStyle(zone),
-  borderRadius: "var(--dashfoo-dock-line-radius, 2px)",
-});
+const DockZone = ({
+  insertion = false,
+  zIndex,
+  zone,
+}: {
+  insertion?: boolean;
+  zIndex: number | "auto";
+  zone: Zone;
+}): ReactNode => (
+  <div
+    data-dashfoo="dock-indicator"
+    data-insertion={insertion || undefined}
+    style={{
+      "--dashfoo-dock-height": `${zone.height}px`,
+      "--dashfoo-dock-left": `${zone.x}px`,
+      "--dashfoo-dock-top": `${zone.y}px`,
+      "--dashfoo-dock-width": `${zone.width}px`,
+      "--dashfoo-dock-z": zIndex,
+    }}
+  />
+);
 
 const tabItemRects = (strip: Element, excludeId?: string): Array<DOMRect> =>
   [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab-item"]')].flatMap((item) =>
@@ -64,7 +60,7 @@ const DockIndicator = ({
     return null;
   }
 
-  const zIndex = element.closest('[data-dashfoo="float"]') ? overlayBase.zIndex : "auto";
+  const zIndex = element.closest('[data-dashfoo="float"]') ? 9999 : "auto";
   if (intent.location === "center") {
     const strip = element.querySelector('[data-dashfoo="tabstrip"]');
     if (strip) {
@@ -73,11 +69,11 @@ const DockIndicator = ({
         tabItemRects(strip, draggedId),
         intent.index ?? 0,
       );
-      return <div data-dashfoo="dock-indicator" style={{ ...lineStyle(line), zIndex }} />;
+      return <DockZone insertion zIndex={zIndex} zone={line} />;
     }
   }
   const zone = zoneRect(element.getBoundingClientRect(), intent.location);
-  return <div data-dashfoo="dock-indicator" style={{ ...paneStyle(zone), zIndex }} />;
+  return <DockZone zIndex={zIndex} zone={zone} />;
 };
 
 const PREVIEW_OFFSET: Point = { x: 12, y: 8 };
@@ -135,12 +131,8 @@ const DragPreviewOverlay = ({ manager }: { manager: DashfooDragManager }): React
         <div
           data-dashfoo="drag-preview"
           style={{
-            left: 0,
-            position: "absolute",
-            top: 0,
-            transform: `translate(${chip.x}px, ${chip.y}px)`,
-
-            width: "max-content",
+            "--dashfoo-preview-x": `${chip.x}px`,
+            "--dashfoo-preview-y": `${chip.y}px`,
           }}
         >
           {chip.label}

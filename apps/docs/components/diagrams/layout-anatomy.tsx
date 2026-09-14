@@ -24,9 +24,9 @@ const LayoutAnatomy = () => (
   >
     <div
       aria-hidden
-      className="bg-fd-secondary/50 relative flex aspect-[16/10] min-w-105 overflow-hidden rounded-md border p-2"
+      className="bg-fd-secondary/50 relative flex aspect-16/10 min-w-105 overflow-hidden rounded-md border p-2"
     >
-      <div className="bg-fd-background flex grow-[2] basis-0 flex-col overflow-hidden rounded-sm border">
+      <div className="bg-fd-background flex grow-2 basis-0 flex-col overflow-hidden rounded-sm border">
         <MockTabStrip tabs={[{ name: "Canvas", selected: true }, { name: "Detail" }]}>
           <Marker className="mb-1 ml-1" n={1} />
           <span className="mb-1 ml-auto flex items-center gap-1 pl-1">

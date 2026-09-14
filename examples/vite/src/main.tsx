@@ -1,3 +1,4 @@
+import "@dashfoo/react/styles.css";
 import "@dashfoo/theme/dashfoo.css";
 import "./style.css";
 

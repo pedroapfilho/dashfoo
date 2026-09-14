@@ -29,16 +29,20 @@ const WidgetCard = ({
 
   return (
     <div
-      className="flex shrink-0 cursor-grab touch-none items-center gap-2 rounded-md border border-neutral-200 bg-white py-1.5 pr-1.5 pl-2.5 text-xs text-neutral-700 select-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
+      className="border-border-default text-foreground-secondary dark:border-border-inverse-subtle dark:bg-surface-inverse dark:text-foreground-pale flex shrink-0 cursor-grab touch-none items-center gap-2 rounded-md border bg-white py-1.5 pr-1.5 pl-2.5 text-xs select-none"
       data-testid={`widget-${widget.component}`}
       ref={ref}
     >
-      <GripVertical aria-hidden className="text-neutral-300 dark:text-neutral-600" size={14} />
+      <GripVertical
+        aria-hidden
+        className="text-foreground-pale dark:text-foreground-subtle"
+        size={14}
+      />
       <widget.icon aria-hidden size={14} strokeWidth={1.75} />
       <span className="md:flex-1">{widget.name}</span>
       <button
         aria-label={`Add ${widget.name}`}
-        className="rounded p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+        className="text-foreground-disabled hover:bg-surface-muted hover:text-foreground-primary dark:text-foreground-muted dark:hover:bg-surface-raised-inverse dark:hover:text-foreground-inverse rounded p-1.5 transition-colors"
         onClick={handleAdd}
         type="button"
       >
@@ -83,10 +87,10 @@ const DockingPage = (): ReactNode => {
     <DemoStage
       actions={
         <>
-          <label className="inline-flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+          <label className="text-foreground-muted dark:text-foreground-disabled inline-flex items-center gap-1.5 text-xs">
             Snap
             <select
-              className="rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-base text-neutral-700 sm:text-xs dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
+              className="border-border-default text-foreground-secondary dark:border-border-inverse-subtle dark:bg-surface-inverse dark:text-foreground-pale rounded-md border bg-white px-2 py-1.5 text-base sm:text-xs"
               onChange={handleSnapChange}
               value={snapKey}
             >

@@ -17,31 +17,6 @@ import { RowView } from "./row-view";
 
 const floatTitle = (node: FloatNode): string => node.name ?? "Panel";
 
-const titleBarStyle: CSSProperties = {
-  alignItems: "center",
-  display: "flex",
-  flexShrink: 0,
-  gap: "0.375rem",
-  touchAction: "none",
-};
-
-const titleStyle: CSSProperties = {
-  flex: 1,
-  minWidth: 0,
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-};
-
-const dockButtonStyle: CSSProperties = {
-  alignItems: "center",
-  cursor: "pointer",
-  display: "inline-flex",
-  flexShrink: 0,
-};
-
-const bodyStyle: CSSProperties = { flex: 1, minHeight: 0, position: "relative" };
-
 const FLOAT_OVERRIDES: Partial<LayoutState> = {
   draggableTabsets: false,
   floatable: false,
@@ -77,7 +52,6 @@ const FloatTitleEditor = ({
         event.stopPropagation();
       }}
       ref={inputRef}
-      style={titleStyle}
       type="text"
     />
   );
@@ -110,7 +84,6 @@ const FloatTitle = ({
             }
           : undefined
       }
-      style={titleStyle}
       title={renamable ? "Double-click to rename" : undefined}
     >
       {floatTitle(node)}
@@ -152,10 +125,11 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
   });
   const { onPointerDown, ...rootHandlers } = handlers;
   const frameStyle: CSSProperties = {
-    ...style,
-    pointerEvents: "auto",
-    position: "absolute",
-    zIndex,
+    "--dashfoo-float-height": style["--dashfoo-float-height"],
+    "--dashfoo-float-left": style["--dashfoo-float-left"],
+    "--dashfoo-float-top": style["--dashfoo-float-top"],
+    "--dashfoo-float-width": style["--dashfoo-float-width"],
+    "--dashfoo-float-z": zIndex,
   };
 
   if (minimized) {
@@ -193,8 +167,8 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
     >
       <div
         data-dashfoo="float-titlebar"
+        data-editable={editable || undefined}
         onPointerDown={onPointerDown}
-        style={editable ? titleBarStyle : { ...titleBarStyle, cursor: "default" }}
       >
         <span aria-hidden="true" data-dashfoo="float-grip">
           <GripIcon />
@@ -211,7 +185,6 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
               onPointerDown={(event) => {
                 event.stopPropagation();
               }}
-              style={dockButtonStyle}
               title="Minimize panel"
               type="button"
             >
@@ -226,7 +199,6 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
               onPointerDown={(event) => {
                 event.stopPropagation();
               }}
-              style={dockButtonStyle}
               title="Dock panel back"
               type="button"
             >
@@ -235,7 +207,7 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
           </>
         )}
       </div>
-      <div data-dashfoo="float-body" style={bodyStyle}>
+      <div data-dashfoo="float-body">
         <LayoutOverrides overrides={FLOAT_OVERRIDES}>
           <DragProvider>
             <RowView node={node.layout} />
@@ -249,7 +221,6 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
             data-edge={handle.key}
             key={handle.key}
             onPointerDown={onPointerDown}
-            style={{ position: "absolute", touchAction: "none", zIndex: 1, ...handle.style }}
           />
         ))}
     </div>

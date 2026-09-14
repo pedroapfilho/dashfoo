@@ -10,10 +10,10 @@ const GITHUB_URL = "https://github.com/pedroapfilho/dashfoo";
 const Cta = (): ReactNode => (
   <section className="border-border/70 border-t py-20 sm:py-28">
     <div className="mx-auto max-w-6xl px-6 text-center lg:px-8">
-      <h2 className="text-foreground mx-auto max-w-[35ch] font-mono text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+      <h2 className="text-foreground max-w-measure-35 mx-auto font-mono text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
         Build the dashboard your product needs
       </h2>
-      <p className="text-muted-foreground mx-auto mt-4 max-w-[56ch] text-base text-pretty">
+      <p className="text-muted-foreground max-w-measure-56 mx-auto mt-4 text-base text-pretty">
         Start with the default theme, then make the chrome your own.
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

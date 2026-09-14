@@ -69,7 +69,7 @@ const ThemeToggle = (): ReactNode => {
   return (
     <button
       aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
-      className="shrink-0 rounded-md p-2 text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+      className="text-foreground-muted hover:bg-surface-muted hover:text-foreground-primary dark:text-foreground-disabled dark:hover:bg-surface-raised-inverse dark:hover:text-foreground-inverse shrink-0 rounded-md p-2 transition-colors"
       onClick={handleToggle}
       type="button"
     >
@@ -81,8 +81,8 @@ const ThemeToggle = (): ReactNode => {
 const RootLayout = (): ReactNode => {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <div className="flex h-dvh w-full flex-col overflow-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
-      <header className="flex shrink-0 items-center gap-3 border-b border-neutral-200 bg-white px-3 py-1.5 sm:px-4 dark:border-neutral-800 dark:bg-neutral-900">
+    <div className="bg-surface-subtle text-foreground-primary dark:bg-surface-deep dark:text-foreground-inverse flex h-dvh w-full flex-col overflow-hidden">
+      <header className="border-border-default dark:border-border-inverse-faint dark:bg-surface-inverse flex shrink-0 items-center gap-3 border-b bg-white px-3 py-1.5 sm:px-4">
         <Link aria-label="Homepage" className="shrink-0 pr-1" to="/">
           <img
             alt="dashfoo"
@@ -106,7 +106,7 @@ const RootLayout = (): ReactNode => {
           {NAV.map((item) => (
             <Link
               activeOptions={{ exact: item.exact }}
-              className="flex shrink-0 items-center gap-2 rounded-md px-2.5 py-2.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 sm:py-2 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 [&.active]:bg-neutral-100 [&.active]:text-neutral-950 dark:[&.active]:bg-neutral-800 dark:[&.active]:text-neutral-50"
+              className="text-foreground-muted hover:bg-surface-muted hover:text-foreground-primary dark:text-foreground-disabled dark:hover:bg-surface-raised-inverse dark:hover:text-foreground-inverse [&.active]:bg-surface-muted [&.active]:text-foreground-deep dark:[&.active]:bg-surface-raised-inverse dark:[&.active]:text-foreground-bright flex shrink-0 items-center gap-2 rounded-md px-2.5 py-2.5 text-xs transition-colors sm:py-2"
               key={item.to}
               to={item.to}
             >
@@ -119,7 +119,7 @@ const RootLayout = (): ReactNode => {
           {EXTERNAL.map((item) => (
             <a
               aria-label={item.label}
-              className="flex shrink-0 items-center gap-2 rounded-md px-2.5 py-2.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 sm:py-2 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+              className="text-foreground-muted hover:bg-surface-muted hover:text-foreground-primary dark:text-foreground-disabled dark:hover:bg-surface-raised-inverse dark:hover:text-foreground-inverse flex shrink-0 items-center gap-2 rounded-md px-2.5 py-2.5 text-xs transition-colors sm:py-2"
               href={item.href}
               key={item.href}
               rel="noopener noreferrer"
@@ -147,12 +147,12 @@ const RootLayout = (): ReactNode => {
       {menuOpen ? (
         <nav
           aria-label="Demo pages"
-          className="flex shrink-0 flex-wrap gap-2 border-b border-neutral-200 p-3 md:hidden dark:border-neutral-700"
+          className="border-border-default dark:border-border-inverse-subtle flex shrink-0 flex-wrap gap-2 border-b p-3 md:hidden"
           id="demo-mobile-nav"
         >
           {NAV.map((item) => (
             <Link
-              className="min-h-11 rounded-md px-3 py-3 text-sm hover:bg-neutral-200 dark:hover:bg-neutral-800"
+              className="hover:bg-surface-hover dark:hover:bg-surface-raised-inverse min-h-11 rounded-md px-3 py-3 text-sm"
               key={item.to}
               onClick={() => {
                 setMenuOpen(false);

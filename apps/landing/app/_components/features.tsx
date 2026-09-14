@@ -49,10 +49,10 @@ const Features = (): ReactNode => (
   <section className="scroll-mt-20 py-16 sm:py-24" id="features">
     <div className="mx-auto max-w-6xl px-6 lg:px-8">
       <div>
-        <h2 className="text-foreground max-w-[35ch] font-mono text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+        <h2 className="text-foreground max-w-measure-35 font-mono text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
           What dashfoo gives you
         </h2>
-        <p className="text-muted-foreground mt-4 max-w-[56ch] text-base text-pretty">
+        <p className="text-muted-foreground max-w-measure-56 mt-4 text-base text-pretty">
           Start with DashfooLayout, or compose Layout and Tabset parts into your own chrome. In-app
           floating panels use the same model, history, and drag-docking.
         </p>
