@@ -1,5 +1,13 @@
 # @dashfoo/react
 
+## 0.8.3
+
+### Patch Changes
+
+- 360e984: Bump runtime dependency ranges to the current non-major line.
+- Updated dependencies [360e984]
+  - @dashfoo/core@1.1.2
+
 ## 0.8.2
 
 ### Patch Changes
