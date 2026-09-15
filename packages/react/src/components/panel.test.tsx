@@ -62,18 +62,18 @@ describe("Panel", () => {
 
   test("spreads rest props while pinning data-dashfoo", () => {
     const { container } = render(
-      <Panel.Root className="shell" data-dashfoo="wrong" id="orders">
-        <Panel.Body className="body" data-dashfoo="wrong-body" id="orders-body">
+      <Panel.Root className="block" data-dashfoo="wrong" id="orders">
+        <Panel.Body className="relative" data-dashfoo="wrong-body" id="orders-body">
           rows
         </Panel.Body>
       </Panel.Root>,
     );
 
     const root = container.querySelector("#orders");
-    expect(root).toHaveAttribute("class", "shell");
+    expect(root).toHaveAttribute("class", "block");
     expect(root).toHaveAttribute("data-dashfoo", "panel");
     const body = container.querySelector("#orders-body");
-    expect(body).toHaveAttribute("class", "body");
+    expect(body).toHaveAttribute("class", "relative");
     expect(body).toHaveAttribute("data-dashfoo", "panel-body");
   });
 });

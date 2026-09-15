@@ -1,5 +1,9 @@
 {
   "extends": "../../packages/config-typescript/base.json",
-  "compilerOptions": { "lib": ["ESNext", "DOM"], "types": ["node"] },
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "lib": ["ESNext", "DOM"],
+    "types": ["node"]
+  },
   "include": ["*.ts"]
 }
