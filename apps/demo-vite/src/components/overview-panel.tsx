@@ -10,14 +10,14 @@ const Notes = (): ReactNode => {
       Notes: switch tabs and come back; your text stays here.
       <textarea
         aria-label="Workspace notes"
-        className="min-h-24 flex-1 resize-y rounded-md border border-neutral-300 bg-transparent p-3 dark:border-neutral-600"
+        className="border-border-strong dark:border-border-inverse min-h-24 flex-1 resize-y rounded-md border bg-transparent p-3"
         onChange={(event) => {
           setNotes(event.target.value);
         }}
         placeholder="Try typing something…"
         value={notes}
       />
-      <span className="text-xs text-neutral-600 dark:text-neutral-300">
+      <span className="text-foreground-subtle dark:text-foreground-pale text-xs">
         keepMounted preserves local state when switching tabs. Widget content is not saved in the
         layout.
       </span>
@@ -33,7 +33,7 @@ const JOBS = [
 
 const Services = (): ReactNode => (
   <table className="w-full text-left text-sm">
-    <caption className="mb-3 text-left text-xs text-neutral-600 dark:text-neutral-300">
+    <caption className="text-foreground-subtle dark:text-foreground-pale mb-3 text-left text-xs">
       Sample service data
     </caption>
     <thead>
@@ -45,7 +45,10 @@ const Services = (): ReactNode => (
     </thead>
     <tbody>
       {JOBS.map((job) => (
-        <tr className="border-t border-neutral-200 dark:border-neutral-700" key={job.name}>
+        <tr
+          className="border-border-default dark:border-border-inverse-subtle border-t"
+          key={job.name}
+        >
           <td className="py-3">{job.name}</td>
           <td>{job.status}</td>
           <td className="tabular-nums">{job.latency}</td>
@@ -64,7 +67,7 @@ const renderOverviewBody = (node: TabNode): ReactNode => {
   }
   return (
     <div className="space-y-3 text-sm">
-      <p className="text-xs text-neutral-600 dark:text-neutral-300">
+      <p className="text-foreground-subtle dark:text-foreground-pale text-xs">
         Sample workspace · {node.name}
       </p>
       <p>Deploy preview ready for review.</p>

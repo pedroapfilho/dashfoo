@@ -1,7 +1,7 @@
 // oxlint-disable jsx-a11y/no-static-element-interactions -- Keyboard events bubble from the owned tabs; the scroll viewport is not itself a tablist.
 "use client";
 
-import type { ComponentProps, CSSProperties, KeyboardEvent, ReactNode } from "react";
+import type { ComponentProps, KeyboardEvent, ReactNode } from "react";
 import { forwardRef, useMemo } from "react";
 
 import { mergeRefs } from "../../lib/merge-refs";
@@ -9,15 +9,11 @@ import { tabDomId } from "../../lib/tab-ids";
 
 import { useTabset } from "./tabset-store";
 
-const stripStyle: CSSProperties = { display: "flex", flexShrink: 0 };
-
-const tablistStyle: CSSProperties = { display: "flex", minWidth: 0, overflowX: "auto" };
-
 type TabsetTabStripProps = ComponentProps<"div">;
 
 const TabsetTabStrip = forwardRef<HTMLDivElement, TabsetTabStripProps>(
   ({ style, ...props }, ref): ReactNode => (
-    <div {...props} data-dashfoo="tabstrip" ref={ref} style={{ ...stripStyle, ...style }} />
+    <div {...props} data-dashfoo="tabstrip" ref={ref} style={style} />
   ),
 );
 
@@ -88,7 +84,7 @@ const TabsetTablist = forwardRef<HTMLDivElement, TabsetTablistProps>(
         data-dashfoo="tablist"
         onKeyDown={handleKeyDown}
         ref={refCallback}
-        style={{ ...tablistStyle, ...style }}
+        style={style}
         tabIndex={-1}
       >
         {/* Close buttons and rename inputs stay outside the tablist in the

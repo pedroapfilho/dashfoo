@@ -2,7 +2,7 @@
 
 import type { Dimension, RowNode, SnapConfig, TabsetNode } from "@dashfoo/core";
 import { resolveSnapGrid, snapEnabled } from "@dashfoo/core";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Fragment, useMemo } from "react";
 import type { Orientation } from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
@@ -15,8 +15,6 @@ import { TabsetView } from "./tabset/tabset-view";
 const dimensionToSize = (dimension: Dimension): string => `${dimension.value}${dimension.unit}`;
 const dimensionToPixels = (dimension: Dimension | undefined): number | undefined =>
   dimension?.unit === "px" ? dimension.value : undefined;
-
-const groupStyle: CSSProperties = { display: "flex", flex: 1, minHeight: 0, minWidth: 0 };
 
 type LayoutChild = RowNode["children"][number];
 
@@ -96,7 +94,6 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
       onLayoutChange={snapActive ? onLayoutChange : undefined}
       onLayoutChanged={onLayoutChanged}
       orientation={orientation}
-      style={groupStyle}
     >
       {node.children.map((child, index) => {
         const percent = (child.weight / total) * 100;

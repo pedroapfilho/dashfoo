@@ -60,7 +60,7 @@ const MobileNav = (): ReactNode => {
         )}
         <span
           aria-hidden="true"
-          className="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden"
+          className="size-touch-target absolute top-1/2 left-1/2 -translate-1/2 pointer-fine:hidden"
         />
       </button>
       {/*

@@ -1,29 +1,17 @@
 import { ImageResponse } from "next/og";
 
-export const size = { height: 180, width: 180 };
-export const contentType = "image/png";
-
+const size = { height: 180, width: 180 };
+const contentType = "image/png";
+const COLORS = { background: "#0a0a0b", ink: "#fafafa", muted: "#8b8b8f" };
 const AppleIcon = (): ImageResponse =>
   new ImageResponse(
-    <div
-      style={{
-        alignItems: "center",
-        backgroundColor: "#0a0a0b",
-        display: "flex",
-        height: "100%",
-        justifyContent: "center",
-        width: "100%",
-      }}
-    >
-      <div style={{ display: "flex", gap: 12 }}>
-        <div style={{ backgroundColor: "#fafafa", borderRadius: 10, height: 108, width: 48 }} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ backgroundColor: "#8b8b8f", borderRadius: 10, height: 48, width: 48 }} />
-          <div style={{ backgroundColor: "#8b8b8f", borderRadius: 10, height: 48, width: 48 }} />
-        </div>
-      </div>
-    </div>,
+    <svg height={180} viewBox="0 0 180 180" width={180}>
+      <rect fill={COLORS.background} height={180} width={180} />
+      <rect fill={COLORS.ink} height={108} rx={10} width={48} x={36} y={36} />
+      <rect fill={COLORS.muted} height={48} rx={10} width={48} x={96} y={36} />
+      <rect fill={COLORS.muted} height={48} rx={10} width={48} x={96} y={96} />
+    </svg>,
     size,
   );
-
+export { contentType, size };
 export default AppleIcon;

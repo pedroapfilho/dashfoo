@@ -10,10 +10,10 @@ const DOCS_URL = process.env.NEXT_PUBLIC_DOCS_URL ?? "https://docs.dashfoo.com";
 const Hero = (): ReactNode => (
   <section className="border-border/70 border-b py-12 sm:py-16">
     <div className="mx-auto max-w-6xl px-6 lg:px-8">
-      <h1 className="text-foreground max-w-[24ch] font-mono text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
+      <h1 className="text-foreground max-w-measure-24 font-mono text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
         Docking layouts for React that you own
       </h1>
-      <p className="text-muted-foreground mt-5 max-w-[65ch] text-lg text-pretty">
+      <p className="text-muted-foreground max-w-measure-65 mt-5 text-lg text-pretty">
         Build your editor, terminal, or dashboard with tabs, splits, and floating panels. Compose
         the chrome, style it your way, and save the whole layout as JSON.
       </p>

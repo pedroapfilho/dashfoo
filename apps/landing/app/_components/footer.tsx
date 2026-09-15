@@ -48,7 +48,7 @@ const Footer = (): ReactNode => (
         >
           <Logo className="h-6 w-auto" />
         </Link>
-        <p className="text-muted-foreground mt-4 max-w-[36ch] text-base text-pretty sm:text-sm">
+        <p className="text-muted-foreground max-w-measure-36 mt-4 text-base text-pretty sm:text-sm">
           Headless React docking layout. Tiled, resizable, tabbed regions that you style yourself.
         </p>
       </div>

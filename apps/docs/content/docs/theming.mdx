@@ -3,6 +3,8 @@ title: Theming the headless chrome
 description: The full data-dashfoo attribute + --dashfoo-* token contract, the dark theme, and how to write your own skin.
 ---
 
+Import `@dashfoo/react/styles.css` once before your theme, including when building a custom skin. It supplies the required structural rules and uses CSS custom properties for runtime geometry.
+
 `@dashfoo/react` renders the dock as plain DOM with zero imposed styling: no
 class names, no inline colors, no default border on a tabset. Every structural
 element instead carries a `data-dashfoo="..."` attribute (and the resize
@@ -26,6 +28,7 @@ You have two paths:
 
    ```ts
    // Apps without Tailwind; prebuilt, zero build
+   import "@dashfoo/react/styles.css";
    import "@dashfoo/theme/dashfoo.css";
    ```
 

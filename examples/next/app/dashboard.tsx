@@ -40,7 +40,7 @@ const components = {
 };
 
 const Dashboard = (): ReactNode => (
-  <main style={{ height: "100dvh" }}>
+  <main>
     <DashfooLayout
       components={components}
       defaultModel={layout}

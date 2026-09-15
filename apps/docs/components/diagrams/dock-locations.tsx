@@ -14,7 +14,7 @@ type ThumbProps = {
 
 const Thumb = ({ children, label }: ThumbProps) => (
   <li className="flex flex-col items-center gap-1">
-    <div className="bg-fd-background flex aspect-[16/10] w-full overflow-hidden rounded border">
+    <div className="bg-fd-background flex aspect-16/10 w-full overflow-hidden rounded border">
       {children}
     </div>
     <span className="text-fd-muted-foreground font-mono text-xs">{label}</span>
@@ -43,7 +43,7 @@ const DockLocations = () => (
   >
     <div className="mx-auto max-w-md min-w-72">
       <MockTabStrip tabs={[{ name: "Canvas", selected: true }, { name: "Detail" }]} />
-      <div className="bg-fd-background grid aspect-[16/10] grid-cols-[1fr_2.2fr_1fr] grid-rows-[1fr_2fr_1fr] gap-1 rounded-b-md border border-t-0 p-2">
+      <div className="bg-fd-background grid-cols-dock-zones grid-rows-dock-zones grid aspect-16/10 gap-1 rounded-b-md border border-t-0 p-2">
         <div className={cn(ZONE_CLASS, "row-span-3")}>split-left</div>
         <div className={ZONE_CLASS}>split-top</div>
         <div className={cn(ZONE_CLASS, "row-span-3")}>split-right</div>

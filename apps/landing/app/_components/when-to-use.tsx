@@ -51,10 +51,10 @@ const AGAINST: Array<{ content: ReactNode; key: string }> = [
 const When = (): ReactNode => (
   <section className="border-border/70 scroll-mt-20 border-t py-16 sm:py-24" id="fit">
     <div className="mx-auto max-w-6xl px-6 lg:px-8">
-      <h2 className="text-foreground max-w-[35ch] font-mono text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+      <h2 className="text-foreground max-w-measure-35 font-mono text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
         Is dashfoo the right fit?
       </h2>
-      <p className="text-muted-foreground mt-4 max-w-[56ch] text-base text-pretty">
+      <p className="text-muted-foreground max-w-measure-56 mt-4 text-base text-pretty">
         dashfoo combines a split/tab tree with in-app floating panels. Native browser-window popouts
         and a freeform widget grid are outside its scope.
       </p>

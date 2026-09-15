@@ -26,6 +26,11 @@ pnpm add @dashfoo/react @dashfoo/core react react-dom
 
 React 18.3+ or 19 is a peer dependency.
 
+Import `@dashfoo/react/styles.css` once in your app entry, before your theme.
+It supplies layout structure, resize handles, and drag indicators in the
+`dashfoo-structure` cascade layer. Floating and docking geometry is passed through
+CSS custom properties. Use `className` to style the layout root.
+
 ## Quick start
 
 A tab's `component` field is a string key. Map those keys to React components
@@ -37,6 +42,7 @@ import type { TabNode } from "@dashfoo/core";
 import { model, row, tabset, tab } from "@dashfoo/core";
 
 // Optional default skin; without it the chrome is unstyled (headless).
+import "@dashfoo/react/styles.css";
 import "@dashfoo/theme/dashfoo.css";
 
 const startingModel = model(
@@ -53,7 +59,7 @@ export const App = () => (
 
 The `model` / `row` / `tabset` / `tab` builders come from `@dashfoo/core`; they
 produce the same plain object you could write by hand. If you don't import
-`@dashfoo/theme`, nothing renders until you style it: the container is
+`@dashfoo/theme`, the chrome remains unstyled: the container is
 `[data-dashfoo="layout"]` with `display: flex; height: 100%; width: 100%`; give it
 a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-attribute-reference)).
 
@@ -399,9 +405,8 @@ const storage = useMemo(() => memoryStorageAdapter(), []);
 ## `data-dashfoo` attribute reference
 
 Every styleable element carries a `data-dashfoo` attribute. Selectors are stable;
-target them in your stylesheet. The package sets only the positioning styles it
-needs inline (sizes, flex, the dock indicator's position) and leaves the rest to
-you.
+target them in your stylesheet. The required `@dashfoo/react/styles.css` owns
+structure and consumes runtime geometry through CSS custom properties.
 
 | `data-dashfoo` value | Element         | Notes                                                                                                                              |
 | -------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -447,7 +452,7 @@ the handle and pick the cursor off `[data-separator][aria-orientation="..."]`.
 
 ### Dock indicator CSS variables
 
-The `[data-dashfoo="dock-indicator"]` overlay positions itself inline, but every
+The `[data-dashfoo="dock-indicator"]` overlay reads its geometry from CSS custom properties, and every
 visual property reads from a CSS variable with a neutral fallback. Override them
 to theme the drag preview without touching layout.
 
@@ -533,7 +538,8 @@ pattern as `Panel`:
 | `Tabset.MaximizeButton` | `button[data-dashfoo="tabset-maximize"]` | Maximize/restore toggle; hides when maximize is off.                                                                        |
 | `Tabset.FloatButton`    | `button[data-dashfoo="tabset-float"]`    | Floats the tabset into a movable overlay; hides when `floatable` is off or the tabset is maximized.                         |
 
-All parts spread native props (`className`, `style`, handlers) like `Panel`;
+Parts forward native props such as `className` and handlers. `Layout.Root`
+accepts `className` for styling and reserves geometry for CSS custom properties;
 the structural attributes (`role`, ids, `data-dashfoo`) are applied after the
 spread because drag hit-testing and overflow measurement query them.
 

@@ -1,3 +1,4 @@
+import "@dashfoo/react/styles.css";
 import "@fontsource-variable/geist-mono/index.css";
 import "./index.css";
 

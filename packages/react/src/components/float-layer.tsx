@@ -1,20 +1,11 @@
 "use client";
 
 import type { FloatNode, GlobalAttributes } from "@dashfoo/core";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useState } from "react";
 
 import { FloatLayerContext } from "./float-context";
 import { FloatPanel } from "./float-panel";
-
-const overlayStyle: CSSProperties = {
-  inset: 0,
-
-  pointerEvents: "none",
-  position: "fixed",
-
-  zIndex: 1,
-};
 
 const FloatOverlay = ({ floats }: { floats: Array<FloatNode> }): ReactNode => {
   const [topId, setTopId] = useState<string | null>(null);
@@ -22,7 +13,7 @@ const FloatOverlay = ({ floats }: { floats: Array<FloatNode> }): ReactNode => {
     return null;
   }
   return (
-    <div data-dashfoo="float-overlay" style={overlayStyle}>
+    <div data-dashfoo="float-overlay">
       {floats.map((node) => (
         <FloatPanel
           key={node.id}

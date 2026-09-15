@@ -107,6 +107,7 @@ describe("floating panels", () => {
     fireEvent.click(screen.getByLabelText("Float panel"));
 
     const panel = floatPanel()!;
+    vi.spyOn(panel, "getBoundingClientRect").mockReturnValue(new DOMRect(40, 40, 200, 160));
     panel.setPointerCapture = () => {};
     panel.releasePointerCapture = () => {};
     panel.hasPointerCapture = () => true;
@@ -115,13 +116,13 @@ describe("floating panels", () => {
 
     fireEvent.pointerDown(se, { buttons: 1, clientX: 100, clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(panel, { buttons: 1, clientX: 160, clientY: 140, pointerId: 1 });
-    const draggedWidth = panel.style.width;
+    const draggedWidth = panel.style.getPropertyValue("--dashfoo-float-width");
     expect(draggedWidth).not.toBe("");
 
     fireEvent.pointerMove(panel, { buttons: 0, clientX: 300, clientY: 260, pointerId: 1 });
     fireEvent.pointerMove(panel, { buttons: 0, clientX: 420, clientY: 380, pointerId: 1 });
 
-    expect(panel.style.width).toBe(draggedWidth);
+    expect(panel.style.getPropertyValue("--dashfoo-float-width")).toBe(draggedWidth);
   });
 
   test("a cancelled resize (OS took the pointer) reverts to the starting rect", () => {
@@ -129,20 +130,21 @@ describe("floating panels", () => {
     fireEvent.click(screen.getByLabelText("Float panel"));
 
     const panel = floatPanel()!;
+    vi.spyOn(panel, "getBoundingClientRect").mockReturnValue(new DOMRect(40, 40, 200, 160));
     panel.setPointerCapture = () => {};
     panel.releasePointerCapture = () => {};
     panel.hasPointerCapture = () => true;
-    const startWidth = panel.style.width;
+    const startWidth = panel.style.getPropertyValue("--dashfoo-float-width");
     const se = [...panel.querySelectorAll<HTMLElement>('[data-dashfoo="float-resize"]')].find(
       (h) => h.dataset.edge === "se",
     )!;
 
     fireEvent.pointerDown(se, { buttons: 1, clientX: 100, clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(panel, { buttons: 1, clientX: 180, clientY: 160, pointerId: 1 });
-    expect(panel.style.width).not.toBe(startWidth);
+    expect(panel.style.getPropertyValue("--dashfoo-float-width")).not.toBe(startWidth);
 
     fireEvent.pointerCancel(panel, { clientX: 180, clientY: 160, pointerId: 1 });
-    expect(panel.style.width).toBe(startWidth);
+    expect(panel.style.getPropertyValue("--dashfoo-float-width")).toBe(startWidth);
   });
 
   test("a stale gesture from one pointer does not block a drag by another pointer", () => {
@@ -150,6 +152,7 @@ describe("floating panels", () => {
     fireEvent.click(screen.getByLabelText("Float panel"));
 
     const panel = floatPanel()!;
+    vi.spyOn(panel, "getBoundingClientRect").mockReturnValue(new DOMRect(40, 40, 200, 160));
     panel.setPointerCapture = () => {};
     panel.releasePointerCapture = () => {};
     panel.hasPointerCapture = () => false;
@@ -160,10 +163,10 @@ describe("floating panels", () => {
 
     fireEvent.pointerDown(titleBar, { buttons: 1, clientX: 0, clientY: 0, pointerId: 1 });
 
-    const startWidth = panel.style.width;
+    const startWidth = panel.style.getPropertyValue("--dashfoo-float-width");
     fireEvent.pointerDown(se, { buttons: 1, clientX: 100, clientY: 100, pointerId: 2 });
     fireEvent.pointerMove(panel, { buttons: 1, clientX: 180, clientY: 160, pointerId: 2 });
-    expect(panel.style.width).not.toBe(startWidth);
+    expect(panel.style.getPropertyValue("--dashfoo-float-width")).not.toBe(startWidth);
   });
 
   test("dock-back returns the panel to the main layout", () => {
@@ -238,13 +241,13 @@ describe("floating panels", () => {
     panel.setPointerCapture = () => {};
     panel.releasePointerCapture = () => {};
     const titleBar = panel.querySelector('[data-dashfoo="float-titlebar"]')!;
-    const startLeft = panel.style.left;
-    const startTop = panel.style.top;
+    const startLeft = panel.style.getPropertyValue("--dashfoo-float-left");
+    const startTop = panel.style.getPropertyValue("--dashfoo-float-top");
     fireEvent.pointerDown(titleBar, { clientX: 0, clientY: 0, pointerId: 1 });
     fireEvent.pointerMove(panel, { clientX: 60, clientY: 50, pointerId: 1 });
     fireEvent.pointerUp(panel, { clientX: 60, clientY: 50, pointerId: 1 });
-    expect(panel.style.left).toBe(startLeft);
-    expect(panel.style.top).toBe(startTop);
+    expect(panel.style.getPropertyValue("--dashfoo-float-left")).toBe(startLeft);
+    expect(panel.style.getPropertyValue("--dashfoo-float-top")).toBe(startTop);
   });
 
   test("clicking a float's body raises it above the others", () => {
@@ -256,11 +259,11 @@ describe("floating panels", () => {
 
     const [first, second] = floatPanels();
 
-    expect(second.style.zIndex).toBe("1");
+    expect(second.style.getPropertyValue("--dashfoo-float-z")).toBe("1");
 
     fireEvent.pointerDown(within(second).getByText("BOOK"));
-    expect(second.style.zIndex).toBe("2");
-    expect(first.style.zIndex).toBe("1");
+    expect(second.style.getPropertyValue("--dashfoo-float-z")).toBe("2");
+    expect(first.style.getPropertyValue("--dashfoo-float-z")).toBe("1");
   });
 
   test("hides the float control and warns when no FloatLayer is present", () => {

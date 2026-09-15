@@ -12,7 +12,7 @@ const Button = ({
   onClick: () => void;
 }): ReactNode => (
   <button
-    className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-700 transition-colors hover:border-neutral-300 disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-600"
+    className="border-border-default text-foreground-secondary hover:border-border-strong dark:border-border-inverse-subtle dark:bg-surface-inverse dark:text-foreground-pale dark:hover:border-border-inverse inline-flex min-h-11 items-center gap-1.5 rounded-md border bg-white px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0"
     disabled={disabled}
     onClick={onClick}
     type="button"
@@ -36,10 +36,10 @@ const DemoStage = ({
   <div className="flex h-full min-h-0 flex-col">
     <header className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-6">
       <div>
-        <h1 className="text-base font-semibold text-neutral-900 sm:text-sm dark:text-neutral-100">
+        <h1 className="text-foreground-primary dark:text-foreground-inverse text-base font-semibold sm:text-sm">
           {title}
         </h1>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-neutral-500 sm:text-xs dark:text-neutral-400">
+        <p className="text-foreground-muted dark:text-foreground-disabled mt-1 max-w-2xl text-sm leading-relaxed sm:text-xs">
           {description}
         </p>
       </div>

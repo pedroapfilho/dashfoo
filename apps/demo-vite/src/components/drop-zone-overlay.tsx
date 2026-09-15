@@ -96,7 +96,7 @@ const ZonePolygon = ({
       <text
         fill={noop ? "hsl(0 0% 50%)" : `hsl(${hue} 60% 45%)`}
         fontSize={10}
-        style={{ paintOrder: "stroke" }}
+        paintOrder="stroke"
         textAnchor="middle"
         x={center.x}
         y={center.y + 3}
@@ -217,16 +217,16 @@ const DropZoneDrawing = ({
             />
           ))}
           {activePolygon.map((vertex, index) => (
-            <circle cx={vertex.x} cy={vertex.y} fill="hsl(210 80% 55%)" key={index} r={2.5} />
+            <circle cx={vertex.x} cy={vertex.y} fill="var(--color-drop-zone)" key={index} r={2.5} />
           ))}
-          <circle cx={pointer.x} cy={pointer.y} fill="hsl(210 80% 55%)" r={3.5} />
+          <circle cx={pointer.x} cy={pointer.y} fill="var(--color-drop-zone)" r={3.5} />
         </g>
       ) : null}
       {pointer && chip !== null && chip !== "" ? (
         <text
-          className="fill-neutral-800 dark:fill-neutral-100"
+          className="fill-illustration-ink dark:fill-illustration-inverse"
           fontSize={11}
-          style={{ paintOrder: "stroke" }}
+          paintOrder="stroke"
           x={pointer.x + 16}
           y={pointer.y - 12}
         >

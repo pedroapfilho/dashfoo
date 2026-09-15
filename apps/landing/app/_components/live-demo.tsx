@@ -75,7 +75,7 @@ const LiveDemo = (): ReactNode => {
           Tap tabs to switch panels. On wider screens, drag to rearrange.
         </p>
       </div>
-      <div className="h-[480px] p-3 sm:p-4">
+      <div className="h-120 p-3 sm:p-4">
         {isClient ? (
           <ActivityContext.Provider value={activity}>
             <DashfooLayout

@@ -1,17 +1,15 @@
-import type { CSSProperties, ReactNode } from "react";
-
-const iconStyle: CSSProperties = { pointerEvents: "none" };
+import type { ReactNode } from "react";
 
 const Icon = ({ children }: { children: ReactNode }): ReactNode => (
   <svg
     aria-hidden="true"
+    data-dashfoo="icon"
     fill="none"
     height="12"
     stroke="currentColor"
     strokeLinecap="round"
     strokeLinejoin="round"
     strokeWidth="2"
-    style={iconStyle}
     viewBox="0 0 24 24"
     width="12"
   >

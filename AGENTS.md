@@ -41,7 +41,7 @@ re-exports. Just change it, update docs/READMEs/changesets, and move on.
 
 Every publishable package keeps the same shape:
 
-- `exports: { ".": { types, default } }`, `files: ["dist"]` (the theme also ships its Tailwind source), `sideEffects: false`, `publishConfig.access: public`, MIT (`@dashfoo/theme` adds `./dashfoo.css` + `./tailwind.css` + `./tokens.css` exports and `sideEffects: ["*.css"]`)
+- `exports: { ".": { types, default } }`, `files: ["dist"]` (the theme also ships its Tailwind source), `sideEffects: false`, `publishConfig.access: public`, MIT (`@dashfoo/react` adds `./styles.css` and `sideEffects: ["*.css"]`; `@dashfoo/theme` adds `./dashfoo.css` + `./tailwind.css` + `./tokens.css` exports and `sideEffects: ["*.css"]`)
 - tsdown build: ESM-only, bundled `.d.ts`, source maps, tree-shaking
 - `prepack`/`prepare` run the build; `typecheck` is `tsc --noEmit` against `@repo/typescript-config/{library,react-library}.json` and covers test files
 - Tests: vitest via `@repo/config-vitest/{node,react}` — node for the core engine, jsdom for the React layer
@@ -65,3 +65,9 @@ Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (c
 - The model is the single source of truth: plain JSON-serializable object, invariants self-heal after every action.
 - Unlike the library template, this repo keeps Playwright e2e (extra `e2e.yml` workflow) — dnd-kit drag behavior is untestable in jsdom. `publish-checks.yml` adds typecheck + publint + @arethetypeswrong on the published packages.
 - This repo follows the fleet's `library` profile (template: `~/dev/acme-package`, verified by `~/dev/orchestrator`).
+
+## Design-system linting
+
+Run `pnpm lint` after changes and fix every error. `oxlint.config.ts` registers `@shadcn/lint` and enforces all six rules as errors: component contracts, known Tailwind classes, static component class names, semantic colors, theme or scale values, and class-based styling. Use CSS custom properties for runtime geometry and named theme tokens for custom values. Use component variants for appearance and layout classes at call sites. All six rules also apply inside primitive directories. Shared styles belong to component variants or the owning stylesheet. Keep theme discovery local to each app. Exact class-merging fixture allowances apply only to the named test files.
+
+`not-prose` is supplied by Fumadocs typography selectors and is allowed only in the docs app. The `shell` and `body` classes in `panel.test.tsx` test class forwarding. Popover triggers accept button color and size props; keep variant evaluation inside the primitive.

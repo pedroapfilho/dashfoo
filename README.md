@@ -26,6 +26,7 @@ pnpm add @dashfoo/core @dashfoo/react @dashfoo/theme
 ```tsx
 import { model, row, tab, tabset } from "@dashfoo/core";
 import { DashfooLayout } from "@dashfoo/react";
+import "@dashfoo/react/styles.css";
 import "@dashfoo/theme/dashfoo.css";
 
 const layout = model(

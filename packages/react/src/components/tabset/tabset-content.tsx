@@ -1,15 +1,13 @@
 "use client";
 
 import type { TabNode } from "@dashfoo/core";
-import type { ComponentProps, CSSProperties, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { forwardRef } from "react";
 
 import { useLayout } from "../../hooks/layout-store";
 import { panelDomId, tabDomId } from "../../lib/tab-ids";
 
 import { useTabset } from "./tabset-store";
-
-const contentStyle: CSSProperties = { flex: 1, minHeight: 0, overflow: "auto" };
 
 const TabPanel = ({
   render,
@@ -33,8 +31,6 @@ const TabsetContent = forwardRef<HTMLDivElement, TabsetContentProps>(
     const visualSelected = useTabset((state) => state.visualSelected);
     const keepMounted = useLayout((state) => state.keepMounted);
 
-    const mergedStyle = { ...contentStyle, ...style };
-
     if (keepMounted && node.children.length > 0) {
       return node.children.map((tab, index) => (
         <div
@@ -47,7 +43,7 @@ const TabsetContent = forwardRef<HTMLDivElement, TabsetContentProps>(
           key={tab.id}
           ref={index === visualSelected ? ref : undefined}
           role={index === visualSelected ? "tabpanel" : undefined}
-          style={mergedStyle}
+          style={style}
           tabIndex={index === visualSelected ? 0 : undefined}
         >
           <TabPanel render={children} tab={tab} />
@@ -67,14 +63,14 @@ const TabsetContent = forwardRef<HTMLDivElement, TabsetContentProps>(
           id={panelDomId(node.id)}
           ref={ref}
           role="tabpanel"
-          style={mergedStyle}
+          style={style}
           tabIndex={0}
         >
           <TabPanel render={children} tab={active} />
         </div>
       );
     }
-    return <div {...props} data-dashfoo="tabcontent" ref={ref} style={mergedStyle} />;
+    return <div {...props} data-dashfoo="tabcontent" ref={ref} style={style} />;
   },
 );
 

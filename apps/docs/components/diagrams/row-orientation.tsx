@@ -21,7 +21,7 @@ const Variant = ({ children, detail, orientation }: VariantProps) => (
   <div>
     <div
       aria-hidden
-      className={`bg-fd-secondary/50 flex aspect-[16/10] overflow-hidden rounded-md border p-1 ${
+      className={`bg-fd-secondary/50 flex aspect-16/10 overflow-hidden rounded-md border p-1 ${
         orientation === "column" ? "flex-col" : ""
       }`}
     >

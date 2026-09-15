@@ -16,3 +16,7 @@ textarea {
   min-height: 120px;
   margin-top: 12px;
 }
+
+main {
+  height: 100dvh;
+}

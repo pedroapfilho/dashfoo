@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentProps, CSSProperties, MouseEvent, ReactNode } from "react";
+import type { ComponentProps, MouseEvent, ReactNode } from "react";
 import { forwardRef, useMemo } from "react";
 
 import { useLayout } from "../../hooks/layout-store";
@@ -13,18 +13,11 @@ import { useHasFloatLayer } from "../float-context";
 
 import { useTabset } from "./tabset-store";
 
-const toolbarStyle: CSSProperties = {
-  alignItems: "center",
-  display: "flex",
-  flexShrink: 0,
-  marginInlineStart: "auto",
-};
-
 type TabsetToolbarProps = ComponentProps<"div">;
 
 const TabsetToolbar = forwardRef<HTMLDivElement, TabsetToolbarProps>(
   ({ style, ...props }, ref): ReactNode => (
-    <div {...props} data-dashfoo="tabset-toolbar" ref={ref} style={{ ...toolbarStyle, ...style }} />
+    <div {...props} data-dashfoo="tabset-toolbar" ref={ref} style={style} />
   ),
 );
 
