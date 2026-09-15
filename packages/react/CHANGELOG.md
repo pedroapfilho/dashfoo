@@ -1,5 +1,11 @@
 # @dashfoo/react
 
+## 0.9.0
+
+### Minor Changes
+
+- c711233: Move required layout, floating-panel geometry, resize handles, and docking indicators into the exported `@dashfoo/react/styles.css` stylesheet. Import it once before an optional theme. Runtime positions use CSS custom properties, including pointer gestures and cancellation.
+
 ## 0.8.3
 
 ### Patch Changes
