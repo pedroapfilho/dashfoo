@@ -1,85 +1,76 @@
 "use client";
-import type { VariantProps } from "class-variance-authority";
-/* oxlint-disable react-doctor/no-multi-comp -- the popover is one compound
-   primitive in three parts; splitting trigger/content into separate files
-   would be a worse abstraction than the standard single-file pattern. */
-import type { ComponentPropsWithRef, ReactNode } from "react";
-import { createContext, use, useId, useMemo } from "react";
 
-import { cn } from "../../lib/cn";
+import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
+import { cn } from "cn";
+import * as React from "react";
 
-import { buttonVariants } from "./button";
-
-type PopoverContextValue = {
-  popoverId: string;
+const Popover = ({ ...props }: PopoverPrimitive.Root.Props) => {
+  return <PopoverPrimitive.Root data-slot="popover" {...props} />;
 };
 
-const PopoverContext = createContext<PopoverContextValue | null>(null);
-
-const Popover = ({ children }: { children: ReactNode }) => {
-  const rawId = useId();
-
-  const popoverId = `fd-popover-${rawId.replaceAll(":", "")}`;
-  const contextValue = useMemo<PopoverContextValue>(() => ({ popoverId }), [popoverId]);
-  return <PopoverContext value={contextValue}>{children}</PopoverContext>;
+const PopoverTrigger = ({ ...props }: PopoverPrimitive.Trigger.Props) => {
+  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
 };
 
-type PopoverTriggerProps = ComponentPropsWithRef<"button"> & VariantProps<typeof buttonVariants>;
-
-const PopoverTrigger = ({
-  children,
+const PopoverContent = ({
+  align = "center",
+  alignOffset = 0,
   className,
-  color,
-  ref,
-  size,
+  side = "bottom",
+  sideOffset = 4,
   ...props
-}: PopoverTriggerProps) => {
-  const ctx = use(PopoverContext);
-  if (!ctx) {
-    throw new Error("PopoverTrigger must be used inside Popover");
-  }
+}: PopoverPrimitive.Popup.Props &
+  Pick<PopoverPrimitive.Positioner.Props, "align" | "alignOffset" | "side" | "sideOffset">) => {
   return (
-    <button
-      ref={ref}
-      type="button"
-      {...props}
-      className={cn(
-        "popover-anchor",
-        (color ?? size) && buttonVariants({ color, size }),
-        className,
-      )}
-      popoverTarget={ctx.popoverId}
-    >
-      {children}
-    </button>
+    <PopoverPrimitive.Portal>
+      <PopoverPrimitive.Positioner
+        align={align}
+        alignOffset={alignOffset}
+        className="isolate z-50"
+        side={side}
+        sideOffset={sideOffset}
+      >
+        <PopoverPrimitive.Popup
+          className={cn(
+            "bg-popover text-popover-foreground ring-foreground/10 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 z-50 flex w-72 origin-(--transform-origin) flex-col gap-2.5 rounded-lg p-2.5 text-sm shadow-md ring-1 outline-hidden duration-100",
+            className,
+          )}
+          data-slot="popover-content"
+          {...props}
+        />
+      </PopoverPrimitive.Positioner>
+    </PopoverPrimitive.Portal>
   );
 };
 
-type PopoverContentProps = ComponentPropsWithRef<"div">;
-
-const PopoverContent = ({ children, className, ref, ...props }: PopoverContentProps) => {
-  const ctx = use(PopoverContext);
-  if (!ctx) {
-    throw new Error("PopoverContent must be used inside Popover");
-  }
+const PopoverHeader = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
     <div
-      ref={ref}
+      className={cn("flex flex-col gap-0.5 text-sm", className)}
+      data-slot="popover-header"
       {...props}
-      className={cn(
-        "m-0 [&:not(:popover-open)]:hidden",
-
-        "bg-fd-popover/60 text-fd-popover-foreground max-w-popover-viewport z-50 min-w-60 overflow-y-auto rounded-xl border p-2 text-sm shadow-lg backdrop-blur-lg",
-
-        "popover-position-anchor popover-position-area popover-position-flip mt-1",
-        className,
-      )}
-      id={ctx.popoverId}
-      popover="auto"
-    >
-      {children}
-    </div>
+    />
   );
 };
 
-export { Popover, PopoverContent, PopoverTrigger };
+const PopoverTitle = ({ className, ...props }: PopoverPrimitive.Title.Props) => {
+  return (
+    <PopoverPrimitive.Title
+      className={cn("font-medium", className)}
+      data-slot="popover-title"
+      {...props}
+    />
+  );
+};
+
+const PopoverDescription = ({ className, ...props }: PopoverPrimitive.Description.Props) => {
+  return (
+    <PopoverPrimitive.Description
+      className={cn("text-muted-foreground", className)}
+      data-slot="popover-description"
+      {...props}
+    />
+  );
+};
+
+export { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger };

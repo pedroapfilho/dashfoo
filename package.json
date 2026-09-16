@@ -26,7 +26,8 @@
     "test:consumers": "node scripts/launch/consumers.mjs",
     "test:sites": "playwright test --config scripts/launch/playwright.config.ts",
     "lint:launch": "oxlint scripts/launch && pnpm lint:examples",
-    "lint:examples": "oxlint --config scripts/launch/examples-lint.config.ts --disable-nested-config examples"
+    "lint:examples": "oxlint --config scripts/launch/examples-lint.config.ts --disable-nested-config examples",
+    "check:shadcn": "node scripts/check-shadcn.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

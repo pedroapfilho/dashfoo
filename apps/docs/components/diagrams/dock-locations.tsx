@@ -5,7 +5,7 @@ import { cn } from "../../lib/cn";
 import { DiagramFigure, MockTabStrip } from "./diagram-figure";
 
 const ZONE_CLASS =
-  "flex items-center justify-center rounded-sm border border-dashed bg-fd-muted/50 font-mono text-xs text-fd-muted-foreground";
+  "flex items-center justify-center rounded-sm border border-dashed bg-docs-muted/50 font-mono text-xs text-docs-muted-foreground";
 
 type ThumbProps = {
   children: ReactNode;
@@ -14,18 +14,18 @@ type ThumbProps = {
 
 const Thumb = ({ children, label }: ThumbProps) => (
   <li className="flex flex-col items-center gap-1">
-    <div className="bg-fd-background flex aspect-16/10 w-full overflow-hidden rounded border">
+    <div className="bg-docs-background flex aspect-16/10 w-full overflow-hidden rounded border">
       {children}
     </div>
-    <span className="text-fd-muted-foreground font-mono text-xs">{label}</span>
+    <span className="text-docs-muted-foreground font-mono text-xs">{label}</span>
   </li>
 );
 
 const ThumbStrip = ({ newTab }: { newTab?: boolean }) => (
-  <div className="bg-fd-muted flex h-2.5 shrink-0 items-end gap-px border-b px-0.5">
-    <span className="bg-fd-background h-1.5 w-3 rounded-t-xs" />
-    <span className="bg-fd-background/60 h-1.5 w-3 rounded-t-xs" />
-    {newTab === true ? <span className="bg-fd-primary/50 h-1.5 w-3 rounded-t-xs" /> : null}
+  <div className="bg-docs-muted flex h-2.5 shrink-0 items-end gap-px border-b px-0.5">
+    <span className="bg-docs-background h-1.5 w-3 rounded-t-xs" />
+    <span className="bg-docs-background/60 h-1.5 w-3 rounded-t-xs" />
+    {newTab === true ? <span className="bg-docs-primary/50 h-1.5 w-3 rounded-t-xs" /> : null}
   </div>
 );
 
@@ -43,13 +43,13 @@ const DockLocations = () => (
   >
     <div className="mx-auto max-w-md min-w-72">
       <MockTabStrip tabs={[{ name: "Canvas", selected: true }, { name: "Detail" }]} />
-      <div className="bg-fd-background grid-cols-dock-zones grid-rows-dock-zones grid aspect-16/10 gap-1 rounded-b-md border border-t-0 p-2">
+      <div className="bg-docs-background grid-cols-dock-zones grid-rows-dock-zones grid aspect-16/10 gap-1 rounded-b-md border border-t-0 p-2">
         <div className={cn(ZONE_CLASS, "row-span-3")}>split-left</div>
         <div className={ZONE_CLASS}>split-top</div>
         <div className={cn(ZONE_CLASS, "row-span-3")}>split-right</div>
         <div className="flex flex-col items-center justify-center gap-0.5 rounded-sm">
           <span className="font-mono text-xs">center</span>
-          <span className="text-fd-muted-foreground text-xs">stack into the tab strip</span>
+          <span className="text-docs-muted-foreground text-xs">stack into the tab strip</span>
         </div>
         <div className={ZONE_CLASS}>split-bottom</div>
       </div>
@@ -60,27 +60,27 @@ const DockLocations = () => (
         <ThumbPane newTab />
       </Thumb>
       <Thumb label="split-left">
-        <div className="bg-fd-primary/10 flex grow basis-0" />
-        <div className="bg-fd-border w-px shrink-0" />
+        <div className="bg-docs-primary/10 flex grow basis-0" />
+        <div className="bg-docs-border w-px shrink-0" />
         <ThumbPane />
       </Thumb>
       <Thumb label="split-right">
         <ThumbPane />
-        <div className="bg-fd-border w-px shrink-0" />
-        <div className="bg-fd-primary/10 flex grow basis-0" />
+        <div className="bg-docs-border w-px shrink-0" />
+        <div className="bg-docs-primary/10 flex grow basis-0" />
       </Thumb>
       <Thumb label="split-top">
         <div className="flex grow flex-col">
-          <div className="bg-fd-primary/10 grow basis-0" />
-          <div className="bg-fd-border h-px shrink-0" />
+          <div className="bg-docs-primary/10 grow basis-0" />
+          <div className="bg-docs-border h-px shrink-0" />
           <ThumbPane />
         </div>
       </Thumb>
       <Thumb label="split-bottom">
         <div className="flex grow flex-col">
           <ThumbPane />
-          <div className="bg-fd-border h-px shrink-0" />
-          <div className="bg-fd-primary/10 grow basis-0" />
+          <div className="bg-docs-border h-px shrink-0" />
+          <div className="bg-docs-primary/10 grow basis-0" />
         </div>
       </Thumb>
     </ul>

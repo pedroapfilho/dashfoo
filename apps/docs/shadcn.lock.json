@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "upstreamCommit": "2b3e6d4f8d9161fe5c19340dc383aade392012dd",
+  "registryBase": "https://ui.shadcn.com/r/styles/base-nova",
+  "style": "base-nova",
+  "componentsDirectory": "components/ui",
+  "normalizations": [
+    "Repository formatting, import paths, declaration ordering, and RSC boundaries.",
+    "Arbitrary values replaced with equivalent named theme tokens or utilities.",
+    "Registry markers resolved to installed styling and Sonner CSS variables moved to its utility.",
+    "Strictly typed conditions and theme values, with reduced-motion support.",
+    "Composite internals render at the primitive layer when no-restyle prohibits the upstream call; public APIs and DOM composition are retained."
+  ],
+  "files": {
+    "components/ui/button.tsx": {
+      "registry": "button",
+      "registrySha256": "9ba7e870178813f0552b818a913a2792fb500c779e36395740b4973e3025d427",
+      "sha256": "8ed7ea8beddf4f0f28b01ff08d1ec0c254ca403fd379c6a06efa60938a5c5e1e"
+    },
+    "components/ui/popover.tsx": {
+      "registry": "popover",
+      "registrySha256": "ba5fe84f353f6c0fd2133a2ab893f5e8861fc60dc4dea548a7ec875acaa37b2c",
+      "sha256": "c78f04edb21f5925e18327e60e6b82a54ef457bdfd83d5ab44ea75ed13788a11"
+    }
+  },
+  "stylesheets": [
+    {
+      "file": "app/global.css",
+      "required": [
+        "@import \"shadcn/tailwind.css\";",
+        "--radius-control-sm: min(var(--radius-md), 10px);",
+        "--radius-control: min(var(--radius-md), 12px);",
+        "--text-control: 0.8rem;",
+        "--color-secondary-hover: color-mix(in oklch, var(--secondary), var(--foreground) 5%);"
+      ]
+    }
+  ]
+}
