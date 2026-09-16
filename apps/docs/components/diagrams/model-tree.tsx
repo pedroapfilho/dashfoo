@@ -7,11 +7,11 @@ import { DiagramFigure, IdChip } from "./diagram-figure";
 type NodeKind = "Dashfoo" | "float" | "row" | "tab" | "tabset";
 
 const KIND_STYLES = {
-  Dashfoo: "bg-fd-primary text-fd-primary-foreground",
-  float: "border bg-fd-secondary text-fd-secondary-foreground",
-  row: "border bg-fd-secondary text-fd-secondary-foreground",
-  tab: "border text-fd-muted-foreground",
-  tabset: "border bg-fd-muted text-fd-foreground",
+  Dashfoo: "bg-docs-primary text-docs-primary-foreground",
+  float: "border bg-docs-secondary text-docs-secondary-foreground",
+  row: "border bg-docs-secondary text-docs-secondary-foreground",
+  tab: "border text-docs-muted-foreground",
+  tabset: "border bg-docs-muted text-docs-foreground",
 };
 
 type TreeNodeProps = {
@@ -26,14 +26,14 @@ const TreeNode = ({ children, field, id, kind, meta }: TreeNodeProps) => (
   <li>
     <div className="flex flex-wrap items-center gap-1.5 py-0.5">
       {field !== undefined && field !== "" ? (
-        <span className="text-fd-muted-foreground font-mono text-xs">{field}:</span>
+        <span className="text-docs-muted-foreground font-mono text-xs">{field}:</span>
       ) : null}
       <span className={cn("rounded px-1.5 font-mono text-xs leading-4.5", KIND_STYLES[kind])}>
         {kind}
       </span>
       {id !== undefined && id !== "" ? <IdChip>{id}</IdChip> : null}
       {meta !== undefined && meta !== "" ? (
-        <span className="text-fd-muted-foreground font-mono text-xs">{meta}</span>
+        <span className="text-docs-muted-foreground font-mono text-xs">{meta}</span>
       ) : null}
     </div>
     {children !== undefined && children !== null ? (

@@ -12,7 +12,8 @@
     "scripts/launch/*.mjs",
     "scripts/launch/playwright.config.ts",
     "scripts/launch/*-lint.config.ts",
-    "scripts/launch/*.spec.ts"
+    "scripts/launch/*.spec.ts",
+    "apps/docs/components/ui/*.tsx"
   ],
   "ignorePatterns": ["apps/docs/content/**", "apps/docs/next-env.d.ts", "examples/**"],
   "ignoreExports": [

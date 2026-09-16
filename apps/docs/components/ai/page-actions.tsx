@@ -4,7 +4,7 @@ import { Check, ChevronDown, Copy, ExternalLinkIcon, TextIcon } from "lucide-rea
 import { type ComponentProps, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { cn } from "../../lib/cn";
-import { buttonVariants } from "../ui/button";
+import { Button, buttonVariants } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 import { AnthropicIcon, CursorIcon, GitHubIcon, OpenAiIcon, SciraIcon } from "./provider-icons";
@@ -94,9 +94,9 @@ const MarkdownCopyButton = ({
       {...props}
       className={cn(
         buttonVariants({
-          className: "gap-2 [&_svg]:size-3.5 [&_svg]:text-fd-muted-foreground",
-          color: "secondary",
+          className: "gap-2 [&_svg]:size-3.5 [&_svg]:text-docs-muted-foreground",
           size: "sm",
+          variant: "secondary",
         }),
         props.className,
       )}
@@ -132,17 +132,16 @@ const ViewOptionsPopover = ({
     <Popover>
       <PopoverTrigger
         {...props}
-        className={cn("gap-2", props.className)}
-        color="secondary"
-        size="sm"
+        className={props.className}
+        render={<Button size="sm" variant="secondary" />}
       >
         {props.children ?? "Open"}
-        <ChevronDown className="text-fd-muted-foreground size-3.5" />
+        <ChevronDown className="text-docs-muted-foreground size-3.5" />
       </PopoverTrigger>
       <PopoverContent className="flex flex-col">
         {items.map((item) => (
           <a
-            className="hover:text-fd-accent-foreground hover:bg-fd-accent inline-flex items-center gap-2 rounded-lg p-2 text-sm [&_svg]:size-4"
+            className="hover:text-docs-accent-foreground hover:bg-docs-accent inline-flex items-center gap-2 rounded-lg p-2 text-sm [&_svg]:size-4"
             href={item.href}
             key={item.href}
             rel="noreferrer noopener"
@@ -150,7 +149,7 @@ const ViewOptionsPopover = ({
           >
             {item.icon}
             {item.title}
-            <ExternalLinkIcon className="text-fd-muted-foreground ms-auto size-3.5" />
+            <ExternalLinkIcon className="text-docs-muted-foreground ms-auto size-3.5" />
           </a>
         ))}
       </PopoverContent>

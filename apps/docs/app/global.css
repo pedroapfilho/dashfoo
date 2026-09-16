@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "shadcn/tailwind.css";
+@import "tw-animate-css";
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
@@ -70,4 +72,76 @@ html {
 
 @utility reading-progress-range {
   animation-range: 0% 100%;
+}
+
+:root {
+  --background: var(--color-fd-background);
+  --foreground: var(--color-fd-foreground);
+  --muted-foreground: var(--color-fd-muted-foreground);
+  --accent: var(--color-fd-accent);
+  --accent-foreground: var(--color-fd-accent-foreground);
+  --border: var(--color-fd-border);
+  --ring: var(--color-fd-ring);
+  --card: var(--color-fd-card, var(--color-fd-background));
+  --card-foreground: var(--color-fd-card-foreground, var(--color-fd-foreground));
+  --popover: var(--color-fd-popover);
+  --popover-foreground: var(--color-fd-popover-foreground);
+  --secondary: var(--color-fd-secondary);
+  --secondary-foreground: var(--color-fd-secondary-foreground);
+  --muted: var(--color-fd-muted);
+  --input: var(--color-fd-border);
+  --destructive: oklch(0.577 0.245 27.325);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-docs-ring: var(--color-fd-ring);
+  --color-docs-accent: var(--color-fd-accent);
+  --color-docs-accent-foreground: var(--color-fd-accent-foreground);
+  --color-docs-primary: var(--color-fd-primary);
+  --color-docs-primary-foreground: var(--color-fd-primary-foreground);
+  --color-docs-secondary: var(--color-fd-secondary);
+  --color-docs-secondary-foreground: var(--color-fd-secondary-foreground);
+  --color-docs-popover: var(--color-fd-popover);
+  --color-docs-popover-foreground: var(--color-fd-popover-foreground);
+  --color-docs-muted-foreground: var(--color-fd-muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-input: var(--input);
+  --color-destructive: var(--destructive);
+  --color-secondary-hover: color-mix(in oklch, var(--secondary), var(--foreground) 5%);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-control: min(var(--radius-md), 12px);
+  --radius-control-sm: min(var(--radius-md), 10px);
+}
+
+@theme {
+  --text-control: 0.8rem;
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-docs-background: var(--color-fd-background);
+  --color-docs-foreground: var(--color-fd-foreground);
+  --color-docs-muted: var(--color-fd-muted);
+  --color-docs-card: var(--color-fd-card);
+  --color-docs-card-foreground: var(--color-fd-card-foreground);
+  --color-docs-border: var(--color-fd-border);
 }
