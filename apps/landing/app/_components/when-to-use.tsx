@@ -67,7 +67,7 @@ const When = (): ReactNode => (
             {FOR.map((item) => (
               <li className="text-foreground flex gap-3 text-base text-pretty" key={item.key}>
                 <Check className="stroke-foreground size-5 h-lh shrink-0" strokeWidth={1.75} />
-                {item.content}
+                <span>{item.content}</span>
               </li>
             ))}
           </ul>
@@ -83,7 +83,7 @@ const When = (): ReactNode => (
                   className="stroke-muted-foreground size-5 h-lh shrink-0"
                   strokeWidth={1.75}
                 />
-                {item.content}
+                <span>{item.content}</span>
               </li>
             ))}
           </ul>

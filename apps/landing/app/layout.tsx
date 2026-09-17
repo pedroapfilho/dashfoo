@@ -5,6 +5,9 @@ import "@/app/global.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { Footer } from "./_components/footer";
+import { Header } from "./_components/header";
+
 const DESCRIPTION =
   "A headless React docking-layout library: tiled, resizable, tabbed regions with a serializable, zod-validated model and zero imposed styling. Build VS-Code-style dashboards you own.";
 const TITLE = "dashfoo: headless React docking layout";
@@ -64,7 +67,21 @@ const RootLayout = ({ children }: { children: ReactNode }) => (
       {/* oxlint-disable react/no-danger */}
       <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
     </head>
-    <body className="bg-background text-foreground font-sans">{children}</body>
+    <body className="bg-background text-foreground isolate flex min-h-dvh flex-col font-sans">
+      {/* A sticky header and a 480px interactive demo sit before any prose, so
+          keyboard users get a way past both. */}
+      <a
+        className="rounded-dashfoo bg-primary text-primary-foreground focus:outline-ring sr-only px-4 py-2.5 text-sm font-medium focus:not-sr-only focus:absolute focus:top-3 focus:left-6 focus:z-20 focus:outline-2 focus:outline-offset-2"
+        href="#main"
+      >
+        Skip to content
+      </a>
+      <Header />
+      <main className="flex-1" id="main" tabIndex={-1}>
+        {children}
+      </main>
+      <Footer />
+    </body>
   </html>
 );
 
