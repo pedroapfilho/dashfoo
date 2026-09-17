@@ -9,7 +9,14 @@ const DEMO_URL = process.env.NEXT_PUBLIC_DEMO_URL ?? "https://demo.dashfoo.com";
 
 export const baseOptions = (): BaseLayoutProps => ({
   links: [
-    { external: true, icon: <GitHubIcon />, text: "GitHub", url: GITHUB_URL },
+    {
+      external: true,
+      icon: <GitHubIcon />,
+      label: "GitHub",
+      text: "GitHub",
+      type: "icon",
+      url: GITHUB_URL,
+    },
     {
       external: true,
       text: "Home",

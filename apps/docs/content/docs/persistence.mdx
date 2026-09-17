@@ -62,8 +62,9 @@ type StorageAdapter = {
 ```
 
 Anything matching that shape works: `localStorage`, `sessionStorage`, an
-in-memory map, or a custom store that batches writes to a server. Two
-adapters ship from `@dashfoo/react`.
+in-memory map, or a custom store that batches writes to a server. The adapter
+is synchronous: backend synchronization belongs in controlled mode, not in an
+adapter that returns promises. Two adapters ship from `@dashfoo/react`.
 
 ### `localStorageAdapter` (default)
 
@@ -251,15 +252,6 @@ hydrate it from your own request-scoped source. For the common case,
 client-side persistence to `localStorage`, the default needs no extra
 wiring.
 
-## See also
-
-- [`packages/react/src/hooks/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/hooks/persistence.ts)
-  for the hook, both adapters, and the `StorageAdapter` type.
-- [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts)
-  for `fromJSON` / `toJSON` and `parseModel`.
-- [`apps/demo-vite/src/pages/overview.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/overview.tsx)
-  for the end-to-end worked example.
-
 ## Using the hook directly
 
 `usePersistence` returns `{ initialModel, save, clear }`. `initialModel` starts
@@ -268,5 +260,13 @@ that creates a store once must apply that restored snapshot with `setModel`
 in an effect; passing it only as the store's `defaultModel` will not update an
 already mounted store. Prefer the `persist` prop, which handles this sequence.
 Changing a mounted persistence key warns; remount with a React `key` to load
-another arrangement. `StorageAdapter` is synchronous; backend synchronization
-belongs in controlled mode rather than returning promises from this adapter.
+another arrangement.
+
+## See also
+
+- [`packages/react/src/hooks/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/hooks/persistence.ts)
+  for the hook, both adapters, and the `StorageAdapter` type.
+- [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts)
+  for `fromJSON` / `toJSON` and `parseModel`.
+- [`apps/demo-vite/src/pages/overview.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/overview.tsx)
+  for the end-to-end worked example.

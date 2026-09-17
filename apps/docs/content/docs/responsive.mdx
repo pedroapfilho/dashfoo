@@ -64,6 +64,17 @@ content survive the breakpoint cross. Tap-to-select still works because the
 projection preserves tabset and tab ids, so a tap routes to the same tabset in
 the canonical model.
 
+The projection keeps nested row identities, so mounted panel state survives an
+ordinary breakpoint change. Entering compact mode from a maximized view, moving
+a tab between tabsets, or supplying a different tree can remount content, so
+keep durable application state outside panel components. The lower-level
+`stackModel` helper flattens the tree, so hand-composed layouts that use it can
+also remount nested panels.
+
+Existing floats stay overlays in compact mode. Their displayed bounds fit the
+viewport without changing the saved geometry, and the float controls still
+minimize or dock them back.
+
 On touch devices, the [theme](/theming) grows tab hit targets to the 44px
 minimum under `@media (pointer: coarse)`, so tap-to-switch stays comfortable once
 drag is off.
@@ -163,7 +174,3 @@ flip to `false`. Feed the model to `model` (controlled) rather than `defaultMode
 so swaps take effect without a remount.
 
 See also: [The layout model](/the-model) · [Persisting layouts](/persistence).
-
-The built-in compact projection retains nested row identities so mounted widget state survives ordinary breakpoint changes. Entering compact mode from a maximized view, moving a tab between tabsets, or supplying a different tree can remount content; keep durable application state outside panel components. The lower-level `stackModel` helper flattens the tree, so hand-composed layouts using it can also remount nested panels.
-
-Existing floats remain overlays in compact mode. Their displayed bounds fit the viewport without changing saved geometry; float controls remain available to minimize or dock them back.

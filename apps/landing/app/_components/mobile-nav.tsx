@@ -75,21 +75,23 @@ const MobileNav = (): ReactNode => {
           id={panelId}
           ref={panelRef}
         >
-          {[...SECTION_LINKS, ...EXTERNAL_LINKS].map((link) => {
-            const isAnchor = link.href.startsWith("#");
-            return (
-              <a
-                className={LINK_CLASS}
-                href={link.href}
-                key={link.href}
-                onClick={handleNavigate}
-                rel={isAnchor ? undefined : "noopener noreferrer"}
-                target={isAnchor ? undefined : "_blank"}
-              >
-                {link.label}
-              </a>
-            );
-          })}
+          {SECTION_LINKS.map((link) => (
+            <a className={LINK_CLASS} href={link.href} key={link.href} onClick={handleNavigate}>
+              {link.label}
+            </a>
+          ))}
+          {EXTERNAL_LINKS.map((link) => (
+            <a
+              className={LINK_CLASS}
+              href={link.href}
+              key={link.href}
+              onClick={handleNavigate}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {link.label}
+            </a>
+          ))}
         </nav>
       ) : null}
     </>

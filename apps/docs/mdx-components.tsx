@@ -28,6 +28,7 @@ const DocsCodeBlock = (props: ComponentProps<"pre">): ReactNode => (
     keepBackground
     viewportProps={{
       "aria-label": `Code example: ${codeText(props.children).trim().slice(0, 100)}`,
+      className: "max-h-none",
     }}
   >
     <Pre>{props.children}</Pre>
