@@ -15,7 +15,12 @@
     "scripts/launch/*.spec.ts",
     "apps/docs/components/ui/*.tsx"
   ],
-  "ignorePatterns": ["apps/docs/content/**", "apps/docs/next-env.d.ts", "examples/**"],
+  "ignorePatterns": [
+    "apps/docs/content/**",
+    "apps/docs/next-env.d.ts",
+    "examples/**",
+    ".github/ci/*.mjs"
+  ],
   "ignoreExports": [
     {
       "file": "apps/docs/app/**/route.ts",

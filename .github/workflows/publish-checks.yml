@@ -6,20 +6,51 @@ on:
   # Dispatched by release.yml for the changeset-release/main PR, whose
   # pull_request runs are parked unexecuted behind an approval gate.
   workflow_dispatch:
+  schedule:
+    - cron: 17 4 * * 1
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 jobs:
+  ci-plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.plan.outputs.run }}
+      scope: ${{ steps.plan.outputs.scope }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Plan validation
+        id: plan
+        run: node .github/ci/ci.mjs plan packaging
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        name: Upload CI evidence
+        if: ${{ !cancelled() }}
+        with:
+          name: ci-selection-${{ github.workflow }}-${{ github.job }}-${{ github.run_attempt }}
+          path: .ci-results/
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: error
   packaging:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Require a successful CI plan
+        env:
+          RESULT: ${{ needs.ci-plan.result }}
+        run: test "$RESULT" = success
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Record validation inputs
+        run: node .github/ci/ci.mjs plan packaging
       - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
         with:
           runtime: node@24
@@ -33,17 +64,29 @@ jobs:
             turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref_name }}-
             turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-push-main-
       - run: pnpm exec changeset status --since=origin/main
-      - run: pnpm typecheck
-      - run: pnpm build --filter="./packages/*"
+      - run: node .github/ci/ci.mjs run packaging -- pnpm build --filter="./packages/*"
       # Packaging hygiene for the published packages (ESM-only, "use client").
       - name: publint
-        run: for pkg in core react theme; do (cd "packages/$pkg" && pnpm dlx publint --strict); done
+        run: node .github/ci/ci.mjs run packaging -- bash -e -o pipefail -c 'for pkg in core react theme; do (cd "packages/$pkg" && pnpm dlx publint --strict); done'
       - name: are-the-types-wrong
-        run: |
-          (cd packages/core && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only)
+        run: |-
+          node .github/ci/ci.mjs run packaging -- bash -e -o pipefail -c '(cd packages/core && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only)
           (cd packages/react && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only)
           # dashfoo.css, tailwind.css, and tokens.css are CSS-only exports with no types/JS for attw to resolve.
           (cd packages/theme && pnpm dlx @arethetypeswrong/cli --pack --profile esm-only --exclude-entrypoints ./dashfoo.css ./tailwind.css ./tokens.css)
+          '
       - run: pnpm exec playwright install --with-deps chromium
       - name: Standalone consumers (React 18 and 19, npm and pnpm)
         run: pnpm test:consumers
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        name: Upload CI evidence
+        if: ${{ !cancelled() }}
+        with:
+          name: ci-execution-${{ github.workflow }}-${{ github.job }}-${{ github.run_attempt }}
+          path: .ci-results/
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: error
+    needs:
+      - ci-plan
+    if: ${{ always() && (needs.ci-plan.result != 'success' || needs.ci-plan.outputs.run != 'false') }}

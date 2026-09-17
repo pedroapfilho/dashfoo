@@ -25,7 +25,7 @@ export default defineConfig({
   },
   // Standalone starters have no workspace dependencies; lint:examples handles
   // their syntax, and test:consumers checks types after isolated installation.
-  ignorePatterns: ["examples/**"],
+  ignorePatterns: [".github/ci/*.mjs", "examples/**"],
   overrides: [
     {
       files: ["apps/docs/**"],
