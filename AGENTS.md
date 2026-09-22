@@ -52,7 +52,7 @@ Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (c
 
 ## Gotchas
 
-- `apps/landing/turbo.json` disables build artifact caching: Next.js file traces can reference pnpm hoisted paths that differ between restored Vercel dependency installs. Reusing those traces caused deployment packaging to fail with a missing `@shikijs/core` path. Dependency-package builds remain cached.
+- `apps/landing/turbo.json` and `apps/docs/turbo.json` disable build artifact caching: Next.js file traces can reference pnpm hoisted paths that differ between restored Vercel dependency installs. Reusing those traces caused deployment packaging to fail with a missing `@shikijs/core` path. Dependency-package builds remain cached.
 - @dnd-kit DragDropManager must be created in a `useState` initializer and destroyed in a `useInsertionEffect` cleanup (NOT `useEffect`) — StrictMode double-fires effect cleanups and a destroyed manager silently stops emitting drag events. See `packages/react/src/components/dashfoo-drag-provider.tsx`.
 - The dnd-kit Feedback plugin runs in overlay mode only: the chip element is assigned to `Feedback.overlay` at mount (`DragPreviewOverlay` in `drag-overlays.tsx`), before any drag — Feedback's render effect fires synchronously at drag start, so a placeholder clone or a promoted source tab means the assignment came too late.
 - dnd-kit's CollisionObserver only computes collisions while `dragOperation.shape` is set, and the ONLY code in the library that sets it is the Feedback plugin — filtering Feedback out silently kills all droppable targeting (no indicator, no drops). Tabset droppables use dashfoo's occlusion-aware detector (`lib/topmost-collision.ts`); never a built-in geometric one, which would hit tabsets covered by floats.
