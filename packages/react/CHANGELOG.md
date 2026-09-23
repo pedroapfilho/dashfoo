@@ -1,5 +1,15 @@
 # @dashfoo/react
 
+## 0.9.0
+
+### Minor Changes
+
+- c711233: Move required layout, floating-panel geometry, resize handles, and docking indicators into the exported `@dashfoo/react/styles.css` stylesheet. Import it once before an optional theme. Runtime positions use CSS custom properties, including pointer gestures and cancellation.
+
+### Patch Changes
+
+- 87e9b4c: Handle the tab keyboard model on `Tabset.Trigger`, the `role="tab"` button, instead of the `Tabset.Tablist` scroll viewport. Arrow keys, Home and End behave as before; to intercept them, pass `onKeyDown` to `Tabset.Trigger` and call `preventDefault()`.
+
 ## 0.8.3
 
 ### Patch Changes
