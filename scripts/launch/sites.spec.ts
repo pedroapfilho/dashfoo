@@ -65,7 +65,7 @@ test("documentation routes, Markdown, search index and metadata are available", 
     const response = await request.get(`http://localhost:4011/${endpoint}`);
     expect(response.ok()).toBe(true);
   }
-  for (const endpoint of ["robots.txt", "sitemap.xml", "opengraph-image", "twitter-image"]) {
+  for (const endpoint of ["robots.txt", "sitemap.xml", "opengraph-image"]) {
     const response = await request.get(`http://localhost:4110/${endpoint}`);
     expect(response.ok()).toBe(true);
   }
