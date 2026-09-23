@@ -1,7 +1,7 @@
 "use client";
 
 import type { TabNode } from "@dashfoo/core";
-import type { ComponentProps, MouseEvent, ReactNode } from "react";
+import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { forwardRef, useContext, useEffect, useMemo, useRef } from "react";
 
 import { useLayout } from "../../hooks/layout-store";
@@ -73,6 +73,7 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
       children,
       onClick,
       onDoubleClick,
+      onKeyDown,
 
       ...props
     },
@@ -109,6 +110,28 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
       }
     };
 
+    const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
+      onKeyDown?.(event);
+      const count = node.children.length;
+      if (event.defaultPrevented || count === 0) {
+        return;
+      }
+      // The visual index, not the model's: focus (`tabindex="0"`) sits at that one.
+      const from = Math.max(visualSelected, 0);
+      const targets = new Map([
+        ["ArrowLeft", (from - 1 + count) % count],
+        ["ArrowRight", (from + 1) % count],
+        ["End", count - 1],
+        ["Home", 0],
+      ]);
+      const next = targets.get(event.key);
+      if (next === undefined) {
+        return;
+      }
+      event.preventDefault();
+      selectTab(next, { focus: true });
+    };
+
     return (
       <button
         aria-label={renderTabLabel ? tab.name : undefined}
@@ -120,6 +143,7 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
         id={tabDomId(node.id, tab.id)}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
+        onKeyDown={handleKeyDown}
         ref={refCallback}
         role="tab"
         tabIndex={selected ? 0 : -1}

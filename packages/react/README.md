@@ -526,9 +526,9 @@ pattern as `Panel`:
 | `Layout.FloatLayer`     | overlay                                  | Wrap the tree's content to enable floating panels; renders `model.floats` as draggable overlays. Takes `floats` + `global`. |
 | `Tabset.Root`           | `div[data-dashfoo="tabset"]`             | Creates the per-tabset store; owns drop registration, overflow measurement, and focus restore after close.                  |
 | `Tabset.TabStrip`       | `div[data-dashfoo="tabstrip"]`           | The strip row (drag hit-testing targets this attribute).                                                                    |
-| `Tabset.Tablist`        | `div[data-dashfoo="tablist"]`            | `role="tablist"` + roving-tabindex arrow/Home/End navigation.                                                               |
+| `Tabset.Tablist`        | `div[data-dashfoo="tablist"]`            | The scrolling viewport holding the `role="tablist"` marker that owns the triggers.                                          |
 | `Tabset.Tab`            | `span[data-dashfoo="tab-item"]`          | Per-tab wrapper; provides identity to the parts inside.                                                                     |
-| `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: select on click, rename on double-click, draggable. Children override the label.                            |
+| `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: arrow/Home/End navigation, select on click, rename on double-click, draggable. Children override the label. |
 | `Tabset.RenameInput`    | `input[data-dashfoo="tab-rename"]`       | Inline rename editor; renders only while its tab is being renamed.                                                          |
 | `Tabset.CloseButton`    | `button[data-dashfoo="tab-close"]`       | Closes the tab with focus restore; hides when the tab isn't closable.                                                       |
 | `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted`. Children render-prop overrides `renderers.tab`.                        |

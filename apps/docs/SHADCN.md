@@ -1,6 +1,6 @@
 # Shared components
 
-`components/ui` contains the shadcn Base UI registry modules for the style in `components.json`. Preserve upstream exports, props, defaults, DOM semantics, and interactions. Product compositions belong outside that directory. Variant factories are exported beside the component.
+`components/ui` contains the shadcn Base UI registry modules for the style in `components.json`. Preserve upstream exports, props, defaults, DOM semantics, and interactions. Product compositions belong outside that directory. Variant factories are exported beside the component, so `doctor.config.json` waives React Doctor's `only-export-components` rule for this directory.
 
 The product palette stays in `app/global.css`, which loads `shadcn/tailwind.css` and maps semantic colors to the existing Fumadocs theme. All six design-system lint rules apply to primitives too. Arbitrary registry values use equivalent named radius, text-size, and color-mix tokens; formatting and import paths follow this repository.
 
