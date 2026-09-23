@@ -16,16 +16,6 @@ allowBuilds:
   esbuild: true
   sharp: true
 
-onlyBuiltDependencies:
-  - "@tailwindcss/oxide"
-  - esbuild
-  - lightningcss
-  - sharp
-  - unrs-resolver
-
-ignoredBuiltDependencies:
-  - "@parcel/watcher"
-
 minimumReleaseAgeExclude:
   - "@dashfoo/*"
   - "@easeia/*"
