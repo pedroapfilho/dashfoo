@@ -119,9 +119,9 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
       const { dispatch, node, tablistElement } = get();
       dispatch({ index, tabsetId: node.id, type: "selectTab" });
       if (options?.focus === true) {
-        const tabId = node.children[index]?.id;
-        if (tabId) {
-          tabButtonIn(tablistElement, node.id, tabId)?.focus();
+        const tab = node.children[index];
+        if (tab) {
+          tabButtonIn(tablistElement, node.id, tab.id)?.focus();
         }
       }
     },
