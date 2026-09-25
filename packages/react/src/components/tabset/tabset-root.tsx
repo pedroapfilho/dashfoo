@@ -95,10 +95,10 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
       if (node.children.some((tab) => tab.id === pendingCloseTabId)) {
         return;
       }
-      const activeTabId = node.children[node.selected]?.id;
-      if (activeTabId) {
+      const selectedTab = node.children[node.selected];
+      if (selectedTab) {
         tabsetRef.current
-          ?.querySelector<HTMLElement>(`#${CSS.escape(tabDomId(node.id, activeTabId))}`)
+          ?.querySelector<HTMLElement>(`#${CSS.escape(tabDomId(node.id, selectedTab.id))}`)
           ?.focus();
       } else {
         tabsetRef.current?.focus();
