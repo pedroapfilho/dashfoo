@@ -32,8 +32,7 @@ const TabsetTablist = forwardRef<HTMLDivElement, TabsetTablistProps>(
     );
 
     const ownedTabs = node.children
-      .filter((tab) => tab.id !== editingTabId)
-      .map((tab) => tabDomId(node.id, tab.id))
+      .flatMap((tab) => (tab.id === editingTabId ? [] : [tabDomId(node.id, tab.id)]))
       .join(" ");
 
     return (

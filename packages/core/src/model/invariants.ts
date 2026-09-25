@@ -49,10 +49,7 @@ const normalizeRowChildren = (
       continue;
     }
     if (grandchildren.length === 1) {
-      const only = grandchildren[0];
-      if (only !== undefined) {
-        out.push(inheritSlot(child, only));
-      }
+      out.push(inheritSlot(child, grandchildren[0]));
       continue;
     }
     out.push({ ...child, children: grandchildren });
@@ -66,7 +63,7 @@ const normalizeLayout = (root: RowNode, keptTabsetIds: Array<string>): RowNode =
   let orientation = root.orientation;
 
   let inner = children[0];
-  while (children.length === 1 && inner?.type === "row") {
+  while (children.length === 1 && inner.type === "row") {
     children = inner.children;
     orientation = inner.orientation;
     inner = children[0];

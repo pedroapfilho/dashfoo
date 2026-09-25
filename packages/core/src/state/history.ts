@@ -46,12 +46,12 @@ const undo = (history: History): History => {
 };
 
 const redo = (history: History): History => {
-  const [next, ...rest] = history.future;
+  const next = history.future.at(0);
   if (next === undefined) {
     return history;
   }
   return {
-    future: rest,
+    future: history.future.slice(1),
     past: [...history.past, history.present].slice(-HISTORY_LIMIT),
     present: next,
   };

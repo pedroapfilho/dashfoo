@@ -3,7 +3,6 @@ import { cacheLife } from "next/cache";
 
 import { source } from "@/lib/source";
 
-// oxlint-disable-next-line require-await -- Next.js requires functions using "use cache" to be async.
 const getLlmsIndex = async () => {
   "use cache";
   cacheLife("max");

@@ -165,8 +165,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       persistence.initialModel !== appliedInitialModel.current
     ) {
       appliedInitialModel.current = persistence.initialModel;
-      // Restoration must happen after hydration, without an action or undo entry.
-      // oxlint-disable-next-line react-doctor/no-pass-data-to-parent
+      // oxlint-disable-next-line react-doctor/no-pass-data-to-parent -- restoration must happen after hydration, without an action or undo entry
       setModel(persistence.initialModel);
     }
   }, [persistence.initialModel, setModel]);
@@ -229,7 +228,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
         if (components && !warnedComponents.has(tab.component)) {
           warnedComponents.add(tab.component);
 
-          // oxlint-disable-next-line no-console
+          // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
           console.warn(`[dashfoo] no component registered for "${tab.component}"`);
         }
         return null;
@@ -245,6 +244,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
 
   const [containerRef, width] = useContainerWidth();
   const isCompact = responsive !== undefined && width <= responsive.maxWidth;
+  const compactOrientation = responsive?.orientation;
 
   /** Everything the compact breakpoint changes, decided once. */
   const presentation = useMemo(
@@ -252,11 +252,11 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       isCompact
         ? {
             maximizable: false,
-            model: compactModel(store.model, responsive?.orientation),
+            model: compactModel(store.model, compactOrientation),
             restructurable: false,
           }
         : { maximizable, model: store.model, restructurable: true },
-    [isCompact, maximizable, responsive?.orientation, store.model],
+    [compactOrientation, isCompact, maximizable, store.model],
   );
   const view = presentation.model;
 

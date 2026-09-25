@@ -20,7 +20,7 @@ const insertionLineRect = (
   itemRects: ReadonlyArray<Rect>,
   index: number,
 ): Zone => {
-  const at = itemRects[index];
+  const at = itemRects.at(index);
   const last = itemRects.at(-1);
   const x = at?.x ?? (last ? last.x + last.width : stripRect.x);
   const left = x - INSERTION_LINE_WIDTH / 2;

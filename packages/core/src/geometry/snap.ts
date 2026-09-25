@@ -51,8 +51,8 @@ type SnapResult = { sizes: Array<number>; snapped: boolean };
 
 const snapSizes = (sizes: Array<number>, boundaryIndex: number, grid: SnapGrid): SnapResult => {
   const { targets, threshold } = grid;
-  const left = sizes[boundaryIndex];
-  const right = sizes[boundaryIndex + 1];
+  const left = sizes.at(boundaryIndex);
+  const right = sizes.at(boundaryIndex + 1);
   if (boundaryIndex < 0 || left === undefined || right === undefined || targets.length === 0) {
     return { sizes, snapped: false };
   }

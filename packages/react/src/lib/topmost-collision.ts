@@ -14,7 +14,7 @@ const createTopmostPointerIntersection = (
 ): TopmostDetector => {
   let cached: { top: Element | null; x: number; y: number } | null = null;
   const topAt = (x: number, y: number): Element | null => {
-    if (cached && cached.x === x && cached.y === y) {
+    if (cached?.x === x && cached.y === y) {
       return cached.top;
     }
     const top = topElementAt(x, y);

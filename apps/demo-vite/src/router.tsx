@@ -46,7 +46,7 @@ const routeTree = rootRoute.addChildren([
 const router = createRouter({ defaultPreload: "intent", routeTree });
 
 declare module "@tanstack/react-router" {
-  // oxlint-disable-next-line typescript-eslint/consistent-type-definitions
+  // oxlint-disable-next-line typescript-eslint/consistent-type-definitions -- TanStack Router registers the router type through interface declaration merging
   interface Register {
     router: typeof router;
   }

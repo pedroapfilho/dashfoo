@@ -31,7 +31,7 @@ const localStorageAdapter: StorageAdapter = {
     try {
       return window.localStorage.getItem(key);
     } catch (error) {
-      // oxlint-disable-next-line no-console
+      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
       console.warn("[dashfoo] failed to load persisted layout", error);
       return null;
     }
@@ -43,7 +43,7 @@ const localStorageAdapter: StorageAdapter = {
     try {
       window.localStorage.removeItem(key);
     } catch (error) {
-      // oxlint-disable-next-line no-console
+      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
       console.warn("[dashfoo] failed to clear persisted layout", error);
     }
   },
@@ -54,7 +54,7 @@ const localStorageAdapter: StorageAdapter = {
     try {
       window.localStorage.setItem(key, value);
     } catch (error) {
-      // oxlint-disable-next-line no-console
+      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
       console.warn("[dashfoo] failed to persist layout", error);
     }
   },
@@ -70,7 +70,7 @@ const removeStoredLayout = ({ key, storage }: PersistConfig): void => {
   try {
     storage.removeItem(key);
   } catch (error) {
-    // oxlint-disable-next-line no-console
+    // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
     console.warn("[dashfoo] failed to clear persisted layout", error);
   }
 };
@@ -113,12 +113,12 @@ const usePersistence = (
         const restored = fromJSON(raw);
         setInitialModel(restored);
       } catch (error) {
-        // oxlint-disable-next-line no-console
+        // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
         console.warn("[dashfoo] discarding unreadable persisted layout", error);
         removeStoredLayout(current);
       }
     } catch (error) {
-      // oxlint-disable-next-line no-console
+      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
       console.warn("[dashfoo] failed to load persisted layout", error);
     }
   }, [defaultModel]);
@@ -126,7 +126,7 @@ const usePersistence = (
   const loadedKey = useRef(config?.key);
   useEffect(() => {
     if (config !== null && config.key !== loadedKey.current) {
-      // oxlint-disable-next-line no-console
+      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
       console.warn(
         "[dashfoo] persist key changed for a mounted layout; the displayed layout still reflects the previous key; remount (key={persistKey}) to load the new key",
       );
@@ -149,7 +149,7 @@ const usePersistence = (
       try {
         write.storage.setItem(write.key, write.value);
       } catch (error) {
-        // oxlint-disable-next-line no-console
+        // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
         console.warn("[dashfoo] failed to persist layout", error);
       }
     }
