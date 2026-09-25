@@ -64,7 +64,7 @@ const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("dashfoo:landin
 const RootLayout = ({ children }: { children: ReactNode }) => (
   <html className="antialiased" lang="en" suppressHydrationWarning>
     <head>
-      {/* oxlint-disable react/no-danger */}
+      {/* oxlint-disable-next-line react/no-danger -- a static inline script sets the theme before first paint to avoid a flash */}
       <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
     </head>
     <body className="bg-background text-foreground isolate flex min-h-dvh flex-col font-sans">

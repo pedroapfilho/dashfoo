@@ -166,7 +166,7 @@ const useMeasuredTabsets = (
     };
   }, [containerRef, subject]);
 
-  return measured !== null && measured.subject === subject ? measured.list : null;
+  return measured?.subject === subject ? measured.list : null;
 };
 
 const DropZoneDrawing = ({

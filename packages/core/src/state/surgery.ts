@@ -16,7 +16,7 @@ const removeTabsetReturning = (model: Dashfoo, tabsetId: string): TabsetNode | u
     return undefined;
   }
   const [removed] = found.parent.children.splice(found.index, 1);
-  return removed?.type === "tabset" ? removed : undefined;
+  return removed.type === "tabset" ? removed : undefined;
 };
 
 /** Total, so a sixth `DockLocation` is a compile error here rather than a wrong default. */

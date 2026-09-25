@@ -70,7 +70,7 @@ const applyAction = (draft: Dashfoo, action: Action): boolean => {
       let changed = false;
       for (let index = 0; index < action.weights.length; index++) {
         const child = row.children.at(index);
-        const weight = action.weights[index];
+        const weight = action.weights.at(index);
         if (!child || weight === undefined || child.weight === weight) {
           continue;
         }

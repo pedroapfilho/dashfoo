@@ -12,6 +12,13 @@ const CHIP_SIZE: Size = { height: 34, width: 168 };
 
 const TAP_SLOP = 4;
 
+const releaseCapture = (panel: HTMLElement, pointerId: number): void => {
+  // oxlint-disable-next-line typescript/no-unnecessary-condition -- jsdom and older engines lack hasPointerCapture despite the DOM typings
+  if (panel.hasPointerCapture?.(pointerId)) {
+    panel.releasePointerCapture(pointerId);
+  }
+};
+
 /** `moved` and `latest` live here because they only mean anything mid-gesture. */
 type Gesture = {
   bounds: Size;
@@ -68,8 +75,8 @@ const useFloatGesture = ({
     }
 
     const prior = gestureRef.current;
-    if (prior && panel.hasPointerCapture?.(prior.pointerId)) {
-      panel.releasePointerCapture(prior.pointerId);
+    if (prior) {
+      releaseCapture(panel, prior.pointerId);
     }
     const edgeKey = event.currentTarget.dataset.edge;
 
@@ -112,8 +119,8 @@ const useFloatGesture = ({
     gestureRef.current = null;
 
     const panel = panelRef.current;
-    if (panel?.hasPointerCapture?.(event.pointerId) === true) {
-      panel.releasePointerCapture(event.pointerId);
+    if (panel) {
+      releaseCapture(panel, event.pointerId);
     }
 
     if (!gesture.moved) {
@@ -171,9 +178,7 @@ const useFloatGesture = ({
       return;
     }
     gestureRef.current = null;
-    if (panel.hasPointerCapture?.(event.pointerId)) {
-      panel.releasePointerCapture(event.pointerId);
-    }
+    releaseCapture(panel, event.pointerId);
     if (!gesture.moved) {
       return;
     }

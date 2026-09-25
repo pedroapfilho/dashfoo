@@ -1,4 +1,3 @@
-// oxlint-disable jsx-a11y/no-noninteractive-tabindex -- The themed body is an independent scroll region and needs keyboard access.
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";

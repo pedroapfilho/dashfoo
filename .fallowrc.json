@@ -27,7 +27,7 @@
       "exports": ["generateStaticParams"]
     }
   ],
-  "ignoreDependencies": ["@vitest/coverage-v8", "jsdom"],
+  "ignoreDependencies": ["@shadcn/lint", "@vitest/coverage-v8", "jsdom"],
   "typeAware": {
     "enabled": true,
     "require": "best-effort"
