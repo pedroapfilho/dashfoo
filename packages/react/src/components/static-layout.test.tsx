@@ -3,7 +3,7 @@ import type { DragDropManager } from "@dnd-kit/dom";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { createRef, useContext, useEffect } from "react";
-import { describe, expect, test } from "vitest";
+import { assert, describe, expect, test } from "vitest";
 
 import { SharedDragManagerContext } from "../hooks/drag-hooks";
 
@@ -117,7 +117,9 @@ describe("editable={false} renders a static layout", () => {
   test("keeps maximize working — it is view state, not a structural edit", () => {
     renderLayout({ editable: false });
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Maximize" })[0]);
+    const [maximize] = screen.getAllByRole("button", { name: "Maximize" });
+    assert(maximize);
+    fireEvent.click(maximize);
     expect(screen.queryByRole("tab", { name: "Trades" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Restore" }));

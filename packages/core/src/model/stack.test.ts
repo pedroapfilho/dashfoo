@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { assert, describe, expect, test } from "vitest";
 
 import { reducer } from "../state/reducer";
 
@@ -69,12 +69,14 @@ describe("stackModel", () => {
   test("a selectTab using a stacked-view tabset id lands on the canonical model", () => {
     const source = nested();
     const stacked = stackModel(source);
-    const tabsetId = stacked.layout.children[0].id;
+    const [stackedTabset] = stacked.layout.children;
+    assert(stackedTabset);
+    const tabsetId = stackedTabset.id;
     expect(tabsetId).toBe("ts-a");
 
     const next = reducer(source, { index: 1, tabsetId, type: "selectTab" });
     const tabset = next.layout.children[0];
-    expect(tabset.type === "tabset" && tabset.selected).toBe(1);
+    expect(tabset?.type === "tabset" && tabset.selected).toBe(1);
   });
 
   test("leaves floating-panel tabsets out of the stacked main layout", () => {

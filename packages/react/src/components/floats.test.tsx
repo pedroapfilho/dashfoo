@@ -1,6 +1,6 @@
 import type { Dashfoo, FloatNode } from "@dashfoo/core";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, assert, describe, expect, test, vi } from "vitest";
 
 import { DashfooLayout } from "./dashfoo-layout";
 import { Layout } from "./layout";
@@ -258,6 +258,8 @@ describe("floating panels", () => {
     render(<DashfooLayout components={components} defaultModel={m} floatable />);
 
     const [first, second] = floatPanels();
+    assert(first);
+    assert(second);
 
     expect(second.style.getPropertyValue("--dashfoo-float-z")).toBe("1");
 

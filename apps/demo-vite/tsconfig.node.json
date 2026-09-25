@@ -4,6 +4,7 @@
     "composite": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "strict": true,
     "target": "ESNext",

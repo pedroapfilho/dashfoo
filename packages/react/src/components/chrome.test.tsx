@@ -1,6 +1,6 @@
 import type { Dashfoo } from "@dashfoo/core";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { assert, describe, expect, test } from "vitest";
 
 import type { DashfooLayoutCommonProps } from "./dashfoo-layout";
 import { DashfooLayout } from "./dashfoo-layout";
@@ -199,7 +199,9 @@ describe("tabset maximize", () => {
     renderLayout();
     expect(screen.getByRole("tab", { name: "Trades" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Maximize" })[0]);
+    const [maximize] = screen.getAllByRole("button", { name: "Maximize" });
+    assert(maximize);
+    fireEvent.click(maximize);
 
     expect(screen.queryByRole("tab", { name: "Trades" })).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Chart" })).toBeInTheDocument();

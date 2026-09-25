@@ -2,7 +2,7 @@ import type { Dashfoo, TabNode, TabsetNode } from "@dashfoo/core";
 import { findTabset } from "@dashfoo/core";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { describe, expect, test, vi } from "vitest";
+import { assert, describe, expect, test, vi } from "vitest";
 
 import { useDashfooStore } from "../hooks/store";
 
@@ -218,7 +218,9 @@ describe("hand-composed layout from primitives", () => {
   test("maximize hands the leaf to the host, which swaps in the stock Layout.Tabset", () => {
     render(<CustomLayout defaultModel={model()} />);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Maximize" })[0]);
+    const [maximize] = screen.getAllByRole("button", { name: "Maximize" });
+    assert(maximize);
+    fireEvent.click(maximize);
 
     expect(screen.queryByRole("tab", { name: "Trades" })).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Chart" })).toBeInTheDocument();

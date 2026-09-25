@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { assert, describe, expect, test } from "vitest";
 
 import { normalize } from "../model/invariants";
 import type { Dashfoo, TabNode, TabsetNode } from "../model/schema";
@@ -27,7 +27,9 @@ const baseModel = (): Dashfoo => ({
 
 const onlyFloat = (model: Dashfoo) => {
   expect(model.floats).toHaveLength(1);
-  return model.floats[0];
+  const [float] = model.floats;
+  assert(float);
+  return float;
 };
 
 const floatTabsets = (model: Dashfoo): Array<TabsetNode> =>
@@ -227,6 +229,8 @@ describe("float naming", () => {
     const a = reducer(baseModel(), { tabsetId: "ts2", type: "floatTabset" });
     const b = reducer(a, { tabId: "t1", type: "floatTab" });
     const [first, second] = b.floats;
+    assert(first);
+    assert(second);
 
     const r1 = reducer(b, { floatId: first.id, name: "Foo", type: "renameFloat" });
     const r2 = reducer(r1, { floatId: second.id, name: "Foo", type: "renameFloat" });

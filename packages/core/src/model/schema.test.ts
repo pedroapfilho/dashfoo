@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { assert, describe, expect, test } from "vitest";
 import { ZodError } from "zod";
 
 import { dashfooSchema, tabNodeSchema, tabsetNodeSchema } from "./schema";
@@ -128,10 +128,10 @@ describe("dashfooSchema", () => {
   test("rejects an unknown dimension unit", () => {
     const badUnit = structuredClone(validModel);
 
-    (badUnit.layout.children[1] as { children: Array<{ min: unknown }> }).children[0].min = {
-      unit: "parsecs",
-      value: 240,
-    };
+    const [badChild] = (badUnit.layout.children[1] as { children: Array<{ min: unknown }> })
+      .children;
+    assert(badChild);
+    badChild.min = { unit: "parsecs", value: 240 };
 
     expect(() => dashfooSchema.parse(badUnit)).toThrow(ZodError);
   });
