@@ -1,4 +1,4 @@
-import type { Action, FloatNode, TabsetNode } from "@dashfoo/core";
+import type { Action, FloatNode, TabNode, TabsetNode } from "@dashfoo/core";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 
@@ -51,15 +51,16 @@ const renderFloatEditor = (): Harness => {
 
 const renderTabEditor = (): Harness => {
   const dispatched: Array<Action> = [];
+  const tab: TabNode = { component: "c", id: "t1", name: CURRENT_NAME, type: "tab" };
   const node: TabsetNode = {
-    children: [{ component: "c", id: "t1", name: CURRENT_NAME, type: "tab" }],
+    children: [tab],
     id: "ts1",
     selected: 0,
     type: "tabset",
     weight: 1,
   };
   const store = createTabsetStore({
-    activeTab: node.children[0],
+    activeTab: tab,
     dispatch: (action) => {
       dispatched.push(action);
     },
@@ -73,7 +74,7 @@ const renderTabEditor = (): Harness => {
   store.setState({ editingTabId: "t1" });
   render(
     <TabsetStoreContext.Provider value={store}>
-      <TabContext.Provider value={{ index: 0, tab: node.children[0] }}>
+      <TabContext.Provider value={{ index: 0, tab }}>
         <RenameEditor />
       </TabContext.Provider>
     </TabsetStoreContext.Provider>,

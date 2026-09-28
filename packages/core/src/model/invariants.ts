@@ -45,11 +45,12 @@ const normalizeRowChildren = (
     // A recorded id implies a survivor, which keeps its ancestor rows alive, so
     // a dropped row never leaves ids behind.
     const grandchildren = normalizeRowChildren(child.children, keptTabsetIds);
-    if (grandchildren.length === 0) {
+    const [onlyGrandchild, ...otherGrandchildren] = grandchildren;
+    if (!onlyGrandchild) {
       continue;
     }
-    if (grandchildren.length === 1) {
-      out.push(inheritSlot(child, grandchildren[0]));
+    if (otherGrandchildren.length === 0) {
+      out.push(inheritSlot(child, onlyGrandchild));
       continue;
     }
     out.push({ ...child, children: grandchildren });
@@ -63,7 +64,7 @@ const normalizeLayout = (root: RowNode, keptTabsetIds: Array<string>): RowNode =
   let orientation = root.orientation;
 
   let inner = children[0];
-  while (children.length === 1 && inner.type === "row") {
+  while (children.length === 1 && inner?.type === "row") {
     children = inner.children;
     orientation = inner.orientation;
     inner = children[0];
