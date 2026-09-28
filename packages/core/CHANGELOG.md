@@ -1,5 +1,11 @@
 # @dashfoo/core
 
+## 1.1.3
+
+### Patch Changes
+
+- 7b8d880: Handle missing array elements explicitly under `noUncheckedIndexedAccess`. Focus after selecting or closing a tab now also reaches a tab whose id is the empty string.
+
 ## 1.1.2
 
 ### Patch Changes
