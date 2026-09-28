@@ -41,7 +41,7 @@ const LayoutAnatomy = () => (
 
       <Gutter orientation="vertical">
         <Marker className="absolute top-9 left-1/2 -translate-x-1/2" n={5} />
-        <Marker className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" n={4} />
+        <Marker className="absolute top-1/2 left-1/2 -translate-1/2" n={4} />
       </Gutter>
 
       <div className="flex grow basis-0 flex-col">
@@ -54,7 +54,7 @@ const LayoutAnatomy = () => (
           <div className="grow" />
         </div>
         <Gutter orientation="horizontal">
-          <span className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1">
+          <span className="absolute top-1/2 left-1/2 flex -translate-1/2 items-center gap-1">
             <Marker n={6} />
             <IdChip>right</IdChip>
           </span>

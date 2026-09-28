@@ -43,7 +43,7 @@ const DockLocations = () => (
   >
     <div className="mx-auto max-w-md min-w-72">
       <MockTabStrip tabs={[{ name: "Canvas", selected: true }, { name: "Detail" }]} />
-      <div className="bg-docs-background grid-cols-dock-zones grid-rows-dock-zones grid aspect-16/10 gap-1 rounded-b-md border border-t-0 p-2">
+      <div className="grid-cols-dock-zones grid-rows-dock-zones bg-docs-background grid aspect-16/10 gap-1 rounded-b-md border border-t-0 p-2">
         <div className={cn(ZONE_CLASS, "row-span-3")}>split-left</div>
         <div className={ZONE_CLASS}>split-top</div>
         <div className={cn(ZONE_CLASS, "row-span-3")}>split-right</div>

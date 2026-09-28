@@ -34,7 +34,7 @@ const DemoStage = ({
   title: string;
 }): ReactNode => (
   <div className="flex h-full min-h-0 flex-col">
-    <header className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-6">
+    <header className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-6">
       <div>
         <h1 className="text-foreground-primary dark:text-foreground-inverse text-base font-semibold sm:text-sm">
           {title}
