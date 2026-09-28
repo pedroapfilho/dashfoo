@@ -38,7 +38,7 @@ const closeActiveTab = (handle: DashfooHandle | null): void => {
   const model = handle.getModel();
   const targetId = addTargetId(model);
   const tabset = targetId === undefined ? undefined : findTabset(model, targetId);
-  const activeTab = tabset?.children[tabset.selected ?? 0];
+  const activeTab = tabset?.children[tabset.selected];
   if (activeTab) {
     handle.closeTab(activeTab.id);
   }

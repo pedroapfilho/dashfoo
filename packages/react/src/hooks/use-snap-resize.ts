@@ -44,13 +44,12 @@ const layoutFromOrdered = (sizes: Array<number>, children: RowChildren): Layout 
   }, {});
 
 const layoutsMatch = (current: Layout, expected: Layout): boolean => {
-  const currentIds = Object.keys(current);
-  const expectedIds = Object.keys(expected);
-  if (currentIds.length !== expectedIds.length) {
+  const expectedEntries = Object.entries(expected);
+  if (Object.keys(current).length !== expectedEntries.length) {
     return false;
   }
-  return expectedIds.every(
-    (id) => Math.abs((current[id] ?? Number.NaN) - expected[id]) <= WEIGHT_EPSILON,
+  return expectedEntries.every(
+    ([id, weight]) => Math.abs((current[id] ?? Number.NaN) - weight) <= WEIGHT_EPSILON,
   );
 };
 
@@ -158,7 +157,7 @@ const useSnapResize = ({
       snap,
     );
     const weightsChanged = weights.some((weight, index) => {
-      const child = children[index];
+      const child = children.at(index);
       return child !== undefined && Math.abs(weight - child.weight) > WEIGHT_EPSILON;
     });
     if (!weightsChanged) {

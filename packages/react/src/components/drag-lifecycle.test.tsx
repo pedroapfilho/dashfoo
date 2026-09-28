@@ -3,7 +3,7 @@ import { Feedback } from "@dnd-kit/dom";
 import { render } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { StrictMode, useContext } from "react";
-import { describe, expect, test } from "vitest";
+import { assert, describe, expect, test } from "vitest";
 
 import type { DragActor } from "../hooks/drag-hooks";
 import {
@@ -196,7 +196,6 @@ describe("useExternalTabSource lifecycle", () => {
     const { useExternalTabSource } = await import("../hooks/drag-hooks");
 
     let capturedManager: DragDropManager | null = null;
-    let capturedId: string | null = null;
 
     const ExternalSource = (): ReactNode => {
       capturedManager = useContext(SharedDragManagerContext);
@@ -218,9 +217,9 @@ describe("useExternalTabSource lifecycle", () => {
     await Promise.resolve();
 
     expect(capturedManager).not.toBeNull();
-    const draggables = [...capturedManager!.registry.draggables];
-    expect(draggables.length).toBeGreaterThanOrEqual(1);
-    capturedId = String(draggables[0].id);
+    const [draggable] = capturedManager!.registry.draggables;
+    assert(draggable);
+    const capturedId = String(draggable.id);
 
     unmount();
 
@@ -259,7 +258,7 @@ describe("useTabsetDroppable lifecycle", () => {
 
     expect(capturedManager).not.toBeNull();
     const [droppable] = droppablesFor(capturedManager!, "ts1");
-    expect(droppable).toBeDefined();
+    assert(droppable);
 
     expect((droppable.data as { layerId?: string }).layerId).toBeTruthy();
     expect(droppable.element).toBeInstanceOf(HTMLElement);

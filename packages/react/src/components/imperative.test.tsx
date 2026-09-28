@@ -1,7 +1,7 @@
 import type { Action, Dashfoo } from "@dashfoo/core";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createRef } from "react";
-import { describe, expect, test, vi } from "vitest";
+import { assert, describe, expect, test, vi } from "vitest";
 
 import type { DashfooHandle } from "./dashfoo-layout";
 import { DashfooLayout } from "./dashfoo-layout";
@@ -112,7 +112,9 @@ describe("derived callbacks", () => {
       />,
     );
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Maximize" })[0]);
+    const [maximize] = screen.getAllByRole("button", { name: "Maximize" });
+    assert(maximize);
+    fireEvent.click(maximize);
     expect(spy).toHaveBeenLastCalledWith("ts1");
 
     fireEvent.click(screen.getByRole("button", { name: "Restore" }));

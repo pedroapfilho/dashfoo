@@ -1,13 +1,10 @@
 import { defineConfig } from "oxlint";
 import awesomeness from "oxlint-config-awesomeness";
+import shadcn from "oxlint-config-awesomeness/shadcn";
 
 export default defineConfig({
-  extends: [awesomeness],
-  jsPlugins: ["@shadcn/lint"],
+  extends: [awesomeness, shadcn],
   rules: {
-    "shadcn/no-arbitrary-values": "error",
-    "shadcn/no-inline-styles": "error",
-    "shadcn/no-raw-colors": "error",
     "shadcn/no-restyle": [
       "error",
       {
@@ -20,8 +17,6 @@ export default defineConfig({
         ],
       },
     ],
-    "shadcn/no-unknown-classes": "error",
-    "shadcn/require-static-classes": "error",
   },
   // Standalone starters have no workspace dependencies; lint:examples handles
   // their syntax, and test:consumers checks types after isolated installation.
@@ -35,7 +30,6 @@ export default defineConfig({
       files: ["**/__tests__/**/*.ts", "**/__tests__/**/*.tsx", "**/*.test.ts", "**/*.test.tsx"],
       rules: {
         "max-nested-calls": "off",
-        "number-literal-case": "off",
       },
     },
 
