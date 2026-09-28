@@ -1,5 +1,18 @@
 # @dashfoo/react
 
+## 0.9.0
+
+### Minor Changes
+
+- c711233: Move required layout, floating-panel geometry, resize handles, and docking indicators into the exported `@dashfoo/react/styles.css` stylesheet. Import it once before an optional theme. Runtime positions use CSS custom properties, including pointer gestures and cancellation.
+
+### Patch Changes
+
+- 7b8d880: Handle missing array elements explicitly under `noUncheckedIndexedAccess`. Focus after selecting or closing a tab now also reaches a tab whose id is the empty string.
+- 87e9b4c: Handle the tab keyboard model on `Tabset.Trigger`, the `role="tab"` button, instead of the `Tabset.Tablist` scroll viewport. Arrow keys, Home and End behave as before; to intercept them, pass `onKeyDown` to `Tabset.Trigger` and call `preventDefault()`.
+- Updated dependencies [7b8d880]
+  - @dashfoo/core@1.1.3
+
 ## 0.8.3
 
 ### Patch Changes
