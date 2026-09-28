@@ -1,5 +1,13 @@
 # @dashfoo/react
 
+## 0.9.1
+
+### Patch Changes
+
+- 72ecd5c: Bump runtime dependency ranges to the current non-major line.
+- Updated dependencies [72ecd5c]
+  - @dashfoo/core@1.1.4
+
 ## 0.9.0
 
 ### Minor Changes

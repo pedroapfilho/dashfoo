@@ -1,5 +1,11 @@
 # @dashfoo/core
 
+## 1.1.4
+
+### Patch Changes
+
+- 72ecd5c: Bump runtime dependency ranges to the current non-major line.
+
 ## 1.1.3
 
 ### Patch Changes
