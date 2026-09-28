@@ -63,7 +63,8 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref_name }}-
             turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-push-main-
-      - run: pnpm exec changeset status --since=origin/main
+      - if: github.ref_name != 'changeset-release/main' && github.head_ref != 'changeset-release/main'
+        run: pnpm exec changeset status --since=origin/main
       - run: node .github/ci/ci.mjs run packaging -- pnpm build --filter="./packages/*"
       # Packaging hygiene for the published packages (ESM-only, "use client").
       - name: publint
