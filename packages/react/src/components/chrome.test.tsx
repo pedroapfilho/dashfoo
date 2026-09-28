@@ -46,6 +46,8 @@ const components = {
 const renderLayout = (props?: Partial<DashfooLayoutCommonProps>) =>
   render(<DashfooLayout components={components} defaultModel={model()} {...props} />);
 
+const withGlobal = (global: Dashfoo["global"]): Dashfoo => ({ ...model(), global });
+
 describe("tab close", () => {
   test("each tab has a close button that removes the tab without selecting it", () => {
     renderLayout();
@@ -219,8 +221,6 @@ describe("tabset maximize", () => {
 });
 
 describe("global attribute defaults", () => {
-  const withGlobal = (global: Dashfoo["global"]): Dashfoo => ({ ...model(), global });
-
   test("tabSetEnableTabStrip: false hides the strip but keeps content", () => {
     render(
       <DashfooLayout
