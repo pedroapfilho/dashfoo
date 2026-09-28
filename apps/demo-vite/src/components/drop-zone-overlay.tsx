@@ -192,7 +192,7 @@ const DropZoneDrawing = ({
   return (
     <svg
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-9998 h-full w-full"
+      className="pointer-events-none fixed inset-0 z-9998 size-full"
       data-testid="drop-zone-overlay"
     >
       {cells.map((cell) => (

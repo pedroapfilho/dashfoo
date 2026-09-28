@@ -141,7 +141,7 @@ const ViewOptionsPopover = ({
       <PopoverContent className="flex flex-col">
         {items.map((item) => (
           <a
-            className="hover:text-docs-accent-foreground hover:bg-docs-accent inline-flex items-center gap-2 rounded-lg p-2 text-sm [&_svg]:size-4"
+            className="hover:bg-docs-accent hover:text-docs-accent-foreground inline-flex items-center gap-2 rounded-lg p-2 text-sm [&_svg]:size-4"
             href={item.href}
             key={item.href}
             rel="noreferrer noopener"

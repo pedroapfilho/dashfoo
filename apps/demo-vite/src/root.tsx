@@ -106,7 +106,7 @@ const RootLayout = (): ReactNode => {
           {NAV.map((item) => (
             <Link
               activeOptions={{ exact: item.exact }}
-              className="text-foreground-muted hover:bg-surface-muted hover:text-foreground-primary dark:text-foreground-disabled dark:hover:bg-surface-raised-inverse dark:hover:text-foreground-inverse [&.active]:bg-surface-muted [&.active]:text-foreground-deep dark:[&.active]:bg-surface-raised-inverse dark:[&.active]:text-foreground-bright flex shrink-0 items-center gap-2 rounded-md px-2.5 py-2.5 text-xs transition-colors sm:py-2"
+              className="text-foreground-muted hover:bg-surface-muted hover:text-foreground-primary dark:text-foreground-disabled dark:hover:bg-surface-raised-inverse dark:hover:text-foreground-inverse [&.active]:bg-surface-muted [&.active]:text-foreground-deep dark:[&.active]:bg-surface-raised-inverse dark:[&.active]:text-foreground-bright flex shrink-0 items-center gap-2 rounded-md p-2.5 text-xs transition-colors sm:py-2"
               key={item.to}
               to={item.to}
             >
@@ -119,7 +119,7 @@ const RootLayout = (): ReactNode => {
           {EXTERNAL.map((item) => (
             <a
               aria-label={item.label}
-              className="text-foreground-muted hover:bg-surface-muted hover:text-foreground-primary dark:text-foreground-disabled dark:hover:bg-surface-raised-inverse dark:hover:text-foreground-inverse flex shrink-0 items-center gap-2 rounded-md px-2.5 py-2.5 text-xs transition-colors sm:py-2"
+              className="text-foreground-muted hover:bg-surface-muted hover:text-foreground-primary dark:text-foreground-disabled dark:hover:bg-surface-raised-inverse dark:hover:text-foreground-inverse flex shrink-0 items-center gap-2 rounded-md p-2.5 text-xs transition-colors sm:py-2"
               href={item.href}
               key={item.href}
               rel="noopener noreferrer"
@@ -152,7 +152,7 @@ const RootLayout = (): ReactNode => {
         >
           {NAV.map((item) => (
             <Link
-              className="hover:bg-surface-hover dark:hover:bg-surface-raised-inverse min-h-11 rounded-md px-3 py-3 text-sm"
+              className="hover:bg-surface-hover dark:hover:bg-surface-raised-inverse min-h-11 rounded-md p-3 text-sm"
               key={item.to}
               onClick={() => {
                 setMenuOpen(false);
