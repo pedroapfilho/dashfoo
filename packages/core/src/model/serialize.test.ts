@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { ZodError } from "zod";
 
 import type { Dashfoo, TabNode } from "./schema";
 import { fromJSON, parseModel, toJSON } from "./serialize";
@@ -59,11 +60,11 @@ describe("serialize", () => {
   test("fromJSON throws on a structurally invalid model", () => {
     expect(() =>
       fromJSON(JSON.stringify({ global: {}, layout: { type: "row" }, version: 1 })),
-    ).toThrow();
+    ).toThrow(ZodError);
   });
 
   test("fromJSON throws on malformed JSON", () => {
-    expect(() => fromJSON("{ not json")).toThrow();
+    expect(() => fromJSON("{ not json")).toThrow(SyntaxError);
   });
 
   test("parseModel validates an object and normalizes it", () => {
@@ -75,10 +76,10 @@ describe("serialize", () => {
   test("parseModel rejects a payload without a version", () => {
     const { version: _version, ...withoutVersion } = model();
 
-    expect(() => parseModel(withoutVersion)).toThrow();
+    expect(() => parseModel(withoutVersion)).toThrow(ZodError);
   });
 
   test("fromJSON rejects a payload with an unknown version", () => {
-    expect(() => fromJSON(JSON.stringify({ ...model(), version: 2 }))).toThrow();
+    expect(() => fromJSON(JSON.stringify({ ...model(), version: 2 }))).toThrow(ZodError);
   });
 });

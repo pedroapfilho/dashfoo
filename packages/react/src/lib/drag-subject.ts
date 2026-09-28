@@ -21,7 +21,7 @@ const subjectFor = (source: DragSource): DragSubject | null => {
   }
   if (data.type === "external") {
     if (!isTabFactory(data.createTab)) {
-      // oxlint-disable-next-line no-console
+      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
       console.warn("[dashfoo] external drag source is missing its createTab function");
       return null;
     }
@@ -29,13 +29,13 @@ const subjectFor = (source: DragSource): DragSubject | null => {
     try {
       candidate = data.createTab();
     } catch (error) {
-      // oxlint-disable-next-line no-console
+      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
       console.warn("[dashfoo] external drag source createTab threw", error);
       return null;
     }
     const parsed = tabNodeSchema.safeParse(candidate);
     if (!parsed.success) {
-      // oxlint-disable-next-line no-console
+      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
       console.warn("[dashfoo] external drag source returned an invalid tab", parsed.error);
       return null;
     }

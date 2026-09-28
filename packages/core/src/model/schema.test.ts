@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { ZodError } from "zod";
 
 import { dashfooSchema, tabNodeSchema, tabsetNodeSchema } from "./schema";
 
@@ -51,7 +52,7 @@ describe("dashfooSchema", () => {
   test("rejects a model missing the version field", () => {
     const { version: _version, ...withoutVersion } = validModel;
 
-    expect(() => dashfooSchema.parse(withoutVersion)).toThrow();
+    expect(() => dashfooSchema.parse(withoutVersion)).toThrow(ZodError);
   });
 
   test("fills in an omitted floats list", () => {
@@ -132,14 +133,14 @@ describe("dashfooSchema", () => {
       value: 240,
     };
 
-    expect(() => dashfooSchema.parse(badUnit)).toThrow();
+    expect(() => dashfooSchema.parse(badUnit)).toThrow(ZodError);
   });
 
   test("rejects a row whose orientation is not row or column", () => {
     const badOrientation = structuredClone(validModel);
     badOrientation.layout.orientation = "diagonal";
 
-    expect(() => dashfooSchema.parse(badOrientation)).toThrow();
+    expect(() => dashfooSchema.parse(badOrientation)).toThrow(ZodError);
   });
 });
 
@@ -165,7 +166,7 @@ describe("tabNodeSchema", () => {
         name: "Chart",
         type: "tab",
       }),
-    ).toThrow();
+    ).toThrow(ZodError);
   });
 });
 

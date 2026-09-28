@@ -158,7 +158,7 @@ const useSnapResize = ({
       snap,
     );
     const weightsChanged = weights.some((weight, index) => {
-      const child = children[index];
+      const child = children.at(index);
       return child !== undefined && Math.abs(weight - child.weight) > WEIGHT_EPSILON;
     });
     if (!weightsChanged) {

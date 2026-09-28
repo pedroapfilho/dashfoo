@@ -196,7 +196,6 @@ describe("useExternalTabSource lifecycle", () => {
     const { useExternalTabSource } = await import("../hooks/drag-hooks");
 
     let capturedManager: DragDropManager | null = null;
-    let capturedId: string | null = null;
 
     const ExternalSource = (): ReactNode => {
       capturedManager = useContext(SharedDragManagerContext);
@@ -220,7 +219,7 @@ describe("useExternalTabSource lifecycle", () => {
     expect(capturedManager).not.toBeNull();
     const draggables = [...capturedManager!.registry.draggables];
     expect(draggables.length).toBeGreaterThanOrEqual(1);
-    capturedId = String(draggables[0].id);
+    const capturedId = String(draggables[0].id);
 
     unmount();
 
