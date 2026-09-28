@@ -89,8 +89,8 @@ test("docs search, copy controls, anchors and mobile navigation work", async ({
   await page.getByRole("link", { exact: true, name: "Step 1: Install" }).click();
   await expect(page).toHaveURL(/#step-1-install$/v);
   await page.getByRole("button", { exact: true, name: "Open Search" }).click();
-  await page.getByRole("textbox", { exact: true, name: "Search" }).fill("persistence");
-  await page.getByRole("button", { exact: true, name: "Docs Guides Persisting layouts" }).click();
+  await page.getByRole("combobox", { exact: true, name: "Search" }).fill("persistence");
+  await page.getByRole("option", { exact: true, name: "Docs Guides Persisting layouts" }).click();
   await expect(
     page.getByRole("heading", { exact: true, name: "Persisting layouts" }),
   ).toBeVisible();
