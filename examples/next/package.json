@@ -8,17 +8,17 @@
     "start": "next start"
   },
   "dependencies": {
-    "@dashfoo/core": "^1.1.0",
-    "@dashfoo/react": "^0.8.0",
-    "@dashfoo/theme": "^0.2.2",
-    "next": "16.3.4",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "@dashfoo/core": "^1.1.3",
+    "@dashfoo/react": "^0.9.0",
+    "@dashfoo/theme": "^0.2.4",
+    "next": "16.3.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@types/node": "^26.4.1",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "typescript": "^7.0.2"
   }
 }

@@ -151,6 +151,28 @@ const CustomLayout = ({
   );
 };
 
+const MovableLayout = (): ReactNode => {
+  const store = useDashfooStore({ defaultModel: model() });
+  const handleMove = (): void => {
+    store.dispatch({ location: "center", sourceId: "t1", targetId: "ts2", type: "moveNode" });
+  };
+  return (
+    <Layout.Root
+      dispatch={store.dispatch}
+      model={store.model}
+      renderers={{ tab: renderTabContent }}
+    >
+      <button onClick={handleMove} type="button">
+        move chart
+      </button>
+      <Layout.Rows
+        node={store.model.layout}
+        renderTabset={(node) => <CustomTabset node={node} />}
+      />
+    </Layout.Root>
+  );
+};
+
 describe("hand-composed layout from primitives", () => {
   test("renders the custom composition with working selection — without a DragLayer", () => {
     render(<CustomLayout defaultModel={model()} />);
@@ -295,27 +317,6 @@ describe("misuse", () => {
   test("moving a tab between tabsets does not emit a false orphan warning", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    const MovableLayout = (): ReactNode => {
-      const store = useDashfooStore({ defaultModel: model() });
-      const handleMove = (): void => {
-        store.dispatch({ location: "center", sourceId: "t1", targetId: "ts2", type: "moveNode" });
-      };
-      return (
-        <Layout.Root
-          dispatch={store.dispatch}
-          model={store.model}
-          renderers={{ tab: renderTabContent }}
-        >
-          <button onClick={handleMove} type="button">
-            move chart
-          </button>
-          <Layout.Rows
-            node={store.model.layout}
-            renderTabset={(node) => <CustomTabset node={node} />}
-          />
-        </Layout.Root>
-      );
-    };
     render(<MovableLayout />);
 
     fireEvent.click(screen.getByRole("button", { name: "move chart" }));
