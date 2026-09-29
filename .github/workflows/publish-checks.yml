@@ -1,7 +1,5 @@
 name: Publish Checks
 on:
-  push:
-    branches: [main]
   pull_request:
   # Dispatched by release.yml for the changeset-release/main PR, whose
   # pull_request runs are parked unexecuted behind an approval gate.
@@ -14,42 +12,16 @@ concurrency:
 permissions:
   contents: read
 jobs:
-  ci-plan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      run: ${{ steps.plan.outputs.run }}
-      scope: ${{ steps.plan.outputs.scope }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - name: Plan validation
-        id: plan
-        run: node .github/ci/ci.mjs plan packaging
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        name: Upload CI evidence
-        if: ${{ !cancelled() }}
-        with:
-          name: ci-selection-${{ github.workflow }}-${{ github.job }}-${{ github.run_attempt }}
-          path: .ci-results/
-          include-hidden-files: true
-          retention-days: 14
-          if-no-files-found: error
   packaging:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Require a successful CI plan
-        env:
-          RESULT: ${{ needs.ci-plan.result }}
-        run: test "$RESULT" = success
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Record validation inputs
+      - name: Plan validation
+        id: plan
         run: node .github/ci/ci.mjs plan packaging
       - uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
         with:
@@ -59,10 +31,10 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref_name }}-${{ github.sha }}
+          key: turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-${{ github.event.pull_request.number || github.ref_name }}-${{ github.sha }}
           restore-keys: |
-            turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref_name }}-
-            turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-push-main-
+            turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-${{ github.event.pull_request.number || github.ref_name }}-
+            turbo-${{ runner.os }}-${{ runner.arch }}-node24-publish-checks-main-
       - if: github.ref_name != 'changeset-release/main' && github.head_ref != 'changeset-release/main'
         run: pnpm exec changeset status --since=origin/main
       - run: node .github/ci/ci.mjs run packaging -- pnpm build --filter="./packages/*"
@@ -88,6 +60,3 @@ jobs:
           include-hidden-files: true
           retention-days: 14
           if-no-files-found: error
-    needs:
-      - ci-plan
-    if: ${{ always() && (needs.ci-plan.result != 'success' || needs.ci-plan.outputs.run != 'false') }}
