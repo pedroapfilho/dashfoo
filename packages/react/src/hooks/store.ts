@@ -17,7 +17,7 @@ import { createStore, useStore } from "zustand";
 import { warnOnce } from "../lib/warn-once";
 
 import type { PersistInput } from "./persistence";
-import { usePersistence } from "./persistence";
+import { useLayoutStorage } from "./persistence";
 
 const CONTROLLED_HISTORY_MESSAGE =
   "undo/redo are unavailable while `model` is controlled; keep the history in the state you own and drive it through onModelChange";
@@ -99,7 +99,7 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
     [historyStore],
   );
 
-  const persistence = usePersistence(controlled ? undefined : persist, replaceSilently);
+  const persistence = useLayoutStorage(controlled ? undefined : persist, replaceSilently);
 
   const notify = useCallback(
     (before: Dashfoo, after: Dashfoo, action?: Action) => {

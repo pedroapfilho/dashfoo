@@ -115,7 +115,7 @@ const loadStoredLayout = (target: PersistTarget): Dashfoo | undefined => {
   }
 };
 
-type Persistence = {
+type LayoutStorage = {
   clear: () => void;
   save: (model: Dashfoo) => void;
 };
@@ -124,10 +124,10 @@ type Persistence = {
  * `restore` receives the stored layout once, after mount: a browser-only read
  * during render would disagree with the server render.
  */
-const usePersistence = (
+const useLayoutStorage = (
   persist: PersistInput | undefined,
   restore: (model: Dashfoo) => void,
-): Persistence => {
+): LayoutStorage => {
   const target = resolvePersist(persist);
   const targetRef = useRef(target);
   useEffect(() => {
@@ -229,5 +229,5 @@ const usePersistence = (
   return useMemo(() => ({ clear, save }), [clear, save]);
 };
 
-export { localStorageAdapter, memoryStorageAdapter, usePersistence };
+export { localStorageAdapter, memoryStorageAdapter, useLayoutStorage };
 export type { PersistInput, StorageAdapter };
