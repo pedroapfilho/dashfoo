@@ -10,7 +10,7 @@ import { memoryStorageAdapter } from "../hooks/persistence";
 import type { DashfooHandle } from "./dashfoo-layout";
 import { DashfooLayout } from "./dashfoo-layout";
 
-test("hydrates the seed before restoring storage once, without saving or recording history", async () => {
+test("persist hydrates the seed, restores storage once silently, resets, and saves edits", async () => {
   const seed = model(row([tabset([tab("chart", "Original")], { id: "main" })], { id: "root" }));
   const storage = memoryStorageAdapter();
   const ref = createRef<DashfooHandle>();
@@ -46,8 +46,10 @@ test("hydrates the seed before restoring storage once, without saving or recordi
   act(() => ref.current?.resetLayout());
   expect(container.textContent).toContain("Original content");
   expect(storage.getItem("hydration")).toBeNull();
+  act(() => ref.current?.renameTab("chart", "Edited"));
   act(() => {
     root.unmount();
   });
+  expect(storage.getItem("hydration")).toContain("Edited");
   container.remove();
 });

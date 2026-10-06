@@ -1,6 +1,6 @@
 ---
 title: Persisting layouts
-description: Save and restore a layout with the persist prop (and the lower-level hooks), storage adapters, validation, and SSR.
+description: Save and restore a layout with the persist prop or the store's persist option, storage adapters, validation, and SSR.
 ---
 
 A dashfoo layout is a plain serializable model. The user rearranges tabs,
@@ -44,9 +44,9 @@ and save the model yourself in `onModelChange`.
 
 Everything below maps to [`packages/react/src/hooks/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/hooks/persistence.ts)
 and the validation pipeline in [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts).
-The `persist` prop is built on the shared `usePersistence` primitive in that file
-(also exported, for hosts that drive the store directly). The storage adapter,
-validation, and debounce below apply to it directly.
+The `persist` prop is the `persist` option of `useDashfooStore`, so hand-built
+layouts get the same behaviour from the hook (see
+[Using the store directly](#using-the-store-directly)).
 
 ## Storage adapter
 
@@ -188,9 +188,13 @@ page. Persistence flushes the pending write on `pagehide` and when the page
 becomes hidden (`visibilitychange`), as well as in a cleanup effect on unmount,
 so reloading right after a drag still saves the last change.
 
-`resetLayout()` (on the [imperative handle](/controlled-and-history)) is the
-inverse: it cancels any pending timer, drops the pending write, removes the stored
-key, and resets the live model to the original `defaultModel`.
+`resetLayout()` (on the [imperative handle](/controlled-and-history), and
+`reset()` on the store) is the inverse: it cancels any pending timer, drops the
+pending write, removes the stored key, and resets the live model to
+`defaultModel` without an undo entry.
+
+Every other change to the document is saved: dispatched actions, undo, redo,
+and `setModel`. Only the restore after mount and `reset` skip the save.
 
 ## Worked example: the demo overview page
 
@@ -239,7 +243,7 @@ Points worth copying:
 
 ## SSR safety
 
-The default adapter is already SSR-safe, so the hook does not crash during a
+The default adapter is already SSR-safe, so persistence does not crash during a
 server render: `getItem` returns `null`, you load `defaultModel`, and the
 server and the first client render agree. The browser then loads the saved
 model after mount, applies it without an undo entry, and does not save the seed
@@ -252,20 +256,42 @@ hydrate it from your own request-scoped source. For the common case,
 client-side persistence to `localStorage`, the default needs no extra
 wiring.
 
-## Using the hook directly
+## Using the store directly
 
-`usePersistence` returns `{ initialModel, save, clear }`. `initialModel` starts
-as the seed and changes after mount when valid storage is restored. A host
-that creates a store once must apply that restored snapshot with `setModel`
-in an effect; passing it only as the store's `defaultModel` will not update an
-already mounted store. Prefer the `persist` prop, which handles this sequence.
-Changing a mounted persistence key warns; remount with a React `key` to load
-another arrangement.
+A hand-built layout passes the same option to `useDashfooStore` and gets the
+whole loop: the seed renders first, the saved layout is restored once after
+mount without an undo entry, a save, or an `onModelChange` call, every edit is
+debounce-saved, and `reset()` clears the saved copy.
+
+```tsx
+import { Layout, useDashfooStore } from "@dashfoo/react";
+
+const HandBuilt = () => {
+  const store = useDashfooStore({ defaultModel, persist: "dashfoo:my-app" });
+
+  return (
+    <>
+      <button onClick={store.reset} type="button">
+        Reset layout
+      </button>
+      <Layout.Root dispatch={store.dispatch} model={store.model} renderers={{ tab: renderPanel }}>
+        <Layout.DragLayer>
+          <Layout.Rows node={store.model.layout} />
+        </Layout.DragLayer>
+      </Layout.Root>
+    </>
+  );
+};
+```
+
+`persist` only applies while the store is uncontrolled; with `model` it warns
+once and does nothing. Changing a mounted persistence key warns; remount with a
+React `key` to load another arrangement.
 
 ## See also
 
 - [`packages/react/src/hooks/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/hooks/persistence.ts)
-  for the hook, both adapters, and the `StorageAdapter` type.
+  for the persistence loop, both adapters, and the `StorageAdapter` type.
 - [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts)
   for `fromJSON` / `toJSON` and `parseModel`.
 - [`apps/demo-vite/src/pages/overview.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/overview.tsx)

@@ -2,7 +2,15 @@ import { describe, expect, test } from "vitest";
 
 import type { Dashfoo, TabNode } from "../model/schema";
 
-import { canRedo, canUndo, createHistory, dispatch, HISTORY_LIMIT, redo, undo } from "./history";
+import {
+  canRedoHistory,
+  canUndoHistory,
+  createHistory,
+  dispatchToHistory,
+  HISTORY_LIMIT,
+  redoHistory,
+  undoHistory,
+} from "./history";
 
 const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab" });
 
@@ -30,72 +38,79 @@ describe("history", () => {
   test("a fresh history can neither undo nor redo", () => {
     const history = createHistory(model());
 
-    expect(canUndo(history)).toBe(false);
-    expect(canRedo(history)).toBe(false);
+    expect(canUndoHistory(history)).toBe(false);
+    expect(canRedoHistory(history)).toBe(false);
+  });
+
+  test("a fresh history holds the normalized document", () => {
+    const raw = model();
+    raw.activeTabsetId = "missing";
+
+    expect(createHistory(raw).present.activeTabsetId).toBe("ts1");
   });
 
   test("undo restores the previous state", () => {
     let history = createHistory(model());
-    history = dispatch(history, { index: 1, tabsetId: "ts1", type: "selectTab" });
+    history = dispatchToHistory(history, { index: 1, tabsetId: "ts1", type: "selectTab" });
     expect(history.present.layout.children[0]?.type === "tabset").toBe(true);
 
-    history = undo(history);
+    history = undoHistory(history);
 
-    expect(canUndo(history)).toBe(false);
+    expect(canUndoHistory(history)).toBe(false);
     expect(history.present.activeTabsetId).toBe("ts1");
   });
 
   test("redo reapplies an undone action", () => {
     let history = createHistory(model());
-    history = dispatch(history, { tabsetId: "ts2", type: "setActiveTabset" });
+    history = dispatchToHistory(history, { tabsetId: "ts2", type: "setActiveTabset" });
     const afterDispatch = history.present;
 
-    history = undo(history);
-    expect(canRedo(history)).toBe(true);
-    history = redo(history);
+    history = undoHistory(history);
+    expect(canRedoHistory(history)).toBe(true);
+    history = redoHistory(history);
 
     expect(history.present.activeTabsetId).toBe(afterDispatch.activeTabsetId);
   });
 
   test("two distinct actions are two undo steps", () => {
     let history = createHistory(model());
-    history = dispatch(history, { index: 1, tabsetId: "ts1", type: "selectTab" });
-    history = dispatch(history, { tabsetId: "ts2", type: "setActiveTabset" });
+    history = dispatchToHistory(history, { index: 1, tabsetId: "ts1", type: "selectTab" });
+    history = dispatchToHistory(history, { tabsetId: "ts2", type: "setActiveTabset" });
 
-    history = undo(history);
-    expect(canUndo(history)).toBe(true);
-    history = undo(history);
-    expect(canUndo(history)).toBe(false);
+    history = undoHistory(history);
+    expect(canUndoHistory(history)).toBe(true);
+    history = undoHistory(history);
+    expect(canUndoHistory(history)).toBe(false);
   });
 
   test("two successive resizes on the same row are two separate undo steps", () => {
     let history = createHistory(model());
-    history = dispatch(history, { rowId: "root", type: "adjustSplit", weights: [70, 30] });
-    history = dispatch(history, { rowId: "root", type: "adjustSplit", weights: [80, 20] });
+    history = dispatchToHistory(history, { rowId: "root", type: "adjustSplit", weights: [70, 30] });
+    history = dispatchToHistory(history, { rowId: "root", type: "adjustSplit", weights: [80, 20] });
     expect(weights(history.present)).toEqual([80, 20]);
 
-    history = undo(history);
+    history = undoHistory(history);
     expect(weights(history.present)).toEqual([70, 30]);
-    expect(canUndo(history)).toBe(true);
+    expect(canUndoHistory(history)).toBe(true);
 
-    history = undo(history);
+    history = undoHistory(history);
     expect(weights(history.present)).toEqual([60, 40]);
-    expect(canUndo(history)).toBe(false);
+    expect(canUndoHistory(history)).toBe(false);
   });
 
   test("dispatching after an undo clears the redo future", () => {
     let history = createHistory(model());
-    history = dispatch(history, { tabsetId: "ts2", type: "setActiveTabset" });
-    history = undo(history);
-    history = dispatch(history, { index: 1, tabsetId: "ts1", type: "selectTab" });
+    history = dispatchToHistory(history, { tabsetId: "ts2", type: "setActiveTabset" });
+    history = undoHistory(history);
+    history = dispatchToHistory(history, { index: 1, tabsetId: "ts1", type: "selectTab" });
 
-    expect(canRedo(history)).toBe(false);
+    expect(canRedoHistory(history)).toBe(false);
   });
 
   test("past is capped at HISTORY_LIMIT", () => {
     let history = createHistory(model());
     for (let i = 0; i < HISTORY_LIMIT + 10; i++) {
-      history = dispatch(history, { name: `tab-${i}`, tabId: "t1", type: "renameTab" });
+      history = dispatchToHistory(history, { name: `tab-${i}`, tabId: "t1", type: "renameTab" });
     }
 
     expect(history.past.length).toBe(HISTORY_LIMIT);
@@ -105,53 +120,53 @@ describe("history", () => {
     let history = createHistory(model());
 
     for (let i = 0; i < 10; i++) {
-      history = dispatch(history, { name: `early-${i}`, tabId: "t1", type: "renameTab" });
+      history = dispatchToHistory(history, { name: `early-${i}`, tabId: "t1", type: "renameTab" });
     }
 
     const stateAfterTenth = history.present;
     for (let i = 0; i < HISTORY_LIMIT; i++) {
-      history = dispatch(history, { name: `late-${i}`, tabId: "t1", type: "renameTab" });
+      history = dispatchToHistory(history, { name: `late-${i}`, tabId: "t1", type: "renameTab" });
     }
 
     for (let i = 0; i < HISTORY_LIMIT; i++) {
-      history = undo(history);
+      history = undoHistory(history);
     }
 
     expect(history.present).toEqual(stateAfterTenth);
-    expect(canUndo(history)).toBe(false);
+    expect(canUndoHistory(history)).toBe(false);
   });
 
   test("an action that changes nothing records no undo step", () => {
-    const history = dispatch(createHistory(model()), {
+    const history = dispatchToHistory(createHistory(model()), {
       index: 0,
       tabsetId: "ts1",
       type: "selectTab",
     });
 
     expect(history.past).toHaveLength(0);
-    expect(canUndo(history)).toBe(false);
+    expect(canUndoHistory(history)).toBe(false);
   });
 
   test("an action that changes nothing preserves the redo stack", () => {
     let history = createHistory(model());
-    history = dispatch(history, { name: "renamed", tabId: "t1", type: "renameTab" });
-    history = undo(history);
-    expect(canRedo(history)).toBe(true);
+    history = dispatchToHistory(history, { name: "renamed", tabId: "t1", type: "renameTab" });
+    history = undoHistory(history);
+    expect(canRedoHistory(history)).toBe(true);
 
-    history = dispatch(history, { index: 0, tabsetId: "ts1", type: "selectTab" });
+    history = dispatchToHistory(history, { index: 0, tabsetId: "ts1", type: "selectTab" });
 
-    expect(canRedo(history)).toBe(true);
+    expect(canRedoHistory(history)).toBe(true);
   });
 
   test("redo respects the cap", () => {
     let history = createHistory(model());
     for (let i = 0; i < HISTORY_LIMIT; i++) {
-      history = dispatch(history, { name: `step-${i}`, tabId: "t1", type: "renameTab" });
+      history = dispatchToHistory(history, { name: `step-${i}`, tabId: "t1", type: "renameTab" });
     }
     const preUndoPresent = history.present;
 
-    history = undo(history);
-    history = redo(history);
+    history = undoHistory(history);
+    history = redoHistory(history);
 
     expect(history.past.length).toBe(HISTORY_LIMIT);
     expect(history.present).toEqual(preUndoPresent);

@@ -1,6 +1,6 @@
 ---
 title: Adaptive layouts
-description: Stack and lock the layout at a breakpoint with the responsive prop, without remounting or losing state.
+description: Stack and lock the layout at a breakpoint with the responsive prop or useResponsiveLayout, without remounting or losing state.
 ---
 
 A dashfoo layout is already fluid: panels are weight-based percentages, so the
@@ -11,7 +11,7 @@ grabbing a splitter is too cramped.
 
 The `responsive` prop handles that case. Below a width it renders the layout as
 one stacked column and **locks every structural interaction** (tab and tabset
-drag, split resize), leaving tap-to-switch. VS Code makes the same
+drag, split resize, floating, maximize), leaving tap-to-switch. VS Code makes the same
 call: docking is a desktop interaction, so mobile gets a read-only, navigable
 view rather than a cramped one.
 
@@ -67,9 +67,7 @@ the canonical model.
 The projection keeps nested row identities, so mounted panel state survives an
 ordinary breakpoint change. Entering compact mode from a maximized view, moving
 a tab between tabsets, or supplying a different tree can remount content, so
-keep durable application state outside panel components. The lower-level
-`stackModel` helper flattens the tree, so hand-composed layouts that use it can
-also remount nested panels.
+keep durable application state outside panel components.
 
 Existing floats stay overlays in compact mode. Their displayed bounds fit the
 viewport without changing the saved geometry, and the float controls still
@@ -81,96 +79,74 @@ drag is off.
 
 ## Hand-built layouts
 
-If you compose the `Layout.*` primitives yourself instead of using
-`DashfooLayout`, make the same behavior with `useContainerWidth` and `stackModel`:
-measure the container, derive `isCompact`, render a stacked projection, and
-lock the flags. The projection is view-only, and `dispatch` still targets your
-canonical store.
+The `responsive` prop runs on `useResponsiveLayout`, exported from
+`@dashfoo/react`. If you compose the `Layout.*` primitives yourself instead of
+using `DashfooLayout`, call the hook with the store's model and the same
+options. It measures the container behind `rootRef` and returns the compact
+view plus the lock that goes with it, so a hand-built layout compacts exactly
+like the built-in one.
 
 ```tsx
-import { stackModel } from "@dashfoo/core";
-import { Layout, useContainerWidth, useDashfooStore } from "@dashfoo/react";
-import { useMemo, useRef } from "react";
+import type { Dashfoo, TabNode } from "@dashfoo/core";
+import { findTabset } from "@dashfoo/core";
+import { Layout, useDashfooStore, useResponsiveLayout } from "@dashfoo/react";
+import type { ReactNode } from "react";
 
-const HandBuilt = ({ defaultModel }) => {
+const renderPanel = (node: TabNode): ReactNode => <div>{node.name}</div>;
+
+const HandBuilt = ({ defaultModel }: { defaultModel: Dashfoo }): ReactNode => {
   const store = useDashfooStore({ defaultModel });
-  const [containerRef, width] = useContainerWidth();
-  const isCompact = width <= 720;
-  const view = useMemo(
-    () => (isCompact ? stackModel(store.model) : store.model),
-    [isCompact, store.model],
-  );
-
-  // View-only: drop the adjustSplit rrp auto-fires while it re-measures the
-  // stacked structure. The ref (written during render so it is current before
-  // rrp's onLayoutChanged) gates even the closure rrp captured before the swap.
-  const isCompactRef = useRef(isCompact);
-  isCompactRef.current = isCompact;
-  const dispatch = (action) =>
-    isCompactRef.current && action.type === "adjustSplit" ? undefined : store.dispatch(action);
+  const responsive = useResponsiveLayout(store.model, { maxWidth: 720 });
+  const view = responsive.model;
+  const maximized =
+    view.maximizedTabsetId === undefined ? undefined : findTabset(view, view.maximizedTabsetId);
 
   return (
     <Layout.Root
-      dispatch={dispatch}
-      draggableTabs={!isCompact}
-      draggableTabsets={!isCompact}
+      dispatch={store.dispatch}
+      maximizable={responsive.maximizable}
       model={view}
       renderers={{ tab: renderPanel }}
-      resizableSplits={!isCompact}
-      rootRef={containerRef}
+      restructurable={responsive.restructurable}
+      rootRef={responsive.rootRef}
     >
       <Layout.DragLayer>
-        <Layout.Rows node={view.layout} />
+        {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={view.layout} />}
       </Layout.DragLayer>
     </Layout.Root>
   );
 };
+
+export { HandBuilt };
 ```
 
-## Distinct per-breakpoint models
+`useResponsiveLayout(model, options)` takes the same
+`{ maxWidth: number; orientation?: Orientation }` as the prop, or `undefined` to
+never compact. It returns:
 
-When mobile and desktop should be _different layouts_ (not the same tree
-stacked), such as a hand-authored tablet arrangement or a panel hidden on small
-screens, use `useResponsiveModel`. You describe the breakpoints; it returns the active model,
-the locking flags, and a `containerRef`. Feed them to `DashfooLayout` as
-reactive props, with **no `key`**, so it swaps the model without a remount.
+| Field            | Type                                     | Description                                                                                              |
+| ---------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `model`          | `Dashfoo`                                | The compact projection at or below `maxWidth`, otherwise the model you passed, unchanged.                |
+| `isCompact`      | `boolean`                                | Whether the container is at or below `maxWidth`.                                                         |
+| `restructurable` | `boolean`                                | `false` when compact. On `Layout.Root` it switches off tab and tabset drag, split resizing and floating. |
+| `maximizable`    | `boolean`                                | `false` when compact: the projection clears the maximized tabset, so maximizing would show nothing.      |
+| `rootRef`        | `(element: HTMLElement \| null) => void` | Put it on `Layout.Root` so the hook measures the layout's own container.                                 |
+
+The width starts at infinity, so the server render and the first client render
+agree on the wide layout before the container is measured. The projection is
+view-only: `store.dispatch` still targets the canonical model, which is why
+tab selection, closing and renaming keep working in compact mode and widening
+restores the arrangement. Splitters stay put while the stacked view
+re-measures: the resize layer only commits a split after a user drag, and it
+is locked in compact mode anyway.
+
+The same hook works on a controlled layout. Swap the store line in `HandBuilt`
+for a model you own, and update it from `onModelChange`; without that every
+edit, tab selection included, is dropped:
 
 ```tsx
-import { stackModel } from "@dashfoo/core";
-import { DashfooLayout, useResponsiveModel } from "@dashfoo/react";
-import { useMemo } from "react";
-
-const Adaptive = ({ base }) => {
-  const breakpoints = useMemo(
-    () => [
-      { id: "mobile", model: stackModel(base), query: { maxWidth: 720 }, compact: true },
-      { id: "desktop", model: base },
-    ],
-    [base],
-  );
-  const { containerRef, model, draggableTabs, draggableTabsets, resizableSplits } =
-    useResponsiveModel({ breakpoints });
-
-  return (
-    <div ref={containerRef} style={{ height: "100%" }}>
-      <DashfooLayout
-        draggableTabs={draggableTabs}
-        draggableTabsets={draggableTabsets}
-        model={model}
-        factory={renderPanel}
-        resizableSplits={resizableSplits}
-      />
-    </div>
-  );
-};
+const [model, setModel] = useState(defaultModel);
+const store = useDashfooStore({ model, onModelChange: setModel });
 ```
-
-A breakpoint is `{ id, model, query?, compact? }`. `query` is **either** a
-container width (`{ maxWidth: number }`) **or** a media query
-(`{ media: string }`, via `matchMedia`); omit it on the last breakpoint to make it
-the catch-all. Mark a breakpoint `compact: true` to lock drag and resize while it
-is active. The returned `draggableTabs` / `draggableTabsets` / `resizableSplits`
-flip to `false`. Feed the model to `model` (controlled) rather than `defaultModel`
-so swaps take effect without a remount.
 
 See also: [The layout model](/the-model) · [Persisting layouts](/persistence).

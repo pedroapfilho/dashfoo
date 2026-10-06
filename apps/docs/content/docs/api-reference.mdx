@@ -164,31 +164,34 @@ complete example.
 ### `useDashfooStore`
 
 The store `DashfooLayout` uses internally, exposed for hosts that render their
-own chrome. Throws when given neither `model` nor `defaultModel`; every entry
-point is normalized.
+own chrome. It owns the whole document lifecycle: the controlled/uncontrolled
+choice, undo/redo history, and persistence. Throws when given neither `model`
+nor `defaultModel`; every entry point is normalized.
 
 `UseDashfooStoreOptions`:
 
-| Option                    | Type                                        | Description                                                       |
-| ------------------------- | ------------------------------------------- | ----------------------------------------------------------------- |
-| `defaultModel`            | `Dashfoo`                                   | Uncontrolled seed; the actor owns it with full undo/redo.         |
-| `model`                   | `Dashfoo`                                   | Controlled document; every change routes through `onModelChange`. |
-| `onAction`                | `(action: Action) => Action \| null`        | Veto or replace an action before it commits.                      |
-| `onActiveTabsetChange`    | `(tabsetId: string \| undefined) => void`   | Active-tabset notifications.                                      |
-| `onMaximizedTabsetChange` | `(tabsetId: string \| undefined) => void`   | Maximize/restore notifications.                                   |
-| `onModelChange`           | `(model: Dashfoo, action?: Action) => void` | Fires once per real change (no-op transitions emit nothing).      |
+| Option                    | Type                                        | Description                                                                                                                                       |
+| ------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `defaultModel`            | `Dashfoo`                                   | Uncontrolled seed; the store owns it with full undo/redo.                                                                                         |
+| `model`                   | `Dashfoo`                                   | Controlled document; every change routes through `onModelChange`.                                                                                 |
+| `onAction`                | `(action: Action) => Action \| null`        | Veto or replace an action before it commits.                                                                                                      |
+| `onActiveTabsetChange`    | `(tabsetId: string \| undefined) => void`   | Active-tabset notifications.                                                                                                                      |
+| `onMaximizedTabsetChange` | `(tabsetId: string \| undefined) => void`   | Maximize/restore notifications.                                                                                                                   |
+| `onModelChange`           | `(model: Dashfoo, action?: Action) => void` | Fires once per real change (no-op transitions emit nothing).                                                                                      |
+| `persist`                 | `PersistInput`                              | Uncontrolled only. Loads once after mount, restores without an undo entry, a save or `onModelChange`, and debounce-saves every change. See below. |
 
 Returns a `DashfooStore`:
 
-| Field      | Type                       | Description                                              |
-| ---------- | -------------------------- | -------------------------------------------------------- |
-| `model`    | `Dashfoo`                  | The current document.                                    |
-| `dispatch` | `(action: Action) => void` | Commit one action.                                       |
-| `undo`     | `() => void`               | Uncontrolled only.                                       |
-| `redo`     | `() => void`               | Uncontrolled only.                                       |
-| `canUndo`  | `() => boolean`            | Reads the live actor snapshot, not a stale render value. |
-| `canRedo`  | `() => boolean`            | Reads the live actor snapshot.                           |
-| `setModel` | `(model: Dashfoo) => void` | Replace the whole document and reset undo history.       |
+| Field      | Type                       | Description                                                                               |
+| ---------- | -------------------------- | ----------------------------------------------------------------------------------------- |
+| `model`    | `Dashfoo`                  | The current document.                                                                     |
+| `dispatch` | `(action: Action) => void` | Commit one action.                                                                        |
+| `undo`     | `() => void`               | Uncontrolled only.                                                                        |
+| `redo`     | `() => void`               | Uncontrolled only.                                                                        |
+| `canUndo`  | `() => boolean`            | Reads the live history, not a stale render value.                                         |
+| `canRedo`  | `() => boolean`            | Reads the live history.                                                                   |
+| `setModel` | `(model: Dashfoo) => void` | Replace the whole document and reset undo history. Saved when `persist` is set.           |
+| `reset`    | `() => void`               | Clear the saved copy and restore `defaultModel` without an undo entry. Uncontrolled only. |
 
 ### `useLayout`
 
@@ -235,23 +238,14 @@ under a `DashfooDragProvider` they work anywhere under the provider. Pair with
 `dockZonePolygons` from `@dashfoo/core` for custom drop indicators and drop-zone
 visualizations.
 
-### `usePersistence`
+### Persistence
 
-The load/save half behind the `persist` prop, usable standalone.
-`usePersistence(config: PersistConfig | null, defaultModel: Dashfoo | undefined)`
-
-It loads the saved model once (validated; falls back to `defaultModel` on miss or
-corruption, pruning corrupt values with a warning), debounce-saves every change,
-and flushes a pending save on page hide (`pagehide` /
-`visibilitychange` → hidden) and on unmount. A `null` config makes it a no-op.
-`initialModel` starts as the seed, then updates after mount when storage is restored.
-Hosts that create a store once must apply that update with `setModel`; `persist`
-on `DashfooLayout` already does this without a history entry or a save.
-
-| Type            | Shape                                                                                       |
-| --------------- | ------------------------------------------------------------------------------------------- |
-| `PersistConfig` | `{ key: string; storage: StorageAdapter; debounceMs: number }`                              |
-| `Persistence`   | `{ initialModel: Dashfoo \| undefined; save: (model: Dashfoo) => void; clear: () => void }` |
+`persist` on `DashfooLayout` and on `useDashfooStore` takes a `PersistInput`:
+`string | { key: string; storage?: StorageAdapter; debounceMs?: number }`. A bare
+string is a localStorage key; the debounce defaults to 300 ms. The saved model is
+validated on load (corrupt values are pruned with a warning), and a pending save
+flushes on page hide (`pagehide` / `visibilitychange` → hidden) and on unmount.
+See [persistence](/persistence).
 
 ### Storage adapters
 
@@ -272,37 +266,29 @@ Drag new tabs in from outside the layout. See
 | `useExternalTabSource`     | `(options: ExternalTabSourceOptions) => { ref }`                   | Registers an element as a drag source; put `ref` on it.                                                                                                           |
 | `ExternalTabSourceOptions` | `{ createTab: () => TabNode; label?: string; disabled?: boolean }` | `createTab` runs at drag start and must mint a fresh tab id per call.                                                                                             |
 
-### `useContainerWidth`
+### `useResponsiveLayout`
 
-`() => [ref: (el: HTMLElement | null) => void, width: number]` tracks one
-element's content-box width via `ResizeObserver`. SSR-safe: seeds
-`POSITIVE_INFINITY` so the first render assumes the widest layout. The building
-block for hand-built responsive layouts (pair with `stackModel`).
+`useResponsiveLayout(model: Dashfoo, options: ResponsiveOptions | undefined): ResponsiveLayout`
+is the compact projection behind `DashfooLayout`'s `responsive` prop, exported for
+hand-built layouts. It measures the element behind `rootRef` with a
+`ResizeObserver` (SSR-safe: the width starts at infinity) and, at or below
+`maxWidth`, returns a stacked view of the model that keeps every row ancestor so
+mounted panels survive. `undefined` options never compact. See
+[responsive](/responsive).
 
-### `useResponsiveModel`
+| Type                | Shape                                                                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `ResponsiveOptions` | `{ maxWidth: number; orientation?: Orientation }`                                                                                   |
+| `ResponsiveLayout`  | `{ model: Dashfoo; isCompact: boolean; maximizable: boolean; restructurable: boolean; rootRef: (el: HTMLElement \| null) => void }` |
 
-Picks a model per breakpoint, keyed off the container's own width
-(ResizeObserver) and/or media queries, and derives the structural-interaction
-flags from the active breakpoint's `compact`. Feed the result onto
-`DashfooLayout`/`Layout.Root` as reactive props; no `key` or remount is needed.
-SSR-safe.
-See [responsive](/responsive).
-
-| Export               | Signature                                                          | Description                                                                                                              |
-| -------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `useResponsiveModel` | `(options: { breakpoints: Array<Breakpoint> }) => ResponsiveModel` | Put `containerRef` on the wrapper; pass `model` + the lock flags onto `DashfooLayout` (use `model`, not `defaultModel`). |
-| `matchBreakpoint`    | `(breakpoint: Breakpoint, width: number) => boolean`               | No query matches always; `maxWidth` matches at or below; `media` consults `matchMedia`.                                  |
-| `activeBreakpoint`   | `(breakpoints: Array<Breakpoint>, width: number) => Breakpoint`    | First match wins; the last entry is the fallback. Throws on an empty array.                                              |
-
-| Type              | Shape                                                                                                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Breakpoint`      | `{ id: string; model: Dashfoo; query?: { maxWidth: number } \| { media: string }; compact?: boolean }`                                                                                     |
-| `ResponsiveModel` | `{ breakpoint: string; containerRef: (el: HTMLElement \| null) => void; model: Dashfoo; isCompact: boolean; draggableTabs: boolean; draggableTabsets: boolean; resizableSplits: boolean }` |
+Pass `model`, `maximizable`, `restructurable` and `rootRef` to `Layout.Root`.
+Compact mode sets `restructurable` and `maximizable` to `false`, which locks tab
+and tabset drag, split resizing, floating and maximize.
 
 ## @dashfoo/core
 
 The framework-free engine: schema, builders, actions, reducer, tree queries,
-geometry, history, serialization, and the XState machines.
+geometry, history, serialization, and the drag/dock XState machine.
 Source: [`packages/core/src`](https://github.com/pedroapfilho/dashfoo/tree/main/packages/core/src).
 
 ### Actions
@@ -437,13 +423,6 @@ Types: `AttributedNode`, `TabLocation`.
 | `createNodeId` | `(prefix?: string) => string` | `` `${prefix}-${uuid}` ``, prefix defaults to `"node"`. |
 | `createTabId`  | `() => string`                | `createNodeId("tab")`.                                  |
 
-### `stackModel`
-
-`stackModel(model: Dashfoo, orientation: Orientation = "column"): Dashfoo`
-flattens any layout into a single row of all its tabsets in document order, each
-with equal weight, and clears maximize. It is the building block for a mobile
-breakpoint. See [responsive](/responsive).
-
 ### Geometry
 
 | Export              | Signature                                                          | Description                                                                                                                                                                                             |
@@ -462,14 +441,15 @@ Past/present/future snapshots over the reducer. Every dispatched action is one
 undo step; there is no coalescing. A splitter drag is still a single step
 because react-resizable-panels v4 commits one `adjustSplit` per release.
 
-| Export          | Signature                                       | Description                                                   |
-| --------------- | ----------------------------------------------- | ------------------------------------------------------------- |
-| `createHistory` | `(present: Dashfoo) => History`                 | A fresh history with empty past and future.                   |
-| `dispatch`      | `(history: History, action: Action) => History` | Reduce `present`, push the old one to `past`, clear `future`. |
-| `undo`          | `(history: History) => History`                 | Step back; returns the same history at the bottom.            |
-| `redo`          | `(history: History) => History`                 | Step forward; returns the same history at the top.            |
-| `canUndo`       | `(history: History) => boolean`                 | `past` is non-empty.                                          |
-| `canRedo`       | `(history: History) => boolean`                 | `future` is non-empty.                                        |
+| Export              | Signature                                       | Description                                                                                     |
+| ------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `createHistory`     | `(present: Dashfoo) => History`                 | A fresh history over the normalized model, with empty past and future.                          |
+| `dispatchToHistory` | `(history: History, action: Action) => History` | Reduce `present`, push the old one to `past`, clear `future`. A no-op action returns `history`. |
+| `undoHistory`       | `(history: History) => History`                 | Step back; returns the same history at the bottom.                                              |
+| `redoHistory`       | `(history: History) => History`                 | Step forward; returns the same history at the top.                                              |
+| `canUndoHistory`    | `(history: History) => boolean`                 | `past` is non-empty.                                                                            |
+| `canRedoHistory`    | `(history: History) => boolean`                 | `future` is non-empty.                                                                          |
+| `HISTORY_LIMIT`     | `number`                                        | The most recent steps kept in `past` (100).                                                     |
 
 `History` is `{ past: Array<Dashfoo>; present: Dashfoo; future: Array<Dashfoo> }`.
 
@@ -483,12 +463,9 @@ because react-resizable-panels v4 commits one `adjustSplit` per release.
 
 ### Machines
 
-Two XState machines, for hosts that bypass the React binding.
+One XState machine, for hosts that bypass the React binding. The document
+needs none: hold a `History` and step it with the functions above.
 
-- `dashfooMachine`: the document actor. Input `{ model: Dashfoo }`, context
-  `{ history: History }`. Events: `DISPATCH` (`{ action }`), `UNDO`, `REDO`,
-  and `SET_MODEL` (`{ model }`, which resets history). Its context and event
-  unions are internal and not exported.
 - `dragDockMachine`: the drag/dock interaction lifecycle. Events: `START`
   (`{ subject: DragSubject }`), `OVER` (`{ drop: DropResolution | null }`),
   `DROP`, `CANCEL`. Its context is one `DragState`
