@@ -123,6 +123,19 @@ stacks the tab into the target tabset. A `split-*` drop creates a new tabset bes
 the target, reusing the parent row when its orientation already matches, otherwise
 wrapping both in a fresh row.
 
+The six docking actions (`addNode`, `moveNode`, `moveTabset`, `floatTab`,
+`floatTabset`, `dockFloat`) share two rules. Each resolves its target before it
+detaches anything, so a drop that cannot land changes nothing. And the tabset
+that receives the moved content becomes `activeTabsetId`: the target on a
+`center` drop, the newly placed tabset on a split, the floated tabset when
+floating. `addNode` ignores a tab whose id is already in the layout and warns.
+
+When a tab leaves its strip (closed, moved, floated), the selection stays on the
+tab that was selected. If that tab is the one leaving, its right neighbour
+inherits the selection, else its left one. `fallbackSelectedIndex(count, removedIndex)`
+returns that neighbour's index in the strip as it stands, which is how a renderer
+previews a drag before the drop.
+
 ### Use the reducer directly
 
 ```ts
@@ -372,7 +385,7 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 `actions`: `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`; types
 `Action`, `DockLocation`, `DropIntent`, `MutableNodeAttrs`.
 
-`reducer`: `reducer`. `invariants`: `normalize`.
+`reducer`: `reducer`. `docking`: `fallbackSelectedIndex`. `invariants`: `normalize`.
 
 `tree`: `collectRoots`, `collectTabsets`, `collectTabsetsInRow`, `getFirstTabset`,
 `findTabset`, `findTab`, `findFloat`, `findRow`, `findRootContaining`, `findAttributedNode`,

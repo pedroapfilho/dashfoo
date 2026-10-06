@@ -1,5 +1,6 @@
 export * from "./state/actions";
 export * from "./model/builders";
+export { fallbackSelectedIndex } from "./state/docking";
 export * from "./geometry/geometry";
 export * from "./geometry/snap";
 export * from "./state/history";

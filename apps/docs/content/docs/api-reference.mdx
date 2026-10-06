@@ -332,8 +332,19 @@ reducer is exhaustive over the union; validate untrusted payloads with
 | `updateNodeAttributes`   | `{ nodeId, attrs }`                        | Patch mutable attributes on a tab, tabset, or row.                                                                                       |
 | `updateGlobalAttributes` | `{ attrs }`                                | Patch the model's `global` block.                                                                                                        |
 
+The six docking actions (`addNode`, `moveNode`, `moveTabset`, `floatTab`,
+`floatTabset`, `dockFloat`) resolve their target before detaching anything, so a
+drop that cannot land is a no-op, and they activate the tabset that received
+the content: the target on a `center` drop, the placed tabset on a split, the
+floated tabset when floating. `addNode` with an id already in the layout is
+ignored with a `[dashfoo]` warning. When a tab leaves a strip, the selection
+stays on the selected tab; if that tab is the one leaving, it passes to the right
+neighbour, else the left.
+
 Related exports: `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`,
-and the types `Action`, `MutableNodeAttrs`,
+`fallbackSelectedIndex` (`(count, removedIndex) => number`: the index of the tab
+that inherits the selection when the selected tab at `removedIndex` leaves, `-1`
+when none remains), and the types `Action`, `MutableNodeAttrs`,
 `DockLocation` (`"center" | "split-top" | "split-bottom" | "split-left" | "split-right"`),
 and `DropIntent` (`{ targetId: string; location: DockLocation; index?: number }`).
 See [drag & dock](/drag-and-dock) for how drops become actions.

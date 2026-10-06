@@ -5,21 +5,14 @@ import type { AttributedNode } from "../model/tree";
 import { findAttributedNode, findFloat, findRow, findTab, findTabset } from "../model/tree";
 
 import type { Action, MutableNodeAttrs } from "./actions";
-import { dockFloat, floatTabsetById, pushFloat, uniqueFloatName } from "./floats";
+import { dock, removeTab, removeTabset } from "./docking";
+import { uniqueFloatName } from "./floats";
 import { jsonEqual } from "./json-equal";
 import {
   mutableRowAttrsSchema,
   mutableTabAttrsSchema,
   mutableTabsetAttrsSchema,
 } from "./node-attrs";
-import {
-  detachTab,
-  insertTab,
-  mergeTabsInto,
-  placeBesideTarget,
-  removeTabsetReturning,
-  wrapTabInLayout,
-} from "./surgery";
 
 const parseNodeAttrs = (node: AttributedNode, attrs: MutableNodeAttrs): MutableNodeAttrs => {
   switch (node.type) {
@@ -41,12 +34,13 @@ const parseNodeAttrs = (node: AttributedNode, attrs: MutableNodeAttrs): MutableN
 /** An id that does not resolve leaves the draft untouched. */
 const applyAction = (draft: Dashfoo, action: Action): void => {
   switch (action.type) {
-    case "addNode": {
-      insertTab(draft, action.tab, {
-        id: action.targetId,
-        index: action.index,
-        location: action.location,
-      });
+    case "addNode":
+    case "dockFloat":
+    case "floatTab":
+    case "floatTabset":
+    case "moveNode":
+    case "moveTabset": {
+      dock(draft, action);
       return;
     }
     case "adjustSplit": {
@@ -63,77 +57,17 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       return;
     }
     case "deleteTab": {
-      const location = findTab(draft, action.tabId);
-      if (location) {
-        detachTab(location.container, location.index);
-      }
+      removeTab(draft, action.tabId);
       return;
     }
     case "deleteTabset": {
-      removeTabsetReturning(draft, action.tabsetId);
-      return;
-    }
-    case "dockFloat": {
-      dockFloat(draft, action.floatId, action.targetId, action.location);
-      return;
-    }
-    case "floatTab": {
-      const location = findTab(draft, action.tabId);
-      if (!location) {
-        return;
-      }
-      const removed = detachTab(location.container, location.index);
-      if (removed) {
-        pushFloat(draft, wrapTabInLayout(removed), action.geometry, action.floatId);
-      }
-      return;
-    }
-    case "floatTabset": {
-      floatTabsetById(draft, action.tabsetId, action.geometry, action.floatId);
+      removeTabset(draft, action.tabsetId);
       return;
     }
     case "moveFloat": {
       const float = findFloat(draft, action.floatId);
       if (float) {
         float.geometry = action.geometry;
-      }
-      return;
-    }
-    case "moveNode": {
-      const source = findTab(draft, action.sourceId);
-      // Resolved before the tab leaves its container: nothing else holds it.
-      if (!source || !findTabset(draft, action.targetId)) {
-        return;
-      }
-
-      const removed = detachTab(source.container, source.index);
-      if (removed) {
-        insertTab(draft, removed, {
-          id: action.targetId,
-          index: action.index,
-          location: action.location,
-        });
-      }
-      return;
-    }
-    case "moveTabset": {
-      if (action.sourceId === action.targetId) {
-        return;
-      }
-      const source = findTabset(draft, action.sourceId);
-      const target = findTabset(draft, action.targetId);
-      if (!source || !target) {
-        return;
-      }
-      if (action.location === "center") {
-        mergeTabsInto(target, source.children, source.selected);
-        removeTabsetReturning(draft, action.sourceId);
-        return;
-      }
-
-      const detached = removeTabsetReturning(draft, action.sourceId);
-      if (detached) {
-        placeBesideTarget(draft, detached, action.targetId, action.location);
       }
       return;
     }

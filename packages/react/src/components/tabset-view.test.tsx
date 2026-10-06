@@ -1,5 +1,5 @@
 import type { Dashfoo, TabsetNode } from "@dashfoo/core";
-import { dragDockMachine } from "@dashfoo/core";
+import { dragDockMachine, fallbackSelectedIndex } from "@dashfoo/core";
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
@@ -9,7 +9,6 @@ import { createActor } from "xstate";
 import type { DragRootContextValue } from "../hooks/drag-hooks";
 import { createDragManager, DragRootContext } from "../hooks/drag-hooks";
 import { useDashfooStore } from "../hooks/store";
-import { fallbackSelectedIndex } from "../lib/tab-selection";
 
 import { Layout } from "./layout";
 import { Tabset } from "./tabset/tabset";
