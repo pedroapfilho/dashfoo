@@ -1,96 +1,18 @@
 "use client";
 
-import type {
-  Action,
-  dragDockMachine,
-  DragSubject,
-  DropIntent,
-  Point,
-  TabNode,
-} from "@dashfoo/core";
-import {
-  Accessibility,
-  Draggable,
-  DragDropManager,
-  Droppable,
-  Feedback,
-  PointerSensor,
-} from "@dnd-kit/dom";
+import type { DragSubject, DropIntent, TabNode } from "@dashfoo/core";
+import { Draggable, Droppable } from "@dnd-kit/dom";
 import { useSelector } from "@xstate/react";
-import type { Context } from "react";
-import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";
-import type { ActorRefFrom } from "xstate";
+import { useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";
 
-import type { DashfooDragData } from "../lib/drag-subject";
-import { topmostPointerIntersection } from "../lib/topmost-collision";
+import { warnOnce } from "../lib/warn-once";
 
-const INTERACTIVE_SELECTOR = `
-  input:not([disabled]),
-  select:not([disabled]),
-  textarea:not([disabled]),
-  button:not([disabled]),
-  a[href],
-  [contenteditable]:not([contenteditable="false"])
-`;
+import { DragContext } from "./drag-context";
+import type { DashfooDragManager } from "./drag-manager";
+import type { DashfooDragData } from "./drag-subject";
+import { topmostPointerIntersection } from "./topmost-collision";
 
-const preventActivation = (event: PointerEvent, source: Draggable): boolean => {
-  const { target } = event;
-  if (!(target instanceof Element)) {
-    return false;
-  }
-  const interactive = target.closest(INTERACTIVE_SELECTOR);
-  return interactive !== null && interactive !== source.element;
-};
-
-type DashfooDragManager = DragDropManager;
-type DashfooDraggable = Draggable;
-
-const createDragManager = (): DashfooDragManager =>
-  new DragDropManager({
-    plugins: (defaults) => [
-      ...defaults.filter((plugin) => plugin !== Accessibility && plugin !== Feedback),
-      Feedback.configure({ dropAnimation: null }),
-    ],
-    sensors: () => [PointerSensor.configure({ preventActivation })],
-  });
-
-type DragActor = ActorRefFrom<typeof dragDockMachine>;
-
-/**
- * One per rendered layer (the main tree, then one per float); the manager and
- * actor are shared above them. `layerId` namespaces droppable registrations, so
- * two layers can hold a tabset with the same model id.
- */
-type DragScope = {
-  commit: (action: Action) => void;
-  layerId: string;
-  resolveIntent: (
-    targetId: string,
-    element: HTMLElement,
-    point: Point,
-    draggedId?: string,
-  ) => DropIntent | null;
-};
-
-type DragRootContextValue = {
-  actorRef: DragActor;
-  manager: DashfooDragManager;
-  registerScope: (scope: DragScope) => () => void;
-};
-
-const DragRootContext: Context<DragRootContextValue | null> =
-  createContext<DragRootContextValue | null>(null);
-
-type DragContextValue = {
-  actorRef: DragActor;
-  layerId: string;
-  manager: DashfooDragManager;
-};
-
-const DragContext = createContext<DragContextValue | null>(null);
-
-const SharedDragManagerContext: Context<DashfooDragManager | null> =
-  createContext<DashfooDragManager | null>(null);
+const tabsetDroppableId = (layerId: string, tabsetId: string): string => `${layerId}:${tabsetId}`;
 
 /** The intent is rebuilt every pointer move, so readers compare by value. */
 const sameDropIntent = (a: DropIntent | null, b: DropIntent | null): boolean =>
@@ -101,15 +23,21 @@ const sameDropIntent = (a: DropIntent | null, b: DropIntent | null): boolean =>
     a.location === b.location &&
     a.targetId === b.targetId);
 
+/** Tabs and grips drag only inside a `Layout.DragLayer`: without one there is nowhere to drop. */
+const useLayerManager = (): DashfooDragManager | undefined => {
+  const context = useContext(DragContext);
+  return context?.layerId === null ? undefined : context?.manager;
+};
+
 type DraggableHandle = {
-  draggableRef: { current: DashfooDraggable | null };
+  draggableRef: { current: Draggable | null };
   elementRef: { current: Element | null };
   ref: (element: Element | null) => void;
 };
 
 const useDraggableHandle = (): DraggableHandle => {
   const elementRef = useRef<Element | null>(null);
-  const draggableRef = useRef<DashfooDraggable | null>(null);
+  const draggableRef = useRef<Draggable | null>(null);
   const ref = useCallback((element: Element | null): void => {
     elementRef.current = element;
     if (draggableRef.current) {
@@ -122,14 +50,11 @@ const useDraggableHandle = (): DraggableHandle => {
 type DraggableDescriptor = { data: DashfooDragData; id: string };
 
 const useDraggableEntity = (
+  manager: DashfooDragManager | undefined,
   descriptor: DraggableDescriptor,
   disabled: boolean,
   label: string,
 ): { ref: (element: Element | null) => void } => {
-  const context = useContext(DragContext);
-
-  const sharedManager = useContext(SharedDragManagerContext);
-  const manager = context?.manager ?? sharedManager;
   const { draggableRef, elementRef, ref } = useDraggableHandle();
   const { data, id } = descriptor;
 
@@ -161,8 +86,9 @@ const useTabDraggable = (
   disabled = false,
   label = "",
 ): { ref: (element: Element | null) => void } => {
+  const manager = useLayerManager();
   const data = useMemo(() => ({ type: "tab" }) satisfies DashfooDragData, []);
-  return useDraggableEntity({ data, id: tabId }, disabled, label);
+  return useDraggableEntity(manager, { data, id: tabId }, disabled, label);
 };
 
 const useTabsetDraggable = (
@@ -170,8 +96,9 @@ const useTabsetDraggable = (
   disabled = false,
   label = "",
 ): { ref: (element: Element | null) => void } => {
+  const manager = useLayerManager();
   const data = useMemo(() => ({ tabsetId, type: "tabset" }) satisfies DashfooDragData, [tabsetId]);
-  return useDraggableEntity({ data, id: `grip-${tabsetId}` }, disabled, label);
+  return useDraggableEntity(manager, { data, id: `grip-${tabsetId}` }, disabled, label);
 };
 
 const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | null) => void } => {
@@ -184,11 +111,11 @@ const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | nu
       droppableRef.current.element = element ?? undefined;
     }
   }, []);
-  const layerId = context?.layerId;
+  const layerId = context?.layerId ?? null;
   const manager = context?.manager;
 
   useEffect(() => {
-    if (!manager || layerId === undefined) {
+    if (!manager || layerId === null) {
       return undefined;
     }
 
@@ -196,7 +123,7 @@ const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | nu
       {
         collisionDetector: topmostPointerIntersection,
         data: { layerId, tabsetId, type: "tabset" },
-        id: `${layerId}:${tabsetId}`,
+        id: tabsetDroppableId(layerId, tabsetId),
       },
       manager,
     );
@@ -222,12 +149,24 @@ const useExternalTabSource = ({
   disabled = false,
   label = "",
 }: ExternalTabSourceOptions): { ref: (element: Element | null) => void } => {
+  const manager = useContext(DragContext)?.manager;
   const id = useId();
   const createTabRef = useRef(createTab);
 
   useEffect(() => {
     createTabRef.current = createTab;
   }, [createTab]);
+
+  const hasRoot = manager !== undefined;
+  useEffect(() => {
+    if (!hasRoot && !disabled) {
+      warnOnce(
+        "external-source-no-root",
+        "useExternalTabSource has no drag root above it; render the source and the layout inside one <DashfooDragProvider>",
+      );
+    }
+  }, [disabled, hasRoot]);
+
   const data = useMemo(
     () =>
       ({
@@ -236,16 +175,16 @@ const useExternalTabSource = ({
       }) satisfies DashfooDragData,
     [],
   );
-  return useDraggableEntity({ data, id: `external-${id}` }, disabled, label);
+  return useDraggableEntity(manager, { data, id: `external-${id}` }, disabled, label);
 };
 
 /**
  * Reads the root's actor, so it works from an overlay mounted beside the layout
- * rather than inside a drag layer. Outside a provider it reports the empty state
+ * rather than inside a drag layer. Outside a root it reports the empty state
  * instead of throwing.
  */
 const useDragSubject = (): DragSubject | null => {
-  const actorRef = useContext(DragRootContext)?.actorRef;
+  const actorRef = useContext(DragContext)?.actorRef;
   return useSelector(actorRef, (snapshot) => {
     const drag = snapshot?.context.drag;
     return drag?.kind === "dragging" ? drag.subject : null;
@@ -253,7 +192,7 @@ const useDragSubject = (): DragSubject | null => {
 };
 
 const useDropIntent = (): DropIntent | null => {
-  const actorRef = useContext(DragRootContext)?.actorRef;
+  const actorRef = useContext(DragContext)?.actorRef;
   return useSelector(
     actorRef,
     (snapshot) => {
@@ -264,20 +203,10 @@ const useDropIntent = (): DropIntent | null => {
   );
 };
 
-export type {
-  DragActor,
-  DragContextValue,
-  DashfooDragManager,
-  DragRootContextValue,
-  DragScope,
-  ExternalTabSourceOptions,
-};
+export type { ExternalTabSourceOptions };
 export {
-  createDragManager,
-  DragContext,
-  DragRootContext,
   sameDropIntent,
-  SharedDragManagerContext,
+  tabsetDroppableId,
   useDragSubject,
   useDropIntent,
   useExternalTabSource,

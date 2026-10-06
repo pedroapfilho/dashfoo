@@ -11,24 +11,14 @@ import type {
 } from "@dashfoo/core";
 import { findTabset } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
-import {
-  forwardRef,
-  useCallback,
-  useContext,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-} from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 
-import { SharedDragManagerContext } from "../hooks/drag-hooks";
 import type { PersistConfig, StorageAdapter } from "../hooks/persistence";
 import { localStorageAdapter, usePersistence } from "../hooks/persistence";
 import { useContainerWidth } from "../hooks/responsive";
 import { useDashfooStore } from "../hooks/store";
 import { compactModel } from "../lib/compact-model";
 
-import { DashfooDragProvider } from "./dashfoo-drag-provider";
 import { Layout } from "./layout";
 
 const DEFAULT_PERSIST_DEBOUNCE_MS = 300;
@@ -170,8 +160,6 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     }
   }, [persistence.initialModel, setModel]);
 
-  const hasSharedManager = useContext(SharedDragManagerContext) !== null;
-
   useImperativeHandle(
     ref,
     () => ({
@@ -289,7 +277,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       rootRef={containerRef}
       snap={snap}
     >
-      {hasSharedManager ? tree : <DashfooDragProvider>{tree}</DashfooDragProvider>}
+      {tree}
     </Layout.Root>
   );
 });
