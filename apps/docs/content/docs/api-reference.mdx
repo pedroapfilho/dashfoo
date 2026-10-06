@@ -424,12 +424,11 @@ of these disagree about which node wins.
 | `findTab`            | `(model: Dashfoo, tabId: string) => TabLocation \| undefined`                           | A tab anywhere in the model: `{ tab, container, index }`.    |
 | `findFloat`          | `(model: Dashfoo, floatId: string) => FloatNode \| undefined`                           | A floating panel by id.                                      |
 | `findRow`            | `(model: Dashfoo, id: string) => RowNode \| undefined`                                  | A row by id.                                                 |
-| `findRootContaining` | `(model: Dashfoo, nodeId: string) => RowNode \| undefined`                              | Which root (main layout or a float) holds a node.            |
 | `findAttributedNode` | `(model: Dashfoo, id: string) => AttributedNode \| undefined`                           | Any row, tabset, or tab by id. Backs `updateNodeAttributes`. |
 | `findTabsetParent`   | `(model: Dashfoo, tabsetId: string) => { index: number; parent: RowNode } \| undefined` | The row holding a tabset and its index within it.            |
 | `findDuplicateIds`   | `(model: Dashfoo) => Array<string>`                                                     | Ids appearing more than once across the whole model.         |
 
-Types: `AttributedNode`, `TabContainer`, `TabLocation`.
+Types: `AttributedNode`, `TabLocation`.
 
 ### Ids
 

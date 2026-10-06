@@ -200,7 +200,6 @@ findTabset(model, tabsetId): TabsetNode | undefined;
 findTab(model, tabId): TabLocation | undefined; // searches tabsets
 findFloat(model, floatId): FloatNode | undefined;
 findRow(model, rowId): RowNode | undefined;
-findRootContaining(model, nodeId): RowNode | undefined; // which root holds a node
 findAttributedNode(model, id): AttributedNode | undefined; // row, tabset, or tab
 findTabsetParent(model, tabsetId): { index: number; parent: RowNode } | undefined;
 findDuplicateIds(model): Array<string>;         // ids used more than once
@@ -208,8 +207,7 @@ findDuplicateIds(model): Array<string>;         // ids used more than once
 
 `findTab` returns `{ container, index, tab }` so a caller knows where the tab
 lives (a tabset in some root). Lookups span every root, so a floated tab is as
-reachable as a docked one; `findRootContaining` tells you which root (main layout
-or a float) a node lives in.
+reachable as a docked one.
 
 ## Floating panels
 
@@ -269,17 +267,21 @@ these arrays and supplies the dragged boundary index.
 ```ts
 // resolveSnapGrid(config, panelCount).targets contains positions inside 0..100
 resolveSnapGrid(config: SnapConfig | null, panelCount: number): SnapGrid;
-snapSizes(sizes: number[], boundaryIndex: number, grid: SnapGrid): { sizes: number[]; snapped: boolean };
+decideSnap(sizes: number[], boundaryIndex: number | null, grid: SnapGrid): SnapDecision;
+settleSnap(sizes: number[], boundaryIndex: number | null, grid: SnapGrid): number[];
 snapEnabled(grid: SnapGrid): boolean;
 ```
 
 `resolveSnapGrid` builds the grid for a row from its config and panel count: the
 union of the `step` grid (multiples of a fixed percent) and the `divisions` grid
 (even splits: multiples of `100/d`, where `d` is the number or, for `"panels"`,
-the panel count). `snapSizes` snaps the boundary between panel `boundaryIndex` and
-the next onto the nearest target within `threshold` (default `4`), moving only that
-pair so siblings keep their size. It is a no-op when the grid is empty, the index
-is out of range, or the correction would drive a panel negative.
+the panel count). `decideSnap` snaps the boundary between panel `boundaryIndex`
+and the next onto the nearest target within `threshold` (default `4`), moving only
+that pair so siblings keep their size. It returns `{ kind: "engage", sizes }` when
+the boundary snaps, `{ kind: "clear" }` when no target is in reach (or the
+correction would drive a panel negative), and `{ kind: "inactive" }` with no
+dragged boundary or an empty grid. `settleSnap` returns the sizes to commit on
+release: the snapped ones when the boundary engages, else the input.
 
 `resolveSnapGrid` is the entry point: it resolves the targets once for a row and
 carries the threshold alongside them, and every other function takes that
@@ -388,15 +390,15 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 `reducer`: `reducer`. `docking`: `fallbackSelectedIndex`. `invariants`: `normalize`.
 
 `tree`: `collectRoots`, `collectTabsets`, `collectTabsetsInRow`, `getFirstTabset`,
-`findTabset`, `findTab`, `findFloat`, `findRow`, `findRootContaining`, `findAttributedNode`,
+`findTabset`, `findTab`, `findFloat`, `findRow`, `findAttributedNode`,
 `findTabsetParent`, `findDuplicateIds`;
-types `AttributedNode`, `TabContainer`, `TabLocation`.
+types `AttributedNode`, `TabLocation`.
 
 `geometry`: `resolveDockTarget`, `dockZonePolygons`, `zoneRect`; types
 `DockZone`, `BandOptions`, `Point`, `Rect`.
 
-`snap`: `resolveSnapGrid`, `decideSnap`, `settleSnap`, `snapSizes`, `snapEnabled`, `DEFAULT_SNAP_THRESHOLD`;
-types `SnapResult`, `SnapGrid`, `SnapDecision`.
+`snap`: `resolveSnapGrid`, `decideSnap`, `settleSnap`, `snapEnabled`;
+types `SnapGrid`, `SnapDecision`.
 
 `history`: `createHistory`, `dispatch`, `undo`, `redo`, `canUndo`, `canRedo`;
 type `History`.

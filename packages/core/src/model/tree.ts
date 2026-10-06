@@ -1,7 +1,6 @@
 import type { Dashfoo, FloatNode, RowNode, TabNode, TabsetNode } from "./schema";
 
-type TabContainer = TabsetNode;
-type TabLocation = { container: TabContainer; index: number; tab: TabNode };
+type TabLocation = { container: TabsetNode; index: number; tab: TabNode };
 
 const collectRoots = (model: Dashfoo): Array<RowNode> => [
   model.layout,
@@ -124,16 +123,6 @@ const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefi
   return undefined;
 };
 
-const findRootContaining = (model: Dashfoo, nodeId: string): RowNode | undefined => {
-  for (const root of collectRoots(model)) {
-    const hit = walk(root, ({ node }) => (node.id === nodeId ? true : undefined));
-    if (hit) {
-      return root;
-    }
-  }
-  return undefined;
-};
-
 const findTabsetParent = (
   model: Dashfoo,
   tabsetId: string,
@@ -175,11 +164,10 @@ export {
   findAttributedNode,
   findDuplicateIds,
   findFloat,
-  findRootContaining,
   findRow,
   findTab,
   findTabset,
   findTabsetParent,
   getFirstTabset,
 };
-export type { AttributedNode, TabContainer, TabLocation };
+export type { AttributedNode, TabLocation };
