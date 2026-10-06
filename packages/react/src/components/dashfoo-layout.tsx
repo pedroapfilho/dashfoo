@@ -1,23 +1,15 @@
 "use client";
 
-import type {
-  Action,
-  Dashfoo,
-  DockLocation,
-  Orientation,
-  SnapConfig,
-  TabNode,
-  TabsetNode,
-} from "@dashfoo/core";
+import type { Action, Dashfoo, DockLocation, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
 import { findTabset } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
 import { forwardRef, useCallback, useContext, useImperativeHandle, useMemo } from "react";
 
 import { SharedDragManagerContext } from "../hooks/drag-hooks";
 import type { PersistInput } from "../hooks/persistence";
-import { useContainerWidth } from "../hooks/responsive";
+import type { ResponsiveOptions } from "../hooks/responsive";
+import { useResponsiveLayout } from "../hooks/responsive";
 import { useDashfooStore } from "../hooks/store";
-import { compactModel } from "../lib/compact-model";
 
 import { DashfooDragProvider } from "./dashfoo-drag-provider";
 import { Layout } from "./layout";
@@ -70,7 +62,7 @@ type DashfooLayoutCommonProps = {
   renderTabsetToolbar?: (tabset: TabsetNode) => ReactNode;
 
   resizableSplits?: boolean;
-  responsive?: { maxWidth: number; orientation?: Orientation };
+  responsive?: ResponsiveOptions;
 
   snap?: SnapConfig;
 };
@@ -184,22 +176,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     [renderTab, renderTabLabel, renderTabsetToolbar],
   );
 
-  const [containerRef, width] = useContainerWidth();
-  const isCompact = responsive !== undefined && width <= responsive.maxWidth;
-  const compactOrientation = responsive?.orientation;
-
-  /** Everything the compact breakpoint changes, decided once. */
-  const presentation = useMemo(
-    () =>
-      isCompact
-        ? {
-            maximizable: false,
-            model: compactModel(store.model, compactOrientation),
-            restructurable: false,
-          }
-        : { maximizable, model: store.model, restructurable: true },
-    [compactOrientation, isCompact, maximizable, store.model],
-  );
+  const presentation = useResponsiveLayout(store.model, responsive);
   const view = presentation.model;
 
   const maximized =
@@ -222,13 +199,13 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       editable={editable}
       floatable={floatable}
       keepMounted={keepMounted}
-      maximizable={presentation.maximizable}
+      maximizable={maximizable && presentation.maximizable}
       model={view}
       renamableTabs={renamableTabs}
       renderers={renderers}
       resizableSplits={resizableSplits}
       restructurable={presentation.restructurable}
-      rootRef={containerRef}
+      rootRef={presentation.rootRef}
       snap={snap}
     >
       {hasSharedManager ? tree : <DashfooDragProvider>{tree}</DashfooDragProvider>}

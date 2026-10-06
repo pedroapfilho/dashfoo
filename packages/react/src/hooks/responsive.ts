@@ -1,47 +1,16 @@
 "use client";
 
-import type { Dashfoo } from "@dashfoo/core";
+import type { Dashfoo, Orientation, RowNode } from "@dashfoo/core";
 import { useEffect, useMemo, useState } from "react";
 
-type Breakpoint = {
-  compact?: boolean;
-  id: string;
-  model: Dashfoo;
-  query?: { maxWidth: number } | { media: string };
-};
+type ResponsiveOptions = { maxWidth: number; orientation?: Orientation };
 
-type UseResponsiveModelOptions = { breakpoints: Array<Breakpoint> };
-
-type ResponsiveModel = {
-  breakpoint: string;
-  containerRef: (element: HTMLElement | null) => void;
-  draggableTabs: boolean;
-  draggableTabsets: boolean;
+type ResponsiveLayout = {
   isCompact: boolean;
+  maximizable: boolean;
   model: Dashfoo;
-  resizableSplits: boolean;
-};
-
-const hasMatchMedia = (): boolean =>
-  typeof window !== "undefined" && typeof window.matchMedia === "function";
-
-const matchBreakpoint = (breakpoint: Breakpoint, width: number): boolean => {
-  const { query } = breakpoint;
-  if (!query) {
-    return true;
-  }
-  if ("maxWidth" in query) {
-    return width <= query.maxWidth;
-  }
-  return hasMatchMedia() && window.matchMedia(query.media).matches;
-};
-
-const activeBreakpoint = (breakpoints: Array<Breakpoint>, width: number): Breakpoint => {
-  const fallback = breakpoints.at(-1);
-  if (!fallback) {
-    throw new Error("useResponsiveModel requires at least one breakpoint.");
-  }
-  return breakpoints.find((breakpoint) => matchBreakpoint(breakpoint, width)) ?? fallback;
+  restructurable: boolean;
+  rootRef: (element: HTMLElement | null) => void;
 };
 
 const observeWidth = (element: HTMLElement, onWidth: (width: number) => void): (() => void) => {
@@ -57,13 +26,7 @@ const observeWidth = (element: HTMLElement, onWidth: (width: number) => void): (
   };
 };
 
-const listenToMedia = (list: MediaQueryList, handleChange: () => void): (() => void) => {
-  list.addEventListener("change", handleChange);
-  return () => {
-    list.removeEventListener("change", handleChange);
-  };
-};
-
+/** Seeds an infinite width so the server render and the first client render agree on the wide layout. */
 const useContainerWidth = (): [(element: HTMLElement | null) => void, number] => {
   const [width, setWidth] = useState<number>(Number.POSITIVE_INFINITY);
   const [container, setContainer] = useState<HTMLElement | null>(null);
@@ -80,48 +43,53 @@ const useContainerWidth = (): [(element: HTMLElement | null) => void, number] =>
   return [setContainer, width];
 };
 
-const useResponsiveModel = ({ breakpoints }: UseResponsiveModelOptions): ResponsiveModel => {
-  const [containerRef, width] = useContainerWidth();
-  const [, setMediaTick] = useState(0);
-
-  useEffect(() => {
-    if (!hasMatchMedia()) {
-      return undefined;
-    }
-    const lists = breakpoints.flatMap((breakpoint) =>
-      breakpoint.query && "media" in breakpoint.query
-        ? [window.matchMedia(breakpoint.query.media)]
-        : [],
-    );
-    if (lists.length === 0) {
-      return undefined;
-    }
-    const handleChange = (): void => {
-      setMediaTick((tick) => tick + 1);
-    };
-    const cleanups = lists.map((list) => listenToMedia(list, handleChange));
-    return () => {
-      for (const cleanup of cleanups) {
-        cleanup();
-      }
-    };
-  }, [breakpoints]);
-
-  const active = activeBreakpoint(breakpoints, width);
-
-  return useMemo(() => {
-    const isCompact = active.compact === true;
-    return {
-      breakpoint: active.id,
-      containerRef,
-      draggableTabs: !isCompact,
-      draggableTabsets: !isCompact,
-      isCompact,
-      model: active.model,
-      resizableSplits: !isCompact,
-    };
-  }, [active, containerRef]);
+const compactRow = (node: RowNode, orientation: Orientation): RowNode => {
+  const children = node.children.map((child) =>
+    child.type === "row" ? compactRow(child, orientation) : { ...child, weight: 1 },
+  );
+  return {
+    ...node,
+    children,
+    orientation,
+    weight: children.reduce((sum, child) => sum + child.weight, 0),
+  };
 };
 
-export { activeBreakpoint, matchBreakpoint, useContainerWidth, useResponsiveModel };
-export type { Breakpoint, ResponsiveModel, UseResponsiveModelOptions };
+// Flattening the tree would reparent nested tabsets in React and lose widget
+// state. Keep every ancestor and distribute space by descendant count.
+const compactModel = (model: Dashfoo, orientation: Orientation): Dashfoo => ({
+  ...model,
+  layout: compactRow(model.layout, orientation),
+  maximizedTabsetId: undefined,
+});
+
+/**
+ * The compact view is a projection: dispatch still targets the canonical
+ * model, so widening restores the arrangement. Docking, resizing, floating and
+ * maximizing are desktop interactions, so compact locks them all.
+ */
+const useResponsiveLayout = (
+  model: Dashfoo,
+  options: ResponsiveOptions | undefined,
+): ResponsiveLayout => {
+  const [rootRef, width] = useContainerWidth();
+  const isCompact = options !== undefined && width <= options.maxWidth;
+  const orientation = options?.orientation ?? "column";
+
+  return useMemo(
+    () =>
+      isCompact
+        ? {
+            isCompact,
+            maximizable: false,
+            model: compactModel(model, orientation),
+            restructurable: false,
+            rootRef,
+          }
+        : { isCompact, maximizable: true, model, restructurable: true, rootRef },
+    [isCompact, model, orientation, rootRef],
+  );
+};
+
+export { useResponsiveLayout };
+export type { ResponsiveLayout, ResponsiveOptions };
