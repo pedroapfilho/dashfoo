@@ -10,6 +10,19 @@ is required to provide the drag shape; removing it breaks collision targeting.
 The historical 0.4 update below describes an earlier adapter and is superseded.
 `react-resizable-panels` remains v4, and docking remains pointer-only.
 
+> **Amendment (2026-10).** The drag adapter is a directory,
+> `packages/react/src/drag/`, rather than the single `drag-adapter.tsx` file this
+> ADR names. It holds the root (`drag-root.tsx`: manager, actor, layer registry
+> and preview, mounted by every `Layout.Root`), the per-layer scope
+> (`drag-layer.tsx`), the hooks, the one DOM measurement of a tabset, the dock
+> indicator and the preview chip. The rule for what a pointer over a tabset
+> means moved out of the adapter into `@dashfoo/core`
+> (`geometry/drop-intent.ts`), so the adapter only measures and forwards. The
+> import-boundary lint guard promised under Consequences now exists: oxlint's
+> `no-restricted-imports` rejects any `@dnd-kit/*` import outside
+> `packages/react/src/drag/`. Wherever this ADR says `drag-adapter.tsx`, read
+> that directory.
+
 > **Update (2026-06).** The drag layer was re-architected off the `@dnd-kit/react`
 > bindings onto the framework-agnostic **`@dnd-kit/dom` 0.4 core**, driven
 > imperatively from the adapter. The adapter now renders its own drag-preview
