@@ -149,7 +149,7 @@ Prop types are exported as `PanelRootProps`, `PanelHeaderProps`,
 ### `Layout` and `Tabset` compound parts
 
 The primitives `DashfooLayout` itself is built from, exported for hand-built
-layouts. `Layout.Root` (the frame + layout store), `Layout.DragLayer`
+layouts. `Layout.Root` (the frame, layout store and drag root), `Layout.DragLayer`
 (drag-dock, optional), `Layout.Rows` (the split tree, with a `renderTabset`
 render prop), `Layout.Tabset` (the stock tabset composition), and, for
 [floating panels](/floating-panels), `Layout.FloatLayer` (wrap the tree's content,
@@ -227,7 +227,7 @@ The `LayoutState` fields:
 `<Tabset.Tab>`.
 
 `useDragSubject()` returns the live drag subject (`{ kind: "tab" | "tabset" |
-"external", id }`) or `null`, including outside a drag layer. See
+"external", id }`) or `null`, including outside any layout or provider. See
 [Build your own layout](/docs/build-your-own-layout).
 
 `useDropIntent()` returns the live drop intent (`{ targetId, location, index? }`,
@@ -235,8 +235,8 @@ where the drag would land if dropped right now) or `null` when nothing is
 dragging or the pointer is over no valid target (empty space, a non-editable
 layout, or a suppressed no-op drop). Both hooks work anywhere under a layout;
 under a `DashfooDragProvider` they work anywhere under the provider. Pair with
-`dockZonePolygons` from `@dashfoo/core` for custom drop indicators and drop-zone
-visualizations.
+`dockZonePolygons`, `resolveDropIntent` and `dropIndicator` from `@dashfoo/core`
+for custom drop indicators and drop-zone visualizations.
 
 ### Persistence
 
@@ -260,11 +260,11 @@ See [persistence](/persistence).
 Drag new tabs in from outside the layout. See
 [drag &amp; dock](/drag-and-dock#dragging-in-from-outside) for the full flow.
 
-| Export                     | Signature                                                          | Description                                                                                                                                                       |
-| -------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DashfooDragProvider`      | `({ children }) => ReactNode`                                      | Shares one drag manager and one drag lifecycle between a layout, its floats and outside sources. A standalone layout needs no provider: it mounts one internally. |
-| `useExternalTabSource`     | `(options: ExternalTabSourceOptions) => { ref }`                   | Registers an element as a drag source; put `ref` on it.                                                                                                           |
-| `ExternalTabSourceOptions` | `{ createTab: () => TabNode; label?: string; disabled?: boolean }` | `createTab` runs at drag start and must mint a fresh tab id per call.                                                                                             |
+| Export                     | Signature                                                          | Description                                                                                                                                                     |
+| -------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DashfooDragProvider`      | `({ children }) => ReactNode`                                      | A drag root: one drag manager and drag lifecycle for layouts, their floats and outside sources. Every `Layout.Root` mounts one; an inner root reuses the outer. |
+| `useExternalTabSource`     | `(options: ExternalTabSourceOptions) => { ref }`                   | Registers an element as a drag source; put `ref` on it. Warns once when no drag root is above it.                                                               |
+| `ExternalTabSourceOptions` | `{ createTab: () => TabNode; label?: string; disabled?: boolean }` | `createTab` runs at drag start and must mint a fresh tab id per call.                                                                                           |
 
 ### `useResponsiveLayout`
 
@@ -434,6 +434,24 @@ Types: `AttributedNode`, `TabLocation`.
 Types: `Point` (`{ x: number; y: number }`), `Rect`
 (`{ x: number; y: number; width: number; height: number }`),
 `BandOptions` (`{ bandFraction?: number }`).
+
+### Drop intent
+
+What a pointer over a tabset means, over a measured tabset instead of the DOM.
+The React drag layer passes one measurement to both functions, so the insertion
+index and the insertion line always agree. See
+[drag &amp; dock](/drag-and-dock#how-resolution-layers).
+
+| Export              | Signature                                                                                                      | Description                                                                                                                                                                         |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resolveDropIntent` | `(subject: DragSubject, tabset: MeasuredTabset, point: Point, opts?: DropIntentOptions) => DropIntent \| null` | `null` for a self-drop (a tabset onto itself, a sole tab onto its own tabset); a `center` stack at the insertion index over the strip; otherwise `resolveDockTarget` over the body. |
+| `dropIndicator`     | `(subject: DragSubject, tabset: MeasuredTabset, intent: DropIntent) => DropIndicator`                          | The insertion line for a `center` drop onto a strip, otherwise the `zoneRect` of the intent.                                                                                        |
+
+Types: `MeasuredTabset` (`{ id: string; rect: Rect; strip: MeasuredStrip | null }`),
+`MeasuredStrip` (`{ rect: Rect; tabs: ReadonlyArray<MeasuredTab> }`, tabs in
+strip order), `MeasuredTab` (`{ id: string; rect: Rect }`, spanning the whole tab
+item), `DropIntentOptions` (`{ splitDock?: boolean }`, `false` turns every body
+drop into a stack), `DropIndicator` (`{ kind: "insertion" | "zone"; rect: Rect }`).
 
 ### History
 

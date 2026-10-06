@@ -4,6 +4,7 @@ import type { Action, Dashfoo, SnapConfig, TabNode, TabsetNode } from "@dashfoo/
 import type { ComponentProps, ReactNode, Ref } from "react";
 import { useLayoutEffect, useState } from "react";
 
+import { DashfooDragProvider } from "../drag/drag-root";
 import type { LayoutState } from "../hooks/layout-store";
 import { createLayoutStore, LayoutStoreContext, useLayout } from "../hooks/layout-store";
 
@@ -131,7 +132,7 @@ const LayoutRoot = ({
             global.splitterSize === undefined ? undefined : `${global.splitterSize}px`,
         }}
       >
-        {children}
+        <DashfooDragProvider>{children}</DashfooDragProvider>
       </div>
     </LayoutStoreContext.Provider>
   );

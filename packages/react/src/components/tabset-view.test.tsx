@@ -6,8 +6,9 @@ import { useState } from "react";
 import { describe, expect, test } from "vitest";
 import { createActor } from "xstate";
 
-import type { DragRootContextValue } from "../hooks/drag-hooks";
-import { createDragManager, DragRootContext } from "../hooks/drag-hooks";
+import type { DragContextValue } from "../drag/drag-context";
+import { DragContext } from "../drag/drag-context";
+import { createDragManager } from "../drag/drag-manager";
 import { useDashfooStore } from "../hooks/store";
 
 import { Layout } from "./layout";
@@ -54,15 +55,20 @@ const renderTabContent = (): ReactNode => <div>CHART</div>;
 
 const DraggedSoleTabset = ({ keepMounted }: { keepMounted: boolean }): ReactNode => {
   const store = useDashfooStore({ defaultModel: soleTabModel() });
-  const [dragRoot] = useState<DragRootContextValue>(() => {
+  const [dragRoot] = useState<DragContextValue>(() => {
     const actorRef = createActor(dragDockMachine).start();
     actorRef.send({ subject: { id: "t1", kind: "tab" }, type: "START" });
-    return { actorRef, manager: createDragManager(), registerScope: () => () => {} };
+    return {
+      actorRef,
+      layerId: null,
+      manager: createDragManager(),
+      registerLayer: () => () => {},
+    };
   });
   const tabset = store.model.layout.children[0] as TabsetNode;
 
   return (
-    <DragRootContext.Provider value={dragRoot}>
+    <DragContext.Provider value={dragRoot}>
       <Layout.Root
         dispatch={store.dispatch}
         keepMounted={keepMounted}
@@ -73,7 +79,7 @@ const DraggedSoleTabset = ({ keepMounted }: { keepMounted: boolean }): ReactNode
           <Tabset.Content />
         </Tabset.Root>
       </Layout.Root>
-    </DragRootContext.Provider>
+    </DragContext.Provider>
   );
 };
 

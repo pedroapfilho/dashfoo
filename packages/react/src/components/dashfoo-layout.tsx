@@ -3,15 +3,13 @@
 import type { Action, Dashfoo, DockLocation, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
 import { findTabset } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
-import { forwardRef, useCallback, useContext, useImperativeHandle, useMemo } from "react";
+import { forwardRef, useCallback, useImperativeHandle, useMemo } from "react";
 
-import { SharedDragManagerContext } from "../hooks/drag-hooks";
 import type { PersistInput } from "../hooks/persistence";
 import type { ResponsiveOptions } from "../hooks/responsive";
 import { useResponsiveLayout } from "../hooks/responsive";
 import { useDashfooStore } from "../hooks/store";
 
-import { DashfooDragProvider } from "./dashfoo-drag-provider";
 import { Layout } from "./layout";
 
 type TabComponent = ComponentType<{ node: TabNode }>;
@@ -108,8 +106,6 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     onModelChange,
     persist,
   });
-
-  const hasSharedManager = useContext(SharedDragManagerContext) !== null;
 
   useImperativeHandle(
     ref,
@@ -208,7 +204,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       rootRef={presentation.rootRef}
       snap={snap}
     >
-      {hasSharedManager ? tree : <DashfooDragProvider>{tree}</DashfooDragProvider>}
+      {tree}
     </Layout.Root>
   );
 });

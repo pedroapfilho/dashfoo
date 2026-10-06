@@ -15,7 +15,7 @@ paint.
 It builds on three engines:
 
 - **[react-resizable-panels](https://github.com/bvaughn/react-resizable-panels)** for splitter resize (the resize adapter is the only file that imports it).
-- **[@dnd-kit/dom](https://github.com/clauderic/dnd-kit) 0.5**, the framework-agnostic core (no React bindings), for drag (touched only by the drag adapter modules: `drag-adapter`/`drag-hooks`/`drag-overlays`; pointer-only). Tabsets are dnd-kit droppables behind a custom occlusion-aware collision detector; the preview chip rides the Feedback plugin's `overlay` accessor.
+- **[@dnd-kit/dom](https://github.com/clauderic/dnd-kit) 0.5**, the framework-agnostic core (no React bindings), for drag (touched only by the drag adapter in `src/drag/`, which a lint guard enforces; pointer-only). Tabsets are dnd-kit droppables behind a custom occlusion-aware collision detector; the preview chip rides the Feedback plugin's `overlay` accessor.
 - **[@dashfoo/core](https://www.npmjs.com/package/@dashfoo/core)** for the document: a zod schema, a pure reducer, the undo/redo history, and the XState machine that drives the drag lifecycle.
 
 ## Install
@@ -248,8 +248,10 @@ const App = () => (
 `createTab` runs at drag start and must return a fresh `TabNode` with a unique
 id per call (`createNodeId` / `createTabId` from `@dashfoo/core` mint one). The
 returned node is validated against the model schema; an invalid tab warns and
-cancels the drag. `DashfooDragProvider` is optional everywhere else; a
-standalone layout needs no provider. Pointer drag is the only drag input, so
+cancels the drag. `DashfooDragProvider` is optional everywhere else: every
+`Layout.Root` mounts a drag root, and a root inside another reuses the outer
+one. A source with no root above it warns once and cannot be dragged. Pointer
+drag is the only drag input, so
 offer a click-to-add path (e.g. `ref.addTab(...)`) alongside the drag for
 keyboard access.
 
@@ -524,7 +526,7 @@ const { index, tab } = useTab(); // which tab a part belongs to; throws outside 
 ```
 
 `useDragSubject()` returns the live drag subject (`{ kind, id }` for a tab or
-tabset being dragged) or `null` (including outside a drag layer) for
+tabset being dragged) or `null` (including outside any layout or provider) for
 drag-aware styling in custom parts.
 
 `useDropIntent()` returns the live drop intent (`{ targetId, location, index? }`,
@@ -534,7 +536,7 @@ layout, or a no-op drop the library suppresses). Together with
 `dockZonePolygons` from `@dashfoo/core` it supports consumer-rendered drop
 indicators and drop-zone visualizations alongside the built-in indicator. Both
 hooks work anywhere under a layout; under a `DashfooDragProvider` they work
-anywhere under the provider (the provider hosts the drag store, so widget lists
+anywhere under the provider (the provider hosts the drag root, so widget lists
 and overlays outside the layout observe the same drag).
 
 ## Build your own layout
@@ -545,15 +547,15 @@ pattern as `Panel`:
 
 | Part                    | Element                                  | Role                                                                                                                        |
 | ----------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `Layout.Root`           | `div[data-dashfoo="layout"]`             | Creates the layout store. Takes `model`, `dispatch`, `renderers`, and the chrome flags `DashfooLayout` accepts.             |
-| `Layout.DragLayer`      | none (overlays)                          | Opts the tree into drag-dock. Omit it and everything else still works, just without dragging.                               |
+| `Layout.Root`           | `div[data-dashfoo="layout"]`             | Creates the layout store and the drag root. Takes `model`, `dispatch`, `renderers`, and the flags `DashfooLayout` accepts.  |
+| `Layout.DragLayer`      | none (overlays)                          | Opts the tree into the enclosing `Layout.Root`'s drag root. Omit it and everything else still works, just without dragging. |
 | `Layout.Rows`           | rrp split tree                           | Renders a `RowNode` recursively. `renderTabset` swaps in a custom tabset composition at every leaf.                         |
 | `Layout.Tabset`         | the stock `Tabset.*` composition         | The stock tabset composition, for leaves that don't need custom chrome.                                                     |
 | `Layout.FloatLayer`     | overlay                                  | Wrap the tree's content to enable floating panels; renders `model.floats` as draggable overlays. Takes `floats` + `global`. |
 | `Tabset.Root`           | `div[data-dashfoo="tabset"]`             | Creates the per-tabset store; owns drop registration, overflow measurement, and focus restore after close.                  |
 | `Tabset.TabStrip`       | `div[data-dashfoo="tabstrip"]`           | The strip row (drag hit-testing targets this attribute).                                                                    |
 | `Tabset.Tablist`        | `div[data-dashfoo="tablist"]`            | The scrolling viewport holding the `role="tablist"` marker that owns the triggers.                                          |
-| `Tabset.Tab`            | `span[data-dashfoo="tab-item"]`          | Per-tab wrapper; provides identity to the parts inside.                                                                     |
+| `Tabset.Tab`            | `span[data-dashfoo="tab-item"]`          | Per-tab wrapper carrying `data-tab-id`; provides identity to the parts inside. Drop slots are measured on these items.      |
 | `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: arrow/Home/End navigation, select on click, rename on double-click, draggable. Children override the label. |
 | `Tabset.RenameInput`    | `input[data-dashfoo="tab-rename"]`       | Inline rename editor; renders only while its tab is being renamed.                                                          |
 | `Tabset.CloseButton`    | `button[data-dashfoo="tab-close"]`       | Closes the tab with focus restore; hides when the tab isn't closable.                                                       |
@@ -664,7 +666,7 @@ useDragSubject; // the live drag subject, or null
 useDropIntent; // where the drag would land if dropped right now, or null
 
 // External drag sources
-DashfooDragProvider; // shares one drag manager + drag store between a layout and outside sources
+DashfooDragProvider; // a drag root shared by layouts and outside sources (Layout.Root mounts one otherwise)
 useExternalTabSource;
 type ExternalTabSourceOptions;
 

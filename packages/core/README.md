@@ -258,6 +258,38 @@ matching inner corner. The two functions share the band default, so a map
 painted from the polygons always agrees with the live hit-test; use it to
 visualize drop zones or to build custom drop indicators.
 
+## Drop intent
+
+The whole rule for what a pointer over a tabset means, over a measured tabset
+instead of the DOM. The React drag layer measures each tabset once per pointer
+move and passes the same measurement to both functions, so the insertion index
+and the insertion line always mark the same slot.
+
+```ts
+resolveDropIntent(subject, tabset, point, { splitDock }?): DropIntent | null;
+dropIndicator(subject, tabset, intent): DropIndicator;
+```
+
+`subject` is the drag machine's `DragSubject`. `tabset` is a `MeasuredTabset`:
+`{ id, rect, strip }`, where `strip` is `{ rect, tabs }` with `tabs` in strip
+order (`MeasuredTab`: `{ id, rect }`, each rect spanning the whole tab item), or
+`null` for a tabset without a strip.
+
+`resolveDropIntent` returns `null` for a drop that changes nothing: a tabset onto
+itself, or the sole tab of a tabset back onto it. Over the strip it stacks at
+the insertion index (the first tab whose midpoint is right of the pointer, the
+dragged tab's own slot excluded). Over the body it defers to `resolveDockTarget`,
+appending a `center` stack past the remaining tabs; `splitDock: false` turns
+every body drop into that stack. A stripless tabset has no tab order, so its
+stack drops carry no index.
+
+`dropIndicator` returns `{ kind: "insertion", rect }` (a 4px line at the slot,
+clamped inside the strip) for a `center` intent onto a strip, and
+`{ kind: "zone", rect }` (`zoneRect`) otherwise.
+
+Exports: `resolveDropIntent`, `dropIndicator`; types `MeasuredTabset`,
+`MeasuredStrip`, `MeasuredTab`, `DropIntentOptions`, `DropIndicator`.
+
 ## Snapping
 
 Pure math for magnetic split-resize snapping, over ordered percentage arrays so

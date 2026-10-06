@@ -4,11 +4,11 @@ import type { TabNode } from "@dashfoo/core";
 import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { forwardRef, useContext, useEffect, useMemo, useRef } from "react";
 
+import { useDragSubject, useTabDraggable } from "../../drag/drag-hooks";
 import { useLayout } from "../../hooks/layout-store";
 import { mergeRefs } from "../../lib/merge-refs";
 import { panelDomId, tabDomId } from "../../lib/tab-ids";
 import { warnOnce } from "../../lib/warn-once";
-import { useDragSubject, useTabDraggable } from "../drag-provider";
 
 import { TabContext, TabsetStoreContext, useTab, useTabset } from "./tabset-store";
 
@@ -54,6 +54,7 @@ const TabsetTab = forwardRef<HTMLSpanElement, TabsetTabProps>(
           {...props}
           data-dashfoo="tab-item"
           data-dragging={isDragging || undefined}
+          data-tab-id={tab.id}
           ref={refCallback}
         >
           {children}

@@ -1,6 +1,7 @@
 export * from "./state/actions";
 export * from "./model/builders";
 export { fallbackSelectedIndex } from "./state/docking";
+export * from "./geometry/drop-intent";
 export * from "./geometry/geometry";
 export { decideSnap, resolveSnapGrid, settleSnap, snapEnabled } from "./geometry/snap";
 export type { SnapDecision, SnapGrid } from "./geometry/snap";

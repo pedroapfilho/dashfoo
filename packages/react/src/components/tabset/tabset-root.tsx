@@ -6,10 +6,10 @@ import type { ComponentProps, ReactNode } from "react";
 import { forwardRef, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 
+import { useDragSubject, useTabsetDroppable } from "../../drag/drag-hooks";
 import { useLayout } from "../../hooks/layout-store";
 import { useTabOverflow } from "../../hooks/use-tab-overflow";
 import { tabDomId } from "../../lib/tab-ids";
-import { useDragSubject, useTabsetDroppable } from "../drag-provider";
 
 import type { TabsetSnapshot } from "./tabset-store";
 import { createTabsetStore, TabsetStoreContext } from "./tabset-store";

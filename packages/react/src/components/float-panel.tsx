@@ -4,13 +4,13 @@ import type { Action, FloatNode } from "@dashfoo/core";
 import type { CSSProperties, ReactNode } from "react";
 import { useRef, useState } from "react";
 
+import { DragLayer } from "../drag/drag-layer";
 import type { LayoutState } from "../hooks/layout-store";
 import { useLayout } from "../hooks/layout-store";
 import { useFloatGesture } from "../hooks/use-float-gesture";
 import { useInlineRename } from "../hooks/use-inline-rename";
 
 import { DockIcon, FloatIcon, GripIcon, MinimizeIcon } from "./close-icon";
-import { DragProvider } from "./drag-provider";
 import { RESIZE_HANDLES } from "./float-resize-handles";
 import { LayoutOverrides } from "./layout-root";
 import { RowView } from "./row-view";
@@ -209,9 +209,9 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
       </div>
       <div data-dashfoo="float-body">
         <LayoutOverrides overrides={FLOAT_OVERRIDES}>
-          <DragProvider>
+          <DragLayer>
             <RowView node={node.layout} />
-          </DragProvider>
+          </DragLayer>
         </LayoutOverrides>
       </div>
       {editable &&
