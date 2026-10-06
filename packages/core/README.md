@@ -3,7 +3,7 @@
 The framework-free engine behind dashfoo's docking layout (FlexLayout / VS-Code-style
 tiled, resizable, tabbed regions). Pure TypeScript: a zod schema for the model, a
 pure reducer, self-healing invariants, drop geometry, an undo/redo history, JSON
-serialization with validation, and two XState v5 machines.
+serialization with validation, and the XState v5 drag/dock machine.
 
 This package has **no React**. It depends only on `zod` and `xstate`. The React
 bindings, the react-resizable-panels and @dnd-kit adapters, and all rendering live
@@ -277,16 +277,24 @@ per-move snap path. `SnapConfig` is the
 ## History (undo / redo)
 
 A small `past` / `present` / `future` structure that wraps the reducer. `present`
-is the live model.
+is the live model. `createHistory` normalizes the model it receives, so a history
+always holds a canonical document.
 
 ```ts
-import { createHistory, dispatch, undo, redo, canUndo, canRedo } from "@dashfoo/core";
+import {
+  canRedoHistory,
+  canUndoHistory,
+  createHistory,
+  dispatchToHistory,
+  redoHistory,
+  undoHistory,
+} from "@dashfoo/core";
 
 let history = createHistory(model);
-history = dispatch(history, { type: "deleteTab", tabId: "tab-2" });
+history = dispatchToHistory(history, { type: "deleteTab", tabId: "tab-2" });
 
-if (canUndo(history)) history = undo(history);
-if (canRedo(history)) history = redo(history);
+if (canUndoHistory(history)) history = undoHistory(history);
+if (canRedoHistory(history)) history = redoHistory(history);
 ```
 
 Every dispatched action is its own undo step; there is no coalescing. A splitter
@@ -307,32 +315,11 @@ and return a normalized model. They throw on an invalid value. The payload's
 `version` field is pinned to `1` by the schema itself, so a payload written in
 any other format fails validation; a future format change bumps the literal.
 
-## XState machines
+## XState machine
 
-Two XState v5 machines model the runtime. `@dashfoo/react` wires them to React, but
-they are framework-free and usable on their own.
-
-### dashfooMachine
-
-The document actor. It owns the undo/redo `History` (whose `present` is the live
-model) and processes mutations through the history helpers. There is no lifecycle,
-the document is data, so it has a single `ready` state and handles four events:
-
-| Event       | Payload      | Effect                         |
-| ----------- | ------------ | ------------------------------ |
-| `DISPATCH`  | `{ action }` | run the reducer via `dispatch` |
-| `UNDO`      | (none)       | step back                      |
-| `REDO`      | (none)       | step forward                   |
-| `SET_MODEL` | `{ model }`  | replace with a fresh history   |
-
-```ts
-import { createActor } from "xstate";
-import { dashfooMachine } from "@dashfoo/core";
-
-const actor = createActor(dashfooMachine, { input: { model } }).start();
-actor.send({ type: "DISPATCH", action: { type: "deleteTab", tabId: "tab-2" } });
-const current = actor.getSnapshot().context.history.present;
-```
+The drag/dock interaction is a real lifecycle, so it is an XState v5 machine.
+`@dashfoo/react` wires it to React, but it is framework-free and usable on its
+own. The document needs no machine: `@dashfoo/react` holds a `History` directly.
 
 ### dragDockMachine
 
@@ -342,8 +329,8 @@ transient drag state only and never touches the document. On a valid `DROP` it
 **emits** a `COMMIT` carrying a `moveNode` action (the drag subject is a tab), a
 `moveTabset` action (the subject is a whole tabset, dragged by its grip), or an
 `addNode` action (an `external` subject: content dragged in from outside the
-layout, carrying the `TabNode` to insert), which the React layer forwards to
-`dashfooMachine`.
+layout, carrying the `TabNode` to insert), which the React layer dispatches to
+the document store.
 
 | Event    | Payload              |
 | -------- | -------------------- |
@@ -382,17 +369,13 @@ types `AttributedNode`, `TabContainer`, `TabLocation`.
 `snap`: `resolveSnapGrid`, `decideSnap`, `settleSnap`, `snapSizes`, `snapEnabled`, `DEFAULT_SNAP_THRESHOLD`;
 types `SnapResult`, `SnapGrid`, `SnapDecision`.
 
-`history`: `createHistory`, `dispatch`, `undo`, `redo`, `canUndo`, `canRedo`;
-type `History`.
+`history`: `createHistory`, `dispatchToHistory`, `undoHistory`, `redoHistory`,
+`canUndoHistory`, `canRedoHistory`, `HISTORY_LIMIT`; type `History`.
 
 `serialize`: `toJSON`, `fromJSON`, `parseModel`.
 
-`stack`: `stackModel` (flatten any layout into one row or column of all its
-tabsets, the building block for a narrow-screen breakpoint).
-
-`machines`: `dashfooMachine`, `dragDockMachine`; types `DashfooContext`,
-`DashfooEvent`, `DragContext`, `DragEvent`, `DragSubject`,
-`DragEmitted`.
+`machines`: `dragDockMachine`, `dropAction`; types `DragState`, `DragSubject`,
+`DropResolution`.
 
 ## License
 

@@ -16,7 +16,7 @@ It builds on three engines:
 
 - **[react-resizable-panels](https://github.com/bvaughn/react-resizable-panels)** for splitter resize (the resize adapter is the only file that imports it).
 - **[@dnd-kit/dom](https://github.com/clauderic/dnd-kit) 0.5**, the framework-agnostic core (no React bindings), for drag (touched only by the drag adapter modules: `drag-adapter`/`drag-hooks`/`drag-overlays`; pointer-only). Tabsets are dnd-kit droppables behind a custom occlusion-aware collision detector; the preview chip rides the Feedback plugin's `overlay` accessor.
-- **[@dashfoo/core](https://www.npmjs.com/package/@dashfoo/core)** for the document: a zod schema, a pure reducer, and the XState machines that drive state and the drag lifecycle.
+- **[@dashfoo/core](https://www.npmjs.com/package/@dashfoo/core)** for the document: a zod schema, a pure reducer, the undo/redo history, and the XState machine that drives the drag lifecycle.
 
 ## Install
 
@@ -107,7 +107,7 @@ ref.current?.resetLayout();
 
 ### Controlled vs. uncontrolled
 
-**Uncontrolled** (`defaultModel`): the internal XState actor owns the document
+**Uncontrolled** (`defaultModel`): the internal store owns the document
 and gives you undo/redo. `onModelChange` still fires on every change if you want
 to observe or persist.
 
@@ -278,9 +278,33 @@ the desktop arrangement exactly. Undo history, persistence, selection, and
 mounted panels all survive the breakpoint cross. The theme grows tab hit targets
 to 44px under `@media (pointer: coarse)` so tap-to-switch stays usable.
 
-Hand-built layouts (the `Layout.*` primitives) can compose a stacked view with
-`useContainerWidth` + `stackModel`; for _distinct_ per-breakpoint models, use
-`useResponsiveModel`. Both feed reactive props; changing the tree hierarchy can remount nested panels.
+The prop runs on `useResponsiveLayout`, which hand-built layouts (the `Layout.*`
+primitives) call directly to get the same projection and the same lock:
+
+```tsx
+const store = useDashfooStore({ defaultModel });
+const responsive = useResponsiveLayout(store.model, { maxWidth: 720 });
+
+<Layout.Root
+  dispatch={store.dispatch}
+  maximizable={responsive.maximizable}
+  model={responsive.model}
+  renderers={{ tab: renderTab }}
+  restructurable={responsive.restructurable}
+  rootRef={responsive.rootRef}
+>
+  <Layout.DragLayer>
+    <Layout.Rows node={responsive.model.layout} />
+  </Layout.DragLayer>
+</Layout.Root>;
+```
+
+`useResponsiveLayout(model, options)` takes `{ maxWidth, orientation? }` (or
+`undefined` to never compact) and returns `{ model, isCompact, maximizable,
+restructurable, rootRef }`. Put `rootRef` on `Layout.Root` so it measures the
+layout's own container. In compact mode `restructurable` is `false`, which
+switches off tab and tabset drag, split resizing and floating, and `maximizable`
+is `false`. Dispatch still targets the canonical store.
 
 ## Floating panels
 
@@ -361,8 +385,8 @@ background), so the last change is never lost, even inside the debounce window.
 The props type only accepts `persist` alongside `defaultModel`; in controlled mode, save the model yourself
 in `onModelChange`.
 
-The lower-level `usePersistence` load/save primitive (that `persist` is built on)
-is also exported, for hosts that drive the store directly. See the
+The prop is `useDashfooStore`'s `persist` option, so a hand-built layout gets the
+same load, silent restore, debounced save and `reset()` from the hook alone. See the
 [persistence guide](https://docs.dashfoo.com/persistence) for the storage seam,
 validation pipeline, and SSR notes.
 
@@ -477,16 +501,18 @@ Set `--dashfoo-dock-transition: none` to disable the indicator animation.
 ## Hooks and the store
 
 `useDashfooStore` is what `DashfooLayout` uses internally. Reach for it when you
-need the store's controls (undo/redo, raw dispatch) outside the default chrome.
+need the store's controls (undo/redo, raw dispatch, persistence) outside the
+default chrome.
 
 ```ts
-const store = useDashfooStore({ defaultModel });
-// store: { model, dispatch, undo, redo, canUndo, canRedo, setModel }
+const store = useDashfooStore({ defaultModel, persist: "my-app:layout" });
+// store: { model, dispatch, undo, redo, canUndo, canRedo, setModel, reset }
 ```
 
-It binds an XState actor to React, normalizes the incoming model, and exposes
-`dispatch` plus undo/redo. Uncontrolled mode gives full history; controlled mode
-routes changes through `onModelChange` and keeps the actor in sync.
+It holds the undo/redo `History` from `@dashfoo/core`, normalizes the incoming
+model, and owns persistence when given `persist`. Uncontrolled mode gives full
+history; controlled mode routes changes through `onModelChange` and ignores
+`persist`. `reset()` clears the saved copy and restores `defaultModel`.
 
 Three selector hooks read the scoped stores the primitives coordinate through.
 Each takes a selector and re-renders only when the selected slice changes:
@@ -642,22 +668,16 @@ DashfooDragProvider; // shares one drag manager + drag store between a layout an
 useExternalTabSource;
 type ExternalTabSourceOptions;
 
-// Persistence
-usePersistence; // load/save primitive (the `persist` prop builds on this)
+// Persistence (the `persist` option of useDashfooStore and DashfooLayout)
 localStorageAdapter;
 memoryStorageAdapter;
 type StorageAdapter;
-type Persistence;
-type PersistConfig;
+type PersistInput; // string | { key, storage?, debounceMs? }
 
 // Responsive
-useContainerWidth; // [ref, width] via ResizeObserver; the hand-built building block
-useResponsiveModel; // per-breakpoint model + lock flags (no remount)
-matchBreakpoint; // does a breakpoint apply at a given width
-activeBreakpoint; // first matching breakpoint, else the last (the catch-all)
-type Breakpoint;
-type ResponsiveModel; // what useResponsiveModel returns
-type UseResponsiveModelOptions;
+useResponsiveLayout; // compact projection + lock for DashfooLayout and hand-built layouts
+type ResponsiveLayout; // what useResponsiveLayout returns
+type ResponsiveOptions; // { maxWidth, orientation? }
 ```
 
 The document type `Dashfoo`, node types (`TabNode`, `TabsetNode`, `RowNode`),
@@ -678,7 +698,7 @@ Keep `Tabset.Trigger` inside `Tabset.Tab` and use the parts together; avoid
 styling the internal semantic marker. Native compound parts forward refs on
 React 18.3 and React 19. Docking itself remains pointer-only.
 
-The built-in compact projection retains nested row identities so mounted widget state survives ordinary breakpoint changes. Entering compact mode from a maximized view, moving a tab between tabsets, or supplying a different tree can remount content; keep durable application state outside panel components. The lower-level `stackModel` helper flattens the tree, so hand-composed layouts using it can also remount nested panels.
+The compact projection retains nested row identities so mounted widget state survives ordinary breakpoint changes. Entering compact mode from a maximized view, moving a tab between tabsets, or supplying a different tree can remount content; keep durable application state outside panel components.
 
 `Tabset.Content` forwards its ref to the active panel, including when inactive panels are retained with `keepMounted`.
 
