@@ -124,6 +124,30 @@ describe("normalize", () => {
     expect(result.maximizedTabsetId).toBe("ts1");
   });
 
+  test("clamps an out-of-range selected index into its strip, in the main layout and floats", () => {
+    const result = normalize(
+      model(row("root", [tabset("past", [tab("t1"), tab("t2")], { selected: 7 })]), {
+        floats: [
+          {
+            geometry: { height: 1, left: 0, top: 0, width: 1 },
+            id: "f1",
+            layout: row("frow", [tabset("negative", [tab("t3")], { selected: -3 })]),
+            type: "float",
+          },
+        ],
+      }),
+    );
+
+    expect(result.layout.children[0]).toMatchObject({ id: "past", selected: 1 });
+    expect(result.floats[0]?.layout.children[0]).toMatchObject({ id: "negative", selected: 0 });
+  });
+
+  test("keeps an in-range tabset by identity", () => {
+    const inRange = tabset("ts1", [tab("t1"), tab("t2")], { selected: 1 });
+
+    expect(normalize(model(row("root", [inRange]))).layout.children[0]).toBe(inRange);
+  });
+
   test("does not mutate the input model", () => {
     const input = model(row("root", [tabset("empty", []), tabset("ts1", [tab("t1")])]));
     normalize(input);

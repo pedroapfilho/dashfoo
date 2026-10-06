@@ -1,4 +1,3 @@
-import { clampSelected } from "../lib/clamp-selected";
 import { createNodeId } from "../model/ids";
 import type { Dashfoo, Orientation, RowNode, TabNode, TabsetNode } from "../model/schema";
 import { DEFAULT_WEIGHT } from "../model/schema";
@@ -92,12 +91,8 @@ const insertTab = (draft: Dashfoo, tab: TabNode, target: DropTarget): boolean =>
   return placeBesideTarget(draft, newTabset, targetId, location);
 };
 
-/** Re-clamps here rather than leaving the whole tree to be re-walked afterwards. */
-const detachTab = (container: TabContainer, index: number): TabNode | undefined => {
-  const removed = container.children.splice(index, 1).at(0);
-  container.selected = clampSelected(container.children.length, container.selected);
-  return removed;
-};
+const detachTab = (container: TabContainer, index: number): TabNode | undefined =>
+  container.children.splice(index, 1).at(0);
 
 const mergeTabsInto = (target: TabsetNode, tabs: Array<TabNode>, selectedOffset: number): void => {
   const mergeStart = target.children.length;

@@ -5,7 +5,7 @@ import {
   orientationSchema,
   snapSchema,
   tabNodeSchema,
-  tabsetNodeObjectSchema,
+  tabsetNodeSchema,
 } from "../model/schema";
 
 const mutableTabAttrsSchema = tabNodeSchema
@@ -19,7 +19,7 @@ const mutableTabAttrsSchema = tabNodeSchema
   .partial();
 
 /** `weight` is re-declared, not picked: `.partial()` over a defaulted field still injects the default. */
-const mutableTabsetAttrsSchema = tabsetNodeObjectSchema
+const mutableTabsetAttrsSchema = tabsetNodeSchema
   .pick({
     enableClose: true,
     enableMaximize: true,

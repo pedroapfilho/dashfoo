@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { clampSelected } from "../lib/clamp-selected";
-
 /** Weights are relative shares of a row, not percentages. */
 const DEFAULT_WEIGHT = 1;
 
@@ -44,11 +42,8 @@ const tabNodeSchema = z.object({
   type: z.literal("tab"),
 });
 
-/**
- * Kept pre-transform so `node-attrs` can `.pick()` from it: a pipe has no
- * `.pick`, and `.partial()` over a defaulted field still fills the default in.
- */
-const tabsetNodeObjectSchema = z.object({
+/** Shape only: `normalize` clamps `selected` into the strip, as it owns every cross-field invariant. */
+const tabsetNodeSchema = z.object({
   children: z.array(tabNodeSchema),
   enableClose: z.boolean().optional(),
   enableMaximize: z.boolean().optional(),
@@ -60,11 +55,6 @@ const tabsetNodeObjectSchema = z.object({
   type: z.literal("tabset"),
   weight: z.number().default(DEFAULT_WEIGHT),
 });
-
-const tabsetNodeSchema = tabsetNodeObjectSchema.transform((tabset) => ({
-  ...tabset,
-  selected: clampSelected(tabset.children.length, tabset.selected),
-}));
 
 /** The getter's explicit return type is required: without it, TS7023. */
 const rowNodeSchema = z.object({
@@ -152,7 +142,6 @@ export {
   rowNodeSchema,
   snapSchema,
   tabNodeSchema,
-  tabsetNodeObjectSchema,
   tabsetNodeSchema,
   unitSchema,
 };

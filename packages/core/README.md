@@ -85,6 +85,8 @@ when omitted. Output is schema-valid by construction.
 `reducer(model, action)` is the canonical engine. It deep-copies the model with
 `structuredClone` (so the input is never mutated, no Immer), applies one action
 to the copy, then runs `normalize` so the result is always valid and canonical.
+When the normalized result equals the input structurally, it returns the input
+object itself, so `Object.is(next, model)` means the action changed nothing.
 
 ```ts
 const reducer: (model: Dashfoo, action: Action) => Dashfoo;
@@ -164,7 +166,8 @@ tree canonical so downstream code never has to defend against degenerate shapes:
 - simplifies a single-child row by lifting its lone child (which inherits the
   lifted row's weight, so sizing is preserved)
 - absorbs a root that reduces to a single nested row
-- preserves schema-normalized selection and weights (`parseModel` supplies defaults and clamps selection)
+- clamps every tabset's `selected` into its strip
+- preserves weights (`parseModel` and the builders supply the defaults)
 - forces `activeTabsetId` / `maximizedTabsetId` to point at a tabset that exists
   (falling back to the first tabset, or clearing)
 - heals each floating panel's own layout and drops a float once it empties
@@ -357,7 +360,7 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 `schema`: `dashfooSchema`, `rowNodeSchema`, `tabsetNodeSchema`, `tabNodeSchema`,
 `floatNodeSchema`, `geometrySchema`, `dimensionSchema`, `snapSchema`, `edgeSchema`,
 `unitSchema`, `orientationSchema`, `globalAttributesSchema`,
-`jsonValueSchema`, `tabsetNodeObjectSchema`; types `Dashfoo`, `DashfooInput`, `RowNodeInput`, `RowNode`, `TabsetNode`, `TabNode`,
+`jsonValueSchema`; types `Dashfoo`, `DashfooInput`, `RowNodeInput`, `RowNode`, `TabsetNode`, `TabNode`,
 `FloatNode`, `Geometry`, `Dimension`, `SnapConfig`, `Edge`, `Unit`, `Orientation`,
 `GlobalAttributes`, `Node`, `Json`.
 

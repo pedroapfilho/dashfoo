@@ -1,4 +1,3 @@
-import { clampSelected } from "../lib/clamp-selected";
 import { createNodeId } from "../model/ids";
 import type { Dashfoo, FloatNode, Geometry, RowNode, TabsetNode } from "../model/schema";
 import { DEFAULT_WEIGHT } from "../model/schema";
@@ -104,9 +103,7 @@ const dockFloat = (
   }
 
   const leadTabset = tabsets.at(0);
-  const selectedOffset = leadTabset
-    ? clampSelected(leadTabset.children.length, leadTabset.selected)
-    : 0;
+  const selectedOffset = leadTabset?.selected ?? 0;
 
   // Resolved before the float leaves `draft.floats`: nothing is removed until
   // there is somewhere for its tabs to land.
