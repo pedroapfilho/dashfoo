@@ -104,13 +104,5 @@ const settleSnap = (
   return decision.kind === "engage" ? decision.sizes : sizes;
 };
 
-export {
-  DEFAULT_SNAP_THRESHOLD,
-  decideSnap,
-  resolveSnapGrid,
-  resolveSnapTargets,
-  settleSnap,
-  snapEnabled,
-  snapSizes,
-};
-export type { SnapDecision, SnapGrid, SnapResult };
+export { decideSnap, resolveSnapGrid, resolveSnapTargets, settleSnap, snapEnabled, snapSizes };
+export type { SnapDecision, SnapGrid };

@@ -1,6 +1,6 @@
-import { assertNever } from "../lib/assert-never";
 import type { Edge } from "../model/schema";
 import type { DockLocation } from "../state/actions";
+import { SPLIT_PLACEMENT } from "../state/dock-placement";
 
 type Point = { x: number; y: number };
 type Rect = { height: number; width: number; x: number; y: number };
@@ -30,28 +30,8 @@ const closestEdge = (d: EdgeDistances): Edge => {
   return "bottom";
 };
 
-const splitEdge = (location: DockLocation): Edge | undefined => {
-  switch (location) {
-    case "center": {
-      return undefined;
-    }
-    case "split-bottom": {
-      return "bottom";
-    }
-    case "split-left": {
-      return "left";
-    }
-    case "split-right": {
-      return "right";
-    }
-    case "split-top": {
-      return "top";
-    }
-    default: {
-      return assertNever(location);
-    }
-  }
-};
+const splitEdge = (location: DockLocation): Edge | undefined =>
+  location === "center" ? undefined : SPLIT_PLACEMENT[location].edge;
 
 const resolveDockTarget = (pointer: Point, rect: Rect, opts?: BandOptions): DockLocation => {
   const band = opts?.bandFraction ?? DEFAULT_BAND_FRACTION;
@@ -93,29 +73,18 @@ const dockZonePolygons = (rect: Rect, opts?: BandOptions): Array<DockZone> => {
   ];
 };
 
+/** Built field by field: a `DOMRect`'s fields are prototype getters, so a spread copies none of them. */
 const zoneRect = (rect: Rect, location: DockLocation): Rect => {
-  const halfW = rect.width / 2;
-  const halfH = rect.height / 2;
-  switch (location) {
-    case "split-bottom": {
-      return { height: halfH, width: rect.width, x: rect.x, y: rect.y + halfH };
-    }
-    case "split-left": {
-      return { height: rect.height, width: halfW, x: rect.x, y: rect.y };
-    }
-    case "split-right": {
-      return { height: rect.height, width: halfW, x: rect.x + halfW, y: rect.y };
-    }
-    case "split-top": {
-      return { height: halfH, width: rect.width, x: rect.x, y: rect.y };
-    }
-    case "center": {
-      return rect;
-    }
-    default: {
-      return assertNever(location);
-    }
+  if (location === "center") {
+    return rect;
   }
+  const { before, orientation } = SPLIT_PLACEMENT[location];
+  if (orientation === "row") {
+    const width = rect.width / 2;
+    return { height: rect.height, width, x: before ? rect.x : rect.x + width, y: rect.y };
+  }
+  const height = rect.height / 2;
+  return { height, width: rect.width, x: rect.x, y: before ? rect.y : rect.y + height };
 };
 
 export { dockZonePolygons, resolveDockTarget, splitEdge, zoneRect };

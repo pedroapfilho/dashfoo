@@ -1,6 +1,7 @@
 "use client";
 
 import type { TabsetNode } from "@dashfoo/core";
+import { fallbackSelectedIndex } from "@dashfoo/core";
 import type { ComponentProps, ReactNode } from "react";
 import { forwardRef, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
@@ -8,7 +9,6 @@ import { useStore } from "zustand";
 import { useLayout } from "../../hooks/layout-store";
 import { useTabOverflow } from "../../hooks/use-tab-overflow";
 import { tabDomId } from "../../lib/tab-ids";
-import { fallbackSelectedIndex } from "../../lib/tab-selection";
 import { useDragSubject, useTabsetDroppable } from "../drag-provider";
 
 import type { TabsetSnapshot } from "./tabset-store";

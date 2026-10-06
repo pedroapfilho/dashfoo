@@ -1,7 +1,9 @@
 export * from "./state/actions";
 export * from "./model/builders";
+export { fallbackSelectedIndex } from "./state/docking";
 export * from "./geometry/geometry";
-export * from "./geometry/snap";
+export { decideSnap, resolveSnapGrid, settleSnap, snapEnabled } from "./geometry/snap";
+export type { SnapDecision, SnapGrid } from "./geometry/snap";
 export * from "./state/history";
 export * from "./model/ids";
 export { normalize } from "./model/invariants";

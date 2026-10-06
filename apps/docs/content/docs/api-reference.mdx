@@ -332,8 +332,19 @@ reducer is exhaustive over the union; validate untrusted payloads with
 | `updateNodeAttributes`   | `{ nodeId, attrs }`                        | Patch mutable attributes on a tab, tabset, or row.                                                                                       |
 | `updateGlobalAttributes` | `{ attrs }`                                | Patch the model's `global` block.                                                                                                        |
 
+The six docking actions (`addNode`, `moveNode`, `moveTabset`, `floatTab`,
+`floatTabset`, `dockFloat`) resolve their target before detaching anything, so a
+drop that cannot land is a no-op, and they activate the tabset that received
+the content: the target on a `center` drop, the placed tabset on a split, the
+floated tabset when floating. `addNode` with an id already in the layout is
+ignored with a `[dashfoo]` warning. When a tab leaves a strip, the selection
+stays on the selected tab; if that tab is the one leaving, it passes to the right
+neighbour, else the left.
+
 Related exports: `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`,
-and the types `Action`, `MutableNodeAttrs`,
+`fallbackSelectedIndex` (`(count, removedIndex) => number`: the index of the tab
+that inherits the selection when the selected tab at `removedIndex` leaves, `-1`
+when none remains), and the types `Action`, `MutableNodeAttrs`,
 `DockLocation` (`"center" | "split-top" | "split-bottom" | "split-left" | "split-right"`),
 and `DropIntent` (`{ targetId: string; location: DockLocation; index?: number }`).
 See [drag & dock](/drag-and-dock) for how drops become actions.
@@ -381,8 +392,8 @@ Zod schemas and their inferred types. Field-by-field tables live in
 `DashfooInput` (`z.input<typeof dashfooSchema>`) is the loose counterpart of
 `Dashfoo`: the shape `parseModel` accepts, with `weight` and `floats` optional.
 Hold host-supplied or stored data as `DashfooInput` and parse it into a
-`Dashfoo`. `tabsetNodeObjectSchema` is `tabsetNodeSchema` before its clamping
-transform, for `.pick()`-ing mutable keys off.
+`Dashfoo`. The schemas check shape only: a `selected` past the end of its strip
+parses, and `normalize` clamps it.
 
 `Node` (`RowNode | TabsetNode | TabNode`) is exported as a type only.
 `FloatNode` (`{ type: "float"; id; layout: RowNode; geometry: Geometry; name?; minimized? }`)
@@ -392,10 +403,10 @@ validation.
 
 ### Reducer and normalize
 
-| Export      | Signature                                     | Description                                                                                                                                                                                                                                                                                                                                                                                             |
-| ----------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `reducer`   | `(model: Dashfoo, action: Action) => Dashfoo` | The pure engine: deep-copies via `structuredClone` (input never mutated), applies one action, runs `normalize`. Returns the input **by reference** when the action changed nothing, so identity equality means "no edit"; a rejected action skips `normalize`.                                                                                                                                          |
-| `normalize` | `(model: Dashfoo) => Dashfoo`                 | The structural canonical pass: removes empty tabsets, collapses single-child rows, heals each float's layout and drops an emptied float, keeps `activeTabsetId` on a live tabset anywhere, and `maximizedTabsetId` on a live tabset **in the main layout** (floats opt out of maximize, so floating the maximized tabset clears it). `selected` and `weight` are settled at the parse boundary instead. |
+| Export      | Signature                                     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reducer`   | `(model: Dashfoo, action: Action) => Dashfoo` | The pure engine: deep-copies via `structuredClone` (input never mutated), applies one action, runs `normalize`, then compares the result structurally with the input. Returns the input **by reference** when they match, so identity equality means "no edit", including an edit `normalize` undoes (maximizing a float's tabset) or an identical attribute re-sent.                                                                                           |
+| `normalize` | `(model: Dashfoo) => Dashfoo`                 | The single owner of the model's invariants: removes empty tabsets, collapses single-child rows, heals each float's layout and drops an emptied float, clamps every tabset's `selected` into its strip, keeps `activeTabsetId` on a live tabset anywhere, and `maximizedTabsetId` on a live tabset **in the main layout** (floats opt out of maximize, so floating the maximized tabset clears it). `weight` defaults are settled at the parse boundary instead. |
 
 ### Tree helpers
 
@@ -413,12 +424,11 @@ of these disagree about which node wins.
 | `findTab`            | `(model: Dashfoo, tabId: string) => TabLocation \| undefined`                           | A tab anywhere in the model: `{ tab, container, index }`.    |
 | `findFloat`          | `(model: Dashfoo, floatId: string) => FloatNode \| undefined`                           | A floating panel by id.                                      |
 | `findRow`            | `(model: Dashfoo, id: string) => RowNode \| undefined`                                  | A row by id.                                                 |
-| `findRootContaining` | `(model: Dashfoo, nodeId: string) => RowNode \| undefined`                              | Which root (main layout or a float) holds a node.            |
 | `findAttributedNode` | `(model: Dashfoo, id: string) => AttributedNode \| undefined`                           | Any row, tabset, or tab by id. Backs `updateNodeAttributes`. |
 | `findTabsetParent`   | `(model: Dashfoo, tabsetId: string) => { index: number; parent: RowNode } \| undefined` | The row holding a tabset and its index within it.            |
 | `findDuplicateIds`   | `(model: Dashfoo) => Array<string>`                                                     | Ids appearing more than once across the whole model.         |
 
-Types: `AttributedNode`, `TabContainer`, `TabLocation`.
+Types: `AttributedNode`, `TabLocation`.
 
 ### Ids
 

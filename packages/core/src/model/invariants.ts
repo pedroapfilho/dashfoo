@@ -1,6 +1,26 @@
-import type { Dashfoo, FloatNode, RowNode } from "./schema";
+import type { Dashfoo, FloatNode, RowNode, TabsetNode } from "./schema";
 
 type RowChild = RowNode["children"][number];
+
+const clampSelected = (length: number, selected: number): number => {
+  if (length === 0) {
+    return 0;
+  }
+
+  const base = Number.isFinite(selected) ? Math.trunc(selected) : 0;
+  if (base < 0) {
+    return 0;
+  }
+  if (base > length - 1) {
+    return length - 1;
+  }
+  return base;
+};
+
+const clampTabset = (tabset: TabsetNode): TabsetNode => {
+  const selected = clampSelected(tabset.children.length, tabset.selected);
+  return selected === tabset.selected ? tabset : { ...tabset, selected };
+};
 
 /**
  * The survivor takes over the collapsed row's slot, so it has to take the slot's
@@ -36,7 +56,7 @@ const normalizeRowChildren = (
   for (const child of children) {
     if (child.type === "tabset") {
       if (child.children.length > 0) {
-        out.push(child);
+        out.push(clampTabset(child));
         keptTabsetIds.push(child.id);
       }
       continue;
@@ -107,4 +127,4 @@ const normalize = (model: Dashfoo): Dashfoo => {
   return { ...model, activeTabsetId, floats, layout, maximizedTabsetId };
 };
 
-export { normalize };
+export { clampSelected, normalize };

@@ -85,6 +85,8 @@ when omitted. Output is schema-valid by construction.
 `reducer(model, action)` is the canonical engine. It deep-copies the model with
 `structuredClone` (so the input is never mutated, no Immer), applies one action
 to the copy, then runs `normalize` so the result is always valid and canonical.
+When the normalized result equals the input structurally, it returns the input
+object itself, so `Object.is(next, model)` means the action changed nothing.
 
 ```ts
 const reducer: (model: Dashfoo, action: Action) => Dashfoo;
@@ -120,6 +122,19 @@ The `DockLocation` union is `center` and
 stacks the tab into the target tabset. A `split-*` drop creates a new tabset beside
 the target, reusing the parent row when its orientation already matches, otherwise
 wrapping both in a fresh row.
+
+The six docking actions (`addNode`, `moveNode`, `moveTabset`, `floatTab`,
+`floatTabset`, `dockFloat`) share two rules. Each resolves its target before it
+detaches anything, so a drop that cannot land changes nothing. And the tabset
+that receives the moved content becomes `activeTabsetId`: the target on a
+`center` drop, the newly placed tabset on a split, the floated tabset when
+floating. `addNode` ignores a tab whose id is already in the layout and warns.
+
+When a tab leaves its strip (closed, moved, floated), the selection stays on the
+tab that was selected. If that tab is the one leaving, its right neighbour
+inherits the selection, else its left one. `fallbackSelectedIndex(count, removedIndex)`
+returns that neighbour's index in the strip as it stands, which is how a renderer
+previews a drag before the drop.
 
 ### Use the reducer directly
 
@@ -164,7 +179,8 @@ tree canonical so downstream code never has to defend against degenerate shapes:
 - simplifies a single-child row by lifting its lone child (which inherits the
   lifted row's weight, so sizing is preserved)
 - absorbs a root that reduces to a single nested row
-- preserves schema-normalized selection and weights (`parseModel` supplies defaults and clamps selection)
+- clamps every tabset's `selected` into its strip
+- preserves weights (`parseModel` and the builders supply the defaults)
 - forces `activeTabsetId` / `maximizedTabsetId` to point at a tabset that exists
   (falling back to the first tabset, or clearing)
 - heals each floating panel's own layout and drops a float once it empties
@@ -184,7 +200,6 @@ findTabset(model, tabsetId): TabsetNode | undefined;
 findTab(model, tabId): TabLocation | undefined; // searches tabsets
 findFloat(model, floatId): FloatNode | undefined;
 findRow(model, rowId): RowNode | undefined;
-findRootContaining(model, nodeId): RowNode | undefined; // which root holds a node
 findAttributedNode(model, id): AttributedNode | undefined; // row, tabset, or tab
 findTabsetParent(model, tabsetId): { index: number; parent: RowNode } | undefined;
 findDuplicateIds(model): Array<string>;         // ids used more than once
@@ -192,8 +207,7 @@ findDuplicateIds(model): Array<string>;         // ids used more than once
 
 `findTab` returns `{ container, index, tab }` so a caller knows where the tab
 lives (a tabset in some root). Lookups span every root, so a floated tab is as
-reachable as a docked one; `findRootContaining` tells you which root (main layout
-or a float) a node lives in.
+reachable as a docked one.
 
 ## Floating panels
 
@@ -253,17 +267,21 @@ these arrays and supplies the dragged boundary index.
 ```ts
 // resolveSnapGrid(config, panelCount).targets contains positions inside 0..100
 resolveSnapGrid(config: SnapConfig | null, panelCount: number): SnapGrid;
-snapSizes(sizes: number[], boundaryIndex: number, grid: SnapGrid): { sizes: number[]; snapped: boolean };
+decideSnap(sizes: number[], boundaryIndex: number | null, grid: SnapGrid): SnapDecision;
+settleSnap(sizes: number[], boundaryIndex: number | null, grid: SnapGrid): number[];
 snapEnabled(grid: SnapGrid): boolean;
 ```
 
 `resolveSnapGrid` builds the grid for a row from its config and panel count: the
 union of the `step` grid (multiples of a fixed percent) and the `divisions` grid
 (even splits: multiples of `100/d`, where `d` is the number or, for `"panels"`,
-the panel count). `snapSizes` snaps the boundary between panel `boundaryIndex` and
-the next onto the nearest target within `threshold` (default `4`), moving only that
-pair so siblings keep their size. It is a no-op when the grid is empty, the index
-is out of range, or the correction would drive a panel negative.
+the panel count). `decideSnap` snaps the boundary between panel `boundaryIndex`
+and the next onto the nearest target within `threshold` (default `4`), moving only
+that pair so siblings keep their size. It returns `{ kind: "engage", sizes }` when
+the boundary snaps, `{ kind: "clear" }` when no target is in reach (or the
+correction would drive a panel negative), and `{ kind: "inactive" }` with no
+dragged boundary or an empty grid. `settleSnap` returns the sizes to commit on
+release: the snapped ones when the boundary engages, else the input.
 
 `resolveSnapGrid` is the entry point: it resolves the targets once for a row and
 carries the threshold alongside them, and every other function takes that
@@ -357,7 +375,7 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 `schema`: `dashfooSchema`, `rowNodeSchema`, `tabsetNodeSchema`, `tabNodeSchema`,
 `floatNodeSchema`, `geometrySchema`, `dimensionSchema`, `snapSchema`, `edgeSchema`,
 `unitSchema`, `orientationSchema`, `globalAttributesSchema`,
-`jsonValueSchema`, `tabsetNodeObjectSchema`; types `Dashfoo`, `DashfooInput`, `RowNodeInput`, `RowNode`, `TabsetNode`, `TabNode`,
+`jsonValueSchema`; types `Dashfoo`, `DashfooInput`, `RowNodeInput`, `RowNode`, `TabsetNode`, `TabNode`,
 `FloatNode`, `Geometry`, `Dimension`, `SnapConfig`, `Edge`, `Unit`, `Orientation`,
 `GlobalAttributes`, `Node`, `Json`.
 
@@ -369,18 +387,18 @@ layout, carrying the `TabNode` to insert), which the React layer forwards to
 `actions`: `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`; types
 `Action`, `DockLocation`, `DropIntent`, `MutableNodeAttrs`.
 
-`reducer`: `reducer`. `invariants`: `normalize`.
+`reducer`: `reducer`. `docking`: `fallbackSelectedIndex`. `invariants`: `normalize`.
 
 `tree`: `collectRoots`, `collectTabsets`, `collectTabsetsInRow`, `getFirstTabset`,
-`findTabset`, `findTab`, `findFloat`, `findRow`, `findRootContaining`, `findAttributedNode`,
+`findTabset`, `findTab`, `findFloat`, `findRow`, `findAttributedNode`,
 `findTabsetParent`, `findDuplicateIds`;
-types `AttributedNode`, `TabContainer`, `TabLocation`.
+types `AttributedNode`, `TabLocation`.
 
 `geometry`: `resolveDockTarget`, `dockZonePolygons`, `zoneRect`; types
 `DockZone`, `BandOptions`, `Point`, `Rect`.
 
-`snap`: `resolveSnapGrid`, `decideSnap`, `settleSnap`, `snapSizes`, `snapEnabled`, `DEFAULT_SNAP_THRESHOLD`;
-types `SnapResult`, `SnapGrid`, `SnapDecision`.
+`snap`: `resolveSnapGrid`, `decideSnap`, `settleSnap`, `snapEnabled`;
+types `SnapGrid`, `SnapDecision`.
 
 `history`: `createHistory`, `dispatch`, `undo`, `redo`, `canUndo`, `canRedo`;
 type `History`.
