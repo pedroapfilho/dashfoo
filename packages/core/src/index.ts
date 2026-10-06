@@ -1,5 +1,6 @@
 export * from "./state/actions";
 export * from "./model/builders";
+export * from "./geometry/drop-intent";
 export * from "./geometry/geometry";
 export * from "./geometry/snap";
 export * from "./state/history";
