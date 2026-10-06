@@ -11,43 +11,16 @@ import type {
 } from "@dashfoo/core";
 import { findTabset } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
-import {
-  forwardRef,
-  useCallback,
-  useContext,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-} from "react";
+import { forwardRef, useCallback, useContext, useImperativeHandle, useMemo } from "react";
 
 import { SharedDragManagerContext } from "../hooks/drag-hooks";
-import type { PersistConfig, StorageAdapter } from "../hooks/persistence";
-import { localStorageAdapter, usePersistence } from "../hooks/persistence";
+import type { PersistInput } from "../hooks/persistence";
 import { useContainerWidth } from "../hooks/responsive";
 import { useDashfooStore } from "../hooks/store";
 import { compactModel } from "../lib/compact-model";
 
 import { DashfooDragProvider } from "./dashfoo-drag-provider";
 import { Layout } from "./layout";
-
-const DEFAULT_PERSIST_DEBOUNCE_MS = 300;
-
-type PersistInput = string | { debounceMs?: number; key: string; storage?: StorageAdapter };
-
-const resolvePersist = (persist: PersistInput | undefined): PersistConfig | null => {
-  if (persist === undefined) {
-    return null;
-  }
-  if (typeof persist === "string") {
-    return { debounceMs: DEFAULT_PERSIST_DEBOUNCE_MS, key: persist, storage: localStorageAdapter };
-  }
-  return {
-    debounceMs: persist.debounceMs ?? DEFAULT_PERSIST_DEBOUNCE_MS,
-    key: persist.key,
-    storage: persist.storage ?? localStorageAdapter,
-  };
-};
 
 type TabComponent = ComponentType<{ node: TabNode }>;
 
@@ -134,41 +107,15 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     snap,
   } = props;
 
-  const persistConfig = useMemo(
-    () => (model === undefined ? resolvePersist(persist) : null),
-    [model, persist],
-  );
-  const persistence = usePersistence(persistConfig, defaultModel);
-
-  const handleModelChange = useCallback(
-    (next: Dashfoo, action?: Action): void => {
-      persistence.save(next);
-      onModelChange?.(next, action);
-    },
-    [onModelChange, persistence],
-  );
-
   const store = useDashfooStore({
-    defaultModel: persistence.initialModel ?? defaultModel,
+    defaultModel,
     model,
     onAction,
     onActiveTabsetChange,
     onMaximizedTabsetChange,
-    onModelChange: handleModelChange,
+    onModelChange,
+    persist,
   });
-
-  const { setModel } = store;
-  const appliedInitialModel = useRef(persistence.initialModel);
-  useEffect(() => {
-    if (
-      persistence.initialModel !== undefined &&
-      persistence.initialModel !== appliedInitialModel.current
-    ) {
-      appliedInitialModel.current = persistence.initialModel;
-      // oxlint-disable-next-line react-doctor/no-pass-data-to-parent -- restoration must happen after hydration, without an action or undo entry
-      setModel(persistence.initialModel);
-    }
-  }, [persistence.initialModel, setModel]);
 
   const hasSharedManager = useContext(SharedDragManagerContext) !== null;
 
@@ -204,18 +151,13 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       renameTab: (tabId, name) => {
         store.dispatch({ name, tabId, type: "renameTab" });
       },
-      resetLayout: () => {
-        persistence.clear();
-        if (defaultModel !== undefined) {
-          store.setModel(defaultModel);
-        }
-      },
+      resetLayout: store.reset,
       selectTab: (tabsetId, index) => {
         store.dispatch({ index, tabsetId, type: "selectTab" });
       },
       undo: store.undo,
     }),
-    [defaultModel, persistence, store],
+    [store],
   );
 
   const renderTab = useCallback(

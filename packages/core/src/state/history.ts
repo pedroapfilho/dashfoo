@@ -1,3 +1,4 @@
+import { normalize } from "../model/invariants";
 import type { Dashfoo } from "../model/schema";
 
 import type { Action } from "./actions";
@@ -11,21 +12,22 @@ type History = {
 
 const HISTORY_LIMIT = 100;
 
+/** The entry point for outside documents, so every history holds a canonical model. */
 const createHistory = (present: Dashfoo): History => ({
   future: [],
   past: [],
-  present,
+  present: normalize(present),
 });
 
-const canUndo = (history: History): boolean => history.past.length > 0;
-const canRedo = (history: History): boolean => history.future.length > 0;
+const canUndoHistory = (history: History): boolean => history.past.length > 0;
+const canRedoHistory = (history: History): boolean => history.future.length > 0;
 
 /**
  * An action that changed nothing is not an edit: recording it would spend an
  * undo slot and clear a redo stack the user just built. Not coalescing (ADR
  * 0002): two distinct edits are still two entries.
  */
-const dispatch = (history: History, action: Action): History => {
+const dispatchToHistory = (history: History, action: Action): History => {
   const present = reducer(history.present, action);
   if (Object.is(present, history.present)) {
     return history;
@@ -33,7 +35,7 @@ const dispatch = (history: History, action: Action): History => {
   return { future: [], past: [...history.past, history.present].slice(-HISTORY_LIMIT), present };
 };
 
-const undo = (history: History): History => {
+const undoHistory = (history: History): History => {
   const previous = history.past.at(-1);
   if (previous === undefined) {
     return history;
@@ -45,7 +47,7 @@ const undo = (history: History): History => {
   };
 };
 
-const redo = (history: History): History => {
+const redoHistory = (history: History): History => {
   const next = history.future.at(0);
   if (next === undefined) {
     return history;
@@ -57,5 +59,13 @@ const redo = (history: History): History => {
   };
 };
 
-export { canRedo, canUndo, createHistory, dispatch, HISTORY_LIMIT, redo, undo };
+export {
+  canRedoHistory,
+  canUndoHistory,
+  createHistory,
+  dispatchToHistory,
+  HISTORY_LIMIT,
+  redoHistory,
+  undoHistory,
+};
 export type { History };

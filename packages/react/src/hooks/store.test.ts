@@ -155,6 +155,23 @@ describe("useDashfooStore (uncontrolled)", () => {
     expect(result.current.model.activeTabsetId).toBe("ts2");
     expect(result.current.canUndo()).toBe(false);
   });
+
+  test("reset restores the default model silently and clears history", () => {
+    const onModelChange = vi.fn<(model: Dashfoo) => void>();
+    const { result } = renderHook(() => useDashfooStore({ defaultModel: model(), onModelChange }));
+
+    act(() => {
+      result.current.dispatch({ tabsetId: "ts2", type: "setActiveTabset" });
+    });
+    onModelChange.mockClear();
+    act(() => {
+      result.current.reset();
+    });
+
+    expect(result.current.model.activeTabsetId).toBe("ts1");
+    expect(result.current.canUndo()).toBe(false);
+    expect(onModelChange).not.toHaveBeenCalled();
+  });
 });
 
 describe("useDashfooStore (controlled)", () => {
@@ -201,6 +218,20 @@ describe("useDashfooStore (controlled)", () => {
 
     expect(onModelChange).not.toHaveBeenCalled();
     expect(result.current.model.activeTabsetId).toBe("ts1");
+  });
+
+  test("setModel and reset warn and leave the controlled model alone", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { result } = renderHook(() => useDashfooStore({ model: model() }));
+
+    act(() => {
+      result.current.setModel({ ...model(), activeTabsetId: "ts2" });
+      result.current.reset();
+    });
+
+    expect(result.current.model.activeTabsetId).toBe("ts1");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("while `model` is controlled"));
+    warn.mockRestore();
   });
 
   test("a change the host does not apply does not accumulate into the next one", () => {

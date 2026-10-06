@@ -1,17 +1,29 @@
 "use client";
 
-import type { Action, Dashfoo } from "@dashfoo/core";
-import { canRedo, canUndo, dashfooMachine, normalize, reducer } from "@dashfoo/core";
-import { useActorRef, useSelector } from "@xstate/react";
+import type { Action, Dashfoo, History } from "@dashfoo/core";
+import {
+  canRedoHistory,
+  canUndoHistory,
+  createHistory,
+  dispatchToHistory,
+  normalize,
+  redoHistory,
+  reducer,
+  undoHistory,
+} from "@dashfoo/core";
 import { useCallback, useMemo, useState } from "react";
+import { createStore, useStore } from "zustand";
 
 import { warnOnce } from "../lib/warn-once";
+
+import type { PersistInput } from "./persistence";
+import { usePersistence } from "./persistence";
 
 const CONTROLLED_HISTORY_MESSAGE =
   "undo/redo are unavailable while `model` is controlled; keep the history in the state you own and drive it through onModelChange";
 
 const CONTROLLED_SET_MODEL_MESSAGE =
-  "setModel (and resetLayout) do nothing while `model` is controlled; set the model you own instead";
+  "setModel (and reset/resetLayout) do nothing while `model` is controlled; set the model you own instead";
 
 const CONTROLLED_MODE_SWITCH_MESSAGE =
   "`model` was added or removed after mount; a layout is controlled or uncontrolled for its whole life, so the first render wins. Remount (key=…) to switch";
@@ -19,12 +31,16 @@ const CONTROLLED_MODE_SWITCH_MESSAGE =
 const CONTROLLED_WITH_DEFAULT_MESSAGE =
   "`model` and `defaultModel` were both passed; `model` wins and `defaultModel` (and `persist`) are ignored";
 
+const CONTROLLED_PERSIST_MESSAGE =
+  "`persist` is ignored while `model` is controlled; save the model you own in onModelChange";
+
 type DashfooStore = {
   canRedo: () => boolean;
   canUndo: () => boolean;
   dispatch: (action: Action) => void;
   model: Dashfoo;
   redo: () => void;
+  reset: () => void;
   setModel: (model: Dashfoo) => void;
   undo: () => void;
 };
@@ -36,6 +52,7 @@ type UseDashfooStoreOptions = {
   onActiveTabsetChange?: (tabsetId: string | undefined) => void;
   onMaximizedTabsetChange?: (tabsetId: string | undefined) => void;
   onModelChange?: (model: Dashfoo, action?: Action) => void;
+  persist?: PersistInput;
 };
 
 /** The mode is latched on the first render; running both sources leaves the
@@ -48,6 +65,7 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
     onActiveTabsetChange,
     onMaximizedTabsetChange,
     onModelChange,
+    persist,
   } = options;
   const initialModel = controlledModel ?? defaultModel;
   if (initialModel === undefined) {
@@ -61,20 +79,34 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
   if (controlled && defaultModel !== undefined) {
     warnOnce("controlled-with-default", CONTROLLED_WITH_DEFAULT_MESSAGE);
   }
+  if (controlled && persist !== undefined) {
+    warnOnce("controlled-persist", CONTROLLED_PERSIST_MESSAGE);
+  }
 
-  const actorRef = useActorRef(dashfooMachine, { input: { model: normalize(initialModel) } });
-  const history = useSelector(actorRef, (snapshot) => snapshot.context.history);
+  const [historyStore] = useState(() => createStore<History>(() => createHistory(initialModel)));
+  const history = useStore(historyStore);
 
   const model = useMemo(
     () => (controlledModel === undefined ? history.present : normalize(controlledModel)),
     [controlledModel, history.present],
   );
 
+  /** Restoring a saved layout or resetting is not an edit, so it records no undo step and notifies nobody. */
+  const replaceSilently = useCallback(
+    (next: Dashfoo): void => {
+      historyStore.setState(createHistory(next), true);
+    },
+    [historyStore],
+  );
+
+  const persistence = usePersistence(controlled ? undefined : persist, replaceSilently);
+
   const notify = useCallback(
     (before: Dashfoo, after: Dashfoo, action?: Action) => {
       if (Object.is(before, after)) {
         return;
       }
+      persistence.save(after);
       onModelChange?.(after, action);
       if (after.activeTabsetId !== before.activeTabsetId) {
         onActiveTabsetChange?.(after.activeTabsetId);
@@ -83,7 +115,17 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
         onMaximizedTabsetChange?.(after.maximizedTabsetId);
       }
     },
-    [onModelChange, onActiveTabsetChange, onMaximizedTabsetChange],
+    [onModelChange, onActiveTabsetChange, onMaximizedTabsetChange, persistence],
+  );
+
+  const commit = useCallback(
+    (step: (current: History) => History, action?: Action) => {
+      const before = historyStore.getState();
+      const after = step(before);
+      historyStore.setState(after, true);
+      notify(before.present, after.present, action);
+    },
+    [historyStore, notify],
   );
 
   const dispatch = useCallback(
@@ -92,17 +134,13 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
       if (!resolved) {
         return;
       }
-
       if (controlled) {
         notify(model, reducer(model, resolved), resolved);
         return;
       }
-
-      const before = actorRef.getSnapshot().context.history.present;
-      actorRef.send({ action: resolved, type: "DISPATCH" });
-      notify(before, actorRef.getSnapshot().context.history.present, resolved);
+      commit((current) => dispatchToHistory(current, resolved), resolved);
     },
-    [actorRef, controlled, model, notify, onAction],
+    [commit, controlled, model, notify, onAction],
   );
 
   const undo = useCallback(() => {
@@ -110,20 +148,16 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
       warnOnce("controlled-undo", CONTROLLED_HISTORY_MESSAGE);
       return;
     }
-    const before = actorRef.getSnapshot().context.history.present;
-    actorRef.send({ type: "UNDO" });
-    notify(before, actorRef.getSnapshot().context.history.present);
-  }, [actorRef, controlled, notify]);
+    commit(undoHistory);
+  }, [commit, controlled]);
 
   const redo = useCallback(() => {
     if (controlled) {
       warnOnce("controlled-redo", CONTROLLED_HISTORY_MESSAGE);
       return;
     }
-    const before = actorRef.getSnapshot().context.history.present;
-    actorRef.send({ type: "REDO" });
-    notify(before, actorRef.getSnapshot().context.history.present);
-  }, [actorRef, controlled, notify]);
+    commit(redoHistory);
+  }, [commit, controlled]);
 
   const setModel = useCallback(
     (next: Dashfoo) => {
@@ -131,22 +165,33 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
         warnOnce("controlled-set-model", CONTROLLED_SET_MODEL_MESSAGE);
         return;
       }
-      actorRef.send({ model: normalize(next), type: "SET_MODEL" });
+      replaceSilently(next);
+      persistence.save(historyStore.getState().present);
     },
-    [actorRef, controlled],
+    [controlled, historyStore, persistence, replaceSilently],
   );
+
+  const reset = useCallback(() => {
+    if (controlled) {
+      warnOnce("controlled-set-model", CONTROLLED_SET_MODEL_MESSAGE);
+      return;
+    }
+    persistence.clear();
+    replaceSilently(initialModel);
+  }, [controlled, initialModel, persistence, replaceSilently]);
 
   return useMemo(
     () => ({
-      canRedo: () => !controlled && canRedo(actorRef.getSnapshot().context.history),
-      canUndo: () => !controlled && canUndo(actorRef.getSnapshot().context.history),
+      canRedo: () => !controlled && canRedoHistory(historyStore.getState()),
+      canUndo: () => !controlled && canUndoHistory(historyStore.getState()),
       dispatch,
       model,
       redo,
+      reset,
       setModel,
       undo,
     }),
-    [actorRef, controlled, dispatch, model, redo, setModel, undo],
+    [controlled, dispatch, historyStore, model, redo, reset, setModel, undo],
   );
 };
 
