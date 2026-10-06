@@ -5,6 +5,19 @@ import shadcn from "oxlint-config-awesomeness/shadcn";
 export default defineConfig({
   extends: [awesomeness, shadcn],
   rules: {
+    // ADR 0005: the drag adapter in packages/react/src/drag is the only module
+    // that may touch dnd-kit, so the primitive stays swappable.
+    "no-restricted-imports": [
+      "error",
+      {
+        patterns: [
+          {
+            group: ["@dnd-kit/*"],
+            message: "Import @dnd-kit only inside packages/react/src/drag.",
+          },
+        ],
+      },
+    ],
     "shadcn/no-restyle": [
       "error",
       {
@@ -49,6 +62,11 @@ export default defineConfig({
       rules: {
         "nextjs/no-img-element": "off",
       },
+    },
+
+    {
+      files: ["packages/react/src/drag/**"],
+      rules: { "no-restricted-imports": "off" },
     },
 
     {
