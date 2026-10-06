@@ -4,7 +4,6 @@ import type { Geometry } from "@dashfoo/core";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useRef } from "react";
 
-import { EDGE_BY_KEY } from "../components/float-resize-handles";
 import type { ResizeEdges, Size } from "../lib/float-geometry";
 import { clampToBounds, resizeRect } from "../lib/float-geometry";
 
@@ -42,7 +41,7 @@ type FloatGestureOptions = {
 
 type FloatGestureHandlers = {
   onPointerCancel: (event: ReactPointerEvent) => void;
-  onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
+  onPointerDown: (event: ReactPointerEvent) => void;
   onPointerMove: (event: ReactPointerEvent) => void;
   onPointerUp: (event: ReactPointerEvent) => void;
 };
@@ -50,6 +49,7 @@ type FloatGestureHandlers = {
 type FloatGesture = {
   handlers: FloatGestureHandlers;
   ref: (element: HTMLElement | null) => void;
+  startResize: (event: ReactPointerEvent, edges: ResizeEdges) => void;
   style: CSSProperties;
 };
 
@@ -67,7 +67,7 @@ const useFloatGesture = ({
     panelRef.current = element;
   };
 
-  const handlePointerDown = (event: ReactPointerEvent<HTMLElement>): void => {
+  const beginGesture = (event: ReactPointerEvent, edges: ResizeEdges | null): void => {
     const panel = panelRef.current;
 
     if (!panel || !editable) {
@@ -78,7 +78,6 @@ const useFloatGesture = ({
     if (prior) {
       releaseCapture(panel, prior.pointerId);
     }
-    const edgeKey = event.currentTarget.dataset.edge;
 
     const parent = panel.offsetParent instanceof HTMLElement ? panel.offsetParent : null;
     const rect = panel.getBoundingClientRect();
@@ -90,7 +89,7 @@ const useFloatGesture = ({
     };
     const gesture: Gesture = {
       bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
-      edges: edgeKey === undefined ? null : (EDGE_BY_KEY.get(edgeKey) ?? null),
+      edges,
       initialStyle: {
         "--dashfoo-float-height": panel.style.getPropertyValue("--dashfoo-float-height"),
         "--dashfoo-float-left": panel.style.getPropertyValue("--dashfoo-float-left"),
@@ -109,6 +108,10 @@ const useFloatGesture = ({
     if (gesture.edges) {
       panel.setPointerCapture(event.pointerId);
     }
+  };
+
+  const handlePointerDown = (event: ReactPointerEvent): void => {
+    beginGesture(event, null);
   };
 
   const handlePointerUp = (event: ReactPointerEvent): void => {
@@ -195,6 +198,7 @@ const useFloatGesture = ({
       onPointerUp: handlePointerUp,
     },
     ref: setPanel,
+    startResize: beginGesture,
     style: {
       "--dashfoo-float-height": `${geometry.height}px`,
       "--dashfoo-float-left": `${geometry.left}px`,

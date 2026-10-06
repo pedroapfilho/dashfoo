@@ -3,7 +3,7 @@
 import type { RowNode, SnapGrid } from "@dashfoo/core";
 import { decideSnap, settleSnap } from "@dashfoo/core";
 import type { RefObject } from "react";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { GroupImperativeHandle, Layout, LayoutChangedMeta } from "react-resizable-panels";
 
 const WEIGHT_EPSILON = 0.01;
@@ -18,7 +18,27 @@ type ResizeState =
   | { boundary: number; kind: "dragging" }
   | { boundary: number; kind: "snapped" };
 
+/** A separator press plus the group's two layout callbacks, each layout
+ * ordered like the row's children. */
+type ResizeEvent =
+  | { boundary: number; type: "boundaryDown" }
+  | { sizes: Array<number>; type: "layoutChange" }
+  | { isUserInteraction: boolean; sizes: Array<number>; type: "layoutChanged" };
+
+type ResizeContext = {
+  resizableSplits: boolean;
+  snap: SnapGrid;
+  weights: Array<number>;
+};
+
+type ResizeEffect =
+  | { sizes: Array<number>; type: "setLayout" }
+  | { type: "settle"; weights: Array<number> };
+
+type ResizeStep = { effect: ResizeEffect | null; state: ResizeState };
+
 const IDLE: ResizeState = { kind: "idle" };
+const SYNCING: ResizeState = { kind: "syncing" };
 
 const boundaryOf = (state: ResizeState): number | null =>
   state.kind === "dragging" || state.kind === "snapped" ? state.boundary : null;
@@ -26,31 +46,66 @@ const boundaryOf = (state: ResizeState): number | null =>
 const snappedBoundaryOf = (state: ResizeState): number | null =>
   state.kind === "snapped" ? state.boundary : null;
 
-const layoutFromWeights = (children: RowChildren): Layout => {
-  const total = children.reduce((sum, child) => sum + child.weight, 0);
-  return children.reduce<Layout>((layout, child) => {
-    layout[child.id] = (child.weight / total) * 100;
-    return layout;
-  }, {});
+const sizesMatch = (current: Array<number>, expected: Array<number>): boolean =>
+  current.length === expected.length &&
+  expected.every(
+    (size, index) => Math.abs((current[index] ?? Number.NaN) - size) <= WEIGHT_EPSILON,
+  );
+
+const enter = (state: ResizeState): ResizeStep => ({ effect: null, state });
+
+const stepResize = (state: ResizeState, event: ResizeEvent, context: ResizeContext): ResizeStep => {
+  if (event.type === "boundaryDown") {
+    return enter({ boundary: event.boundary, kind: "dragging" });
+  }
+  // rrp reports its mount-time measurement as a non-user layoutChanged;
+  // committing it would rewrite the model before anyone touched a splitter.
+  if (state.kind === "syncing" || (event.type === "layoutChanged" && !event.isUserInteraction)) {
+    return enter(state);
+  }
+
+  const boundary = boundaryOf(state);
+  if (event.type === "layoutChanged") {
+    if (!context.resizableSplits) {
+      return enter(IDLE);
+    }
+    const weights = settleSnap(event.sizes, boundary, context.snap);
+    return {
+      effect: sizesMatch(weights, context.weights) ? null : { type: "settle", weights },
+      state: IDLE,
+    };
+  }
+
+  if (!context.resizableSplits || boundary === null) {
+    return enter(state);
+  }
+  const decision = decideSnap(event.sizes, boundary, context.snap);
+  if (decision.kind === "inactive") {
+    return enter(state);
+  }
+  if (decision.kind === "clear") {
+    return enter({ boundary, kind: "dragging" });
+  }
+  return {
+    effect: sizesMatch(event.sizes, decision.sizes)
+      ? null
+      : { sizes: decision.sizes, type: "setLayout" },
+    state: { boundary, kind: "snapped" },
+  };
 };
 
-const orderedFromLayout = (layout: Layout, children: RowChildren): Array<number> =>
-  children.map((child) => layout[child.id] ?? 0);
+const sizesFromLayout = (layout: Layout, children: RowChildren): Array<number> =>
+  children.map((child) => layout[child.id] ?? child.weight);
 
-const layoutFromOrdered = (sizes: Array<number>, children: RowChildren): Layout =>
+const layoutFromSizes = (sizes: Array<number>, children: RowChildren): Layout =>
   children.reduce<Layout>((layout, child, index) => {
     layout[child.id] = sizes[index] ?? 0;
     return layout;
   }, {});
 
-const layoutsMatch = (current: Layout, expected: Layout): boolean => {
-  const expectedEntries = Object.entries(expected);
-  if (Object.keys(current).length !== expectedEntries.length) {
-    return false;
-  }
-  return expectedEntries.every(
-    ([id, weight]) => Math.abs((current[id] ?? Number.NaN) - weight) <= WEIGHT_EPSILON,
-  );
+const percentagesOf = (children: RowChildren): Array<number> => {
+  const total = children.reduce((sum, child) => sum + child.weight, 0);
+  return children.map((child) => (child.weight / total) * 100);
 };
 
 type SnapResizeOptions = {
@@ -78,12 +133,10 @@ const useSnapResize = ({
   const state = useRef<ResizeState>(IDLE);
   const [snappedBoundary, setSnappedBoundary] = useState<number | null>(null);
 
-  const transition = useCallback((next: ResizeState): void => {
+  const commit = useCallback((next: ResizeState): void => {
     state.current = next;
     setSnappedBoundary(snappedBoundaryOf(next));
   }, []);
-
-  const desiredLayout = useMemo(() => layoutFromWeights(children), [children]);
 
   useLayoutEffect(() => {
     const group = groupRef.current;
@@ -91,88 +144,72 @@ const useSnapResize = ({
       return undefined;
     }
     const current = group.getLayout();
+    const desired = percentagesOf(children);
     const samePanelSet =
-      Object.keys(current).length === Object.keys(desiredLayout).length &&
-      Object.keys(desiredLayout).every((id) => id in current);
-    if (!samePanelSet || layoutsMatch(current, desiredLayout)) {
+      Object.keys(current).length === children.length &&
+      children.every((child) => child.id in current);
+    if (!samePanelSet || sizesMatch(sizesFromLayout(current, children), desired)) {
       return undefined;
     }
 
-    transition({ kind: "syncing" });
-    group.setLayout(desiredLayout);
+    commit(SYNCING);
+    group.setLayout(layoutFromSizes(desired, children));
     const frame = requestAnimationFrame(() => {
-      transition(IDLE);
+      commit(IDLE);
     });
     return () => {
       cancelAnimationFrame(frame);
-      transition(IDLE);
+      commit(IDLE);
     };
-  }, [desiredLayout, transition]);
+  }, [children, commit]);
 
-  const onLayoutChange = (layout: Layout): void => {
-    if (state.current.kind === "syncing" || !resizableSplits) {
-      return;
-    }
-    const boundary = boundaryOf(state.current);
-    if (boundary === null) {
-      return;
-    }
-
-    const decision = decideSnap(orderedFromLayout(layout, children), boundary, snap);
-    if (decision.kind === "inactive") {
-      return;
-    }
-    if (decision.kind === "clear") {
-      transition({ boundary, kind: "dragging" });
-      return;
-    }
-
-    transition({ boundary, kind: "snapped" });
-    const group = groupRef.current;
-    const target = layoutFromOrdered(decision.sizes, children);
-    if (!group || layoutsMatch(layout, target)) {
-      return;
-    }
-    transition({ kind: "syncing" });
-    group.setLayout(target);
-    transition({ boundary, kind: "snapped" });
-  };
-
-  const onLayoutChanged = (layout: Layout, meta: LayoutChangedMeta): void => {
-    if (!meta.isUserInteraction) {
-      return;
-    }
-    if (state.current.kind === "syncing") {
-      return;
-    }
-    const boundary = boundaryOf(state.current);
-    transition(IDLE);
-
-    if (!resizableSplits) {
-      return;
-    }
-    const weights = settleSnap(
-      children.map((child) => layout[child.id] ?? child.weight),
-      boundary,
+  const handle = (event: ResizeEvent): void => {
+    const { effect, state: next } = stepResize(state.current, event, {
+      resizableSplits,
       snap,
-    );
-    const weightsChanged = weights.some((weight, index) => {
-      const child = children.at(index);
-      return child !== undefined && Math.abs(weight - child.weight) > WEIGHT_EPSILON;
+      weights: children.map((child) => child.weight),
     });
-    if (!weightsChanged) {
+    if (next !== state.current) {
+      commit(next);
+    }
+    if (effect?.type === "settle") {
+      onWeightsSettled(effect.weights);
       return;
     }
-
-    onWeightsSettled(weights);
+    const group = groupRef.current;
+    if (effect?.type !== "setLayout" || !group) {
+      return;
+    }
+    commit(SYNCING);
+    group.setLayout(layoutFromSizes(effect.sizes, children));
+    commit(next);
   };
 
-  const beginBoundaryDrag = (boundary: number): void => {
-    transition({ boundary, kind: "dragging" });
+  return {
+    beginBoundaryDrag: (boundary) => {
+      handle({ boundary, type: "boundaryDown" });
+    },
+    groupRef,
+    onLayoutChange: (layout) => {
+      handle({ sizes: sizesFromLayout(layout, children), type: "layoutChange" });
+    },
+    onLayoutChanged: (layout, meta) => {
+      handle({
+        isUserInteraction: meta.isUserInteraction,
+        sizes: sizesFromLayout(layout, children),
+        type: "layoutChanged",
+      });
+    },
+    snappedBoundary,
   };
-
-  return { beginBoundaryDrag, groupRef, onLayoutChange, onLayoutChanged, snappedBoundary };
 };
 
-export { useSnapResize };
-export type { SnapResize, SnapResizeOptions };
+export { stepResize, useSnapResize };
+export type {
+  ResizeContext,
+  ResizeEffect,
+  ResizeEvent,
+  ResizeState,
+  SnapResize,
+  SnapResizeOptions,
+};

@@ -110,7 +110,7 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
     dispatch({ floatId: node.id, minimized: false, type: "setFloatMinimized" });
   };
 
-  const { handlers, ref, style } = useFloatGesture({
+  const { handlers, ref, startResize, style } = useFloatGesture({
     editable,
     geometry: node.geometry,
     minimized,
@@ -220,7 +220,9 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
             data-dashfoo="float-resize"
             data-edge={handle.key}
             key={handle.key}
-            onPointerDown={onPointerDown}
+            onPointerDown={(event) => {
+              startResize(event, handle.edges);
+            }}
           />
         ))}
     </div>

@@ -351,7 +351,7 @@ How it works:
   `setFloatMinimized` / `dockFloat`).
 
 Hand-built layouts opt in by wrapping the tree's content with `Layout.FloatLayer`
-(passing `floats` + `global`) and adding `Tabset.FloatButton`. `Tabset.FloatButton`
+(passing `floats`) and adding `Tabset.FloatButton`. `Tabset.FloatButton`
 hides itself (and warns) if no `Layout.FloatLayer` is present.
 
 ## Persistence
@@ -551,7 +551,7 @@ pattern as `Panel`:
 | `Layout.DragLayer`      | none (overlays)                          | Opts the tree into the enclosing `Layout.Root`'s drag root. Omit it and everything else still works, just without dragging. |
 | `Layout.Rows`           | rrp split tree                           | Renders a `RowNode` recursively. `renderTabset` swaps in a custom tabset composition at every leaf.                         |
 | `Layout.Tabset`         | the stock `Tabset.*` composition         | The stock tabset composition, for leaves that don't need custom chrome.                                                     |
-| `Layout.FloatLayer`     | overlay                                  | Wrap the tree's content to enable floating panels; renders `model.floats` as draggable overlays. Takes `floats` + `global`. |
+| `Layout.FloatLayer`     | overlay                                  | Wrap the tree's content to enable floating panels; renders `model.floats` as draggable overlays. Takes `floats`.            |
 | `Tabset.Root`           | `div[data-dashfoo="tabset"]`             | Creates the per-tabset store; owns drop registration, overflow measurement, and focus restore after close.                  |
 | `Tabset.TabStrip`       | `div[data-dashfoo="tabstrip"]`           | The strip row (drag hit-testing targets this attribute).                                                                    |
 | `Tabset.Tablist`        | `div[data-dashfoo="tablist"]`            | The scrolling viewport holding the `role="tablist"` marker that owns the triggers.                                          |
