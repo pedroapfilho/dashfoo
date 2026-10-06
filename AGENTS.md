@@ -57,7 +57,7 @@ Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (c
 - The dnd-kit Feedback plugin runs in overlay mode only: the chip element is assigned to `Feedback.overlay` at mount (`DragPreviewOverlay` in `drag-overlays.tsx`), before any drag — Feedback's render effect fires synchronously at drag start, so a placeholder clone or a promoted source tab means the assignment came too late.
 - dnd-kit's CollisionObserver only computes collisions while `dragOperation.shape` is set, and the ONLY code in the library that sets it is the Feedback plugin — filtering Feedback out silently kills all droppable targeting (no indicator, no drops). Tabset droppables use dashfoo's occlusion-aware detector (`lib/topmost-collision.ts`); never a built-in geometric one, which would hit tabsets covered by floats.
 - react-resizable-panels v4 puts `aria-orientation` on the Separator and gives it no intrinsic size — themes must set width/height or the gutter collapses.
-- rrp v4 fires `onLayoutChanged` once on mount with the measured layout; `row-view.tsx` deliberately ignores that first call.
+- rrp v4 fires `onLayoutChanged` once on mount with the measured layout, flagged `isUserInteraction: false`; `stepResize` in `hooks/use-snap-resize.ts` deliberately ignores every non-user `layoutChanged`.
 - Drag is pointer-only by design (keyboard docking needs its own interaction model — see commit 8c9975b).
 
 ## Notable decisions
