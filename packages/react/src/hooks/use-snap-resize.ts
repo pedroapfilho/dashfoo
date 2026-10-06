@@ -18,7 +18,8 @@ type ResizeState =
   | { boundary: number; kind: "dragging" }
   | { boundary: number; kind: "snapped" };
 
-/** The group's callbacks, with each layout ordered like the row's children. */
+/** A separator press plus the group's two layout callbacks, each layout
+ * ordered like the row's children. */
 type ResizeEvent =
   | { boundary: number; type: "boundaryDown" }
   | { sizes: Array<number>; type: "layoutChange" }
