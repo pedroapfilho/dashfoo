@@ -22,7 +22,7 @@
     "fumadocs-mdx": "^15.4.4",
     "fumadocs-ui": "^16.15.14",
     "lucide-react": "^1.48.0",
-    "next": "16.3.6",
+    "next": "16.3.8",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "shadcn": "^4.21.0",
@@ -31,7 +31,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@next/playwright": "16.3.6",
+    "@next/playwright": "16.3.8",
     "@playwright/test": "^1.63.0",
     "@repo/typescript-config": "workspace:*",
     "@types/mdx": "^2.0.14",
