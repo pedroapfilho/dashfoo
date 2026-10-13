@@ -10,6 +10,17 @@ is required to provide the drag shape; removing it breaks collision targeting.
 The historical 0.4 update below describes an earlier adapter and is superseded.
 `react-resizable-panels` remains v4, and docking remains pointer-only.
 
+> **Amendment (2026-10, floats).** Moving and resizing a floating panel stays
+> a hand-written pointer gesture (`hooks/use-float-gesture.ts`), not a dnd-kit
+> draggable. dnd-kit 0.5 can't express it cleanly: `Feedback.overlay` is one
+> element for the whole manager, so `feedback: 'move'` on a float would move the
+> tab preview chip instead of the panel. `feedback: 'move'` also promotes the
+> panel to a popover with `position: fixed !important`. Resize has no dnd-kit
+> primitive, and under `feedback: 'none'` the operation's transform never
+> updates ([dnd-kit#2055](https://github.com/clauderic/dnd-kit/issues/2055)).
+> Revisit when a fix for #2055 ships and Feedback accepts a per-draggable
+> overlay opt-out.
+
 > **Amendment (2026-10).** The drag adapter is a directory,
 > `packages/react/src/drag/`, rather than the single `drag-adapter.tsx` file this
 > ADR names. It holds the root (`drag-root.tsx`: manager, actor, layer registry
