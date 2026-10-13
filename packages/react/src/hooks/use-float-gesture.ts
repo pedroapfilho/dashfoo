@@ -53,6 +53,7 @@ type FloatGesture = {
   style: CSSProperties;
 };
 
+// shortcut: a hand-written pointer gesture instead of a dnd-kit draggable, upgrade once dnd-kit#2055 ships and Feedback allows a per-draggable overlay (ADR 0005)
 const useFloatGesture = ({
   editable,
   geometry,
