@@ -200,25 +200,9 @@ describe("tabsetNodeSchema", () => {
     expect(parsed.min).toEqual({ unit: "px", value: 120 });
   });
 
-  test("clamps a selected index past the end of the strip", () => {
-    expect(tabsetNodeSchema.parse({ ...baseTabset, selected: 7 }).selected).toBe(0);
-  });
-
-  test("clamps a negative selected index", () => {
-    expect(tabsetNodeSchema.parse({ ...baseTabset, selected: -3 }).selected).toBe(0);
-  });
-
-  test("keeps an in-range selected index", () => {
-    const twoTabs = {
-      ...baseTabset,
-      children: [
-        ...baseTabset.children,
-        { component: "book", id: "t2", name: "Book", type: "tab" },
-      ],
-      selected: 1,
-    };
-
-    expect(tabsetNodeSchema.parse(twoTabs).selected).toBe(1);
+  test("leaves an out-of-range selected index for normalize to clamp", () => {
+    expect(tabsetNodeSchema.parse({ ...baseTabset, selected: 7 }).selected).toBe(7);
+    expect(tabsetNodeSchema.parse({ ...baseTabset, selected: -3 }).selected).toBe(-3);
   });
 
   test("rejects a fractional or NaN selected index", () => {

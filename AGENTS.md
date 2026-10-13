@@ -53,16 +53,16 @@ Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (c
 ## Gotchas
 
 - `apps/landing/turbo.json` and `apps/docs/turbo.json` disable build artifact caching: Next.js file traces can reference pnpm hoisted paths that differ between restored Vercel dependency installs. Reusing those traces caused deployment packaging to fail with a missing `@shikijs/core` path. Dependency-package builds remain cached.
-- @dnd-kit DragDropManager must be created in a `useState` initializer and destroyed in a `useInsertionEffect` cleanup (NOT `useEffect`) — StrictMode double-fires effect cleanups and a destroyed manager silently stops emitting drag events. See `packages/react/src/components/dashfoo-drag-provider.tsx`.
-- The dnd-kit Feedback plugin runs in overlay mode only: the chip element is assigned to `Feedback.overlay` at mount (`DragPreviewOverlay` in `drag-overlays.tsx`), before any drag — Feedback's render effect fires synchronously at drag start, so a placeholder clone or a promoted source tab means the assignment came too late.
-- dnd-kit's CollisionObserver only computes collisions while `dragOperation.shape` is set, and the ONLY code in the library that sets it is the Feedback plugin — filtering Feedback out silently kills all droppable targeting (no indicator, no drops). Tabset droppables use dashfoo's occlusion-aware detector (`lib/topmost-collision.ts`); never a built-in geometric one, which would hit tabsets covered by floats.
+- @dnd-kit DragDropManager must be created in a `useState` initializer and destroyed in a `useInsertionEffect` cleanup (NOT `useEffect`) — StrictMode double-fires effect cleanups and a destroyed manager silently stops emitting drag events. See `packages/react/src/drag/drag-root.tsx`.
+- The dnd-kit Feedback plugin runs in overlay mode only: the chip element is assigned to `Feedback.overlay` at mount (`DragPreviewOverlay` in `packages/react/src/drag/drag-preview.tsx`), before any drag — Feedback's render effect fires synchronously at drag start, so a placeholder clone or a promoted source tab means the assignment came too late.
+- dnd-kit's CollisionObserver only computes collisions while `dragOperation.shape` is set, and the ONLY code in the library that sets it is the Feedback plugin — filtering Feedback out silently kills all droppable targeting (no indicator, no drops). Tabset droppables use dashfoo's occlusion-aware detector (`drag/topmost-collision.ts`); never a built-in geometric one, which would hit tabsets covered by floats.
 - react-resizable-panels v4 puts `aria-orientation` on the Separator and gives it no intrinsic size — themes must set width/height or the gutter collapses.
-- rrp v4 fires `onLayoutChanged` once on mount with the measured layout; `row-view.tsx` deliberately ignores that first call.
+- rrp v4 fires `onLayoutChanged` once on mount with the measured layout, flagged `isUserInteraction: false`; `stepResize` in `hooks/use-snap-resize.ts` deliberately ignores every non-user `layoutChanged`.
 - Drag is pointer-only by design (keyboard docking needs its own interaction model — see commit 8c9975b).
 
 ## Notable decisions
 
-- Primitives stay internal: `react-resizable-panels`, `@dnd-kit/dom` `^0.5.0`, and XState are installed dependencies behind the React adapters, never peers. Core currently exports its framework-free XState machines; application integrations should prefer the reducer and React store.
+- Primitives stay internal: `react-resizable-panels`, `@dnd-kit/dom` `^0.5.0`, and XState are installed dependencies behind the React adapters, never peers. The document has no machine: `useDashfooStore` holds core's pure `History` and owns persistence (ADR 0002 amendment, 2026-10). Core still exports the framework-free drag/dock machine; application integrations should prefer the reducer and React store.
 - The model is the single source of truth: plain JSON-serializable object, invariants self-heal after every action.
 - Unlike the library template, this repo keeps Playwright e2e (extra `e2e.yml` workflow) — dnd-kit drag behavior is untestable in jsdom. `publish-checks.yml` adds typecheck + publint + @arethetypeswrong on the published packages.
 - This repo follows the fleet's `library` profile (template: `~/dev/acme-package`, verified by `~/dev/orchestrator`).

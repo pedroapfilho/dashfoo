@@ -1,6 +1,6 @@
 "use client";
 
-import type { FloatNode, GlobalAttributes } from "@dashfoo/core";
+import type { FloatNode } from "@dashfoo/core";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -31,8 +31,6 @@ const FloatOverlay = ({ floats }: { floats: Array<FloatNode> }): ReactNode => {
 type FloatLayerProps = {
   children: ReactNode;
   floats: Array<FloatNode>;
-  /** Unread: floats inherit every global-derived capability from the layout store above them. */
-  global?: GlobalAttributes;
 };
 
 const FloatLayer = ({ children, floats }: FloatLayerProps): ReactNode => (

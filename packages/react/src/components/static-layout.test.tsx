@@ -1,13 +1,13 @@
 import type { Dashfoo } from "@dashfoo/core";
-import type { DragDropManager } from "@dnd-kit/dom";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { createRef, useContext, useEffect } from "react";
 import { assert, describe, expect, test } from "vitest";
 
-import { SharedDragManagerContext } from "../hooks/drag-hooks";
+import { DragContext } from "../drag/drag-context";
+import type { DashfooDragManager } from "../drag/drag-manager";
+import { DashfooDragProvider } from "../drag/drag-root";
 
-import { DashfooDragProvider } from "./dashfoo-drag-provider";
 import type { DashfooHandle, DashfooLayoutCommonProps } from "./dashfoo-layout";
 import { DashfooLayout } from "./dashfoo-layout";
 
@@ -64,9 +64,9 @@ const ManagerProbe = ({
   onManager,
 }: {
   children: ReactNode;
-  onManager: (manager: DragDropManager | null) => void;
+  onManager: (manager: DashfooDragManager | null) => void;
 }): ReactNode => {
-  const manager = useContext(SharedDragManagerContext);
+  const manager = useContext(DragContext)?.manager ?? null;
   useEffect(() => {
     onManager(manager);
   }, [manager, onManager]);
@@ -74,8 +74,8 @@ const ManagerProbe = ({
 };
 
 const renderWithManager = (props?: LayoutOverrides) => {
-  let manager: DragDropManager | null = null;
-  const capture = (value: DragDropManager | null): void => {
+  let manager: DashfooDragManager | null = null;
+  const capture = (value: DashfooDragManager | null): void => {
     manager = value;
   };
   const tree = (overrides?: LayoutOverrides): ReactNode => (
@@ -87,7 +87,7 @@ const renderWithManager = (props?: LayoutOverrides) => {
   );
   const view = render(tree());
   return {
-    manager: (): DragDropManager => manager!,
+    manager: (): DashfooDragManager => manager!,
     rerender: (overrides?: LayoutOverrides): void => {
       view.rerender(tree(overrides));
     },

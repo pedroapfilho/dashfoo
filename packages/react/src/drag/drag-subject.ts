@@ -5,15 +5,14 @@ import type { Draggable } from "@dnd-kit/dom";
 
 type DashfooDragData =
   | { label?: string; type: "tab" }
-  | { label?: string; layerId?: string; tabsetId: string; type: "tabset" }
+  | { label?: string; tabsetId: string; type: "tabset" }
   | { createTab: () => TabNode; label?: string; type: "external" };
 
 type DragSource = Pick<Draggable, "data" | "id">;
 
 const isTabFactory = (value: Data[string]): value is () => TabNode => typeof value === "function";
 
-/** Beside the manager wiring, not the layer adapter: `dragstart` fires once per
- * gesture on the shared manager, above any one layer. */
+/** Called by the root, not a layer: `dragstart` fires once per gesture on the shared manager. */
 const subjectFor = (source: DragSource): DragSubject | null => {
   const data = source.data;
   if (data.type === "tabset") {

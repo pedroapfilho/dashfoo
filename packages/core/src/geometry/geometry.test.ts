@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import type { BandOptions, Point, Rect } from "./geometry";
-import { dockZonePolygons, resolveDockTarget, zoneRect } from "./geometry";
+import { dockZonePolygons, resolveDockTarget, splitEdge, zoneRect } from "./geometry";
 
 const rect: Rect = { height: 100, width: 200, x: 0, y: 0 };
 
@@ -132,5 +132,46 @@ describe("zoneRect", () => {
 
   test("split-top highlights the top half", () => {
     expect(zoneRect(r, "split-top")).toEqual({ height: 50, width: 200, x: 10, y: 20 });
+  });
+
+  test("reads a DOMRect-like rect whose fields are prototype getters", () => {
+    class GetterRect {
+      readonly #height = 100;
+      readonly #width = 200;
+      readonly #x = 10;
+      readonly #y = 20;
+      get height(): number {
+        return this.#height;
+      }
+      get width(): number {
+        return this.#width;
+      }
+      get x(): number {
+        return this.#x;
+      }
+      get y(): number {
+        return this.#y;
+      }
+    }
+
+    expect(zoneRect(new GetterRect(), "split-right")).toEqual({
+      height: 100,
+      width: 100,
+      x: 110,
+      y: 20,
+    });
+  });
+});
+
+describe("splitEdge", () => {
+  test("names the edge a split location docks against", () => {
+    expect(splitEdge("split-top")).toBe("top");
+    expect(splitEdge("split-bottom")).toBe("bottom");
+    expect(splitEdge("split-left")).toBe("left");
+    expect(splitEdge("split-right")).toBe("right");
+  });
+
+  test("has no edge for a center drop", () => {
+    expect(splitEdge("center")).toBeUndefined();
   });
 });

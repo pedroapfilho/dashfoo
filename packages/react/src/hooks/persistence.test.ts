@@ -1,9 +1,12 @@
-import type { Dashfoo } from "@dashfoo/core";
+import type { Action, Dashfoo } from "@dashfoo/core";
 import { toJSON } from "@dashfoo/core";
 import { act, renderHook } from "@testing-library/react";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { memoryStorageAdapter, usePersistence } from "./persistence";
+import type { PersistInput, StorageAdapter } from "./persistence";
+import { memoryStorageAdapter } from "./persistence";
+import { useDashfooStore } from "./store";
 
 const fail = (): never => {
   throw new Error("Storage unavailable");
@@ -36,11 +39,12 @@ const firstTabName = (model: Dashfoo | undefined): string | undefined => {
   return tabset?.type === "tabset" ? tabset.children[0]?.name : undefined;
 };
 
-const config = (storage: ReturnType<typeof memoryStorageAdapter>, debounceMs = 300) => ({
-  debounceMs,
-  key: "layout",
-  storage,
-});
+const rename = (name: string): Action => ({ name, tabId: "t1", type: "renameTab" });
+
+const target = (storage: StorageAdapter): PersistInput => ({ key: "layout", storage });
+
+const renderPersisted = (persist: PersistInput, onModelChange?: (model: Dashfoo) => void) =>
+  renderHook(() => useDashfooStore({ defaultModel: modelWith("Default"), onModelChange, persist }));
 
 describe("memoryStorageAdapter", () => {
   test("round-trips get/set/remove", () => {
@@ -53,7 +57,7 @@ describe("memoryStorageAdapter", () => {
   });
 });
 
-describe("usePersistence", () => {
+describe("useDashfooStore persist", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -61,162 +65,183 @@ describe("usePersistence", () => {
     vi.useRealTimers();
   });
 
-  test("loads a saved model when storage has one", () => {
+  test("renders the seed first, then restores storage once, silently", () => {
     const storage = memoryStorageAdapter();
     storage.setItem("layout", toJSON(modelWith("Saved")));
+    const read = vi.spyOn(storage, "getItem");
+    const write = vi.spyOn(storage, "setItem");
+    const onModelChange = vi.fn<(model: Dashfoo) => void>();
+    const rendered: Array<string | undefined> = [];
 
-    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
+    const { result } = renderHook(
+      () => {
+        const store = useDashfooStore({
+          defaultModel: modelWith("Default"),
+          onModelChange,
+          persist: target(storage),
+        });
+        rendered.push(firstTabName(store.model));
+        return store;
+      },
+      { wrapper: StrictMode },
+    );
 
-    expect(firstTabName(result.current.initialModel)).toBe("Saved");
+    expect(rendered[0]).toBe("Default");
+    expect(firstTabName(result.current.model)).toBe("Saved");
+    expect(read).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.runAllTimers();
+    });
+    expect(write).not.toHaveBeenCalled();
+    expect(onModelChange).not.toHaveBeenCalled();
+    expect(result.current.canUndo()).toBe(false);
   });
 
-  test("falls back to the default model when storage is empty", () => {
-    const storage = memoryStorageAdapter();
+  test("keeps the default model when storage is empty", () => {
+    const { result } = renderPersisted(target(memoryStorageAdapter()));
 
-    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
-
-    expect(firstTabName(result.current.initialModel)).toBe("Default");
+    expect(firstTabName(result.current.model)).toBe("Default");
   });
 
-  test("falls back and clears a corrupt stored value", () => {
-    const storage = memoryStorageAdapter();
-    storage.setItem("layout", "{ not valid json");
-
-    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
-
-    expect(firstTabName(result.current.initialModel)).toBe("Default");
-    expect(storage.getItem("layout")).toBeNull();
-  });
-
-  test("a corrupt stored value warns and is removed on mount", () => {
+  test("a corrupt stored value warns, is removed, and leaves the default", () => {
     const storage = memoryStorageAdapter();
     storage.setItem("layout", "{ not valid json");
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const removeItem = vi.spyOn(storage, "removeItem");
 
-    renderHook(() => usePersistence(config(storage), modelWith("Default")));
+    const { result } = renderPersisted(target(storage));
 
+    expect(firstTabName(result.current.model)).toBe("Default");
     expect(warn).toHaveBeenCalledWith(
       "[dashfoo] discarding unreadable persisted layout",
       expect.anything(),
     );
-    expect(removeItem).toHaveBeenCalledWith("layout");
     expect(storage.getItem("layout")).toBeNull();
-
     warn.mockRestore();
-    removeItem.mockRestore();
   });
 
-  test("a queued save lands under the key it was produced for after a key change", () => {
+  test("debounce-saves the latest edit and a fresh store restores it", () => {
     const storage = memoryStorageAdapter();
-    const { rerender, result } = renderHook(
-      ({ key }: { key: string }) =>
-        usePersistence({ debounceMs: 300, key, storage }, modelWith("Default")),
-      { initialProps: { key: "old" } },
-    );
+    const first = renderPersisted(target(storage));
 
     act(() => {
-      result.current.save(modelWith("Edited"));
+      first.result.current.dispatch(rename("One"));
+      first.result.current.dispatch(rename("Two"));
     });
-
-    rerender({ key: "new" });
+    expect(storage.getItem("layout")).toBeNull();
     act(() => {
       vi.advanceTimersByTime(300);
     });
+    expect(firstTabName(JSON.parse(storage.getItem("layout") ?? "null"))).toBe("Two");
+    first.unmount();
 
-    expect(storage.getItem("old")).toBe(toJSON(modelWith("Edited")));
-    expect(storage.getItem("new")).toBeNull();
+    const second = renderPersisted(target(storage));
+    expect(firstTabName(second.result.current.model)).toBe("Two");
   });
 
-  test("a queued save lands in the storage it was produced for after a config change", () => {
+  test("a bare string persists to localStorage with the default debounce", () => {
+    const { result } = renderPersisted("dashfoo:test");
+
+    act(() => {
+      result.current.dispatch(rename("Local"));
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(firstTabName(JSON.parse(localStorage.getItem("dashfoo:test") ?? "null"))).toBe("Local");
+    localStorage.removeItem("dashfoo:test");
+  });
+
+  test("undo and setModel are saved like any other change", () => {
+    const storage = memoryStorageAdapter();
+    const { result } = renderPersisted(target(storage));
+
+    act(() => {
+      result.current.dispatch(rename("Edited"));
+      result.current.undo();
+      vi.advanceTimersByTime(300);
+    });
+    expect(firstTabName(JSON.parse(storage.getItem("layout") ?? "null"))).toBe("Default");
+
+    act(() => {
+      result.current.setModel(modelWith("Replaced"));
+      vi.advanceTimersByTime(300);
+    });
+    expect(firstTabName(JSON.parse(storage.getItem("layout") ?? "null"))).toBe("Replaced");
+  });
+
+  test("reset clears storage, drops the pending save, and restores the default", () => {
+    const storage = memoryStorageAdapter();
+    storage.setItem("layout", toJSON(modelWith("Saved")));
+    const { result } = renderPersisted(target(storage));
+
+    act(() => {
+      result.current.dispatch(rename("Pending"));
+      result.current.reset();
+      vi.runAllTimers();
+    });
+
+    expect(storage.getItem("layout")).toBeNull();
+    expect(firstTabName(result.current.model)).toBe("Default");
+    expect(result.current.canUndo()).toBe(false);
+  });
+
+  test("a queued save lands in the target it was produced for after a change", () => {
     const oldStorage = memoryStorageAdapter();
     const newStorage = memoryStorageAdapter();
     const { rerender, result } = renderHook(
-      ({ storage }: { storage: ReturnType<typeof memoryStorageAdapter> }) =>
-        usePersistence({ debounceMs: 300, key: "layout", storage }, modelWith("Default")),
-      { initialProps: { storage: oldStorage } },
+      ({ persist }: { persist: { key: string; storage: StorageAdapter } }) =>
+        useDashfooStore({ defaultModel: modelWith("Default"), persist }),
+      { initialProps: { persist: { key: "old", storage: oldStorage } } },
     );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     act(() => {
-      result.current.save(modelWith("Edited"));
+      result.current.dispatch(rename("Edited"));
     });
-
-    rerender({ storage: newStorage });
-    act(() => {
-      vi.advanceTimersByTime(300);
-    });
-
-    expect(oldStorage.getItem("layout")).toBe(toJSON(modelWith("Edited")));
-    expect(newStorage.getItem("layout")).toBeNull();
-  });
-
-  test("debounce-saves the latest model and collapses rapid changes", () => {
-    const storage = memoryStorageAdapter();
-    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
-
-    act(() => {
-      result.current.save(modelWith("One"));
-      result.current.save(modelWith("Two"));
-    });
-    expect(storage.getItem("layout")).toBeNull();
-
+    rerender({ persist: { key: "new", storage: newStorage } });
     act(() => {
       vi.advanceTimersByTime(300);
     });
 
-    expect(storage.getItem("layout")).toBe(toJSON(modelWith("Two")));
-  });
-
-  test("clear() removes the saved layout", () => {
-    const storage = memoryStorageAdapter();
-    storage.setItem("layout", toJSON(modelWith("Saved")));
-    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
-
-    act(() => {
-      result.current.clear();
-    });
-
-    expect(storage.getItem("layout")).toBeNull();
+    expect(firstTabName(JSON.parse(oldStorage.getItem("old") ?? "null"))).toBe("Edited");
+    expect(newStorage.getItem("new")).toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("persist key changed"));
+    warn.mockRestore();
   });
 
   test("flushes a pending save on unmount", () => {
     const storage = memoryStorageAdapter();
-    const { result, unmount } = renderHook(() =>
-      usePersistence(config(storage), modelWith("Default")),
-    );
+    const { result, unmount } = renderPersisted(target(storage));
 
     act(() => {
-      result.current.save(modelWith("Edited"));
+      result.current.dispatch(rename("Edited"));
     });
     unmount();
 
-    expect(storage.getItem("layout")).toBe(toJSON(modelWith("Edited")));
+    expect(firstTabName(JSON.parse(storage.getItem("layout") ?? "null"))).toBe("Edited");
   });
 
   test("flushes a pending save on pagehide", () => {
     const storage = memoryStorageAdapter();
-    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
+    const { result } = renderPersisted(target(storage));
 
     act(() => {
-      result.current.save(modelWith("Edited"));
+      result.current.dispatch(rename("Edited"));
     });
     expect(storage.getItem("layout")).toBeNull();
-
     act(() => {
       window.dispatchEvent(new Event("pagehide"));
     });
 
-    expect(storage.getItem("layout")).toBe(toJSON(modelWith("Edited")));
+    expect(firstTabName(JSON.parse(storage.getItem("layout") ?? "null"))).toBe("Edited");
   });
 
   test("flushes a pending save when the page becomes hidden, not while visible", () => {
     const storage = memoryStorageAdapter();
-    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
+    const { result } = renderPersisted(target(storage));
 
     act(() => {
-      result.current.save(modelWith("Edited"));
+      result.current.dispatch(rename("Edited"));
     });
-
     act(() => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
@@ -229,35 +254,42 @@ describe("usePersistence", () => {
     act(() => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
-
     Reflect.deleteProperty(document, "visibilityState");
 
-    expect(storage.getItem("layout")).toBe(toJSON(modelWith("Edited")));
+    expect(firstTabName(JSON.parse(storage.getItem("layout") ?? "null"))).toBe("Edited");
   });
 
-  test("a null config makes save and clear no-ops", () => {
+  test("a controlled store ignores persist and warns", () => {
     const storage = memoryStorageAdapter();
     storage.setItem("layout", toJSON(modelWith("Saved")));
-    const { result } = renderHook(() => usePersistence(null, modelWith("Default")));
-
-    expect(firstTabName(result.current.initialModel)).toBe("Default");
-    act(() => {
-      result.current.save(modelWith("Edited"));
-      vi.advanceTimersByTime(300);
-      result.current.clear();
-    });
-    expect(storage.getItem("layout")).toBe(toJSON(modelWith("Saved")));
-  });
-  test("storage read, write and remove failures warn without breaking the layout", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const storage = { getItem: fail, removeItem: fail, setItem: fail };
-    const { result } = renderHook(() => usePersistence(config(storage), modelWith("Default")));
-    expect(firstTabName(result.current.initialModel)).toBe("Default");
+    const { result } = renderHook(() =>
+      useDashfooStore({ model: modelWith("Controlled"), persist: target(storage) }),
+    );
+
     act(() => {
-      result.current.save(modelWith("Edited"));
-      vi.advanceTimersByTime(300);
-      result.current.clear();
+      result.current.dispatch(rename("Edited"));
+      vi.runAllTimers();
     });
+
+    expect(firstTabName(result.current.model)).toBe("Controlled");
+    expect(storage.getItem("layout")).toBe(toJSON(modelWith("Saved")));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("`persist` is ignored"));
+    warn.mockRestore();
+  });
+
+  test("storage read, write and remove failures warn without breaking the store", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { result } = renderPersisted(target({ getItem: fail, removeItem: fail, setItem: fail }));
+
+    expect(firstTabName(result.current.model)).toBe("Default");
+    act(() => {
+      result.current.dispatch(rename("Edited"));
+      vi.advanceTimersByTime(300);
+      result.current.reset();
+    });
+
+    expect(firstTabName(result.current.model)).toBe("Default");
     expect(warn).toHaveBeenCalledWith(
       "[dashfoo] failed to load persisted layout",
       expect.any(Error),

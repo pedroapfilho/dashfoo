@@ -4,9 +4,8 @@ description: Uncontrolled vs controlled mode, the built-in undo/redo history, th
 ---
 
 `DashfooLayout` runs in one of two modes, decided by which prop you pass.
-Give it `defaultModel` and the layout owns its document: an XState actor
-holds the model plus a full undo/redo history, and you can ignore the
-internals. Give it `model` and `onModelChange` instead, and the prop
+Give it `defaultModel` and the layout owns its document: its store holds
+the model plus a full undo/redo history, and you can ignore the internals. Give it `model` and `onModelChange` instead, and the prop
 becomes the source of truth. Every edit routes out to you, and nothing
 changes on screen until you feed a new `model` back in.
 
@@ -20,7 +19,7 @@ The mode is mutually exclusive at the prop level.
 
 | Mode         | Prop you pass             | Who owns the model | History       |
 | ------------ | ------------------------- | ------------------ | ------------- |
-| Uncontrolled | `defaultModel`            | the actor inside   | built in      |
+| Uncontrolled | `defaultModel`            | the store inside   | built in      |
 | Controlled   | `model` + `onModelChange` | your component     | yours to keep |
 
 Both go through `useDashfooStore`, which `DashfooLayout` calls for you. The
@@ -35,11 +34,13 @@ type UseDashfooStoreOptions = {
   onActiveTabsetChange?: (tabsetId: string | undefined) => void;
   onMaximizedTabsetChange?: (tabsetId: string | undefined) => void;
   onModelChange?: (model: Dashfoo, action?: Action) => void;
+  persist?: PersistInput;
 };
 ```
 
-The last four are the same callbacks `DashfooLayout` accepts as props; it
-forwards them straight through. They work in both modes and are covered in
+The callbacks are the same ones `DashfooLayout` accepts as props; it
+forwards them straight through, along with `persist` (see
+[Persisting layouts](/persistence)). They work in both modes and are covered in
 [Observing and intercepting changes](#observing-and-intercepting-changes).
 
 Pass one of `model` or `defaultModel`. Passing neither throws:
@@ -48,7 +49,7 @@ Pass one of `model` or `defaultModel`. Passing neither throws:
 // useDashfooStore requires either a `model` or a `defaultModel`.
 ```
 
-## Uncontrolled: the actor owns history
+## Uncontrolled: the store owns history
 
 This is the short path. Hand over an initial `Dashfoo` model and walk away.
 
@@ -61,15 +62,15 @@ import { renderPanel } from "./panels";
 const Workspace = () => <DashfooLayout defaultModel={playgroundModel()} factory={renderPanel} />;
 ```
 
-Behind the scenes the actor keeps a `History` record: `past`, `present`,
-and `future`. Every dispatched `Action` runs through the pure `reducer` and
+Behind the scenes the store keeps a `History` record from `@dashfoo/core`:
+`past`, `present`, and `future`. Every dispatched `Action` runs through the pure `reducer` and
 pushes a new entry. The store derives `canUndo` / `canRedo` / `undo` /
 `redo` from that history, and the [imperative handle](#the-imperative-handle)
 surfaces them, so chrome controls can wire up without touching internals.
 
 `onModelChange` is optional here. Add it and you get a read-only feed of
 every committed model (and the `action` that produced it) without giving
-up the actor's own history. The actor stays the source of truth.
+up the store's own history. The store stays the source of truth.
 
 ### One action, one undo step
 
@@ -83,7 +84,7 @@ type History = {
   present: Dashfoo;
 };
 
-const dispatch = (history: History, action: Action): History => {
+const dispatchToHistory = (history: History, action: Action): History => {
   const present = reducer(history.present, action);
   return { future: [], past: [...history.past, history.present], present };
 };
@@ -96,7 +97,7 @@ The reasoning is recorded in
 [`packages/core/src/state/history.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/state/history.ts).
 
 `canUndo` and `canRedo` on the store are functions, not booleans. They read
-the live actor snapshot, so a caller checking them right after `undo()`
+the live history, so a caller checking them right after `undo()`
 (inside `onModelChange`, for instance) sees the fresh value rather than a
 one-render-stale one.
 
@@ -170,8 +171,8 @@ const Workspace = (): ReactNode => {
   const layout = useRef<DashfooHandle>(null);
   const [history, setHistory] = useState({ canRedo: false, canUndo: false });
 
-  // canUndo/canRedo read the live actor snapshot, so sample them when the
-  // model changes (an event), not during render.
+  // canUndo/canRedo read the live history, so sample them when the model
+  // changes (an event), not during render.
   const handleModelChange = useCallback((): void => {
     setHistory({
       canRedo: layout.current?.canRedo() ?? false,
@@ -238,7 +239,7 @@ const Workspace = () => {
 };
 ```
 
-When `model` is set, a dispatch never touches the actor. The store runs
+When `model` is set, a dispatch never touches the store's history. The store runs
 `onAction` first (which may veto or replace the action), computes the next
 model with the pure `reducer`, and hands the result to `onModelChange`. A
 dispatch that produces no change emits nothing.
@@ -247,15 +248,11 @@ Two consequences follow from this.
 
 First, the screen does not update until your new `model` arrives. If
 `onModelChange` does nothing, the layout sits still. You own the model, so you
-decide when it changes. A `useEffect`
-syncs each new `model` prop back into the actor, so the inspector and any
-internal selectors still observe the current document.
+decide when it changes.
 
 Second, undo and redo are no-ops in controlled mode. Both warn once and
 return without touching anything or firing `onModelChange`, and `canUndo` /
-`canRedo` always report `false`. The internal actor still records what you
-dispatch, but the controlled sync resets it on every new `model`, so it is
-never a stack you can walk. If you want undo/redo in controlled mode, you
+`canRedo` always report `false`. If you want undo/redo in controlled mode, you
 keep the history yourself. That's the
 [worked example](#worked-example-external-history--undoredo--inspector) below.
 
@@ -265,13 +262,11 @@ Whatever model enters the store gets run through `normalize` first,
 whether it came from `model` or `defaultModel`:
 
 ```ts
-const actorRef = useActorRef(dashfooMachine, { input: { model: normalize(initialModel) } });
-```
+// Uncontrolled: createHistory normalizes the seed, setModel's replacement and a restored layout.
+const history = createHistory(defaultModel);
 
-The controlled sync does the same on every update:
-
-```ts
-actorRef.send({ model: normalize(controlledModel), type: "SET_MODEL" });
+// Controlled: every new `model` prop is normalized before it renders.
+const model = normalize(controlledModel);
 ```
 
 `normalize` enforces the same structural invariants the reducer guarantees: no

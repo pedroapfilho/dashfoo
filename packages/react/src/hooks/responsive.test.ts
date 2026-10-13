@@ -1,190 +1,169 @@
 import type { Dashfoo } from "@dashfoo/core";
+import { floatNode, model, row, tab, tabset } from "@dashfoo/core";
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import {
-  activeBreakpoint,
-  matchBreakpoint,
-  useContainerWidth,
-  useResponsiveModel,
-} from "./responsive";
+import type { ResponsiveOptions } from "./responsive";
+import { useResponsiveLayout } from "./responsive";
 
-const model = (name: string): Dashfoo => ({
-  activeTabsetId: "ts1",
-  floats: [],
-  global: {},
-  layout: {
-    children: [
-      {
-        children: [{ component: "c", id: "t1", name, type: "tab" }],
-        id: "ts1",
-        selected: 0,
-        type: "tabset",
-        weight: 1,
-      },
-    ],
-    id: "root",
-    orientation: "row",
-    type: "row",
-    weight: 1,
-  },
-  version: 1,
-});
+const nestedModel = (): Dashfoo =>
+  model(
+    row(
+      [
+        tabset([tab("main", "Main")], { id: "main", weight: 3 }),
+        row(
+          [
+            tabset([tab("notes", "Notes")], { id: "notes" }),
+            tabset([tab("logs", "Logs")], { id: "logs" }),
+          ],
+          { id: "side", orientation: "column" },
+        ),
+      ],
+      { id: "root" },
+    ),
+    {
+      floats: [
+        floatNode(
+          row([tabset([tab("chat", "Chat")], { id: "chat" })], { id: "float-root" }),
+          { height: 200, left: 0, top: 0, width: 300 },
+          { id: "f1" },
+        ),
+      ],
+    },
+  );
 
-const MOBILE = model("Mobile");
-const DESKTOP = model("Desktop");
+const measurement: { width: number | undefined } = { width: undefined };
 
-describe("matchBreakpoint", () => {
-  test("a breakpoint with no query always matches", () => {
-    expect(matchBreakpoint({ id: "d", model: DESKTOP }, 9999)).toBe(true);
-  });
-
-  test("a maxWidth query matches at or below the width", () => {
-    const bp = { id: "m", model: MOBILE, query: { maxWidth: 640 } } as const;
-    expect(matchBreakpoint(bp, 500)).toBe(true);
-    expect(matchBreakpoint(bp, 800)).toBe(false);
-  });
-
-  describe("a media query consults matchMedia", () => {
-    afterEach(() => {
-      vi.unstubAllGlobals();
-    });
-
-    const bp = {
-      id: "dark",
-      model: MOBILE,
-      query: { media: "(prefers-color-scheme: dark)" },
-    } as const;
-
-    test("returns true when the media query matches", () => {
-      vi.stubGlobal(
-        "matchMedia",
-        vi.fn(() => ({ matches: true })),
-      );
-      expect(matchBreakpoint(bp, 0)).toBe(true);
-    });
-
-    test("returns false when the media query does not match", () => {
-      vi.stubGlobal(
-        "matchMedia",
-        vi.fn(() => ({ matches: false })),
-      );
-      expect(matchBreakpoint(bp, 0)).toBe(false);
-    });
-  });
-});
-
-describe("activeBreakpoint", () => {
-  const breakpoints = [
-    { id: "mobile", model: MOBILE, query: { maxWidth: 640 } },
-    { id: "desktop", model: DESKTOP },
-  ];
-
-  test("the first matching breakpoint wins", () => {
-    expect(activeBreakpoint(breakpoints, 500).id).toBe("mobile");
-  });
-
-  test("falls through to the catch-all when nothing matches", () => {
-    expect(activeBreakpoint(breakpoints, 1000).id).toBe("desktop");
-  });
-
-  test("throws when given no breakpoints", () => {
-    expect(() => activeBreakpoint([], 500)).toThrow(
-      "useResponsiveModel requires at least one breakpoint.",
-    );
-  });
-});
-
-describe("useResponsiveModel", () => {
-  test("returns the active model + a containerRef function, unlocked by default", () => {
-    const { result } = renderHook(() =>
-      useResponsiveModel({ breakpoints: [{ id: "desktop", model: DESKTOP }] }),
-    );
-    expect(typeof result.current.containerRef).toBe("function");
-    expect(result.current.model).toBe(DESKTOP);
-    expect(result.current.breakpoint).toBe("desktop");
-    expect(result.current.isCompact).toBe(false);
-    expect(result.current.draggableTabs).toBe(true);
-    expect(result.current.draggableTabsets).toBe(true);
-    expect(result.current.resizableSplits).toBe(true);
-  });
-
-  test("a compact breakpoint locks every structural interaction", () => {
-    const { result } = renderHook(() =>
-      useResponsiveModel({ breakpoints: [{ compact: true, id: "stacked", model: MOBILE }] }),
-    );
-    expect(result.current.isCompact).toBe(true);
-    expect(result.current.model).toBe(MOBILE);
-    expect(result.current.draggableTabs).toBe(false);
-    expect(result.current.draggableTabsets).toBe(false);
-    expect(result.current.resizableSplits).toBe(false);
-  });
-});
-
-describe("responsive subscription cleanup", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  test("disconnects the previous container on replacement, detach and unmount", () => {
-    const observers: Array<{
-      disconnect: ReturnType<typeof vi.fn>;
-      observe: ReturnType<typeof vi.fn>;
-    }> = [];
-    class MockResizeObserver {
-      disconnect = vi.fn();
-      observe = vi.fn();
-
-      constructor() {
-        observers.push(this);
-      }
+class MeasuringObserver {
+  static instances: Array<MeasuringObserver> = [];
+  callback: (entries: Array<{ contentRect: { width: number } }>) => void;
+  disconnect = vi.fn<() => void>();
+  observe = vi.fn<(target: Element) => void>(() => {
+    if (measurement.width !== undefined) {
+      this.callback([{ contentRect: { width: measurement.width } }]);
     }
-    vi.stubGlobal("ResizeObserver", MockResizeObserver);
-    const { result, unmount } = renderHook(useContainerWidth);
+  });
+
+  constructor(callback: (entries: Array<{ contentRect: { width: number } }>) => void) {
+    this.callback = callback;
+    MeasuringObserver.instances.push(this);
+  }
+}
+
+const stubContainerWidth = (width: number | undefined): void => {
+  measurement.width = width;
+  vi.stubGlobal("ResizeObserver", MeasuringObserver);
+};
+
+const renderMeasured = (source: Dashfoo, options: ResponsiveOptions | undefined) => {
+  const rendered = renderHook(() => useResponsiveLayout(source, options));
+  act(() => {
+    rendered.result.current.rootRef(document.createElement("div"));
+  });
+  return rendered;
+};
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  MeasuringObserver.instances = [];
+});
+
+describe("useResponsiveLayout", () => {
+  test("passes the model through, unlocked, above the breakpoint", () => {
+    stubContainerWidth(1200);
+    const source = nestedModel();
+    const { result } = renderMeasured(source, { maxWidth: 720 });
+
+    expect(result.current.isCompact).toBe(false);
+    expect(result.current.model).toBe(source);
+    expect(result.current.restructurable).toBe(true);
+    expect(result.current.maximizable).toBe(true);
+  });
+
+  test("never compacts without options", () => {
+    stubContainerWidth(10);
+    const source = nestedModel();
+    const { result } = renderMeasured(source, undefined);
+
+    expect(result.current.isCompact).toBe(false);
+    expect(result.current.model).toBe(source);
+  });
+
+  test("assumes the wide layout before the container is measured", () => {
+    const source = nestedModel();
+    const { result } = renderHook(() => useResponsiveLayout(source, { maxWidth: 720 }));
+
+    expect(result.current.isCompact).toBe(false);
+  });
+
+  test("at or below the breakpoint stacks every row and locks the structure, floats included", () => {
+    stubContainerWidth(720);
+    const source = { ...nestedModel(), maximizedTabsetId: "main" };
+    const { result } = renderMeasured(source, { maxWidth: 720 });
+    const { layout } = result.current.model;
+    const side = layout.children[1];
+
+    expect(result.current.isCompact).toBe(true);
+    expect(result.current.restructurable).toBe(false);
+    expect(result.current.maximizable).toBe(false);
+    expect(result.current.model.maximizedTabsetId).toBeUndefined();
+    expect(layout.orientation).toBe("column");
+    expect(layout.children.map((child) => [child.id, child.weight])).toEqual([
+      ["main", 1],
+      ["side", 2],
+    ]);
+    expect(side?.type === "row" && side.orientation).toBe("column");
+    expect(result.current.model.floats).toBe(source.floats);
+  });
+
+  test("keeps row ancestors so nested tabsets are never reparented", () => {
+    stubContainerWidth(500);
+    const { result } = renderMeasured(nestedModel(), { maxWidth: 720, orientation: "row" });
+    const side = result.current.model.layout.children[1];
+
+    expect(result.current.model.layout.orientation).toBe("row");
+    expect(side?.type === "row" && side.children.map((child) => child.id)).toEqual([
+      "notes",
+      "logs",
+    ]);
+  });
+
+  test("never mutates the canonical model", () => {
+    stubContainerWidth(500);
+    const source = nestedModel();
+    const before = structuredClone(source);
+    renderMeasured(source, { maxWidth: 720 });
+
+    expect(source).toEqual(before);
+  });
+});
+
+describe("container measurement", () => {
+  test("disconnects the previous container on replacement, detach and unmount", () => {
+    stubContainerWidth(undefined);
+    const observers = MeasuringObserver.instances;
+    const source = nestedModel();
+    const { result, unmount } = renderHook(() => useResponsiveLayout(source, { maxWidth: 720 }));
     const first = document.createElement("div");
     const second = document.createElement("div");
 
     act(() => {
-      result.current[0](first);
+      result.current.rootRef(first);
     });
     expect(observers[0]?.observe).toHaveBeenCalledWith(first);
     act(() => {
-      result.current[0](second);
+      result.current.rootRef(second);
     });
     expect(observers[0]?.disconnect).toHaveBeenCalledOnce();
     expect(observers[1]?.observe).toHaveBeenCalledWith(second);
     act(() => {
-      result.current[0](null);
+      result.current.rootRef(null);
     });
     expect(observers[1]?.disconnect).toHaveBeenCalledOnce();
     act(() => {
-      result.current[0](first);
+      result.current.rootRef(first);
     });
     unmount();
     expect(observers[2]?.disconnect).toHaveBeenCalledOnce();
-  });
-
-  test("removes every media listener on breakpoint replacement and unmount", () => {
-    const narrow = { addEventListener: vi.fn(), matches: false, removeEventListener: vi.fn() };
-    const dark = { addEventListener: vi.fn(), matches: false, removeEventListener: vi.fn() };
-    vi.stubGlobal("matchMedia", (query: string) =>
-      query === "(max-width: 640px)" ? narrow : dark,
-    );
-    const breakpoints = [
-      { id: "mobile", model: MOBILE, query: { media: "(max-width: 640px)" } },
-      { id: "dark", model: DESKTOP, query: { media: "(prefers-color-scheme: dark)" } },
-    ];
-    const { rerender, unmount } = renderHook(useResponsiveModel, { initialProps: { breakpoints } });
-    const firstHandler = narrow.addEventListener.mock.calls[0]?.[1];
-
-    rerender({ breakpoints: breakpoints.slice(1) });
-    expect(narrow.removeEventListener).toHaveBeenCalledWith("change", firstHandler);
-    expect(dark.removeEventListener).toHaveBeenCalledWith("change", firstHandler);
-    unmount();
-    expect(narrow.removeEventListener).toHaveBeenCalledOnce();
-    expect(dark.removeEventListener).toHaveBeenCalledTimes(2);
-    expect(dark.removeEventListener.mock.calls[1]?.[1]).toBe(
-      dark.addEventListener.mock.calls[1]?.[1],
-    );
   });
 });

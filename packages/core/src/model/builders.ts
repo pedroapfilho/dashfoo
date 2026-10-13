@@ -1,6 +1,5 @@
-import { clampSelected } from "../lib/clamp-selected";
-
 import { createNodeId } from "./ids";
+import { clampSelected } from "./invariants";
 import { DEFAULT_WEIGHT } from "./schema";
 import type {
   Dashfoo,

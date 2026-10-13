@@ -1,7 +1,6 @@
 "use client";
 
 export * from "./components/dashfoo-layout";
-export * from "./components/dashfoo-drag-provider";
 export * from "./components/layout";
 export * from "./components/panel";
 export { Tabset } from "./components/tabset/tabset";
@@ -23,9 +22,11 @@ export { useTab, useTabset } from "./components/tabset/tabset-store";
 export type { TabContextValue, TabsetState } from "./components/tabset/tabset-store";
 export { useLayout } from "./hooks/layout-store";
 export type { LayoutState } from "./hooks/layout-store";
-export * from "./hooks/persistence";
+export { localStorageAdapter, memoryStorageAdapter } from "./hooks/persistence";
+export type { PersistInput, StorageAdapter } from "./hooks/persistence";
 export * from "./hooks/responsive";
 export * from "./hooks/store";
 
-export { useDragSubject, useDropIntent, useExternalTabSource } from "./hooks/drag-hooks";
-export type { ExternalTabSourceOptions } from "./hooks/drag-hooks";
+export { useDragSubject, useDropIntent, useExternalTabSource } from "./drag/drag-hooks";
+export type { ExternalTabSourceOptions } from "./drag/drag-hooks";
+export { DashfooDragProvider } from "./drag/drag-root";

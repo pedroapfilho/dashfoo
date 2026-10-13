@@ -2,7 +2,7 @@
 
 import type { Dashfoo } from "@dashfoo/core";
 import { fromJSON, toJSON } from "@dashfoo/core";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 type StorageAdapter = {
   getItem: (key: string) => string | null;
@@ -60,13 +60,32 @@ const localStorageAdapter: StorageAdapter = {
   },
 };
 
-type PersistConfig = {
+const DEFAULT_DEBOUNCE_MS = 300;
+
+/** A bare string is a localStorage key. */
+type PersistInput = string | { debounceMs?: number; key: string; storage?: StorageAdapter };
+
+type PersistTarget = {
   debounceMs: number;
   key: string;
   storage: StorageAdapter;
 };
 
-const removeStoredLayout = ({ key, storage }: PersistConfig): void => {
+const resolvePersist = (persist: PersistInput | undefined): PersistTarget | null => {
+  if (persist === undefined) {
+    return null;
+  }
+  if (typeof persist === "string") {
+    return { debounceMs: DEFAULT_DEBOUNCE_MS, key: persist, storage: localStorageAdapter };
+  }
+  return {
+    debounceMs: persist.debounceMs ?? DEFAULT_DEBOUNCE_MS,
+    key: persist.key,
+    storage: persist.storage ?? localStorageAdapter,
+  };
+};
+
+const removeStoredLayout = ({ key, storage }: PersistTarget): void => {
   try {
     storage.removeItem(key);
   } catch (error) {
@@ -75,64 +94,71 @@ const removeStoredLayout = ({ key, storage }: PersistConfig): void => {
   }
 };
 
-type Persistence = {
-  clear: () => void;
+const loadStoredLayout = (target: PersistTarget): Dashfoo | undefined => {
+  try {
+    const raw = target.storage.getItem(target.key);
+    if (raw === null) {
+      return undefined;
+    }
+    try {
+      return fromJSON(raw);
+    } catch (error) {
+      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
+      console.warn("[dashfoo] discarding unreadable persisted layout", error);
+      removeStoredLayout(target);
+      return undefined;
+    }
+  } catch (error) {
+    // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
+    console.warn("[dashfoo] failed to load persisted layout", error);
+    return undefined;
+  }
+};
 
-  initialModel: Dashfoo | undefined;
+type LayoutStorage = {
+  clear: () => void;
   save: (model: Dashfoo) => void;
 };
 
-const usePersistence = (
-  config: PersistConfig | null,
-  defaultModel: Dashfoo | undefined,
-): Persistence => {
-  const configRef = useRef(config);
+/**
+ * `restore` receives the stored layout once, after mount: a browser-only read
+ * during render would disagree with the server render.
+ */
+const useLayoutStorage = (
+  persist: PersistInput | undefined,
+  restore: (model: Dashfoo) => void,
+): LayoutStorage => {
+  const target = resolvePersist(persist);
+  const targetRef = useRef(target);
   useEffect(() => {
-    configRef.current = config;
-  }, [config]);
+    targetRef.current = target;
+  }, [target]);
 
-  const [initialModel, setInitialModel] = useState(defaultModel);
   const loaded = useRef(false);
   useEffect(() => {
-    // A browser-only read during render disagrees with SSR. Load once after
-    // hydration; the layout applies this snapshot without recording an action.
     if (loaded.current) {
       return;
     }
     loaded.current = true;
-    const current = configRef.current;
-    if (current === null || defaultModel === undefined) {
-      return;
+    const current = targetRef.current;
+    const restored = current === null ? undefined : loadStoredLayout(current);
+    if (restored !== undefined) {
+      // oxlint-disable-next-line react-doctor/no-pass-data-to-parent -- restoration must happen after hydration, without an action or undo entry
+      restore(restored);
     }
-    try {
-      const raw = current.storage.getItem(current.key);
-      if (raw === null) {
-        return;
-      }
-      try {
-        const restored = fromJSON(raw);
-        setInitialModel(restored);
-      } catch (error) {
-        // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-        console.warn("[dashfoo] discarding unreadable persisted layout", error);
-        removeStoredLayout(current);
-      }
-    } catch (error) {
-      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-      console.warn("[dashfoo] failed to load persisted layout", error);
-    }
-  }, [defaultModel]);
+  }, [restore]);
 
-  const loadedKey = useRef(config?.key);
+  const key = target?.key;
+  const loadedKey = useRef(key);
   useEffect(() => {
-    if (config !== null && config.key !== loadedKey.current) {
+    if (key !== undefined && key !== loadedKey.current) {
       // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
       console.warn(
         "[dashfoo] persist key changed for a mounted layout; the displayed layout still reflects the previous key; remount (key={persistKey}) to load the new key",
       );
-      loadedKey.current = config.key;
+      loadedKey.current = key;
     }
-  }, [config]);
+  }, [key]);
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -157,7 +183,7 @@ const usePersistence = (
 
   const save = useCallback(
     (next: Dashfoo): void => {
-      const current = configRef.current;
+      const current = targetRef.current;
       if (current === null) {
         return;
       }
@@ -194,14 +220,14 @@ const usePersistence = (
       timer.current = null;
     }
     pending.current = null;
-    const current = configRef.current;
+    const current = targetRef.current;
     if (current !== null) {
       removeStoredLayout(current);
     }
   }, []);
 
-  return useMemo(() => ({ clear, initialModel, save }), [clear, initialModel, save]);
+  return useMemo(() => ({ clear, save }), [clear, save]);
 };
 
-export { localStorageAdapter, memoryStorageAdapter, usePersistence };
-export type { Persistence, PersistConfig, StorageAdapter };
+export { localStorageAdapter, memoryStorageAdapter, useLayoutStorage };
+export type { PersistInput, StorageAdapter };

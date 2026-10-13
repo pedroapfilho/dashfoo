@@ -1,10 +1,10 @@
 import type { TabsetNode } from "@dashfoo/core";
-import { findTabset, stackModel } from "@dashfoo/core";
+import { findTabset } from "@dashfoo/core";
 import {
   Layout,
   Tabset,
-  useContainerWidth,
   useDashfooStore,
+  useResponsiveLayout,
   useTab,
   useTabset,
 } from "@dashfoo/react";
@@ -67,21 +67,11 @@ const RawTabset = ({ node }: { node: TabsetNode }): ReactNode => (
 const RawPage = (): ReactNode => {
   const defaultModel = useMemo(() => dockingModel(), []);
   const store = useDashfooStore({ defaultModel });
-  const [containerRef, width] = useContainerWidth();
-  const isCompact = width <= 720;
-  const view = useMemo(
-    () => (isCompact ? stackModel(store.model) : store.model),
-    [isCompact, store.model],
-  );
+  const responsive = useResponsiveLayout(store.model, { maxWidth: 720 });
+  const view = responsive.model;
   const maximized =
     view.maximizedTabsetId === undefined ? undefined : findTabset(view, view.maximizedTabsetId);
 
-  const dispatch = (action: Parameters<typeof store.dispatch>[0]): void => {
-    if (isCompact && action.type === "adjustSplit") {
-      return;
-    }
-    store.dispatch(action);
-  };
   const handleUndo = (): void => {
     store.undo();
   };
@@ -105,13 +95,12 @@ const RawPage = (): ReactNode => {
       title="Raw primitives"
     >
       <Layout.Root
-        dispatch={dispatch}
-        draggableTabs={!isCompact}
-        draggableTabsets={!isCompact}
+        dispatch={store.dispatch}
+        maximizable={responsive.maximizable}
         model={view}
         renderers={{ tab: PlaceholderPanel }}
-        resizableSplits={!isCompact}
-        rootRef={containerRef}
+        restructurable={responsive.restructurable}
+        rootRef={responsive.rootRef}
       >
         <Layout.DragLayer>
           {maximized ? (

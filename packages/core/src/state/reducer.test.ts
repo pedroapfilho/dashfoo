@@ -24,6 +24,30 @@ const baseModel = (): Dashfoo => ({
   version: 1,
 });
 
+const attributedModel = (): Dashfoo => ({
+  ...baseModel(),
+  global: { snap: { divisions: "panels", step: 10 }, tabLocation: "top" },
+  layout: {
+    children: [
+      {
+        children: [{ ...tab("t1"), config: { series: [1, 2], symbol: "AAPL" } }, tab("t2")],
+        id: "ts1",
+        max: { unit: "%", value: 80 },
+        min: { unit: "px", value: 120 },
+        selected: 0,
+        type: "tabset",
+        weight: 60,
+      },
+      { children: [tab("t3")], id: "ts2", selected: 0, type: "tabset", weight: 40 },
+    ],
+    id: "root",
+    orientation: "row",
+    snap: { step: 25, threshold: 5 },
+    type: "row",
+    weight: 1,
+  },
+});
+
 const tabsetById = (model: Dashfoo, id: string): TabsetNode | undefined =>
   model.layout.children.find((c): c is TabsetNode => c.type === "tabset" && c.id === id);
 
@@ -311,6 +335,55 @@ describe("reducer reports no change by identity", () => {
     const input = baseModel();
 
     expect(reducer(input, { rowId: "root", type: "adjustSplit", weights: [60, 40] })).toBe(input);
+  });
+
+  test("maximizing a float's tabset returns the same model", () => {
+    const floated = reducer(baseModel(), { floatId: "f1", tabsetId: "ts2", type: "floatTabset" });
+
+    expect(reducer(floated, { tabsetId: "ts2", type: "setMaximizedTabset" })).toBe(floated);
+  });
+
+  test("maximizing an unknown tabset returns the same model", () => {
+    const input = baseModel();
+
+    expect(reducer(input, { tabsetId: "ghost", type: "setMaximizedTabset" })).toBe(input);
+  });
+
+  test("re-sending identical object-valued node attributes returns the same model", () => {
+    const input = attributedModel();
+
+    expect(
+      reducer(input, {
+        attrs: { max: { unit: "%", value: 80 }, min: { unit: "px", value: 120 } },
+        nodeId: "ts1",
+        type: "updateNodeAttributes",
+      }),
+    ).toBe(input);
+    expect(
+      reducer(input, {
+        attrs: { snap: { step: 25, threshold: 5 } },
+        nodeId: "root",
+        type: "updateNodeAttributes",
+      }),
+    ).toBe(input);
+    expect(
+      reducer(input, {
+        attrs: { config: { series: [1, 2], symbol: "AAPL" } },
+        nodeId: "t1",
+        type: "updateNodeAttributes",
+      }),
+    ).toBe(input);
+  });
+
+  test("re-sending an identical global snap returns the same model", () => {
+    const input = attributedModel();
+
+    expect(
+      reducer(input, {
+        attrs: { snap: { divisions: "panels", step: 10 } },
+        type: "updateGlobalAttributes",
+      }),
+    ).toBe(input);
   });
 
   test("a real edit still returns a new model", () => {

@@ -18,13 +18,15 @@ This guide explains how the pointer position resolves to one of those
 outcomes, the pipeline that carries a drag from the internal drag hooks to a
 committed model change, and the gates that turn each outcome on or off.
 
-The geometry lives in `@dashfoo/core`
-([`resolveDockTarget`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/geometry/geometry.ts))
-and `@dashfoo/react`
-(the [drag adapter](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/drag-provider.tsx)).
-The drag adapter is the only module in the library that touches `@dnd-kit`.
-It drives the framework-agnostic `@dnd-kit/dom` core imperatively (no
-React bindings). Everything it touches downstream is pure and unit-tested.
+The decision lives in `@dashfoo/core`
+([`resolveDropIntent`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/geometry/drop-intent.ts),
+built on [`resolveDockTarget`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/geometry/geometry.ts))
+and the wiring in `@dashfoo/react`
+(the [drag adapter](https://github.com/pedroapfilho/dashfoo/tree/main/packages/react/src/drag)).
+The drag adapter directory is the only place in the library that touches
+`@dnd-kit`, and a lint guard keeps it that way. It drives the
+framework-agnostic `@dnd-kit/dom` core imperatively (no React bindings).
+Everything it touches downstream is pure and unit-tested.
 
 > **Pointer-only.** Drag-docking uses a pointer sensor; there is no keyboard
 > drag. The arrow keys are already bound to roving-tabindex tab navigation, and
@@ -46,15 +48,16 @@ picks which one.
 ### Over a tab strip: stack at an insertion index
 
 When the pointer is inside the element marked `data-dashfoo="tabstrip"`, the
-drop is always a stack. The adapter gathers the strip's `data-dashfoo="tab"`
-rects (excluding the dragged tab itself) and the pure math in
-[`tab-insertion.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/lib/tab-insertion.ts)
-finds the first tab whose horizontal midpoint sits to the right of the pointer:
+drop is always a stack. The adapter measures the strip once: its rect and the
+rect and `data-tab-id` of every `data-dashfoo="tab-item"` in it. The pure
+[`resolveDropIntent`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/geometry/drop-intent.ts)
+drops the dragged tab from that list and finds the first tab item whose
+horizontal midpoint sits to the right of the pointer:
 
 ```ts
-const insertionIndex = (rects: ReadonlyArray<Rect>, pointerX: number): number => {
-  const found = rects.findIndex((rect) => pointerX < rect.x + rect.width / 2);
-  return found === -1 ? rects.length : found;
+const insertionIndex = (tabs: ReadonlyArray<MeasuredTab>, pointerX: number): number => {
+  const found = tabs.findIndex((tab) => pointerX < tab.rect.x + tab.rect.width / 2);
+  return found === -1 ? tabs.length : found;
 };
 ```
 
@@ -69,14 +72,15 @@ The resulting intent carries `location: "center"`, the target tabset id, and the
 computed `index`:
 
 ```ts
-{ index: insertionIndex(tabRects(strip, draggedId), point.x), location: "center", targetId: id }
+{ index: insertionIndex(landingTabs(subject, strip), point.x), location: "center", targetId: tabset.id }
 ```
 
-The on-screen feedback is a thin vertical line (`insertionLineRect`) centered
-on the slot boundary, spanning the strip's height and clamped so it never
-leaves the strip. The slot is measured against whole tab items (label plus
-close button), so the "after the last tab" position sits past the last close
-button rather than between the label and the close.
+The on-screen feedback is a thin vertical line (`dropIndicator`, also in
+`@dashfoo/core`) centered on the slot boundary, spanning the strip's height and
+clamped so it never leaves the strip. The index and the line read the same
+measurement of whole tab items (label plus close button), so the line always
+marks the slot the index names, and the "after the last tab" position sits past
+the last close button rather than between the label and the close.
 
 For a tabset dragged by its grip, a strip drop still resolves to `center`, but
 the index does not apply: the committed `moveTabset` appends every tab from the
@@ -117,8 +121,9 @@ nothing has to convert it.
 <DockLocations />
 
 A center drop over the **body** appends rather than inserting at a mid-strip
-slot. The adapter sets `index` to the count of remaining tabs so the tab lands
-last.
+slot. `resolveDropIntent` sets `index` to the count of remaining tabs so the tab
+lands last. A tabset without a strip has no tab order to measure, so its stack
+drops carry no index and the reducer appends.
 
 The indicator for a split highlights the matching half of the tabset:
 `split-left` paints the left half, `split-top` the top half, and so on
@@ -155,13 +160,13 @@ reducer treats the two locations differently:
   otherwise wrapping both in a new row, the same `placeBesideTarget` path a
   tab split uses.
 
-Dropping a tabset onto itself is a no-op; the adapter suppresses the intent
-before the machine ever sees it, and the reducer guards
-`sourceId === targetId` independently.
+Dropping a tabset onto itself is a no-op; `resolveDropIntent` suppresses the
+intent, decided from the drag subject's kind and id, before the machine ever
+sees it, and the reducer guards `sourceId === targetId` independently.
 
 Internally the grip registers with dnd-kit under the id `grip-<tabsetId>`, so
 it never collides with the tabset's own registered id; the real tabset id rides
-in the draggable's data and becomes the `moveTabset` source.
+in the draggable's data and becomes the drag subject's id.
 
 ## Dragging in from outside
 
@@ -207,39 +212,48 @@ keyboard path.
 
 ## How resolution layers
 
-For a pointer over a tabset, the adapter's `resolveIntent` runs the checks in a
-fixed order:
+For a pointer over a tabset, the drag layer measures the tabset once
+(`measureTabset`: its rect, plus its strip's rect and tab items when it has a
+strip) and hands that measurement, the drag subject and the pointer to
+`resolveDropIntent`, which runs the checks in a fixed order:
 
 1. **No-op filter.** A tabset dragged onto itself, or the sole tab of a tabset
-   dropped back onto that same tabset, resolves to no intent at all
-   (`shouldAllowDrop`). The drop changes nothing once empties collapse, so the
-   indicator never appears.
+   dropped back onto that same tabset, resolves to no intent at all. The drop
+   changes nothing once empties collapse, so the indicator never appears.
 2. **Tab strip.** Inside the strip, return a `center` stack at the insertion
    index.
 3. **Tabset body.** Otherwise resolve `center` (append) or `split-*` from the
-   tabset rect.
+   tabset rect, or always `center` when `splitDock` is off.
 
 ```ts
-const resolveIntent = (
-  targetId: string,
-  element: HTMLElement,
+const resolveDropIntent = (
+  subject: DragSubject,
+  tabset: MeasuredTabset,
   point: Point,
-  draggedId?: string,
+  options?: DropIntentOptions,
 ): DropIntent | null => {
-  const tabIds = [...element.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].map(
-    (tab) => tab.dataset.tabId ?? "",
-  );
-  if (!shouldAllowDrop(draggedId, targetId, tabIds)) {
+  if (isSelfDrop(subject, tabset)) {
     return null;
   }
-  const intent = intentForTabset(targetId, element, point, draggedId);
-  // When splitting is disabled, a drop over the body stacks instead of splits.
-  if (!splitDock && intent.location.startsWith("split-")) {
-    return { location: "center", targetId };
+  const { strip } = tabset;
+  if (strip && pointInRect(point, strip.rect)) {
+    return {
+      index: insertionIndex(landingTabs(subject, strip), point.x),
+      location: "center",
+      targetId: tabset.id,
+    };
   }
-  return intent;
+  const location = options?.splitDock === false ? "center" : resolveDockTarget(point, tabset.rect);
+  if (location === "center" && strip) {
+    return { index: landingTabs(subject, strip).length, location, targetId: tabset.id };
+  }
+  return { location, targetId: tabset.id };
 };
 ```
+
+The dock indicator reads the same measurement through `dropIndicator`, so the
+rule and its feedback cannot drift apart. Both are pure, and the core unit
+tests cover each case on rect fixtures.
 
 ## The pipeline
 
@@ -257,7 +271,7 @@ drag hooks      →  dnd-kit/dom  →  dragDockMachine  →  COMMIT        →  
 ### 1. The drag hooks mark the sources
 
 Three internal hooks in
-[`drag-hooks.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/hooks/drag-hooks.tsx)
+[`drag-hooks.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/drag/drag-hooks.ts)
 wire the DOM to the drag system. None of them is exported from
 `@dashfoo/react`. They are described here to explain the flow, not as API.
 
@@ -275,23 +289,27 @@ wire the DOM to the drag system. None of them is exported from
 
 ### 2. The adapter reads the pointer and hit-tests
 
-`DashfooDragProvider` constructs one `@dnd-kit/dom` `DragDropManager` (minus the
+The drag root constructs one `@dnd-kit/dom` `DragDropManager` (minus the
 `Accessibility` plugin and the keyboard sensor), starts one `dragDockMachine`
-actor, and subscribes to the manager's monitor once for the whole tree. On
+actor, and subscribes to the manager's monitor once for the whole tree. Every
+`Layout.Root` mounts the root, so the main tree and its floats share it with no
+extra wiring; a root inside another (a layout under `DashfooDragProvider`, or a
+layout nested in a tab) reuses the outer one. On
 `dragstart` it reads the source's data to decide the subject kind (a grip
 carries `type: "tabset"`, an external source carries `type: "external"`, a tab
 carries its own id) and sends `START`. On `dragmove` and on every `collision`
 pulse it takes the drop target dnd-kit's collision pass resolved, looks up the
-layer that registered it, asks that layer to resolve an intent, and sends
-`OVER`. On `dragend` it re-resolves from the final operation state, sends a last
+layer that registered it, asks that layer to resolve an intent for the
+machine's current subject, and sends `OVER`. On `dragend` it re-resolves from the final operation state, sends a last
 `OVER`, then `DROP`.
 
 Each `Layout.DragLayer` is one such layer: the main tree, plus one per float.
 A layer registers only how its own tabsets turn a pointer into an intent and
 where a committed action goes, keyed by a layer id that also namespaces its
 droppable registrations. It holds no drag state, so a pointer move costs one
-intent resolution rather than one per mounted layer. A `Layout.DragLayer` with
-no provider above it mounts its own, so it still works standalone.
+intent resolution rather than one per mounted layer. A `Layout.DragLayer`
+needs a `Layout.Root` above it; without one it warns and renders its children
+without drag.
 
 The `data-dashfoo="drag-preview"` chip is positioned by dnd-kit's `Feedback`
 plugin in overlay mode: the chip element is handed to Feedback's `overlay`
@@ -349,8 +367,8 @@ machine never mutates the model; it only emits the action.
 
 The provider subscribes to the machine's `COMMIT` emission and forwards the
 action (`moveNode` for a tab drag, `moveTabset` for a grip drag, `addNode` for
-an external source) to the layer named by the emission's `scope`, which sends it
-to that layer's `onCommit` or, without one, to the `Layout.Root` above it.
+an external source) to the layer named by the emission's `scope`, which
+dispatches it through the `Layout.Root` above that layer.
 `DashfooLayout` wires that straight to `store.dispatch`.
 
 ### 5. The reducer applies the move
@@ -397,7 +415,7 @@ layout props.
 
 `editable={false}` makes the layout static. On the source side every internal
 draggable is disabled, so no drag can start from it. On the target side the
-adapter gates at drag time: `resolveIntent` returns `null` for a non-editable
+adapter gates at drag time: the layer resolves no intent for a non-editable
 layout (no dock indicator and no drop target) and the `COMMIT` subscription
 drops the action, so even a drag that started before `editable` flipped off, or
 an external-source drag arriving through a shared `DashfooDragProvider`, cannot
@@ -406,15 +424,16 @@ still accepts those drags.
 
 ### Global gate
 
-`DashfooLayout` reads the global flag and passes it to `DragProvider`. It
-defaults to enabled. The check is `!== false`, so an absent flag means on:
+`Layout.Root` reads the global flag into the layout store, and each drag layer
+passes it to `resolveDropIntent` as `splitDock`. It defaults to enabled. The
+check is `!== false`, so an absent flag means on:
 
 ```ts
-const splitDock = store.model.global.enableSplitDock !== false;
+const splitDock = model.global.enableSplitDock !== false;
 ```
 
-When `enableSplitDock` is off, `resolveIntent` rewrites any `split-*` result back
-to a `center` stack, so a drop over the body lands as a tab.
+When `enableSplitDock` is off, `resolveDropIntent` resolves every body drop to a
+`center` stack, so a drop over the body lands as a tab.
 
 ### Per-tab gate
 
@@ -481,11 +500,12 @@ voronoi-style visualization of every candidate region this way.
 
 - [`resolveDockTarget`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/geometry/geometry.ts)
   in `@dashfoo/core` for the band math and `BandOptions`.
-- [`tab-insertion.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/lib/tab-insertion.ts)
-  in `@dashfoo/react` for the insertion index, the insertion line, and the
-  no-op drop filter.
-- [`drag-adapter.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/drag-provider.tsx)
-  in `@dashfoo/react` for the manager, the hit-testing, and the indicator.
+- [`drop-intent.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/geometry/drop-intent.ts)
+  in `@dashfoo/core` for the no-op drop filter, the insertion index, the
+  `splitDock` override, and the insertion line.
+- The [drag adapter](https://github.com/pedroapfilho/dashfoo/tree/main/packages/react/src/drag)
+  in `@dashfoo/react` for the root, the layers, the measurement, and the
+  indicator.
 - [`dragDockMachine`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/machines/drag-dock-machine.ts)
   in `@dashfoo/core` for the interaction lifecycle.
 - The `moveNode`, `moveTabset`, and `insertTab` paths in the

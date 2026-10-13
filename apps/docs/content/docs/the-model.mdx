@@ -331,17 +331,12 @@ parsed payload.
 
 ## Invariants at the boundary
 
-Three invariants are enforced where a model enters the library rather than being
+Two invariants are enforced where a model enters the library rather than being
 repaired afterwards, so no reader has to carry a fallback for them:
 
 - **A `weight` on every row and tabset.** `dashfooSchema` defaults an omitted
   `weight` to `1` and the builders do the same, so a reader can sum
   `child.weight` without deciding what a missing one means.
-- **A `selected` inside its strip.** `tabsetNodeSchema` clamps `selected` into
-  `[0, children.length - 1]` at parse, `tabset()` clamps what you pass it, and
-  the actions that can invalidate it (selecting a tab, closing one, moving one
-  out, writing `selected` through `updateNodeAttributes`) re-clamp the one
-  tabset they touch.
 - **A `floats` array.** Omitted on input, always present on output, empty when
   nothing is floating.
 
@@ -354,8 +349,8 @@ the normalize pass clean it up. There is one definition of "valid layout," and
 it lives in
 [`packages/core/src/model/invariants.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/invariants.ts).
 
-The pass enforces four structural invariants. Clamping `selected` is not one of
-them: that happens at the boundary (see above), not on every dispatch.
+The pass enforces five invariants, and no action re-implements any of them: an
+action edits the tree and leaves the repair to this pass.
 
 **1. Drop empty tabsets.** A tabset whose `children` array is empty is removed
 from its parent row. Closing the last tab in a pane removes the pane, rather than
@@ -371,7 +366,13 @@ child is lifted into the grandparent's place. The child inherits the lifted row'
 if the tree reduces to a single child that is itself a row, that row is absorbed:
 its children and orientation replace the root's, avoiding redundant nesting.
 
-**4. Repair the id references.** `activeTabsetId` is checked against the set of
+**4. Clamp `selected` into its strip.** Every surviving tabset's `selected` is
+truncated to an integer inside `[0, children.length - 1]`. Selecting past the
+end, closing the selected tab, or writing `selected` through
+`updateNodeAttributes` all land on a real tab. `tabset()` clamps what you pass
+it too, so a builder-made model is valid before it is ever normalized.
+
+**5. Repair the id references.** `activeTabsetId` is checked against the set of
 tabset ids that remain after the structural rewrites. If it no longer
 points at a real tabset, it falls back to the first tabset in the tree.
 `maximizedTabsetId` gets the same existence check, but a stale value is cleared
@@ -379,7 +380,9 @@ to `undefined` rather than reassigned: you do not want to silently maximize a
 different pane than the one the user chose.
 
 Because normalize is idempotent, applying it twice gives the same result as
-applying it once. That property is what lets the reducer call it unconditionally.
+applying it once. That property is what lets the reducer call it unconditionally,
+then compare the result with its input: a structurally equal result means the
+action was a no-op, and the reducer hands back the input object itself.
 
 ## Serialization: `toJSON`, `fromJSON`
 
@@ -419,8 +422,8 @@ written in a different format fails validation instead of loading lossily. A
 future format change bumps the literal.
 
 Order is deliberate: validate first (so a malformed payload is rejected with a
-zod error, and the schema's own defaults and clamps apply), normalize second (so
-the structure is canonical). Skip normalize and you might hand your renderer a
+zod error, and the schema's own defaults apply), normalize second (so the
+structure is canonical and every `selected` is in range). Skip normalize and you might hand your renderer a
 row that adds a nesting level without splitting anything, or an id reference
 pointing at a tabset that is no longer there.
 

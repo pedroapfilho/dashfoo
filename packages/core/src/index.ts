@@ -1,7 +1,10 @@
 export * from "./state/actions";
 export * from "./model/builders";
+export { fallbackSelectedIndex } from "./state/docking";
+export * from "./geometry/drop-intent";
 export * from "./geometry/geometry";
-export * from "./geometry/snap";
+export { decideSnap, resolveSnapGrid, settleSnap, snapEnabled } from "./geometry/snap";
+export type { SnapDecision, SnapGrid } from "./geometry/snap";
 export * from "./state/history";
 export * from "./model/ids";
 export { normalize } from "./model/invariants";
@@ -10,5 +13,4 @@ export { mutableNodeAttrsSchema } from "./state/node-attrs";
 export * from "./state/reducer";
 export * from "./model/schema";
 export * from "./model/serialize";
-export * from "./model/stack";
 export * from "./model/tree";

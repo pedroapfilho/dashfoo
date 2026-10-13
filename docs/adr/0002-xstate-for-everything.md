@@ -4,10 +4,11 @@
 
 Partially superseded · originally accepted 2026-06-02
 
-XState still drives the document/history and drag lifecycle. React composition
-now uses Zustand selector stores for layout and tabset context. The historical
-“not zustand” and “for everything” wording no longer describes all state.
-The no-coalescing amendment below remains current.
+XState still drives the drag lifecycle. The document machine was removed in
+2026-10 (see the amendment under Decision). React composition uses Zustand
+selector stores for layout, tabset context and the document history. The
+historical “not zustand” and “for everything” wording no longer describes all
+state. The no-coalescing amendment below remains current.
 
 ## Context
 
@@ -43,9 +44,22 @@ the lifecycle and the document split push us toward an actor model instead.
 **Use XState v5 (`^5.0.0`, already a `@dashfoo/core` dependency) as the state
 layer. Model the system as two actors.**
 
-### The document machine — `dashfooMachine`
+### The document machine
 
-Defined in `packages/core/src/machines/dashfoo-machine.ts`. It owns the undo/redo
+> **Amendment (2026-10).** The document machine was removed. It had one state,
+> `ready`, and each of its four events was a one-to-one `assign` onto a
+> `history.ts` function, so it carried no lifecycle. Its remaining
+> justification, coalescing, went with the 2026-06 amendment. The React store
+> drove it synchronously through `getSnapshot` before and after every `send`,
+> which was a function call routed through an actor. `useDashfooStore` now
+> holds a `History` directly in a Zustand store and steps it with
+> `dispatchToHistory`, `undoHistory` and `redoHistory`. The reducer and the
+> history stay pure and framework-free in `@dashfoo/core`. The store also owns
+> persistence and the restore-after-hydration rule, which used to live in
+> `DashfooLayout`. The transient/durable seam this ADR argues for is unchanged:
+> the drag stays an XState machine and touches the document once, at commit.
+
+Originally defined in `packages/core/src/machines/`. It owned the undo/redo
 history whose `present` is the live model, and it runs the pure reducer through the
 history helpers (`dispatch`, `undo`, `redo` from `history.ts`). It has a single
 finite state, `ready` — the document is data, not a lifecycle — so every change is
@@ -104,7 +118,7 @@ type DragEmitted = { action: Action; type: "COMMIT" };
 > subject is a tabset; `moveNode` covers tab drags.
 
 The React layer listens for that emitted `COMMIT` and forwards its `action` to
-`dashfooMachine` as a `DISPATCH`. The guard plus the `requireDrop` invariant
+the document machine as a `DISPATCH`. The guard plus the `requireDrop` invariant
 (which throws if `subject` or `intent` is null at commit time) make the impossible
 drop unrepresentable rather than a runtime surprise.
 
@@ -115,7 +129,7 @@ the two machines, not a convention someone has to remember.
 
 ### Binding to React
 
-`packages/react/src/hooks/store.ts` binds a `dashfooMachine` actor with `useActorRef`
+`packages/react/src/hooks/store.ts` binds a document actor with `useActorRef`
 and reads its history with `useSelector` from `@xstate/react`. The same hook covers
 both control modes: uncontrolled (`defaultModel`) lets the actor own the document
 with full undo/redo; controlled (`model`) makes the prop the source of truth, routes
@@ -160,7 +174,7 @@ serialization contract in `packages/core/src/model/serialize.ts`:
 | Load       | `fromJSON`      | parse → `dashfooSchema.parse` → `normalize`            |
 | Versioning | `dashfooSchema` | pins the payload `version` to the format literal (`1`) |
 
-Persistence (the `persist` prop, built on `usePersistence`) loads the saved model
+Persistence (the `persist` option of `useDashfooStore`, which the `persist` prop forwards) loads the saved model
 once (validated via `fromJSON`, falling back to `defaultModel` on a
 miss or on corruption), debounce-saves every change with `toJSON`, and prunes a
 corrupt stored value on mount. The `StorageAdapter` shape
