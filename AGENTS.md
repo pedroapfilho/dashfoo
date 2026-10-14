@@ -2,6 +2,14 @@
 
 Guidance for AI coding agents working in `dashfoo`. `CLAUDE.md` is a symlink to this file.
 
+## Friction Log
+
+- Log papercuts and friction (tooling, docs, APIs, tests, conventions) as you hit them with `npx frog log`.
+- Do not add global, system, or internal friction.
+- Run `npx frog list` first to see what is already known.
+
+Entries live in `.agents/friction-log/`, one directory each. A GitHub Action reports them as issues and deletes the entry once the issue closes, so anything still in that directory is still outstanding.
+
 ## What this repo is
 
 A **headless React docking-layout library** (tabs, tabsets, splits, drag-dock) — VS-Code-style dashboards. The layout is one serializable, zod-validated model; the engine ships structure (`data-dashfoo="..."` markup), not appearance. pnpm + turbo monorepo, Node ≥ 24, pnpm 11.
