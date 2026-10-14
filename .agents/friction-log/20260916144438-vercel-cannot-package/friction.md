@@ -1,6 +1,7 @@
 ---
-title: "Vercel cannot package cached Next landing traces across pnpm installs"
-severity: "major"
+title: 'Vercel cannot package cached Next landing traces across pnpm installs'
+severity: 'major'
+issue: 'pedroapfilho/dashfoo#184'
 ---
 
 ### Minimal reproduction
