@@ -1,5 +1,28 @@
 # @dashfoo/core
 
+## 2.0.0
+
+### Major Changes
+
+- 9eec182: Give the history functions explicit names: `dispatch` is now `dispatchToHistory`, `undo` is `undoHistory`, `redo` is `redoHistory`, `canUndo` is `canUndoHistory` and `canRedo` is `canRedoHistory`. `createHistory` now normalizes the model it receives, so every history holds a canonical document.
+- 9eec182: `normalize` clamps every tabset's `selected` into its strip. `tabsetNodeSchema` now checks shape only, so `tabsetNodeSchema.parse` and `dashfooSchema.parse` keep an out-of-range `selected` for `normalize` (and `parseModel`) to clamp. `tabsetNodeObjectSchema` is removed: `tabsetNodeSchema` has no transform left to bypass.
+- 9eec182: Remove `dashfooMachine`. It had one state and mapped each event onto a history function, so it added indirection without a lifecycle. Hold a `History` from `createHistory` and step it with `dispatchToHistory`, `undoHistory` and `redoHistory`. `dragDockMachine` is unchanged.
+- 9eec182: One responsive projection. `useResponsiveLayout(model, { maxWidth, orientation? })` measures the layout's own container and returns the compact view of the model plus the lock that goes with it (`restructurable: false`, which also disables floating, and `maximizable: false`). `DashfooLayout`'s `responsive` prop runs on the same hook, so a hand-built `Layout.Root` compacts exactly like the built-in layout, keeping row ancestors so nested widget state survives the breakpoint.
+
+  Breaking: `useResponsiveModel`, `useContainerWidth`, `matchBreakpoint`, `activeBreakpoint` and the `Breakpoint`, `ResponsiveModel` and `UseResponsiveModelOptions` types are removed from `@dashfoo/react`, and `stackModel` is removed from `@dashfoo/core`. Flattening reparented nested tabsets and remounted their content; use `useResponsiveLayout` instead.
+
+- 9eec182: Remove exports nothing consumed: `findRootContaining`, the `TabContainer` alias (`TabLocation.container` is a `TabsetNode`), and the snap internals `snapSizes`, `resolveSnapTargets`, `DEFAULT_SNAP_THRESHOLD` and `SnapResult`. Snap through `resolveSnapGrid`, `decideSnap` and `settleSnap`.
+
+### Minor Changes
+
+- 9eec182: Add `resolveDropIntent` and `dropIndicator`: pure drop-intent resolution over a measured tabset. They decide self-drops from the drag subject, strip versus body, the insertion index and the `splitDock` override, and derive the insertion line or split zone from the same measurement.
+- 9eec182: Removing a tab from a strip keeps the selection on the tab that was selected; removing a tab before it used to shift the selection onto its neighbour. Core exports the rule as `fallbackSelectedIndex`, and the tab strip's drag preview uses it instead of its own copy.
+
+### Patch Changes
+
+- 9eec182: Every docking action now activates the tabset that received the moved content. `moveNode`, `moveTabset` and `addNode` onto a tabset's center used to leave focus where it was, so merging the active tabset away dropped focus to the first tabset. `addNode` with a tab id already in the layout is ignored with a `[dashfoo]` warning instead of creating a duplicate.
+- 9eec182: The reducer detects a no-op once, by comparing the normalized result with its input, and returns the input object when they match. Maximizing a float's tabset or an unknown id, and re-sending an identical `min`, `max`, `snap` or `config`, no longer record an undo step or clear the redo stack.
+
 ## 1.1.4
 
 ### Patch Changes
