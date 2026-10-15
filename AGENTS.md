@@ -12,11 +12,11 @@ Entries live in `.agents/friction-log/`, one directory each. A GitHub Action rep
 
 ## Standards
 
-This repo follows the fleet's shared standards, checked by `keel` (`~/dev/keel`).
+This repo follows the fleet's shared standards, checked by `standy` (`~/dev/standy`).
 
-- Before editing, run `keel standards --for <paths>` for the rules that apply to the files you will touch.
-- Before finishing, run `keel check --changed --fix-hints` and fix what fails. It only sees tracked files, so run `git add -N` on new files first.
-- When a failure is unclear, `keel explain <rule>` prints what the rule asserts, why, and how to fix it.
+- Before editing, run `standy standards --for <paths>` for the rules that apply to the files you will touch.
+- Before finishing, run `standy check --changed --fix-hints` and fix what fails. It only sees tracked files, so run `git add -N` on new files first.
+- When a failure is unclear, `standy explain <rule>` prints what the rule asserts, why, and how to fix it.
 
 ## What this repo is
 
@@ -81,7 +81,7 @@ Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (c
 - Primitives stay internal: `react-resizable-panels`, `@dnd-kit/dom` `^0.5.0`, and XState are installed dependencies behind the React adapters, never peers. The document has no machine: `useDashfooStore` holds core's pure `History` and owns persistence (ADR 0002 amendment, 2026-10). Core still exports the framework-free drag/dock machine; application integrations should prefer the reducer and React store.
 - The model is the single source of truth: plain JSON-serializable object, invariants self-heal after every action.
 - Unlike the library template, this repo keeps Playwright e2e (extra `e2e.yml` workflow) — dnd-kit drag behavior is untestable in jsdom. `publish-checks.yml` adds typecheck + publint + @arethetypeswrong on the published packages.
-- This repo follows the fleet's `library` profile (template: `~/dev/acme-package`, verified by `~/dev/keel`).
+- This repo follows the fleet's `library` profile (template: `~/dev/acme-package`, verified by `~/dev/standy`).
 
 ## Design-system linting
 
