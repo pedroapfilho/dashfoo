@@ -73,7 +73,7 @@ Changesets: every user-visible change adds a `.changeset/*.md`; `release.yml` (c
 - Primitives stay internal: `react-resizable-panels`, `@dnd-kit/dom` `^0.5.0`, and XState are installed dependencies behind the React adapters, never peers. The document has no machine: `useDashfooStore` holds core's pure `History` and owns persistence (ADR 0002 amendment, 2026-10). Core still exports the framework-free drag/dock machine; application integrations should prefer the reducer and React store.
 - The model is the single source of truth: plain JSON-serializable object, invariants self-heal after every action.
 - Unlike the library template, this repo keeps Playwright e2e (extra `e2e.yml` workflow) — dnd-kit drag behavior is untestable in jsdom. `publish-checks.yml` adds typecheck + publint + @arethetypeswrong on the published packages.
-- This repo follows the fleet's `library` profile (template: `~/dev/acme-package`, verified by `~/dev/orchestrator`).
+- This repo follows the fleet's `library` profile (template: `~/dev/acme-package`, verified by `~/dev/keel`).
 
 ## Design-system linting
 
