@@ -28,3 +28,8 @@ minimumReleaseAgeExclude:
   - "@walletwright/*"
   - astro-awesomeness
   - oxlint-config-awesomeness
+
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  - semver@6.3.1
+  - why-is-node-running@3.2.2

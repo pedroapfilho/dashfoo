@@ -34,5 +34,27 @@
   },
   "rules": {
     "private-type-leaks": "off"
+  },
+  "boundaries": {
+    "zones": [
+      {
+        "name": "app",
+        "autoDiscover": ["apps"]
+      },
+      {
+        "name": "package",
+        "patterns": ["packages/**"]
+      }
+    ],
+    "rules": [
+      {
+        "from": "package",
+        "allow": ["package"]
+      },
+      {
+        "from": "app",
+        "allow": ["package"]
+      }
+    ]
   }
 }
