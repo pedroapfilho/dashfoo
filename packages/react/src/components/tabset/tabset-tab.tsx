@@ -1,6 +1,7 @@
 "use client";
 
 import type { TabNode } from "@dashfoo/core";
+import { warnOnce } from "@dashfoo/core";
 import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { forwardRef, useContext, useEffect, useMemo, useRef } from "react";
 
@@ -8,7 +9,6 @@ import { useDragSubject, useTabDraggable } from "../../drag/drag-hooks";
 import { useLayout } from "../../hooks/layout-store";
 import { mergeRefs } from "../../lib/merge-refs";
 import { panelDomId, tabDomId } from "../../lib/tab-ids";
-import { warnOnce } from "../../lib/warn-once";
 
 import { TabContext, TabsetStoreContext, useTab, useTabset } from "./tabset-store";
 

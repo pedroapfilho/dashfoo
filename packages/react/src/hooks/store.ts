@@ -10,11 +10,10 @@ import {
   redoHistory,
   reducer,
   undoHistory,
+  warnOnce,
 } from "@dashfoo/core";
 import { useCallback, useMemo, useState } from "react";
 import { createStore, useStore } from "zustand";
-
-import { warnOnce } from "../lib/warn-once";
 
 import type { PersistInput } from "./persistence";
 import { useLayoutStorage } from "./persistence";

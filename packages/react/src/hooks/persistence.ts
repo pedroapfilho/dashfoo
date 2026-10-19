@@ -1,7 +1,7 @@
 "use client";
 
 import type { Dashfoo } from "@dashfoo/core";
-import { fromJSON, toJSON } from "@dashfoo/core";
+import { fromJSON, toJSON, warn } from "@dashfoo/core";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 type StorageAdapter = {
@@ -31,8 +31,7 @@ const localStorageAdapter: StorageAdapter = {
     try {
       return window.localStorage.getItem(key);
     } catch (error) {
-      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-      console.warn("[dashfoo] failed to load persisted layout", error);
+      warn("failed to load persisted layout", error);
       return null;
     }
   },
@@ -43,8 +42,7 @@ const localStorageAdapter: StorageAdapter = {
     try {
       window.localStorage.removeItem(key);
     } catch (error) {
-      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-      console.warn("[dashfoo] failed to clear persisted layout", error);
+      warn("failed to clear persisted layout", error);
     }
   },
   setItem: (key, value) => {
@@ -54,8 +52,7 @@ const localStorageAdapter: StorageAdapter = {
     try {
       window.localStorage.setItem(key, value);
     } catch (error) {
-      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-      console.warn("[dashfoo] failed to persist layout", error);
+      warn("failed to persist layout", error);
     }
   },
 };
@@ -89,8 +86,7 @@ const removeStoredLayout = ({ key, storage }: PersistTarget): void => {
   try {
     storage.removeItem(key);
   } catch (error) {
-    // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-    console.warn("[dashfoo] failed to clear persisted layout", error);
+    warn("failed to clear persisted layout", error);
   }
 };
 
@@ -103,14 +99,12 @@ const loadStoredLayout = (target: PersistTarget): Dashfoo | undefined => {
     try {
       return fromJSON(raw);
     } catch (error) {
-      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-      console.warn("[dashfoo] discarding unreadable persisted layout", error);
+      warn("discarding unreadable persisted layout", error);
       removeStoredLayout(target);
       return undefined;
     }
   } catch (error) {
-    // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-    console.warn("[dashfoo] failed to load persisted layout", error);
+    warn("failed to load persisted layout", error);
     return undefined;
   }
 };
@@ -152,9 +146,8 @@ const useLayoutStorage = (
   const loadedKey = useRef(key);
   useEffect(() => {
     if (key !== undefined && key !== loadedKey.current) {
-      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-      console.warn(
-        "[dashfoo] persist key changed for a mounted layout; the displayed layout still reflects the previous key; remount (key={persistKey}) to load the new key",
+      warn(
+        "persist key changed for a mounted layout; the displayed layout still reflects the previous key; remount (key={persistKey}) to load the new key",
       );
       loadedKey.current = key;
     }
@@ -175,8 +168,7 @@ const useLayoutStorage = (
       try {
         write.storage.setItem(write.key, write.value);
       } catch (error) {
-        // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-        console.warn("[dashfoo] failed to persist layout", error);
+        warn("failed to persist layout", error);
       }
     }
   }, []);

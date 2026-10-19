@@ -1,11 +1,10 @@
 "use client";
 
 import type { DragSubject, DropIntent, TabNode } from "@dashfoo/core";
+import { warnOnce } from "@dashfoo/core";
 import { Draggable, Droppable } from "@dnd-kit/dom";
 import { useSelector } from "@xstate/react";
 import { useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";
-
-import { warnOnce } from "../lib/warn-once";
 
 import { DragContext } from "./drag-context";
 import type { DashfooDragManager } from "./drag-manager";

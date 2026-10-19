@@ -1,5 +1,5 @@
 import type { DragSubject, TabNode } from "@dashfoo/core";
-import { tabNodeSchema } from "@dashfoo/core";
+import { tabNodeSchema, warn } from "@dashfoo/core";
 import type { Data } from "@dnd-kit/abstract";
 import type { Draggable } from "@dnd-kit/dom";
 
@@ -20,22 +20,19 @@ const subjectFor = (source: DragSource): DragSubject | null => {
   }
   if (data.type === "external") {
     if (!isTabFactory(data.createTab)) {
-      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-      console.warn("[dashfoo] external drag source is missing its createTab function");
+      warn("external drag source is missing its createTab function");
       return null;
     }
     let candidate: ReturnType<typeof data.createTab>;
     try {
       candidate = data.createTab();
     } catch (error) {
-      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-      console.warn("[dashfoo] external drag source createTab threw", error);
+      warn("external drag source createTab threw", error);
       return null;
     }
     const parsed = tabNodeSchema.safeParse(candidate);
     if (!parsed.success) {
-      // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-      console.warn("[dashfoo] external drag source returned an invalid tab", parsed.error);
+      warn("external drag source returned an invalid tab", parsed.error);
       return null;
     }
     return { id: String(source.id), kind: "external", tab: parsed.data };

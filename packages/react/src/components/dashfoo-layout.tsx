@@ -1,7 +1,7 @@
 "use client";
 
 import type { Action, Dashfoo, DockLocation, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
-import { findTabset } from "@dashfoo/core";
+import { findTabset, warnOnce } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useMemo } from "react";
 
@@ -13,8 +13,6 @@ import { useDashfooStore } from "../hooks/store";
 import { Layout } from "./layout";
 
 type TabComponent = ComponentType<{ node: TabNode }>;
-
-const warnedComponents = new Set<string>();
 
 type DashfooHandle = {
   addTab: (
@@ -155,11 +153,11 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       }
       const Component = components?.[tab.component];
       if (!Component) {
-        if (components && !warnedComponents.has(tab.component)) {
-          warnedComponents.add(tab.component);
-
-          // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-          console.warn(`[dashfoo] no component registered for "${tab.component}"`);
+        if (components) {
+          warnOnce(
+            `unregistered-component:${tab.component}`,
+            `no component registered for "${tab.component}"`,
+          );
         }
         return null;
       }

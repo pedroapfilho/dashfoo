@@ -14,3 +14,4 @@ export * from "./state/reducer";
 export * from "./model/schema";
 export * from "./model/serialize";
 export * from "./model/tree";
+export { warn, warnOnce } from "./lib/warn";

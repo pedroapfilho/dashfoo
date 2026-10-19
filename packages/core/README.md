@@ -427,6 +427,9 @@ types `SnapGrid`, `SnapDecision`.
 `machines`: `dragDockMachine`, `dropAction`; types `DragState`, `DragSubject`,
 `DropResolution`.
 
+`warn`: `warn`, `warnOnce`. Both prefix the message with `[dashfoo]` and write it
+with `console.warn`; `@dashfoo/react` reports its degraded paths through them.
+
 ## License
 
 MIT

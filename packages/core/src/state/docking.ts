@@ -1,4 +1,5 @@
 import { assertNever } from "../lib/assert-never";
+import { warn } from "../lib/warn";
 import { floatNode, row, tabset } from "../model/builders";
 import type { Dashfoo, Geometry, RowNode, TabNode, TabsetNode } from "../model/schema";
 import {
@@ -145,9 +146,8 @@ const addTab = (
   { index, location, tab, targetId }: Extract<DockingAction, { type: "addNode" }>,
 ): TabsetNode | undefined => {
   if (isIdInUse(draft, tab.id)) {
-    // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-    console.warn(
-      `[dashfoo] addNode ignored: node id "${tab.id}" is already in the layout. Pass a fresh id, e.g. createTabId()`,
+    warn(
+      `addNode ignored: node id "${tab.id}" is already in the layout. Pass a fresh id, e.g. createTabId()`,
     );
     return undefined;
   }

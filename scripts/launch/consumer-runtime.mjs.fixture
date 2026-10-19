@@ -1,5 +1,3 @@
-// oxlint-disable unicorn/max-nested-calls -- This standalone smoke fixture uses createElement to avoid requiring a JSX transpiler in consumers.
-// oxlint-disable require-await, typescript/require-await -- Async act flushes hydration and passive effects in both supported React versions.
 import assert from "node:assert/strict";
 
 import { model, row, tab, tabset } from "@dashfoo/core";
