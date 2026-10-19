@@ -12,8 +12,7 @@ const CHIP_SIZE: Size = { height: 34, width: 168 };
 const TAP_SLOP = 4;
 
 const releaseCapture = (panel: HTMLElement, pointerId: number): void => {
-  // oxlint-disable-next-line typescript/no-unnecessary-condition -- jsdom and older engines lack hasPointerCapture despite the DOM typings
-  if (panel.hasPointerCapture?.(pointerId)) {
+  if (panel.hasPointerCapture(pointerId)) {
     panel.releasePointerCapture(pointerId);
   }
 };

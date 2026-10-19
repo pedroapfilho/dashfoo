@@ -1,3 +1,5 @@
+import { warn } from "../lib/warn";
+
 import { normalize } from "./invariants";
 import type { Dashfoo } from "./schema";
 import { dashfooSchema, jsonValueSchema } from "./schema";
@@ -8,8 +10,7 @@ const parseModel = (value: unknown): Dashfoo => {
   const model = normalize(dashfooSchema.parse(value));
   const duplicates = findDuplicateIds(model);
   if (duplicates.length > 0) {
-    // oxlint-disable-next-line no-console -- dashfoo reports degraded paths on the developer console instead of failing silently
-    console.warn(`[dashfoo] duplicate node ids in the loaded layout: ${duplicates.join(", ")}`);
+    warn(`duplicate node ids in the loaded layout: ${duplicates.join(", ")}`);
   }
   return model;
 };

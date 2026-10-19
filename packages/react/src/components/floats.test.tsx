@@ -94,6 +94,7 @@ describe("floating panels", () => {
 
     panel.setPointerCapture = () => {};
     panel.releasePointerCapture = () => {};
+    panel.hasPointerCapture = () => true;
 
     fireEvent.pointerDown(titleBar, { buttons: 1, clientX: 0, clientY: 0, pointerId: 1 });
     fireEvent.pointerMove(panel, { buttons: 1, clientX: 40, clientY: 30, pointerId: 1 });
@@ -240,6 +241,7 @@ describe("floating panels", () => {
 
     panel.setPointerCapture = () => {};
     panel.releasePointerCapture = () => {};
+    panel.hasPointerCapture = () => true;
     const titleBar = panel.querySelector('[data-dashfoo="float-titlebar"]')!;
     const startLeft = panel.style.getPropertyValue("--dashfoo-float-left");
     const startTop = panel.style.getPropertyValue("--dashfoo-float-top");

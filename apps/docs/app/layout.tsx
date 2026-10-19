@@ -4,6 +4,8 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
+import { DocsSearchDialog } from "@/components/search-dialog";
+
 export const metadata: Metadata = {
   description:
     "Documentation for dashfoo: a headless React docking-layout library with tiled, resizable, tabbed regions, a serializable model, and zero imposed styling.",
@@ -28,8 +30,7 @@ const RootLayout = ({ children }: { children: ReactNode }) => (
         aria-hidden="true"
         className="reading-progress-bar reading-progress-range fixed top-0 left-0 z-50 h-0.5 w-0 bg-(--primary)"
       />
-      {/* oxlint-disable-next-line typescript/no-deprecated -- fumadocs still supports the static preset; swapping to a hand-rolled Orama dialog is out of scope for the lint rollout. */}
-      <RootProvider search={{ options: { type: "static" } }}>{children}</RootProvider>
+      <RootProvider search={{ SearchDialog: DocsSearchDialog }}>{children}</RootProvider>
     </body>
   </html>
 );

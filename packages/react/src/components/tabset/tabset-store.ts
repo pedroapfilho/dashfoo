@@ -1,12 +1,12 @@
 "use client";
 
 import type { Action, TabNode, TabsetNode } from "@dashfoo/core";
+import { warnOnce } from "@dashfoo/core";
 import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
 import { createStore, useStore } from "zustand";
 
 import { tabDomId } from "../../lib/tab-ids";
-import { warnOnce } from "../../lib/warn-once";
 import type { OverflowItem } from "../tab-overflow-menu";
 
 type TabsetState = {

@@ -1,12 +1,11 @@
 "use client";
 
-import { resolveDropIntent } from "@dashfoo/core";
+import { resolveDropIntent, warnOnce } from "@dashfoo/core";
 import type { ReactNode } from "react";
 import { useContext, useEffect, useId, useMemo } from "react";
 
 import type { LayoutStore } from "../hooks/layout-store";
 import { LayoutStoreContext } from "../hooks/layout-store";
-import { warnOnce } from "../lib/warn-once";
 
 import { DockIndicator } from "./dock-indicator";
 import type { DragContextValue, RegisteredLayer } from "./drag-context";
