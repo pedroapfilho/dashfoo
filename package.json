@@ -21,7 +21,7 @@
     "fallow:dead": "fallow dead-code",
     "fallow:dupes": "fallow dupes",
     "fallow:health": "fallow health --score",
-    "fallow:audit": "fallow audit --base main",
+    "fallow:audit": "fallow audit",
     "prepare": "husky",
     "test:consumers": "node scripts/launch/consumers.mjs",
     "test:sites": "playwright test --config scripts/launch/playwright.config.ts",
