@@ -4,7 +4,7 @@ import type { TabNode } from "../model/schema";
 import type { Action, DropIntent } from "../state/actions";
 
 type DragSubject =
-  | { id: string; kind: "tab" | "tabset" }
+  | { documentId: string; id: string; kind: "tab" | "tabset" }
   | { id: string; kind: "external"; tab: TabNode };
 
 /** `scope` names whoever resolved the intent, echoed back on `COMMIT` so the host can route the action. */
@@ -23,10 +23,10 @@ type DragEvent =
   | { type: "CANCEL" }
   | { type: "DROP" };
 
-type DragEmitted = { action: Action; scope: string; type: "COMMIT" };
+type DragEmitted = { action: Action; scope: string; subject: DragSubject; type: "COMMIT" };
 
 /** One definition of both "is this drop valid" and "what does it do", so the guard and the emit agree. */
-const dropAction = (drag: DragState): { action: Action; scope: string } | null => {
+const dropAction = (drag: DragState): Omit<DragEmitted, "type"> | null => {
   if (drag.kind !== "dragging" || drag.drop === null) {
     return null;
   }
@@ -43,6 +43,7 @@ const dropAction = (drag: DragState): { action: Action; scope: string } | null =
         type: "addNode",
       },
       scope,
+      subject,
     };
   }
   if (subject.kind === "tabset") {
@@ -54,6 +55,7 @@ const dropAction = (drag: DragState): { action: Action; scope: string } | null =
         type: "moveTabset",
       },
       scope,
+      subject,
     };
   }
   return {
@@ -65,6 +67,7 @@ const dropAction = (drag: DragState): { action: Action; scope: string } | null =
       type: "moveNode",
     },
     scope,
+    subject,
   };
 };
 
@@ -95,7 +98,7 @@ const dragDockMachine = setup({
               if (resolved === null) {
                 throw new Error("drop requires a subject and a resolved drop target");
               }
-              return { action: resolved.action, scope: resolved.scope, type: "COMMIT" };
+              return { ...resolved, type: "COMMIT" };
             }),
             guard: "hasValidDrop",
             target: "idle",

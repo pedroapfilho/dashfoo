@@ -9,6 +9,7 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 
 import { useLayout } from "../hooks/layout-store";
 import { useSnapResize } from "../hooks/use-snap-resize";
+import { resizePanelId } from "../lib/dom-ids";
 
 import { TabsetView } from "./tabset/tabset-view";
 
@@ -59,6 +60,7 @@ type RowViewProps = {
 
 const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
   const dispatch = useLayout((state) => state.dispatch);
+  const documentId = useLayout((state) => state.documentId);
   const resizableSplits = useLayout((state) => state.resizableSplits);
   const tabsetMinSize = useLayout((state) => state.tabsetMinSize);
   const globalSnap = useLayout((state) => state.snap);
@@ -74,12 +76,21 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
   const total = node.children.reduce((sum, child) => sum + child.weight, 0);
 
+  const panels = useMemo(
+    () =>
+      node.children.map((child) => ({
+        id: resizePanelId(documentId, child.id),
+        weight: child.weight,
+      })),
+    [documentId, node.children],
+  );
+
   const { beginBoundaryDrag, groupRef, onLayoutChange, onLayoutChanged, snappedBoundary } =
     useSnapResize({
-      children: node.children,
       onWeightsSettled: (weights) => {
         dispatch({ rowId: node.id, type: "adjustSplit", weights });
       },
+      panels,
       resizableSplits,
       snap: snapGrid,
     });
@@ -120,7 +131,12 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
                 }
               />
             ) : null}
-            <Panel defaultSize={`${percent}%`} id={child.id} maxSize={max} minSize={min}>
+            <Panel
+              defaultSize={`${percent}%`}
+              id={resizePanelId(documentId, child.id)}
+              maxSize={max}
+              minSize={min}
+            >
               {child.type === "row" ? (
                 <RowView node={child} renderTabset={renderTabset} />
               ) : (

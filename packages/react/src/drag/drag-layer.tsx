@@ -1,10 +1,11 @@
 "use client";
 
+import type { DragSubject } from "@dashfoo/core";
 import { resolveDropIntent, warnOnce } from "@dashfoo/core";
 import type { ReactNode } from "react";
 import { useContext, useEffect, useId, useMemo } from "react";
 
-import type { LayoutStore } from "../hooks/layout-store";
+import type { LayoutState, LayoutStore } from "../hooks/layout-store";
 import { LayoutStoreContext } from "../hooks/layout-store";
 
 import { DockIndicator } from "./dock-indicator";
@@ -14,19 +15,23 @@ import { measureTabset } from "./measure-tabset";
 
 type DragLayerProps = { children: ReactNode };
 
-/** Read at drag time, so a layout that turns static mid-drag neither resolves nor commits. */
+const canDrop = ({ canDock, documentId }: LayoutState, subject: DragSubject): boolean =>
+  canDock && (subject.kind === "external" || subject.documentId === documentId);
+
 const createLayer = (layerId: string, store: LayoutStore): RegisteredLayer => ({
-  commit: (action) => {
-    const { dispatch, editable } = store.getState();
-    if (editable) {
-      dispatch(action);
+  commit: (action, subject) => {
+    const state = store.getState();
+    if (canDrop(state, subject)) {
+      state.dispatch(action);
     }
   },
   layerId,
   resolveIntent: (subject, tabsetId, element, point) => {
-    const { editable, splitDock } = store.getState();
-    return editable
-      ? resolveDropIntent(subject, measureTabset(tabsetId, element), point, { splitDock })
+    const state = store.getState();
+    return canDrop(state, subject)
+      ? resolveDropIntent(subject, measureTabset(tabsetId, element), point, {
+          splitDock: state.splitDock,
+        })
       : null;
   },
 });
@@ -65,5 +70,5 @@ const DragLayer = ({ children }: DragLayerProps): ReactNode => {
   );
 };
 
-export { DragLayer };
+export { createLayer, DragLayer };
 export type { DragLayerProps };

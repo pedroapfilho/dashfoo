@@ -1,5 +1,6 @@
 import "@dashfoo/theme/dashfoo.css";
 
+import type { TabNode } from "@dashfoo/core";
 import { model, row, tab, tabset } from "@dashfoo/core";
 import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooLayout } from "@dashfoo/react";
@@ -39,7 +40,7 @@ globalThis.runWorkloads = (): Array<Workload> =>
       root.render(
         <DashfooLayout
           defaultModel={seed}
-          factory={(node) => (
+          factory={(node: TabNode) => (
             <label>
               {node.name}
               <input defaultValue="Sample state" />

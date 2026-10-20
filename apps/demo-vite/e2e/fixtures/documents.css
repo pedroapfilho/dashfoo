@@ -1,0 +1,22 @@
+body {
+  margin: 0;
+}
+[data-documents] {
+  display: flex;
+  height: 96vh;
+  gap: 16px;
+}
+[data-document] {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+[data-document] > [data-dashfoo="layout"] {
+  flex: 1;
+  min-height: 0;
+}
+[data-document="nested"] {
+  height: 240px;
+}

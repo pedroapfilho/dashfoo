@@ -24,7 +24,7 @@ describe("dragDockMachine", () => {
 
   test("a full drag over a target emits a moveNode commit on drop", () => {
     const { actor, committed } = startDrag();
-    actor.send({ subject: { id: "t1", kind: "tab" }, type: "START" });
+    actor.send({ subject: { documentId: "doc", id: "t1", kind: "tab" }, type: "START" });
     expect(actor.getSnapshot().value).toBe("dragging");
 
     actor.send({
@@ -41,7 +41,7 @@ describe("dragDockMachine", () => {
 
   test("dropping with no valid target emits nothing", () => {
     const { actor, committed } = startDrag();
-    actor.send({ subject: { id: "t1", kind: "tab" }, type: "START" });
+    actor.send({ subject: { documentId: "doc", id: "t1", kind: "tab" }, type: "START" });
     actor.send({ type: "DROP" });
 
     expect(committed).toEqual([]);
@@ -50,7 +50,7 @@ describe("dragDockMachine", () => {
 
   test("cancelling a drag emits nothing and returns to idle", () => {
     const { actor, committed } = startDrag();
-    actor.send({ subject: { id: "t1", kind: "tab" }, type: "START" });
+    actor.send({ subject: { documentId: "doc", id: "t1", kind: "tab" }, type: "START" });
     actor.send({
       drop: { intent: { location: "center", targetId: "ts2" }, scope: "main" },
       type: "OVER",
@@ -63,7 +63,7 @@ describe("dragDockMachine", () => {
 
   test("forwards the drop index for tab reordering", () => {
     const { actor, committed } = startDrag();
-    actor.send({ subject: { id: "t1", kind: "tab" }, type: "START" });
+    actor.send({ subject: { documentId: "doc", id: "t1", kind: "tab" }, type: "START" });
     actor.send({
       drop: { intent: { index: 2, location: "center", targetId: "ts1" }, scope: "main" },
       type: "OVER",
@@ -101,7 +101,7 @@ describe("dragDockMachine", () => {
 
   test("a tabset subject emits a moveTabset commit on drop", () => {
     const { actor, committed } = startDrag();
-    actor.send({ subject: { id: "ts1", kind: "tabset" }, type: "START" });
+    actor.send({ subject: { documentId: "doc", id: "ts1", kind: "tabset" }, type: "START" });
     actor.send({
       drop: { intent: { location: "center", targetId: "ts2" }, scope: "main" },
       type: "OVER",
@@ -116,15 +116,17 @@ describe("dragDockMachine", () => {
     });
   });
 
-  test("echoes the resolving scope back on commit", () => {
+  test("echoes the resolving scope and original subject back on commit", () => {
     const actor = createActor(dragDockMachine);
     actor.start();
     const scopes: Array<string> = [];
+    const subjects: Array<unknown> = [];
     actor.on("COMMIT", (emitted) => {
       scopes.push(emitted.scope);
+      subjects.push(emitted.subject);
     });
 
-    actor.send({ subject: { id: "t1", kind: "tab" }, type: "START" });
+    actor.send({ subject: { documentId: "doc", id: "t1", kind: "tab" }, type: "START" });
     actor.send({
       drop: { intent: { location: "center", targetId: "ts2" }, scope: "float-2" },
       type: "OVER",
@@ -132,6 +134,7 @@ describe("dragDockMachine", () => {
     actor.send({ type: "DROP" });
 
     expect(scopes).toEqual(["float-2"]);
+    expect(subjects).toEqual([{ documentId: "doc", id: "t1", kind: "tab" }]);
   });
 });
 
@@ -144,7 +147,11 @@ describe("dropAction", () => {
 
   test("returns null while dragging over nothing", () => {
     expect(
-      dropAction({ drop: null, kind: "dragging", subject: { id: "t1", kind: "tab" } }),
+      dropAction({
+        drop: null,
+        kind: "dragging",
+        subject: { documentId: "doc", id: "t1", kind: "tab" },
+      }),
     ).toBeNull();
   });
 
@@ -155,14 +162,14 @@ describe("dropAction", () => {
       dropAction({
         drop: { intent, scope: "s" },
         kind: "dragging",
-        subject: { id: "t1", kind: "tab" },
+        subject: { documentId: "doc", id: "t1", kind: "tab" },
       })?.action.type,
     ).toBe("moveNode");
     expect(
       dropAction({
         drop: { intent, scope: "s" },
         kind: "dragging",
-        subject: { id: "ts1", kind: "tabset" },
+        subject: { documentId: "doc", id: "ts1", kind: "tabset" },
       })?.action.type,
     ).toBe("moveTabset");
     expect(

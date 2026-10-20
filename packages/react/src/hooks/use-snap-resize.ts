@@ -1,6 +1,6 @@
 "use client";
 
-import type { RowNode, SnapGrid } from "@dashfoo/core";
+import type { SnapGrid } from "@dashfoo/core";
 import { decideSnap, settleSnap } from "@dashfoo/core";
 import type { RefObject } from "react";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
@@ -8,7 +8,7 @@ import type { GroupImperativeHandle, Layout, LayoutChangedMeta } from "react-res
 
 const WEIGHT_EPSILON = 0.01;
 
-type RowChildren = RowNode["children"];
+type ResizePanels = ReadonlyArray<{ id: string; weight: number }>;
 
 /** `syncing` covers this hook's own writes: the group echoes an imperative
  * `setLayout` back synchronously, and that echo is not user input. */
@@ -94,23 +94,23 @@ const stepResize = (state: ResizeState, event: ResizeEvent, context: ResizeConte
   };
 };
 
-const sizesFromLayout = (layout: Layout, children: RowChildren): Array<number> =>
-  children.map((child) => layout[child.id] ?? child.weight);
+const sizesFromLayout = (layout: Layout, panels: ResizePanels): Array<number> =>
+  panels.map((child) => layout[child.id] ?? child.weight);
 
-const layoutFromSizes = (sizes: Array<number>, children: RowChildren): Layout =>
-  children.reduce<Layout>((layout, child, index) => {
+const layoutFromSizes = (sizes: Array<number>, panels: ResizePanels): Layout =>
+  panels.reduce<Layout>((layout, child, index) => {
     layout[child.id] = sizes[index] ?? 0;
     return layout;
   }, {});
 
-const percentagesOf = (children: RowChildren): Array<number> => {
-  const total = children.reduce((sum, child) => sum + child.weight, 0);
-  return children.map((child) => (child.weight / total) * 100);
+const percentagesOf = (panels: ResizePanels): Array<number> => {
+  const total = panels.reduce((sum, child) => sum + child.weight, 0);
+  return panels.map((child) => (child.weight / total) * 100);
 };
 
 type SnapResizeOptions = {
-  children: RowChildren;
   onWeightsSettled: (weights: Array<number>) => void;
+  panels: ResizePanels;
   resizableSplits: boolean;
   snap: SnapGrid;
 };
@@ -124,8 +124,8 @@ type SnapResize = {
 };
 
 const useSnapResize = ({
-  children,
   onWeightsSettled,
+  panels,
   resizableSplits,
   snap,
 }: SnapResizeOptions): SnapResize => {
@@ -144,16 +144,15 @@ const useSnapResize = ({
       return undefined;
     }
     const current = group.getLayout();
-    const desired = percentagesOf(children);
+    const desired = percentagesOf(panels);
     const samePanelSet =
-      Object.keys(current).length === children.length &&
-      children.every((child) => child.id in current);
-    if (!samePanelSet || sizesMatch(sizesFromLayout(current, children), desired)) {
+      Object.keys(current).length === panels.length && panels.every((child) => child.id in current);
+    if (!samePanelSet || sizesMatch(sizesFromLayout(current, panels), desired)) {
       return undefined;
     }
 
     commit(SYNCING);
-    group.setLayout(layoutFromSizes(desired, children));
+    group.setLayout(layoutFromSizes(desired, panels));
     const frame = requestAnimationFrame(() => {
       commit(IDLE);
     });
@@ -161,13 +160,13 @@ const useSnapResize = ({
       cancelAnimationFrame(frame);
       commit(IDLE);
     };
-  }, [children, commit]);
+  }, [panels, commit]);
 
   const handle = (event: ResizeEvent): void => {
     const { effect, state: next } = stepResize(state.current, event, {
       resizableSplits,
       snap,
-      weights: children.map((child) => child.weight),
+      weights: panels.map((child) => child.weight),
     });
     if (next !== state.current) {
       commit(next);
@@ -181,7 +180,7 @@ const useSnapResize = ({
       return;
     }
     commit(SYNCING);
-    group.setLayout(layoutFromSizes(effect.sizes, children));
+    group.setLayout(layoutFromSizes(effect.sizes, panels));
     commit(next);
   };
 
@@ -191,12 +190,12 @@ const useSnapResize = ({
     },
     groupRef,
     onLayoutChange: (layout) => {
-      handle({ sizes: sizesFromLayout(layout, children), type: "layoutChange" });
+      handle({ sizes: sizesFromLayout(layout, panels), type: "layoutChange" });
     },
     onLayoutChanged: (layout, meta) => {
       handle({
         isUserInteraction: meta.isUserInteraction,
-        sizes: sizesFromLayout(layout, children),
+        sizes: sizesFromLayout(layout, panels),
         type: "layoutChanged",
       });
     },

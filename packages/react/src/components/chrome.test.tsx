@@ -190,7 +190,9 @@ describe("tab keyboard navigation (WAI-ARIA Tabs)", () => {
     const controls = chart.getAttribute("aria-controls");
     expect(controls).toBeTruthy();
     const panel =
-      controls === null || controls === "" ? null : document.querySelector(`#${controls}`);
+      controls === null || controls === ""
+        ? null
+        : document.querySelector(`#${CSS.escape(controls)}`);
     expect(panel).toHaveAttribute("aria-labelledby", chart.getAttribute("id"));
     expect(panel).toHaveAttribute("tabindex", "0");
   });

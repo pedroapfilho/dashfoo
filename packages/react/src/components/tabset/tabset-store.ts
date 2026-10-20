@@ -6,7 +6,7 @@ import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
 import { createStore, useStore } from "zustand";
 
-import { tabDomId } from "../../lib/tab-ids";
+import { tabDomId } from "../../lib/dom-ids";
 import type { OverflowItem } from "../tab-overflow-menu";
 
 type TabsetState = {
@@ -15,6 +15,7 @@ type TabsetState = {
   closeTab: (tabId: string) => void;
   commitRename: (tabId: string, value: string) => void;
   dispatch: (action: Action) => void;
+  documentId: string;
   editingTabId: string | null;
   isMaximized: boolean;
   node: TabsetNode;
@@ -42,6 +43,7 @@ type TabsetSnapshot = Pick<
   TabsetState,
   | "activeTab"
   | "dispatch"
+  | "documentId"
   | "isMaximized"
   | "node"
   | "showMaximize"
@@ -52,10 +54,12 @@ type TabsetSnapshot = Pick<
 
 const tabButtonIn = (
   scope: HTMLElement | null,
+  documentId: string,
   tabsetId: string,
   tabId: string,
 ): HTMLElement | null =>
-  scope?.querySelector<HTMLElement>(`#${CSS.escape(tabDomId(tabsetId, tabId))}`) ?? null;
+  scope?.querySelector<HTMLElement>(`#${CSS.escape(tabDomId(documentId, tabsetId, tabId))}`) ??
+  null;
 
 const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
   createStore<TabsetState>((set, get) => ({
@@ -104,24 +108,24 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
       get().dispatch({ name, tabId, type: "renameTab" });
     },
     selectOverflowTab: (tabId) => {
-      const { dispatch, node, tablistElement } = get();
+      const { dispatch, documentId, node, tablistElement } = get();
       const index = node.children.findIndex((tab) => tab.id === tabId);
       if (index === -1) {
         return;
       }
       dispatch({ index, tabsetId: node.id, type: "selectTab" });
-      tabButtonIn(tablistElement, node.id, tabId)?.scrollIntoView({
+      tabButtonIn(tablistElement, documentId, node.id, tabId)?.scrollIntoView({
         block: "nearest",
         inline: "nearest",
       });
     },
     selectTab: (index, options) => {
-      const { dispatch, node, tablistElement } = get();
+      const { dispatch, documentId, node, tablistElement } = get();
       dispatch({ index, tabsetId: node.id, type: "selectTab" });
       if (options?.focus === true) {
         const tab = node.children[index];
         if (tab) {
-          tabButtonIn(tablistElement, node.id, tab.id)?.focus();
+          tabButtonIn(tablistElement, documentId, node.id, tab.id)?.focus();
         }
       }
     },

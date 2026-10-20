@@ -183,8 +183,12 @@ describe("draggableTabs", () => {
     await flushRegistrations();
 
     const registry = manager().registry.draggables;
-    expect(registry.has("t1")).toBe(false);
-    expect(registry.has("grip-ts1")).toBe(true);
+    expect(
+      [...registry].some((source) => source.data.type === "tab" && source.data.id === "t1"),
+    ).toBe(false);
+    expect(
+      [...registry].some((source) => source.data.type === "tabset" && source.data.id === "ts1"),
+    ).toBe(true);
   });
 
   test("global tabEnableDrag: false unregisters tab draggables", async () => {
@@ -193,14 +197,22 @@ describe("draggableTabs", () => {
     });
     await flushRegistrations();
 
-    expect(manager().registry.draggables.has("t1")).toBe(false);
+    expect(
+      [...manager().registry.draggables].some(
+        (source) => source.data.type === "tab" && source.data.id === "t1",
+      ),
+    ).toBe(false);
   });
 
   test("tabs are draggable by default", async () => {
     const { manager } = renderWithManager();
     await flushRegistrations();
 
-    expect(manager().registry.draggables.has("t1")).toBe(true);
+    expect(
+      [...manager().registry.draggables].some(
+        (source) => source.data.type === "tab" && source.data.id === "t1",
+      ),
+    ).toBe(true);
   });
 });
 
@@ -218,6 +230,10 @@ describe("runtime toggling", () => {
     expect(screen.getByRole("button", { name: "Close Chart" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Move tabset" })).not.toHaveLength(0);
     expect(splitterOf(view.container)).not.toHaveAttribute("data-separator", "disabled");
-    expect(manager().registry.draggables.has("t1")).toBe(true);
+    expect(
+      [...manager().registry.draggables].some(
+        (source) => source.data.type === "tab" && source.data.id === "t1",
+      ),
+    ).toBe(true);
   });
 });

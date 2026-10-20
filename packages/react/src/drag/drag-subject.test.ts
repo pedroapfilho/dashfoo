@@ -3,14 +3,31 @@ import { describe, expect, test, vi } from "vitest";
 import { subjectFor } from "./drag-subject";
 
 describe("subjectFor", () => {
+  test.each([{ type: "tab" }, { documentId: "doc", type: "tabset" }, { id: "t1", type: "other" }])(
+    "rejects an incomplete or unknown internal source: %j",
+    (data) => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      expect(subjectFor({ data, id: "registration" })).toBeNull();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("missing its document or node identity"),
+      );
+      warn.mockRestore();
+    },
+  );
   test("tabset source returns tabset subject with tabsetId", () => {
-    const result = subjectFor({ data: { tabsetId: "ts1", type: "tabset" }, id: "grip-ts1" });
-    expect(result).toEqual({ id: "ts1", kind: "tabset" });
+    const result = subjectFor({
+      data: { documentId: "doc", id: "ts1", type: "tabset" },
+      id: "grip-ts1",
+    });
+    expect(result).toEqual({ documentId: "doc", id: "ts1", kind: "tabset" });
   });
 
-  test("plain tab source returns tab subject with source id", () => {
-    const result = subjectFor({ data: { type: "tab" }, id: "t1" });
-    expect(result).toEqual({ id: "t1", kind: "tab" });
+  test("tab source preserves document and model ids independently of its registration", () => {
+    const result = subjectFor({
+      data: { documentId: "doc", id: "t1", type: "tab" },
+      id: "registration-id",
+    });
+    expect(result).toEqual({ documentId: "doc", id: "t1", kind: "tab" });
   });
 
   test("external source with valid createTab returns external subject carrying the tab", () => {

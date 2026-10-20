@@ -72,7 +72,9 @@ test("undo and redo restore resized panel dimensions", async ({ page }) => {
 
   const undo = page.getByRole("button", { name: "Undo" });
   const redo = page.getByRole("button", { name: "Redo" });
-  const left = page.locator("#left");
+  const left = page
+    .locator("[data-panel]")
+    .filter({ has: page.getByRole("tab", { name: "Canvas" }) });
 
   const initialWidth = await panelWidth(left);
   await dragSplitterBy(page, 160);

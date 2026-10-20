@@ -104,7 +104,7 @@ const useDragMonitor = (
     };
 
     const commitSubscription = actorRef.on("COMMIT", (emitted) => {
-      layers.get(emitted.scope)?.commit(emitted.action);
+      layers.get(emitted.scope)?.commit(emitted.action, emitted.subject);
     });
     manager.monitor.addEventListener("dragstart", handleStart);
     manager.monitor.addEventListener("dragmove", scheduleResolve);

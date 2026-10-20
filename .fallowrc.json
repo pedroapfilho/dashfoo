@@ -13,7 +13,8 @@
     "scripts/launch/playwright.config.ts",
     "scripts/launch/*-lint.config.mjs",
     "scripts/launch/*.spec.ts",
-    "apps/docs/components/ui/*.tsx"
+    "apps/docs/components/ui/*.tsx",
+    "apps/demo-vite/e2e/fixtures/*.tsx"
   ],
   "ignorePatterns": [
     "apps/docs/content/**",

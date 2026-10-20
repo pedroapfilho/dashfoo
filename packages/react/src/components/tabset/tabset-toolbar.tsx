@@ -4,7 +4,7 @@ import { warnOnce } from "@dashfoo/core";
 import type { ComponentProps, MouseEvent, ReactNode } from "react";
 import { forwardRef, useMemo } from "react";
 
-import { useTabsetDraggable } from "../../drag/drag-hooks";
+import { useNodeDraggable } from "../../drag/drag-hooks";
 import { useLayout } from "../../hooks/layout-store";
 import { measureFloatRect } from "../../lib/float-geometry";
 import { mergeRefs } from "../../lib/merge-refs";
@@ -59,7 +59,7 @@ const TabsetGrip = forwardRef<HTMLButtonElement, TabsetGripProps>(
     const activeTabName = useTabset((state) => state.activeTab?.name ?? "");
     const node = useTabset((state) => state.node);
     const { grip } = useTabsetChrome();
-    const { ref } = useTabsetDraggable(node.id, !grip, activeTabName);
+    const { ref } = useNodeDraggable("tabset", node.id, !grip, activeTabName);
     const refCallback = useMemo(() => mergeRefs<HTMLButtonElement>(ref, userRef), [ref, userRef]);
 
     if (!grip) {

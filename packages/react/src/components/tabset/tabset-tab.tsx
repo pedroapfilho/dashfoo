@@ -5,10 +5,10 @@ import { warnOnce } from "@dashfoo/core";
 import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { forwardRef, useContext, useEffect, useMemo, useRef } from "react";
 
-import { useDragSubject, useTabDraggable } from "../../drag/drag-hooks";
+import { useDragSubject, useNodeDraggable } from "../../drag/drag-hooks";
 import { useLayout } from "../../hooks/layout-store";
+import { panelDomId, tabDomId } from "../../lib/dom-ids";
 import { mergeRefs } from "../../lib/merge-refs";
-import { panelDomId, tabDomId } from "../../lib/tab-ids";
 
 import { TabContext, TabsetStoreContext, useTab, useTabset } from "./tabset-store";
 
@@ -18,10 +18,14 @@ const TabsetTab = forwardRef<HTMLSpanElement, TabsetTabProps>(
   ({ children, tab, ...props }, userRef): ReactNode => {
     const store = useContext(TabsetStoreContext);
     const node = useTabset((state) => state.node);
+    const documentId = useTabset((state) => state.documentId);
     const editing = useTabset((state) => state.editingTabId === tab.id);
 
     const dragSubject = useDragSubject();
-    const isDragging = dragSubject?.kind === "tab" && dragSubject.id === tab.id;
+    const isDragging =
+      dragSubject?.kind === "tab" &&
+      dragSubject.documentId === documentId &&
+      dragSubject.id === tab.id;
     const itemRef = useRef<HTMLSpanElement | null>(null);
     const wasEditing = useRef(false);
 
@@ -82,6 +86,7 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
   ): ReactNode => {
     const { index, tab } = useTab();
     const node = useTabset((state) => state.node);
+    const documentId = useTabset((state) => state.documentId);
     const editing = useTabset((state) => state.editingTabId === tab.id);
     const selectTab = useTabset((state) => state.selectTab);
     const startEditing = useTabset((state) => state.startEditing);
@@ -89,7 +94,12 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
     const visualSelected = useTabset((state) => state.visualSelected);
     const draggableTabs = useLayout((state) => state.draggableTabs);
     const renderTabLabel = useLayout((state) => state.renderTabLabel);
-    const { ref } = useTabDraggable(tab.id, !draggableTabs || tab.enableDrag === false, tab.name);
+    const { ref } = useNodeDraggable(
+      "tab",
+      tab.id,
+      !draggableTabs || tab.enableDrag === false,
+      tab.name,
+    );
     const refCallback = useMemo(() => mergeRefs<HTMLButtonElement>(ref, userRef), [ref, userRef]);
 
     if (editing) {
@@ -137,11 +147,11 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
       <button
         aria-label={renderTabLabel ? tab.name : undefined}
         {...props}
-        aria-controls={panelDomId(node.id)}
+        aria-controls={panelDomId(documentId, node.id)}
         aria-selected={selected}
         data-dashfoo="tab"
         data-tab-id={tab.id}
-        id={tabDomId(node.id, tab.id)}
+        id={tabDomId(documentId, node.id, tab.id)}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onKeyDown={handleKeyDown}

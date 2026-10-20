@@ -3,8 +3,8 @@
 import type { ComponentProps, ReactNode } from "react";
 import { forwardRef, useMemo } from "react";
 
+import { tabDomId } from "../../lib/dom-ids";
 import { mergeRefs } from "../../lib/merge-refs";
-import { tabDomId } from "../../lib/tab-ids";
 
 import { useTabset } from "./tabset-store";
 
@@ -23,6 +23,7 @@ type TabsetTablistProps = ComponentProps<"div">;
 const TabsetTablist = forwardRef<HTMLDivElement, TabsetTablistProps>(
   ({ "aria-label": ariaLabel, children, style, ...props }, userRef): ReactNode => {
     const node = useTabset((state) => state.node);
+    const documentId = useTabset((state) => state.documentId);
     const registerTablist = useTabset((state) => state.registerTablist);
     const editingTabId = useTabset((state) => state.editingTabId);
 
@@ -32,7 +33,7 @@ const TabsetTablist = forwardRef<HTMLDivElement, TabsetTablistProps>(
     );
 
     const ownedTabs = node.children
-      .flatMap((tab) => (tab.id === editingTabId ? [] : [tabDomId(node.id, tab.id)]))
+      .flatMap((tab) => (tab.id === editingTabId ? [] : [tabDomId(documentId, node.id, tab.id)]))
       .join(" ");
 
     return (

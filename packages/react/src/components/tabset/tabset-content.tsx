@@ -5,7 +5,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { forwardRef } from "react";
 
 import { useLayout } from "../../hooks/layout-store";
-import { panelDomId, tabDomId } from "../../lib/tab-ids";
+import { panelDomId, tabDomId } from "../../lib/dom-ids";
 
 import { useTabset } from "./tabset-store";
 
@@ -27,6 +27,7 @@ type TabsetContentProps = Omit<ComponentProps<"div">, "children"> & {
 const TabsetContent = forwardRef<HTMLDivElement, TabsetContentProps>(
   ({ children, style, ...props }, ref): ReactNode => {
     const node = useTabset((state) => state.node);
+    const documentId = useTabset((state) => state.documentId);
     const editingTabId = useTabset((state) => state.editingTabId);
     const visualSelected = useTabset((state) => state.visualSelected);
     const keepMounted = useLayout((state) => state.keepMounted);
@@ -36,10 +37,12 @@ const TabsetContent = forwardRef<HTMLDivElement, TabsetContentProps>(
         <div
           {...props}
           aria-label={editingTabId === tab.id ? tab.name : undefined}
-          aria-labelledby={editingTabId === tab.id ? undefined : tabDomId(node.id, tab.id)}
+          aria-labelledby={
+            editingTabId === tab.id ? undefined : tabDomId(documentId, node.id, tab.id)
+          }
           data-dashfoo="tabcontent"
           hidden={index !== visualSelected || undefined}
-          id={index === visualSelected ? panelDomId(node.id) : undefined}
+          id={index === visualSelected ? panelDomId(documentId, node.id) : undefined}
           key={tab.id}
           ref={index === visualSelected ? ref : undefined}
           role={index === visualSelected ? "tabpanel" : undefined}
@@ -57,9 +60,11 @@ const TabsetContent = forwardRef<HTMLDivElement, TabsetContentProps>(
         <div
           {...props}
           aria-label={editingTabId === active.id ? active.name : undefined}
-          aria-labelledby={editingTabId === active.id ? undefined : tabDomId(node.id, active.id)}
+          aria-labelledby={
+            editingTabId === active.id ? undefined : tabDomId(documentId, node.id, active.id)
+          }
           data-dashfoo="tabcontent"
-          id={panelDomId(node.id)}
+          id={panelDomId(documentId, node.id)}
           ref={ref}
           role="tabpanel"
           style={style}

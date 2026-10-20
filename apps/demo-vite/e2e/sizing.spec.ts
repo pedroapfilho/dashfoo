@@ -1,8 +1,10 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
-const aPanel = (page: Page): Locator => page.locator("#a");
-const bPanel = (page: Page): Locator => page.locator("#b");
+const aPanel = (page: Page): Locator =>
+  page.locator("[data-panel]").filter({ has: page.getByRole("tab", { name: "Canvas" }) });
+const bPanel = (page: Page): Locator =>
+  page.locator("[data-panel]").filter({ has: page.getByRole("tab", { name: "Activity" }) });
 const splitter = (page: Page): Locator => page.locator('[data-dashfoo="splitter"]').first();
 const rootGroup = (page: Page): Locator => page.locator('[data-dashfoo="row"]').first();
 
@@ -138,5 +140,14 @@ test("the overview side column keeps descendant tabset minimum width", async ({ 
   await page.mouse.move(2000, y, { steps: 16 });
   await page.mouse.up();
 
-  await expect.poll(() => panelWidth(page.locator("#ts-side-top"))).toBeGreaterThanOrEqual(319);
+  await expect
+    .poll(() =>
+      panelWidth(
+        page
+          .locator("[data-panel]")
+          .filter({ has: page.getByRole("tab", { name: "Activity" }) })
+          .last(),
+      ),
+    )
+    .toBeGreaterThanOrEqual(319);
 });

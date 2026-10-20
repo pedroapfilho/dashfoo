@@ -129,6 +129,9 @@ detaches anything, so a drop that cannot land changes nothing. And the tabset
 that receives the moved content becomes `activeTabsetId`: the target on a
 `center` drop, the newly placed tabset on a split, the floated tabset when
 floating. `addNode` ignores a tab whose id is already in the layout and warns.
+`floatTab` and `floatTabset` likewise reject a supplied `floatId` used by any
+node or float, including their source. Rejection warns and leaves the model
+and undo/redo history unchanged; omitting the ID generates a fresh one.
 
 When a tab leaves its strip (closed, moved, floated), the selection stays on the
 tab that was selected. If that tab is the one leaving, its right neighbour
@@ -382,12 +385,20 @@ transient drag state only and never touches the document. On a valid `DROP` it
 layout, carrying the `TabNode` to insert), which the React layer dispatches to
 the document store.
 
-| Event    | Payload              |
-| -------- | -------------------- |
-| `START`  | `{ subject }`        |
-| `OVER`   | `{ intent \| null }` |
-| `DROP`   | (none)               |
-| `CANCEL` | (none)               |
+Internal subjects carry `{ kind: "tab" | "tabset", id, documentId }`, where
+`documentId` identifies the owning document and `id` stays local to its model.
+External subjects carry `{ kind: "external", id, tab }`. `COMMIT` and
+`dropAction(drag)` return the action, target `scope`, and original `subject`, so
+hosts can check ownership again before dispatching. The React adapter rejects
+internal subjects from another document while allowing moves between its main
+and float layers and imports from external factories.
+
+| Event    | Payload                            |
+| -------- | ---------------------------------- |
+| `START`  | `{ subject }`                      |
+| `OVER`   | `{ drop: DropResolution \| null }` |
+| `DROP`   | (none)                             |
+| `CANCEL` | (none)                             |
 
 ## Public exports
 

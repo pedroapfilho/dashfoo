@@ -4,8 +4,7 @@ import type { Data } from "@dnd-kit/abstract";
 import type { Draggable } from "@dnd-kit/dom";
 
 type DashfooDragData =
-  | { label?: string; type: "tab" }
-  | { label?: string; tabsetId: string; type: "tabset" }
+  | { documentId: string; id: string; label?: string; type: "tab" | "tabset" }
   | { createTab: () => TabNode; label?: string; type: "external" };
 
 type DragSource = Pick<Draggable, "data" | "id">;
@@ -15,9 +14,6 @@ const isTabFactory = (value: Data[string]): value is () => TabNode => typeof val
 /** Called by the root, not a layer: `dragstart` fires once per gesture on the shared manager. */
 const subjectFor = (source: DragSource): DragSubject | null => {
   const data = source.data;
-  if (data.type === "tabset") {
-    return { id: String(data.tabsetId), kind: "tabset" };
-  }
   if (data.type === "external") {
     if (!isTabFactory(data.createTab)) {
       warn("external drag source is missing its createTab function");
@@ -37,7 +33,18 @@ const subjectFor = (source: DragSource): DragSubject | null => {
     }
     return { id: String(source.id), kind: "external", tab: parsed.data };
   }
-  return { id: String(source.id), kind: "tab" };
+  const documentId: unknown = data.documentId;
+  const id: unknown = data.id;
+  const kind: unknown = data.type;
+  if (
+    (kind === "tab" || kind === "tabset") &&
+    typeof documentId === "string" &&
+    typeof id === "string"
+  ) {
+    return { documentId, id, kind };
+  }
+  warn("internal drag source is missing its document or node identity");
+  return null;
 };
 
 export { subjectFor };

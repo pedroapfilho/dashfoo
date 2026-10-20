@@ -14,7 +14,7 @@ type DragActor = ActorRefFrom<typeof dragDockMachine>;
  * same model id.
  */
 type RegisteredLayer = {
-  commit: (action: Action) => void;
+  commit: (action: Action, subject: DragSubject) => void;
   layerId: string;
   resolveIntent: (
     subject: DragSubject,

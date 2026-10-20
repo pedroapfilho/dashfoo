@@ -6,6 +6,8 @@ import { Draggable, Droppable } from "@dnd-kit/dom";
 import { useSelector } from "@xstate/react";
 import { useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";
 
+import { useLayout } from "../hooks/layout-store";
+
 import { DragContext } from "./drag-context";
 import type { DashfooDragManager } from "./drag-manager";
 import type { DashfooDragData } from "./drag-subject";
@@ -80,24 +82,24 @@ const useDraggableEntity = (
   return useMemo(() => ({ ref }), [ref]);
 };
 
-const useTabDraggable = (
-  tabId: string,
-  disabled = false,
-  label = "",
+const useNodeDraggable = (
+  kind: "tab" | "tabset",
+  id: string,
+  disabled: boolean,
+  label: string,
 ): { ref: (element: Element | null) => void } => {
   const manager = useLayerManager();
-  const data = useMemo(() => ({ type: "tab" }) satisfies DashfooDragData, []);
-  return useDraggableEntity(manager, { data, id: tabId }, disabled, label);
-};
-
-const useTabsetDraggable = (
-  tabsetId: string,
-  disabled = false,
-  label = "",
-): { ref: (element: Element | null) => void } => {
-  const manager = useLayerManager();
-  const data = useMemo(() => ({ tabsetId, type: "tabset" }) satisfies DashfooDragData, [tabsetId]);
-  return useDraggableEntity(manager, { data, id: `grip-${tabsetId}` }, disabled, label);
+  const documentId = useLayout((state) => state.documentId);
+  const data = useMemo(
+    () => ({ documentId, id, type: kind }) satisfies DashfooDragData,
+    [documentId, id, kind],
+  );
+  return useDraggableEntity(
+    manager,
+    { data, id: JSON.stringify([documentId, kind, id]) },
+    disabled,
+    label,
+  );
 };
 
 const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | null) => void } => {
@@ -209,7 +211,6 @@ export {
   useDragSubject,
   useDropIntent,
   useExternalTabSource,
-  useTabDraggable,
-  useTabsetDraggable,
+  useNodeDraggable,
   useTabsetDroppable,
 };

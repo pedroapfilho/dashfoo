@@ -104,6 +104,11 @@ describe("one drag root per layout", () => {
     expect(main.layerId).not.toBeNull();
     expect(float.layerId).not.toBeNull();
     expect(float.layerId).not.toBe(main.layerId);
+    const sources = [...main.manager.registry.draggables].filter(
+      (source) => source.data.type === "tab",
+    );
+    expect(new Set(sources.map((source) => source.data.documentId)).size).toBe(1);
+    expect(sources[0]?.data.documentId).toBeTruthy();
 
     const tabsetIds = tabsetDroppables(main.manager).map((data) => data.tabsetId);
     expect(tabsetIds).toEqual(expect.arrayContaining(["ts1", "ts2", "f1-ts"]));
@@ -159,7 +164,7 @@ describe("one drag root per layout", () => {
 
     const { manager } = captured("main-tab");
     const draggableIds = [...manager.registry.draggables].map((draggable) => String(draggable.id));
-    expect(draggableIds).not.toContain("main-tab");
+    expect(draggableIds.some((id) => id.includes("main-tab"))).toBe(false);
     expect(tabsetDroppables(manager).map((data) => data.tabsetId)).not.toContain("ts1");
   });
 
