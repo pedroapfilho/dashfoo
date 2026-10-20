@@ -297,7 +297,12 @@ extra wiring; a root inside another (a layout under `DashfooDragProvider`, or a
 layout nested in a tab) reuses the outer one. On
 `dragstart` it reads the source's data to decide the subject kind (a grip
 carries `type: "tabset"`, an external source carries `type: "external"`, a tab
-carries its own id) and sends `START`. On `dragmove` and on every `collision`
+carries its model id and document identity) and sends `START`.
+Each `Layout.Root` owns one stable `documentId`, inherited by its main and float
+layers. Internal draggable registrations include that identity and the source
+kind, so sibling and nested documents may reuse local node IDs safely. A layer
+rejects foreign internal subjects; external factories remain importable.
+On `dragmove` and on every `collision`
 pulse it takes the drop target dnd-kit's collision pass resolved, looks up the
 layer that registered it, asks that layer to resolve an intent for the
 machine's current subject, and sends `OVER`. On `dragend` it re-resolves from the final operation state, sends a last
@@ -339,22 +344,7 @@ subject is not expressible, so "is this drop valid" and "what does it do" are on
 total function:
 
 ```ts
-const dropAction = (drag: DragState): { action: Action; scope: string } | null => {
-  if (drag.kind !== "dragging" || drag.drop === null) {
-    return null;
-  }
-  const { intent, scope } = drag.drop;
-  const { subject } = drag;
-  if (subject.kind === "external") {
-    return { action: { ...intent, tab: subject.tab, type: "addNode" }, scope };
-  }
-  if (subject.kind === "tabset") {
-    // no `index`: a tabset merges or docks beside, never into a strip slot
-    const { index, ...target } = intent;
-    return { action: { ...target, sourceId: subject.id, type: "moveTabset" }, scope };
-  }
-  return { action: { ...intent, sourceId: subject.id, type: "moveNode" }, scope };
-};
+const resolved: { action: Action; scope: string; subject: DragSubject } | null = dropAction(drag);
 ```
 
 The `DROP` guard is `dropAction(context.drag) !== null`, and the emitted
@@ -368,7 +358,11 @@ machine never mutates the model; it only emits the action.
 The provider subscribes to the machine's `COMMIT` emission and forwards the
 action (`moveNode` for a tab drag, `moveTabset` for a grip drag, `addNode` for
 an external source) to the layer named by the emission's `scope`, which
-dispatches it through the `Layout.Root` above that layer.
+dispatches it through the `Layout.Root` above that layer. Both intent resolution
+and commit read the current docking permission (`editable && restructurable`)
+and check the original subject's document identity. A layout that becomes
+compact during a gesture therefore rejects the pending drop, including an
+external widget. `enableSplitDock: false` still allows center docking.
 `DashfooLayout` wires that straight to `store.dispatch`.
 
 ### 5. The reducer applies the move

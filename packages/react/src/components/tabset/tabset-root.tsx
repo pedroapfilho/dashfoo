@@ -9,7 +9,7 @@ import { useStore } from "zustand";
 import { useDragSubject, useTabsetDroppable } from "../../drag/drag-hooks";
 import { useLayout } from "../../hooks/layout-store";
 import { useTabOverflow } from "../../hooks/use-tab-overflow";
-import { tabDomId } from "../../lib/tab-ids";
+import { tabDomId } from "../../lib/dom-ids";
 
 import type { TabsetSnapshot } from "./tabset-store";
 import { createTabsetStore, TabsetStoreContext } from "./tabset-store";
@@ -35,6 +35,7 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
     const tabLocation = useLayout((state) => state.tabLocation);
 
     const { ref } = useTabsetDroppable(node.id);
+    const documentId = useLayout((state) => state.documentId);
     const dragSubject = useDragSubject();
     const tabsetRef = useRef<HTMLDivElement | null>(null);
 
@@ -45,7 +46,7 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
     const tabsRenamable = renamableTabs;
 
     const draggingTabIndex =
-      dragSubject?.kind === "tab"
+      dragSubject?.kind === "tab" && dragSubject.documentId === documentId
         ? node.children.findIndex((tab) => tab.id === dragSubject.id)
         : -1;
     const visualSelected =
@@ -53,11 +54,15 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
         ? fallbackSelectedIndex(node.children.length, draggingTabIndex)
         : node.selected;
     const activeTab = node.children[visualSelected];
-    const isDragSource = dragSubject?.kind === "tabset" && dragSubject.id === node.id;
+    const isDragSource =
+      dragSubject?.kind === "tabset" &&
+      dragSubject.documentId === documentId &&
+      dragSubject.id === node.id;
 
     const snapshot: TabsetSnapshot = {
       activeTab,
       dispatch,
+      documentId,
       isMaximized,
       node,
       showMaximize,
@@ -98,12 +103,14 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
       const selectedTab = node.children[node.selected];
       if (selectedTab) {
         tabsetRef.current
-          ?.querySelector<HTMLElement>(`#${CSS.escape(tabDomId(node.id, selectedTab.id))}`)
+          ?.querySelector<HTMLElement>(
+            `#${CSS.escape(tabDomId(documentId, node.id, selectedTab.id))}`,
+          )
           ?.focus();
       } else {
         tabsetRef.current?.focus();
       }
-    }, [node.children, node.selected, node.id, store]);
+    }, [documentId, node.children, node.selected, node.id, store]);
 
     return (
       <TabsetStoreContext.Provider value={store}>

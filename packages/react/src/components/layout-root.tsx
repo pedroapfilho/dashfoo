@@ -2,7 +2,7 @@
 
 import type { Action, Dashfoo, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
 import type { ComponentProps, ReactNode, Ref } from "react";
-import { useLayoutEffect, useState } from "react";
+import { useId, useLayoutEffect, useState } from "react";
 
 import { DashfooDragProvider } from "../drag/drag-root";
 import type { LayoutState } from "../hooks/layout-store";
@@ -59,6 +59,7 @@ type CapabilityOptions = Required<
 const resolveCapabilities = (global: Dashfoo["global"], options: CapabilityOptions) => {
   const structural = options.editable && options.restructurable;
   return {
+    canDock: structural,
     closableTabs: options.editable && options.closableTabs && global.tabEnableClose !== false,
     draggableTabs: structural && options.draggableTabs && global.tabEnableDrag !== false,
     draggableTabsets: structural && options.draggableTabsets,
@@ -88,6 +89,7 @@ const LayoutRoot = ({
   snap,
   ...props
 }: LayoutRootProps): ReactNode => {
+  const documentId = useId();
   const global = model.global;
   const snapshot: LayoutState = {
     ...resolveCapabilities(global, {
@@ -102,6 +104,7 @@ const LayoutRoot = ({
       restructurable,
     }),
     dispatch,
+    documentId,
     editable,
     keepMounted,
     maximizedTabsetId: model.maximizedTabsetId,

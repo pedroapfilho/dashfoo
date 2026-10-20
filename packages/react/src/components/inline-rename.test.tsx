@@ -64,6 +64,7 @@ const renderTabEditor = (): Harness => {
     dispatch: (action) => {
       dispatched.push(action);
     },
+    documentId: "doc",
     isMaximized: false,
     node,
     showMaximize: false,

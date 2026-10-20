@@ -7,8 +7,10 @@ import type { StoreApi } from "zustand";
 import { createStore, useStore } from "zustand";
 
 type LayoutState = {
+  canDock: boolean;
   closableTabs: boolean;
   dispatch: (action: Action) => void;
+  documentId: string;
   draggableTabs: boolean;
   draggableTabsets: boolean;
   editable: boolean;

@@ -19,8 +19,8 @@ const tabset = (tabIds: ReadonlyArray<string>, id = "ts1"): MeasuredTabset => ({
 
 const stripless = (id = "ts1"): MeasuredTabset => ({ id, rect: TABSET_RECT, strip: null });
 
-const tab = (id: string): DragSubject => ({ id, kind: "tab" });
-const tabsetSubject = (id: string): DragSubject => ({ id, kind: "tabset" });
+const tab = (id: string): DragSubject => ({ documentId: "doc", id, kind: "tab" });
+const tabsetSubject = (id: string): DragSubject => ({ documentId: "doc", id, kind: "tabset" });
 const external: DragSubject = {
   id: "external-1",
   kind: "external",

@@ -141,6 +141,14 @@ const floatOut = (
 const isIdInUse = (draft: Dashfoo, id: string): boolean =>
   findAttributedNode(draft, id) !== undefined || findFloat(draft, id) !== undefined;
 
+const canCreateFloat = (draft: Dashfoo, floatId: string | undefined): boolean => {
+  if (floatId === undefined || !isIdInUse(draft, floatId)) {
+    return true;
+  }
+  warn(`float ignored: float id "${floatId}" is already in the layout. Pass a fresh id`);
+  return false;
+};
+
 const addTab = (
   draft: Dashfoo,
   { index, location, tab, targetId }: Extract<DockingAction, { type: "addNode" }>,
@@ -186,7 +194,7 @@ const floatTab = (
   draft: Dashfoo,
   { floatId, geometry, tabId }: Extract<DockingAction, { type: "floatTab" }>,
 ): TabsetNode | undefined => {
-  const tab = removeTab(draft, tabId);
+  const tab = canCreateFloat(draft, floatId) ? removeTab(draft, tabId) : undefined;
   return tab && floatOut(draft, tabset([tab]), geometry, floatId);
 };
 
@@ -194,7 +202,7 @@ const floatTabset = (
   draft: Dashfoo,
   { floatId, geometry, tabsetId }: Extract<DockingAction, { type: "floatTabset" }>,
 ): TabsetNode | undefined => {
-  const source = locateTabset(draft, tabsetId);
+  const source = canCreateFloat(draft, floatId) ? locateTabset(draft, tabsetId) : undefined;
   return source && floatOut(draft, detachTabset(source), geometry, floatId);
 };
 

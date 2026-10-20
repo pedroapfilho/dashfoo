@@ -525,14 +525,19 @@ const node = useTabset((state) => state.node); // per-tabset state; throws outsi
 const { index, tab } = useTab(); // which tab a part belongs to; throws outside <Tabset.Tab>
 ```
 
-`useDragSubject()` returns the live drag subject (`{ kind, id }` for a tab or
+`useDragSubject()` returns the live drag subject (`{ kind, id, documentId }` for a tab or
 tabset being dragged) or `null` (including outside any layout or provider) for
-drag-aware styling in custom parts.
+drag-aware styling in custom parts. `documentId` is the owning `Layout.Root`'s
+stable identity, also available through `useLayout((state) => state.documentId)`.
+When sharing a provider across layouts, match it before styling a local node.
+Internal drags stay within that document, including its float layers; external
+factories can insert into any layout that permits docking. Tab, panel, and resize registrations also use
+the document namespace, keeping accessibility relationships and resizing local.
 
 `useDropIntent()` returns the live drop intent (`{ targetId, location, index? }`,
 where the drag would land if dropped right now) or `null` when nothing is
 dragging or the pointer is over no valid target (empty space, a non-editable
-layout, or a no-op drop the library suppresses). Together with
+layout, a structurally locked layout, a foreign internal drag, or a no-op drop the library suppresses). Together with
 `dockZonePolygons` from `@dashfoo/core` it supports consumer-rendered drop
 indicators and drop-zone visualizations alongside the built-in indicator. Both
 hooks work anywhere under a layout; under a `DashfooDragProvider` they work
