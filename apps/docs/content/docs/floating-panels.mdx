@@ -75,6 +75,10 @@ layout and drops a float the moment its last panel leaves, the same way it remov
 empty tabset. Because a float owns a full `RowNode`, a floated panel is a real
 container: it can hold one tab or several.
 
+`floatTab` and `floatTabset` generate a fresh float ID unless given `floatId`.
+A supplied ID already used by any node or float is rejected before detaching
+the source, with a warning and no document or history change.
+
 Saved float bounds are projected into the current viewport, so restoring a
 desktop layout on a narrow screen keeps title-bar controls reachable. The
 projection creates no history entry and never overwrites the saved rect;

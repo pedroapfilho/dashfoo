@@ -1,10 +1,11 @@
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, assert, describe, expect, test, vi } from "vitest";
 
 import type { Dashfoo, TabNode, TabsetNode } from "../model/schema";
-import { findTab, findTabset } from "../model/tree";
+import { findDuplicateIds, findTab, findTabset } from "../model/tree";
 
 import type { Action } from "./actions";
 import { fallbackSelectedIndex } from "./docking";
+import { createHistory, dispatchToHistory, undoHistory } from "./history";
 import { reducer } from "./reducer";
 
 const tab = (id: string): TabNode => ({ component: "c", id, name: id, type: "tab" });
@@ -185,6 +186,62 @@ describe("addNode with an id already in the layout", () => {
         reducer(input, { location: "center", tab: tab(id), targetId: "ts1", type: "addNode" }),
       ).toBe(input);
       expect(warn).toHaveBeenCalledWith(expect.stringContaining(`[dashfoo] addNode ignored`));
+    },
+  );
+});
+
+describe("float id reservation", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const sources: Array<Extract<Action, { type: "floatTab" | "floatTabset" }>> = [
+    { tabId: "t1", type: "floatTab" },
+    { tabsetId: "ts1", type: "floatTabset" },
+  ];
+
+  test.each(sources)("$type rejects occupied ids before detaching the source", (source) => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const history = undoHistory(
+      dispatchToHistory(createHistory(dockingModel()), {
+        name: "Renamed",
+        tabId: "t1",
+        type: "renameTab",
+      }),
+    );
+    const before = structuredClone(history.present);
+
+    for (const floatId of ["f1", "t3", "ts2", "root", "t1", "ts1", "frow", "fts", "t5"]) {
+      const action = { ...source, floatId };
+      expect(reducer(history.present, action)).toBe(history.present);
+      expect(dispatchToHistory(history, action)).toBe(history);
+      expect(history.present).toEqual(before);
+      expect(findDuplicateIds(history.present)).toEqual([]);
+      expect(warn).toHaveBeenLastCalledWith(
+        expect.stringContaining(`float id "${floatId}" is already in the layout`),
+      );
+    }
+    expect(history.past).toHaveLength(0);
+    expect(history.future).toHaveLength(1);
+  });
+
+  test.each(sources)(
+    "$type accepts fresh explicit and generated ids, then docks back",
+    (source) => {
+      for (const floatId of ["fresh-float", undefined]) {
+        const next = reducer(createHistory(dockingModel()).present, { ...source, floatId });
+        const float = next.floats.at(-1);
+        assert(float);
+        if (floatId !== undefined) {
+          expect(float.id).toBe(floatId);
+        }
+        expect(next.floats).toHaveLength(2);
+        expect(findDuplicateIds(next)).toEqual([]);
+        const restored = reducer(next, { floatId: float.id, type: "dockFloat" });
+        expect(restored.floats).toHaveLength(1);
+        expect(findTab(restored, "t1")).toBeDefined();
+        expect(findDuplicateIds(restored)).toEqual([]);
+      }
     },
   );
 });
