@@ -108,6 +108,7 @@ test("a widget gesture started on desktop cannot commit after the compact breakp
   page,
 }) => {
   await page.goto("/docking");
+  await expect.poll(() => columns(page)).toBeGreaterThan(1);
   const before = await tabsByTabset(page);
   const target = page.locator('[data-dashfoo="tabset"]').first();
   const desktop = await target.boundingBox();
