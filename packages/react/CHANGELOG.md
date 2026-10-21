@@ -1,5 +1,43 @@
 # @dashfoo/react
 
+## 0.10.0
+
+### Minor Changes
+
+- 86ae424: Bind internal drag subjects to their owning document and namespace draggable registrations and tab/panel accessibility IDs. Sibling and nested layouts sharing a provider reject foreign internal drops while main/float moves and external tab factories keep working. Internal `DragSubject` values now require `documentId`, and `COMMIT`/`dropAction` include the original subject for commit-time validation.
+
+  Enforce the resolved structural permission at both drop resolution and commit, preventing external widgets and gestures started before compact mode from bypassing its docking lock. Center-only docking remains available when split docking is disabled.
+
+- 9eec182: `Layout.Root` now mounts the drag root, so every layout gets exactly one drag manager and drag actor, shared by the main tree and its floats. Hand-built layouts with `Layout.FloatLayer` can now drag between floats and the main tree; before, each float mounted its own root and those drops failed silently. A root nested inside another (a layout under `DashfooDragProvider`, or a layout in a tab) reuses the outer one. `Layout.DragLayer` no longer mounts a root of its own: it must sit inside a `Layout.Root`, warns when it does not, and drops its undocumented `onCommit` and `splitDock` props in favour of the layout store.
+- 9eec182: Remove the unused `global` prop from `Layout.FloatLayer`. Floating panels already inherit their capabilities from the layout above them; drop `global={...}` from any hand-built `<Layout.FloatLayer>`.
+- 9eec182: One responsive projection. `useResponsiveLayout(model, { maxWidth, orientation? })` measures the layout's own container and returns the compact view of the model plus the lock that goes with it (`restructurable: false`, which also disables floating, and `maximizable: false`). `DashfooLayout`'s `responsive` prop runs on the same hook, so a hand-built `Layout.Root` compacts exactly like the built-in layout, keeping row ancestors so nested widget state survives the breakpoint.
+
+  Breaking: `useResponsiveModel`, `useContainerWidth`, `matchBreakpoint`, `activeBreakpoint` and the `Breakpoint`, `ResponsiveModel` and `UseResponsiveModelOptions` types are removed from `@dashfoo/react`, and `stackModel` is removed from `@dashfoo/core`. Flattening reparented nested tabsets and remounted their content; use `useResponsiveLayout` instead.
+
+- 9eec182: `useDashfooStore` now owns the whole document lifecycle. It takes a `persist` option (the same `string | { key, storage?, debounceMs? }` that `DashfooLayout` accepts) that loads once after hydration, restores without an undo entry or a save, debounce-saves every change and flushes on page hide and unmount. The store also returns `reset()`, which clears the saved copy and restores `defaultModel`. Hand-built layouts get the same persistence as `DashfooLayout` from the hook alone.
+
+  Breaking: `usePersistence` and its `Persistence` and `PersistConfig` types are removed; pass `persist` to `useDashfooStore` instead. The persist input type is exported as `PersistInput`. With `persist` set, `setModel` now saves the replacement like any other change. The store no longer runs an XState actor.
+
+### Patch Changes
+
+- 9eec182: Drop intents and the dock indicator now come from one tab-strip measurement through `resolveDropIntent` and `dropIndicator` in `@dashfoo/core`, so the insertion index and the insertion line always mark the same slot. The index is measured against whole tab items (label plus close button), the item wrapper (`data-dashfoo="tab-item"`) carries `data-tab-id`, a layout nested in a tab no longer leaks its strip into the outer tabset's measurement, and only the layer that resolved a drop paints its indicator.
+- 9eec182: `useExternalTabSource` warns once when it has no drag root above it instead of silently registering nothing.
+- 9eec182: Removing a tab from a strip keeps the selection on the tab that was selected; removing a tab before it used to shift the selection onto its neighbour. Core exports the rule as `fallbackSelectedIndex`, and the tab strip's drag preview uses it instead of its own copy.
+- 6d86c96: Export `warn` and `warnOnce` from `@dashfoo/core`. Both packages now report degraded paths through them, so every developer-console warning carries the same `[dashfoo]` prefix, and a missing tab component warns once per component key across layouts.
+- Updated dependencies [9eec182]
+- Updated dependencies [9eec182]
+- Updated dependencies [86ae424]
+- Updated dependencies [9eec182]
+- Updated dependencies [9eec182]
+- Updated dependencies [9eec182]
+- Updated dependencies [9eec182]
+- Updated dependencies [86ae424]
+- Updated dependencies [9eec182]
+- Updated dependencies [9eec182]
+- Updated dependencies [6d86c96]
+- Updated dependencies [9eec182]
+  - @dashfoo/core@2.0.0
+
 ## 0.9.1
 
 ### Patch Changes
