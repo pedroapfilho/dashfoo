@@ -30,6 +30,7 @@ const landingTabs = (subject: DragSubject, strip: MeasuredStrip): ReadonlyArray<
 
 const insertionIndex = (tabs: ReadonlyArray<MeasuredTab>, pointerX: number): number => {
   const found = tabs.findIndex((tab) => pointerX < tab.rect.x + tab.rect.width / 2);
+
   return found === -1 ? tabs.length : found;
 };
 
@@ -38,7 +39,9 @@ const isSelfDrop = (subject: DragSubject, tabset: MeasuredTabset): boolean => {
   if (subject.kind === "tabset") {
     return subject.id === tabset.id;
   }
+
   const tabs = tabset.strip?.tabs ?? [];
+
   return subject.kind === "tab" && tabs.length === 1 && tabs[0]?.id === subject.id;
 };
 
@@ -51,7 +54,9 @@ const resolveDropIntent = (
   if (isSelfDrop(subject, tabset)) {
     return null;
   }
+
   const { strip } = tabset;
+
   if (strip && pointInRect(point, strip.rect)) {
     return {
       index: insertionIndex(landingTabs(subject, strip), point.x),
@@ -59,10 +64,13 @@ const resolveDropIntent = (
       targetId: tabset.id,
     };
   }
+
   const location = options?.splitDock === false ? "center" : resolveDockTarget(point, tabset.rect);
+
   if (location === "center" && strip) {
     return { index: landingTabs(subject, strip).length, location, targetId: tabset.id };
   }
+
   return { location, targetId: tabset.id };
 };
 
@@ -76,6 +84,7 @@ const insertionLineRect = (
   const x = at?.x ?? (last ? last.x + last.width : strip.rect.x);
   const left = x - INSERTION_LINE_WIDTH / 2;
   const { rect } = strip;
+
   return {
     height: rect.height,
     width: INSERTION_LINE_WIDTH,
@@ -91,14 +100,17 @@ const dropIndicator = (
   intent: DropIntent,
 ): DropIndicator => {
   const { strip } = tabset;
+
   if (intent.location === "center" && strip) {
     return {
       kind: "insertion",
       rect: insertionLineRect(strip, landingTabs(subject, strip), intent.index ?? 0),
     };
   }
+
   return { kind: "zone", rect: zoneRect(tabset.rect, intent.location) };
 };
 
 export { dropIndicator, resolveDropIntent };
+
 export type { DropIndicator, DropIntentOptions, MeasuredStrip, MeasuredTab, MeasuredTabset };

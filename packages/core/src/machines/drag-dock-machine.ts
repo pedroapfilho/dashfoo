@@ -30,6 +30,7 @@ const dropAction = (drag: DragState): Omit<DragEmitted, "type"> | null => {
   if (drag.kind !== "dragging" || drag.drop === null) {
     return null;
   }
+
   const { intent, scope } = drag.drop;
   const { subject } = drag;
 
@@ -46,6 +47,7 @@ const dropAction = (drag: DragState): Omit<DragEmitted, "type"> | null => {
       subject,
     };
   }
+
   if (subject.kind === "tabset") {
     return {
       action: {
@@ -58,6 +60,7 @@ const dropAction = (drag: DragState): Omit<DragEmitted, "type"> | null => {
       subject,
     };
   }
+
   return {
     action: {
       index: intent.index,
@@ -95,9 +98,11 @@ const dragDockMachine = setup({
           {
             actions: emit(({ context }) => {
               const resolved = dropAction(context.drag);
+
               if (resolved === null) {
                 throw new Error("drop requires a subject and a resolved drop target");
               }
+
               return { ...resolved, type: "COMMIT" };
             }),
             guard: "hasValidDrop",
@@ -130,4 +135,5 @@ const dragDockMachine = setup({
 });
 
 export { dragDockMachine, dropAction };
+
 export type { DragState, DragSubject, DropResolution };

@@ -14,6 +14,7 @@ import { resizePanelId } from "../lib/dom-ids";
 import { TabsetView } from "./tabset/tabset-view";
 
 const dimensionToSize = (dimension: Dimension): string => `${dimension.value}${dimension.unit}`;
+
 const dimensionToPixels = (dimension: Dimension | undefined): number | undefined =>
   dimension?.unit === "px" ? dimension.value : undefined;
 
@@ -25,24 +26,31 @@ const descendantMinSize = (
   tabsetMinSize: number,
 ): number | undefined => {
   const explicit = dimensionToPixels(child.min);
+
   if (explicit !== undefined) {
     return explicit;
   }
+
   if (child.min !== undefined) {
     return undefined;
   }
+
   if (child.type === "tabset") {
     return tabsetMinSize;
   }
 
   const childMinimums: Array<number> = [];
+
   for (const grandchild of child.children) {
     const minimum = descendantMinSize(grandchild, axis, tabsetMinSize);
+
     if (minimum === undefined) {
       return undefined;
     }
+
     childMinimums.push(minimum);
   }
+
   if (childMinimums.length === 0) {
     return undefined;
   }
@@ -66,12 +74,14 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
   const globalSnap = useLayout((state) => state.snap);
 
   const effectiveSnap: SnapConfig | null = node.snap ?? globalSnap;
+
   // Resolved once per row, and the same value decides whether the per-move
   // listener is attached at all.
   const snapGrid = useMemo(
     () => resolveSnapGrid(effectiveSnap, node.children.length),
     [effectiveSnap, node.children.length],
   );
+
   const snapActive = snapEnabled(snapGrid);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
   const total = node.children.reduce((sum, child) => sum + child.weight, 0);
@@ -109,10 +119,12 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
       {node.children.map((child, index) => {
         const percent = (child.weight / total) * 100;
         let min = child.min ? dimensionToSize(child.min) : undefined;
+
         if (min === undefined) {
           const minimum = descendantMinSize(child, node.orientation, tabsetMinSize);
           min = minimum === undefined ? undefined : `${minimum}px`;
         }
+
         const max = child.max ? dimensionToSize(child.max) : undefined;
 
         return (
@@ -151,4 +163,5 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
 };
 
 export { RowView };
+
 export type { RowViewProps };

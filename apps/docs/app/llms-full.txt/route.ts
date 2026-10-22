@@ -8,11 +8,14 @@ const getLlmsFull = async () => {
   cacheLife("max");
   const pages = source.getPages();
   const results = await Promise.allSettled(pages.map(getLLMText));
+
   const scanned = results.flatMap((result, index) => {
     if (result.status === "fulfilled") {
       return [result.value];
     }
+
     console.warn(`[dashfoo docs] llms-full.txt skipped ${pages[index]?.url}`, result.reason);
+
     return [];
   });
 

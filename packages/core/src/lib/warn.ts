@@ -10,6 +10,7 @@ const warnOnce = (key: string, message: string): void => {
   if (warned.has(key)) {
     return;
   }
+
   warned.add(key);
   warn(message);
 };

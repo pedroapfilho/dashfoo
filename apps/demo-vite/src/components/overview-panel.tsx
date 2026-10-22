@@ -5,6 +5,7 @@ import { useState } from "react";
 
 const Notes = (): ReactNode => {
   const [notes, setNotes] = useState("");
+
   return (
     <label className="flex h-full flex-col gap-3 text-sm">
       Notes: switch tabs and come back; your text stays here.
@@ -62,9 +63,11 @@ const renderOverviewBody = (node: TabNode): ReactNode => {
   if (node.component === "detail") {
     return <Notes />;
   }
+
   if (node.component === "canvas" || node.component === "metrics") {
     return <Services />;
   }
+
   return (
     <div className="space-y-3 text-sm">
       <p className="text-foreground-subtle dark:text-foreground-pale text-xs">

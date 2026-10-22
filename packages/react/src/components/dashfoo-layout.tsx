@@ -151,7 +151,9 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       if (factory) {
         return factory(tab);
       }
+
       const Component = components?.[tab.component];
+
       if (!Component) {
         if (components) {
           warnOnce(
@@ -159,12 +161,15 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
             `no component registered for "${tab.component}"`,
           );
         }
+
         return null;
       }
+
       return <Component node={tab} />;
     },
     [components, factory],
   );
+
   const renderers = useMemo(
     () => ({ tab: renderTab, tabLabel: renderTabLabel, tabsetToolbar: renderTabsetToolbar }),
     [renderTab, renderTabLabel, renderTabsetToolbar],
@@ -210,4 +215,5 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
 DashfooLayout.displayName = "DashfooLayout";
 
 export { DashfooLayout };
+
 export type { DashfooHandle, DashfooLayoutCommonProps, DashfooLayoutProps, TabComponent };

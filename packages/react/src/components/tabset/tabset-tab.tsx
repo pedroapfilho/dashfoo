@@ -22,10 +22,12 @@ const TabsetTab = forwardRef<HTMLSpanElement, TabsetTabProps>(
     const editing = useTabset((state) => state.editingTabId === tab.id);
 
     const dragSubject = useDragSubject();
+
     const isDragging =
       dragSubject?.kind === "tab" &&
       dragSubject.documentId === documentId &&
       dragSubject.id === tab.id;
+
     const itemRef = useRef<HTMLSpanElement | null>(null);
     const wasEditing = useRef(false);
 
@@ -34,6 +36,7 @@ const TabsetTab = forwardRef<HTMLSpanElement, TabsetTabProps>(
     const orphanAtRender = index === -1;
     useEffect(() => {
       const settled = store?.getState().node.children.some((child) => child.id === tab.id);
+
       if (settled === false) {
         warnOnce(
           `orphan-tab-${tab.id}`,
@@ -46,6 +49,7 @@ const TabsetTab = forwardRef<HTMLSpanElement, TabsetTabProps>(
       if (wasEditing.current && !editing) {
         itemRef.current?.querySelector<HTMLElement>('[data-dashfoo="tab"]')?.focus();
       }
+
       wasEditing.current = editing;
     }, [editing]);
 
@@ -94,12 +98,14 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
     const visualSelected = useTabset((state) => state.visualSelected);
     const draggableTabs = useLayout((state) => state.draggableTabs);
     const renderTabLabel = useLayout((state) => state.renderTabLabel);
+
     const { ref } = useNodeDraggable(
       "tab",
       tab.id,
       !draggableTabs || tab.enableDrag === false,
       tab.name,
     );
+
     const refCallback = useMemo(() => mergeRefs<HTMLButtonElement>(ref, userRef), [ref, userRef]);
 
     if (editing) {
@@ -116,6 +122,7 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
 
     const handleDoubleClick = (event: MouseEvent<HTMLButtonElement>): void => {
       onDoubleClick?.(event);
+
       if (renamable) {
         startEditing(tab.id);
       }
@@ -124,21 +131,27 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
     const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
       onKeyDown?.(event);
       const count = node.children.length;
+
       if (event.defaultPrevented || count === 0) {
         return;
       }
+
       // The visual index, not the model's: focus (`tabindex="0"`) sits at that one.
       const from = Math.max(visualSelected, 0);
+
       const targets = new Map([
         ["ArrowLeft", (from - 1 + count) % count],
         ["ArrowRight", (from + 1) % count],
         ["End", count - 1],
         ["Home", 0],
       ]);
+
       const next = targets.get(event.key);
+
       if (next === undefined) {
         return;
       }
+
       event.preventDefault();
       selectTab(next, { focus: true });
     };
@@ -169,4 +182,5 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
 TabsetTrigger.displayName = "TabsetTrigger";
 
 export { TabsetTab, TabsetTrigger };
+
 export type { TabsetTabProps, TabsetTriggerProps };

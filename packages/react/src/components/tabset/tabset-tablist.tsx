@@ -57,4 +57,5 @@ const TabsetTablist = forwardRef<HTMLDivElement, TabsetTablistProps>(
 TabsetTablist.displayName = "TabsetTablist";
 
 export { TabsetTablist, TabsetTabStrip };
+
 export type { TabsetTablistProps, TabsetTabStripProps };

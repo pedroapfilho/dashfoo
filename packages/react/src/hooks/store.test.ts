@@ -77,6 +77,7 @@ describe("useDashfooStore (uncontrolled)", () => {
   test("undo and redo fire onActiveTabsetChange with the restored id", () => {
     const onActiveTabsetChange = vi.fn<(tabsetId: string | undefined) => void>();
     const onModelChange = vi.fn<(model: Dashfoo) => void>();
+
     const { result } = renderHook(() =>
       useDashfooStore({ defaultModel: model(), onActiveTabsetChange, onModelChange }),
     );
@@ -105,6 +106,7 @@ describe("useDashfooStore (uncontrolled)", () => {
 
   test("undo and redo fire onMaximizedTabsetChange with the restored id", () => {
     const onMaximizedTabsetChange = vi.fn<(tabsetId: string | undefined) => void>();
+
     const { result } = renderHook(() =>
       useDashfooStore({ defaultModel: model(), onMaximizedTabsetChange }),
     );
@@ -177,6 +179,7 @@ describe("useDashfooStore (uncontrolled)", () => {
 describe("useDashfooStore (controlled)", () => {
   test("renders the model prop and routes changes through onModelChange", () => {
     const onModelChange = vi.fn<(model: Dashfoo) => void>();
+
     const { rerender, result } = renderHook(
       ({ current }) => useDashfooStore({ model: current, onModelChange }),
       { initialProps: { current: model() } },
@@ -204,6 +207,7 @@ describe("useDashfooStore (controlled)", () => {
   test("undo and redo are no-ops that never fire onModelChange", () => {
     const onModelChange = vi.fn<(model: Dashfoo) => void>();
     const initialModel = model();
+
     const { result } = renderHook(
       ({ current }) => useDashfooStore({ model: current, onModelChange }),
       { initialProps: { current: initialModel } },
@@ -236,6 +240,7 @@ describe("useDashfooStore (controlled)", () => {
 
   test("a change the host does not apply does not accumulate into the next one", () => {
     const onModelChange = vi.fn<(model: Dashfoo) => void>();
+
     const { result } = renderHook(
       ({ current }) => useDashfooStore({ model: current, onModelChange }),
       { initialProps: { current: model() } },
@@ -257,6 +262,7 @@ describe("useDashfooStore (controlled)", () => {
 
   test("an action that changes nothing does not fire onModelChange", () => {
     const onModelChange = vi.fn<(model: Dashfoo) => void>();
+
     const { result } = renderHook(
       ({ current }) => useDashfooStore({ model: current, onModelChange }),
       { initialProps: { current: model() } },

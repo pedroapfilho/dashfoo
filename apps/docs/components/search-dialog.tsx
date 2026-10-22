@@ -19,6 +19,7 @@ const client = staticClient();
 
 const DocsSearchDialog = (props: SharedProps): ReactNode => {
   const { query, search, setSearch } = useDocsSearch({ client });
+
   return (
     <SearchDialog isLoading={query.isLoading} onSearchChange={setSearch} search={search} {...props}>
       <SearchDialogOverlay />

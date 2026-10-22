@@ -5,6 +5,7 @@ const ogSize = { height: 630, width: 1200 };
 const ogContentType = "image/png";
 const ogAlt = "dashfoo: headless React docking layout";
 const COLORS = { background: "#0a0a0b", ink: "#fafafa", mark: "#8b8b8f", muted: "#a1a1aa" };
+
 const renderOgImage = (): ImageResponse =>
   new ImageResponse(
     <svg height={630} viewBox="0 0 1200 630" width={1200}>
@@ -20,4 +21,5 @@ const renderOgImage = (): ImageResponse =>
     </svg>,
     ogSize,
   );
+
 export { ogAlt, ogContentType, ogSize, renderOgImage };

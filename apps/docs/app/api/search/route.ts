@@ -9,6 +9,7 @@ const getSearchIndex = async () => {
   "use cache";
   cacheLife("max");
   const index = await search.export();
+
   return index;
 };
 

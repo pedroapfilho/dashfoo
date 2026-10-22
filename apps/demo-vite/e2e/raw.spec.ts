@@ -74,6 +74,7 @@ test("undo restores a closed tab and redo removes it again", async ({ page }) =>
 
 test("dragging a tab onto the other tabset docks it there", async ({ page }) => {
   const target = await page.locator('[data-dashfoo="tabset"]').last().boundingBox();
+
   if (!target) {
     throw new Error("no target tabset box");
   }
@@ -83,6 +84,7 @@ test("dragging a tab onto the other tabset docks it there", async ({ page }) => 
   await expect
     .poll(async () => {
       const tabs = await tabsByTabset(page);
+
       return tabs[1];
     })
     .toContain("Notes");

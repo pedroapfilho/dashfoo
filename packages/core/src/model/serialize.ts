@@ -9,9 +9,11 @@ import { findDuplicateIds } from "./tree";
 const parseModel = (value: unknown): Dashfoo => {
   const model = normalize(dashfooSchema.parse(value));
   const duplicates = findDuplicateIds(model);
+
   if (duplicates.length > 0) {
     warn(`duplicate node ids in the loaded layout: ${duplicates.join(", ")}`);
   }
+
   return model;
 };
 

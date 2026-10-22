@@ -15,6 +15,7 @@ test("persist hydrates the seed, restores storage once silently, resets, and sav
   const storage = memoryStorageAdapter();
   const ref = createRef<DashfooHandle>();
   const onModelChange = vi.fn<() => void>();
+
   const view = (
     <StrictMode>
       <DashfooLayout
@@ -26,6 +27,7 @@ test("persist hydrates the seed, restores storage once silently, resets, and sav
       />
     </StrictMode>
   );
+
   const container = document.createElement("div");
   container.innerHTML = renderToString(view);
   document.body.append(container);

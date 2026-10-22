@@ -19,6 +19,7 @@ describe("subjectFor", () => {
       data: { documentId: "doc", id: "ts1", type: "tabset" },
       id: "grip-ts1",
     });
+
     expect(result).toEqual({ documentId: "doc", id: "ts1", kind: "tabset" });
   });
 
@@ -27,15 +28,18 @@ describe("subjectFor", () => {
       data: { documentId: "doc", id: "t1", type: "tab" },
       id: "registration-id",
     });
+
     expect(result).toEqual({ documentId: "doc", id: "t1", kind: "tab" });
   });
 
   test("external source with valid createTab returns external subject carrying the tab", () => {
     const tab = { component: "metrics", id: "w1", name: "Metrics", type: "tab" as const };
+
     const result = subjectFor({
       data: { createTab: () => tab, type: "external" },
       id: "external-1",
     });
+
     expect(result).toEqual({ id: "external-1", kind: "external", tab });
   });
 

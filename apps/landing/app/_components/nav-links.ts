@@ -14,4 +14,5 @@ const EXTERNAL_LINKS: Array<NavLink> = [
 ];
 
 export { EXTERNAL_LINKS, GITHUB_URL, SECTION_LINKS };
+
 export type { NavLink };

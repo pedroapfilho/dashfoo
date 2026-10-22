@@ -24,6 +24,7 @@ const model = (snap?: SnapConfig): Dashfoo => ({
 
 const SnapProbe = (): ReactNode => {
   const snap = useLayout((state) => state.snap);
+
   return <span data-testid="snap">{JSON.stringify(snap)}</span>;
 };
 
@@ -38,6 +39,7 @@ const resolvedSnap = (props: { model: Dashfoo; snap?: SnapConfig }): SnapConfig 
       <SnapProbe />
     </Layout.Root>,
   );
+
   return snapSchema.nullable().parse(JSON.parse(screen.getByTestId("snap").textContent ?? "null"));
 };
 

@@ -17,6 +17,7 @@ const TabPanel = ({
   tab: TabNode;
 }): ReactNode => {
   const renderTab = useLayout((state) => state.renderTab);
+
   return render ? render(tab) : renderTab(tab);
 };
 
@@ -55,6 +56,7 @@ const TabsetContent = forwardRef<HTMLDivElement, TabsetContentProps>(
     }
 
     const active = visualSelected < 0 ? undefined : node.children.at(visualSelected);
+
     if (active) {
       return (
         <div
@@ -74,6 +76,7 @@ const TabsetContent = forwardRef<HTMLDivElement, TabsetContentProps>(
         </div>
       );
     }
+
     return <div {...props} data-dashfoo="tabcontent" ref={ref} style={style} />;
   },
 );
@@ -81,4 +84,5 @@ const TabsetContent = forwardRef<HTMLDivElement, TabsetContentProps>(
 TabsetContent.displayName = "TabsetContent";
 
 export { TabsetContent };
+
 export type { TabsetContentProps };

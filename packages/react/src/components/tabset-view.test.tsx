@@ -60,13 +60,16 @@ const StartTabDrag = (): null => {
   useEffect(() => {
     actorRef?.send({ subject: { documentId, id: "t1", kind: "tab" }, type: "START" });
   }, [actorRef, documentId]);
+
   return null;
 };
 
 const DraggedSoleTabset = ({ keepMounted }: { keepMounted: boolean }): ReactNode => {
   const store = useDashfooStore({ defaultModel: soleTabModel() });
+
   const [dragRoot] = useState<DragContextValue>(() => {
     const actorRef = createActor(dragDockMachine).start();
+
     return {
       actorRef,
       layerId: null,
@@ -74,6 +77,7 @@ const DraggedSoleTabset = ({ keepMounted }: { keepMounted: boolean }): ReactNode
       registerLayer: () => () => {},
     };
   });
+
   const tabset = store.model.layout.children[0] as TabsetNode;
 
   return (

@@ -11,6 +11,7 @@ test("the drop-zone map appears mid-drag and clears after the drop", async ({ pa
 
   const box = await page.getByRole("tab", { name: "Canvas" }).boundingBox();
   const target = await page.locator('[data-dashfoo="tabset"]').last().boundingBox();
+
   if (!box || !target) {
     throw new Error("missing tab or tabset bounding box");
   }
@@ -33,9 +34,11 @@ test("the toggle disables the map", async ({ page }) => {
   await page.getByRole("button", { name: "Hide drop zones" }).click();
 
   const box = await page.getByRole("tab", { name: "Canvas" }).boundingBox();
+
   if (!box) {
     throw new Error("missing tab bounding box");
   }
+
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 16, box.y + box.height / 2 + 16);

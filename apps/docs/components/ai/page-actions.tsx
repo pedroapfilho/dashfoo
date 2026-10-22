@@ -1,4 +1,5 @@
 "use client";
+
 import { usePathname } from "fumadocs-core/framework";
 import { Check, ChevronDown, Copy, ExternalLinkIcon, TextIcon } from "lucide-react";
 import { type ComponentProps, useEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -33,6 +34,7 @@ const AI_PROVIDERS = [
 ];
 
 const markdownCache = new Map<string, Promise<string>>();
+
 type CopyStatus = "copied" | "failed" | "idle";
 
 const MarkdownCopyButton = ({
@@ -61,16 +63,21 @@ const MarkdownCopyButton = ({
   const handleClick = (): void => {
     startTransition(async () => {
       const cached = markdownCache.get(markdownUrl);
+
       const markdown =
         cached ??
         (async () => {
           const response = await fetch(markdownUrl);
+
           if (!response.ok) {
             throw new Error(`fetching ${markdownUrl} failed with ${response.status}`);
           }
+
           return response.text();
         })();
+
       markdownCache.set(markdownUrl, markdown);
+
       try {
         await navigator.clipboard.write([new ClipboardItem({ "text/plain": markdown })]);
         showStatus("copied");
@@ -80,6 +87,7 @@ const MarkdownCopyButton = ({
         } catch {
           markdownCache.delete(markdownUrl);
         }
+
         showStatus("failed");
         console.warn(`[dashfoo docs] copying ${markdownUrl} failed`, error);
       }
@@ -115,8 +123,10 @@ const ViewOptionsPopover = ({
   ...props
 }: ComponentProps<"button"> & { githubUrl?: string; markdownUrl?: string }) => {
   const pathname = usePathname();
+
   const items = useMemo(() => {
     const q = `Read ${new URL(pathname, "https://dashfoo.com")}, I want to ask questions about it.`;
+
     return [
       ...(githubUrl !== undefined && githubUrl !== ""
         ? [{ href: githubUrl, icon: <GitHubIcon />, title: "Open in GitHub" }]

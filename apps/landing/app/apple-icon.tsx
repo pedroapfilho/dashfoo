@@ -3,6 +3,7 @@ import { ImageResponse } from "next/og";
 const size = { height: 180, width: 180 };
 const contentType = "image/png";
 const COLORS = { background: "#0a0a0b", ink: "#fafafa", muted: "#8b8b8f" };
+
 const AppleIcon = (): ImageResponse =>
   new ImageResponse(
     <svg height={180} viewBox="0 0 180 180" width={180}>
@@ -13,5 +14,7 @@ const AppleIcon = (): ImageResponse =>
     </svg>,
     size,
   );
+
 export { contentType, size };
+
 export default AppleIcon;

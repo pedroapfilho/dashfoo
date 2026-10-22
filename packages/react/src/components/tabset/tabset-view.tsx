@@ -76,4 +76,5 @@ const TabsetView = ({ node }: TabsetViewProps): ReactNode => (
 );
 
 export { TabsetView };
+
 export type { TabsetViewProps };

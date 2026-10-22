@@ -32,6 +32,7 @@ const FloatTitleEditor = ({
   onDone,
 }: TitleProps & { onDone: () => void }): ReactNode => {
   const inputRef = useRef<HTMLInputElement | null>(null);
+
   const { handleBlur, handleKeyDown } = useInlineRename({
     currentName: floatTitle(node),
     inputRef,
@@ -63,6 +64,7 @@ const FloatTitle = ({
   renamable,
 }: TitleProps & { renamable: boolean }): ReactNode => {
   const [editing, setEditing] = useState(false);
+
   if (renamable && editing) {
     return (
       <FloatTitleEditor
@@ -74,6 +76,7 @@ const FloatTitle = ({
       />
     );
   }
+
   return (
     <span
       data-dashfoo="float-title"
@@ -107,6 +110,7 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
     if (!editable) {
       return;
     }
+
     dispatch({ floatId: node.id, minimized: false, type: "setFloatMinimized" });
   };
 
@@ -123,7 +127,9 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
       }
     },
   });
+
   const { onPointerDown, ...rootHandlers } = handlers;
+
   const frameStyle: CSSProperties = {
     "--dashfoo-float-height": style["--dashfoo-float-height"],
     "--dashfoo-float-left": style["--dashfoo-float-left"],
@@ -230,4 +236,5 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
 };
 
 export { FloatPanel, FloatTitleEditor };
+
 export type { FloatPanelProps };

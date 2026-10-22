@@ -30,9 +30,11 @@ describe("serialize", () => {
   test("round-trips sizing fields", () => {
     const input = model();
     const first = input.layout.children[0];
+
     if (first?.type === "tabset") {
       first.min = { unit: "px", value: 160 };
     }
+
     input.layout.children.push({
       children: [tab("t3")],
       id: "ts2",

@@ -6,6 +6,7 @@ import { dragElementOver } from "./helpers/drag";
 const columns = (page: Page): Promise<number> =>
   page.locator('[data-dashfoo="tabset"]').evaluateAll((els) => {
     const xs = els.map((el) => Math.round(el.getBoundingClientRect().x));
+
     return new Set(xs).size;
   });
 
@@ -69,12 +70,15 @@ test("compact docking rejects widgets over the strip, body, and edge, then works
   await expect.poll(() => columns(page)).toBe(1);
   const before = await tabsByTabset(page);
   const target = page.locator('[data-dashfoo="tabset"]').first();
+
   for (const region of ["strip", "body", "edge"]) {
     const element = region === "strip" ? target.locator('[data-dashfoo="tabstrip"]') : target;
     const box = await element.boundingBox();
+
     if (!box) {
       throw new Error("missing compact drop target");
     }
+
     await dragElementOver(
       page,
       page.getByTestId("widget-reports"),
@@ -86,13 +90,16 @@ test("compact docking rejects widgets over the strip, body, and edge, then works
     await page.mouse.up();
     expect(await tabsByTabset(page)).toEqual(before);
   }
+
   await page.setViewportSize({ height: 720, width: 1280 });
   await expect.poll(() => columns(page)).toBeGreaterThan(1);
   expect(await tabsByTabset(page)).toEqual(before);
   const box = await target.boundingBox();
+
   if (!box) {
     throw new Error("missing desktop drop target");
   }
+
   await dragElementOver(
     page,
     page.getByTestId("widget-reports"),
@@ -112,9 +119,11 @@ test("a widget gesture started on desktop cannot commit after the compact breakp
   const before = await tabsByTabset(page);
   const target = page.locator('[data-dashfoo="tabset"]').first();
   const desktop = await target.boundingBox();
+
   if (!desktop) {
     throw new Error("missing desktop target");
   }
+
   await dragElementOver(
     page,
     page.getByTestId("widget-reports"),
@@ -125,9 +134,11 @@ test("a widget gesture started on desktop cannot commit after the compact breakp
   await page.setViewportSize({ height: 900, width: 600 });
   await expect.poll(() => columns(page)).toBe(1);
   const compact = await target.boundingBox();
+
   if (!compact) {
     throw new Error("missing compact target");
   }
+
   await page.mouse.move(compact.x + compact.width / 2, compact.y + compact.height / 2, {
     steps: 4,
   });

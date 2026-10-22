@@ -14,21 +14,25 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
 });
+
 const dockingRoute = createRoute({
   component: lazyRouteComponent(() => import("./pages/docking"), "DockingPage"),
   getParentRoute: () => rootRoute,
   path: "/docking",
 });
+
 const controlledRoute = createRoute({
   component: lazyRouteComponent(() => import("./pages/controlled"), "ImperativeControlPage"),
   getParentRoute: () => rootRoute,
   path: "/controlled",
 });
+
 const rawRoute = createRoute({
   component: lazyRouteComponent(() => import("./pages/raw"), "RawPage"),
   getParentRoute: () => rootRoute,
   path: "/raw",
 });
+
 const staticRoute = createRoute({
   component: lazyRouteComponent(() => import("./pages/static"), "StaticLayoutPage"),
   getParentRoute: () => rootRoute,

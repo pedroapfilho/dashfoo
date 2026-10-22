@@ -19,6 +19,7 @@ import { dockingModel } from "../models";
 const RawTabLabel = (): ReactNode => {
   const { index, tab } = useTab();
   const selected = useTabset((state) => state.visualSelected === index);
+
   return (
     <span className="inline-flex items-center gap-1.5">
       <span
@@ -32,6 +33,7 @@ const RawTabLabel = (): ReactNode => {
 
 const TabCountBadge = (): ReactNode => {
   const count = useTabset((state) => state.node.children.length);
+
   return (
     <span className="text-foreground-disabled dark:text-foreground-muted px-1.5 text-xs tabular-nums">
       {count}&nbsp;tabs
@@ -69,12 +71,14 @@ const RawPage = (): ReactNode => {
   const store = useDashfooStore({ defaultModel });
   const responsive = useResponsiveLayout(store.model, { maxWidth: 720 });
   const view = responsive.model;
+
   const maximized =
     view.maximizedTabsetId === undefined ? undefined : findTabset(view, view.maximizedTabsetId);
 
   const handleUndo = (): void => {
     store.undo();
   };
+
   const handleRedo = (): void => {
     store.redo();
   };

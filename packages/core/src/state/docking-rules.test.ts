@@ -48,6 +48,7 @@ const dockingModel = (): Dashfoo => ({
 
 const selectedTabOf = (model: Dashfoo, tabsetId: string): string | undefined => {
   const found = findTabset(model, tabsetId);
+
   return found?.children[found.selected]?.id;
 };
 
@@ -202,6 +203,7 @@ describe("float id reservation", () => {
 
   test.each(sources)("$type rejects occupied ids before detaching the source", (source) => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
     const history = undoHistory(
       dispatchToHistory(createHistory(dockingModel()), {
         name: "Renamed",
@@ -209,6 +211,7 @@ describe("float id reservation", () => {
         type: "renameTab",
       }),
     );
+
     const before = structuredClone(history.present);
 
     for (const floatId of ["f1", "t3", "ts2", "root", "t1", "ts1", "frow", "fts", "t5"]) {
@@ -221,6 +224,7 @@ describe("float id reservation", () => {
         expect.stringContaining(`float id "${floatId}" is already in the layout`),
       );
     }
+
     expect(history.past).toHaveLength(0);
     expect(history.future).toHaveLength(1);
   });
@@ -232,9 +236,11 @@ describe("float id reservation", () => {
         const next = reducer(createHistory(dockingModel()).present, { ...source, floatId });
         const float = next.floats.at(-1);
         assert(float);
+
         if (floatId !== undefined) {
           expect(float.id).toBe(floatId);
         }
+
         expect(next.floats).toHaveLength(2);
         expect(findDuplicateIds(next)).toEqual([]);
         const restored = reducer(next, { floatId: float.id, type: "dockFloat" });

@@ -8,9 +8,11 @@ for (const distinct of [false, true]) {
   }) => {
     await page.goto(`/e2e/fixtures/documents.html${distinct ? "?distinct" : ""}`);
     await expect(page.getByRole("tab", { exact: true, name: "nested First" })).toBeVisible();
+
     const ids = await page
       .locator("[id]")
       .evaluateAll((elements) => elements.map((element) => element.id));
+
     expect(new Set(ids).size).toBe(ids.length);
     await expect(
       page.getByTestId("nested").getByRole("tabpanel", { exact: true, name: "nested First" }),
@@ -18,10 +20,13 @@ for (const distinct of [false, true]) {
     const right = page.getByTestId("right");
     const target = right.getByRole("tab", { exact: true, name: "right Target" });
     const targetBox = await target.boundingBox();
+
     if (!targetBox) {
       throw new Error("missing destination strip");
     }
+
     const before = await page.locator("output").allTextContents();
+
     for (const name of ["left", "nested"]) {
       for (const source of [
         page.getByRole("tab", { exact: true, name: `${name} Second` }),
@@ -40,6 +45,7 @@ for (const distinct of [false, true]) {
         expect(await page.locator("output").allTextContents()).toEqual(before);
       }
     }
+
     await dragElementOver(
       page,
       right.getByRole("tab", { exact: true, name: "right Second" }),

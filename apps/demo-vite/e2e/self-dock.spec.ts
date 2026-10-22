@@ -15,18 +15,22 @@ test("dragging the sole tab of a tabset back over itself shows no dock preview",
   page,
 }) => {
   const canvas = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
+
   if (!canvas) {
     throw new Error("no canvas tabset box");
   }
+
   await dragTabTo(page, "Tasks", canvas.x + 8, canvas.y + canvas.height / 2);
   await expect.poll(() => tabsetCount(page)).toBe(4);
 
   const tasksTabset = page.locator('[data-dashfoo="tabset"]', { hasText: "Tasks" });
   const box = await tasksTabset.boundingBox();
   const tab = await page.getByRole("tab", { name: "Tasks" }).boundingBox();
+
   if (!box || !tab) {
     throw new Error("no boxes for the sole-tab self-drag");
   }
+
   await page.mouse.move(tab.x + tab.width / 2, tab.y + tab.height / 2);
   await page.mouse.down();
   await page.mouse.move(tab.x + tab.width / 2 + 8, tab.y + tab.height / 2 + 8);

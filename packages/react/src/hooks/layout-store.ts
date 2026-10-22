@@ -41,11 +41,14 @@ const LayoutStoreContext = createContext<LayoutStore | null>(null);
 
 const useLayout = <T>(selector: (state: LayoutState) => T): T => {
   const store = useContext(LayoutStoreContext);
+
   if (store === null) {
     throw new Error("dashfoo components must be rendered inside <DashfooLayout> or <Layout.Root>.");
   }
+
   return useStore(store, selector);
 };
 
 export { createLayoutStore, LayoutStoreContext, useLayout };
+
 export type { LayoutState, LayoutStore };

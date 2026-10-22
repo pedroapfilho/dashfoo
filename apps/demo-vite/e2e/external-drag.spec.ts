@@ -12,6 +12,7 @@ test.beforeEach(async ({ page }) => {
 
 test("dragging a widget card into a tabset adds it as a tab", async ({ page }) => {
   const target = await tabsets(page).nth(1).boundingBox();
+
   if (!target) {
     throw new Error("no target box");
   }
@@ -30,6 +31,7 @@ test("dragging a widget card into a tabset adds it as a tab", async ({ page }) =
 
 test("dragging a widget card to a tabset edge splits the layout", async ({ page }) => {
   const target = await tabsets(page).nth(1).boundingBox();
+
   if (!target) {
     throw new Error("no target box");
   }
@@ -55,6 +57,7 @@ test("the add button inserts the widget, and ids stay unique across repeats", as
 test("a drop outside any tabset is a no-op", async ({ page }) => {
   const card = page.getByTestId("widget-alerts");
   const box = await card.boundingBox();
+
   if (!box) {
     throw new Error("no card box");
   }

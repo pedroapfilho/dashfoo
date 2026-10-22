@@ -156,6 +156,7 @@ const TabsetFloatButton = forwardRef<HTMLButtonElement, TabsetFloatButtonProps>(
 TabsetFloatButton.displayName = "TabsetFloatButton";
 
 export { TabsetFloatButton, TabsetGrip, TabsetMaximizeButton, TabsetToolbar, useTabsetChrome };
+
 export type {
   TabsetChrome,
   TabsetFloatButtonProps,

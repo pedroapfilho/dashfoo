@@ -8,6 +8,7 @@ import { TabOverflowMenu } from "./tab-overflow-menu";
 const makeTablist = (tabs: Array<[string, number]>, rightEdge: number): HTMLElement => {
   const tablist = document.createElement("div");
   vi.spyOn(tablist, "getBoundingClientRect").mockReturnValue({ right: rightEdge } as DOMRect);
+
   for (const [id, right] of tabs) {
     const tab = document.createElement("button");
     tab.dataset.tabId = id;
@@ -15,6 +16,7 @@ const makeTablist = (tabs: Array<[string, number]>, rightEdge: number): HTMLElem
     vi.spyOn(tab, "getBoundingClientRect").mockReturnValue({ right } as DOMRect);
     tablist.append(tab);
   }
+
   return tablist;
 };
 
@@ -28,6 +30,7 @@ describe("overflowingIds", () => {
       ],
       100,
     );
+
     expect(overflowingIds(tablist)).toEqual(["c"]);
   });
 
@@ -39,6 +42,7 @@ describe("overflowingIds", () => {
       ],
       100,
     );
+
     expect(overflowingIds(tablist)).toEqual([]);
   });
 });

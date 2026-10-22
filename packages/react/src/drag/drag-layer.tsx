@@ -21,6 +21,7 @@ const canDrop = ({ canDock, documentId }: LayoutState, subject: DragSubject): bo
 const createLayer = (layerId: string, store: LayoutStore): RegisteredLayer => ({
   commit: (action, subject) => {
     const state = store.getState();
+
     if (canDrop(state, subject)) {
       state.dispatch(action);
     }
@@ -28,6 +29,7 @@ const createLayer = (layerId: string, store: LayoutStore): RegisteredLayer => ({
   layerId,
   resolveIntent: (subject, tabsetId, element, point) => {
     const state = store.getState();
+
     return canDrop(state, subject)
       ? resolveDropIntent(subject, measureTabset(tabsetId, element), point, {
           splitDock: state.splitDock,
@@ -49,8 +51,10 @@ const DragLayer = ({ children }: DragLayerProps): ReactNode => {
         "drag-layer-no-root",
         "Layout.DragLayer is not inside a <Layout.Root>; its tabsets cannot be dragged or dropped on",
       );
+
       return undefined;
     }
+
     return registerLayer(createLayer(layerId, store));
   }, [layerId, registerLayer, store]);
 
@@ -62,6 +66,7 @@ const DragLayer = ({ children }: DragLayerProps): ReactNode => {
   if (layer === null) {
     return children;
   }
+
   return (
     <DragContext.Provider value={layer}>
       {children}
@@ -71,4 +76,5 @@ const DragLayer = ({ children }: DragLayerProps): ReactNode => {
 };
 
 export { createLayer, DragLayer };
+
 export type { DragLayerProps };

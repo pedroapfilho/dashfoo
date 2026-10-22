@@ -40,6 +40,7 @@ const subscribeTheme = (handleStoreChange: () => void): (() => void) => {
     attributeFilter: ["data-dashfoo-theme"],
     attributes: true,
   });
+
   return () => {
     observer.disconnect();
   };
@@ -52,6 +53,7 @@ const ThemeToggle = (): ReactNode => {
 
   const handleToggle = (): void => {
     const next = !dark;
+
     if (next) {
       document.documentElement.dataset.dashfooTheme = "dark";
     } else {
@@ -59,6 +61,7 @@ const ThemeToggle = (): ReactNode => {
     }
 
     document.querySelector("#theme-color")?.setAttribute("content", next ? "#0a0a0a" : "#ffffff");
+
     try {
       localStorage.setItem(THEME_KEY, next ? "dark" : "light");
     } catch {
@@ -80,6 +83,7 @@ const ThemeToggle = (): ReactNode => {
 
 const RootLayout = (): ReactNode => {
   const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className="bg-surface-subtle text-foreground-primary dark:bg-surface-deep dark:text-foreground-inverse flex h-dvh w-full flex-col overflow-hidden">
       <header className="border-border-default dark:border-border-inverse-faint dark:bg-surface-inverse flex shrink-0 items-center gap-3 border-b bg-white px-3 py-1.5 sm:px-4">

@@ -15,6 +15,7 @@ import { DashfooDragProvider } from "./drag-root";
 import { subjectFor } from "./drag-subject";
 
 type DocumentSnapshot = { context: DragContextValue; documentId: string; model: Dashfoo };
+
 const documents = new Map<string, DocumentSnapshot>();
 
 beforeEach(() => {
@@ -26,6 +27,7 @@ const Probe = ({ name, value }: { name: string; value: Dashfoo }): null => {
   const documentId = useLayout((state) => state.documentId);
   assert(context);
   documents.set(name, { context, documentId, model: value });
+
   return null;
 };
 
@@ -52,6 +54,7 @@ const Document = ({
       ]),
     ),
   });
+
   return (
     <Layout.Root
       data-testid={name}
@@ -70,6 +73,7 @@ const Document = ({
 const captured = (name: string): DocumentSnapshot => {
   const value = documents.get(name);
   assert(value);
+
   return value;
 };
 
@@ -101,10 +105,12 @@ describe.each(["sibling", "nested"] as const)("%s documents sharing a manager", 
     const registrations = [...first.context.manager.registry.draggables];
     expect(registrations).toHaveLength(10);
     expect(new Set(registrations.map((source) => source.id)).size).toBe(10);
+
     for (const kind of ["tab", "tabset"] as const) {
       const source = registrations.find(
         (entry) => entry.data.documentId === other.documentId && entry.data.type === kind,
       );
+
       assert(source);
       const subject = subjectFor(source);
       assert(subject);
@@ -123,6 +129,7 @@ describe.each(["sibling", "nested"] as const)("%s documents sharing a manager", 
       expect(captured("first").model).toBe(first.model);
       expect(captured("second").model).toBe(other.model);
     }
+
     expect(document.querySelectorAll("[data-dragging]")).toHaveLength(0);
     const local: DragSubject = { documentId: first.documentId, id: "t2", kind: "tab" };
     commitTo(first, local);

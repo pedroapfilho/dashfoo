@@ -75,18 +75,21 @@ const useFloatGesture = ({
     }
 
     const prior = gestureRef.current;
+
     if (prior) {
       releaseCapture(panel, prior.pointerId);
     }
 
     const parent = panel.offsetParent instanceof HTMLElement ? panel.offsetParent : null;
     const rect = panel.getBoundingClientRect();
+
     const visibleGeometry = {
       height: minimized ? geometry.height : rect.height,
       left: rect.left,
       top: rect.top,
       width: minimized ? geometry.width : rect.width,
     };
+
     const gesture: Gesture = {
       bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
       edges,
@@ -103,6 +106,7 @@ const useFloatGesture = ({
       startX: event.clientX,
       startY: event.clientY,
     };
+
     gestureRef.current = gesture;
 
     if (gesture.edges) {
@@ -116,46 +120,57 @@ const useFloatGesture = ({
 
   const handlePointerUp = (event: ReactPointerEvent): void => {
     const gesture = gestureRef.current;
+
     if (!gesture || event.pointerId !== gesture.pointerId) {
       return;
     }
+
     gestureRef.current = null;
 
     const panel = panelRef.current;
+
     if (panel) {
       releaseCapture(panel, event.pointerId);
     }
 
     if (!gesture.moved) {
       onTap();
+
       return;
     }
+
     onCommit(gesture.latest);
   };
 
   const handlePointerMove = (event: ReactPointerEvent): void => {
     const gesture = gestureRef.current;
     const panel = panelRef.current;
+
     if (!gesture || !panel || event.pointerId !== gesture.pointerId) {
       return;
     }
 
     if (event.buttons === 0) {
       handlePointerUp(event);
+
       return;
     }
+
     const dx = event.clientX - gesture.startX;
     const dy = event.clientY - gesture.startY;
+
     if (!gesture.moved) {
       if (Math.hypot(dx, dy) <= TAP_SLOP) {
         return;
       }
+
       gesture.moved = true;
 
       if (!gesture.edges) {
         panel.setPointerCapture(gesture.pointerId);
       }
     }
+
     const next = gesture.edges
       ? resizeRect(gesture.start, gesture.edges, dx, dy)
       : clampToBounds(
@@ -177,14 +192,18 @@ const useFloatGesture = ({
   const handlePointerCancel = (event: ReactPointerEvent): void => {
     const gesture = gestureRef.current;
     const panel = panelRef.current;
+
     if (!gesture || !panel || event.pointerId !== gesture.pointerId) {
       return;
     }
+
     gestureRef.current = null;
     releaseCapture(panel, event.pointerId);
+
     if (!gesture.moved) {
       return;
     }
+
     for (const [property, value] of Object.entries(gesture.initialStyle)) {
       panel.style.setProperty(property, value);
     }
@@ -209,4 +228,5 @@ const useFloatGesture = ({
 };
 
 export { useFloatGesture };
+
 export type { FloatGesture, FloatGestureOptions };

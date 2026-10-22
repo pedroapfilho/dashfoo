@@ -12,6 +12,7 @@ type StorageAdapter = {
 
 const memoryStorageAdapter = (): StorageAdapter => {
   const store = new Map<string, string>();
+
   return {
     getItem: (key) => store.get(key) ?? null,
     removeItem: (key) => {
@@ -28,10 +29,12 @@ const localStorageAdapter: StorageAdapter = {
     if (typeof window === "undefined") {
       return null;
     }
+
     try {
       return window.localStorage.getItem(key);
     } catch (error) {
       warn("failed to load persisted layout", error);
+
       return null;
     }
   },
@@ -39,6 +42,7 @@ const localStorageAdapter: StorageAdapter = {
     if (typeof window === "undefined") {
       return;
     }
+
     try {
       window.localStorage.removeItem(key);
     } catch (error) {
@@ -49,6 +53,7 @@ const localStorageAdapter: StorageAdapter = {
     if (typeof window === "undefined") {
       return;
     }
+
     try {
       window.localStorage.setItem(key, value);
     } catch (error) {
@@ -72,9 +77,11 @@ const resolvePersist = (persist: PersistInput | undefined): PersistTarget | null
   if (persist === undefined) {
     return null;
   }
+
   if (typeof persist === "string") {
     return { debounceMs: DEFAULT_DEBOUNCE_MS, key: persist, storage: localStorageAdapter };
   }
+
   return {
     debounceMs: persist.debounceMs ?? DEFAULT_DEBOUNCE_MS,
     key: persist.key,
@@ -93,18 +100,22 @@ const removeStoredLayout = ({ key, storage }: PersistTarget): void => {
 const loadStoredLayout = (target: PersistTarget): Dashfoo | undefined => {
   try {
     const raw = target.storage.getItem(target.key);
+
     if (raw === null) {
       return undefined;
     }
+
     try {
       return fromJSON(raw);
     } catch (error) {
       warn("discarding unreadable persisted layout", error);
       removeStoredLayout(target);
+
       return undefined;
     }
   } catch (error) {
     warn("failed to load persisted layout", error);
+
     return undefined;
   }
 };
@@ -133,9 +144,11 @@ const useLayoutStorage = (
     if (loaded.current) {
       return;
     }
+
     loaded.current = true;
     const current = targetRef.current;
     const restored = current === null ? undefined : loadStoredLayout(current);
+
     if (restored !== undefined) {
       // oxlint-disable-next-line react-doctor/no-pass-data-to-parent -- restoration must happen after hydration, without an action or undo entry
       restore(restored);
@@ -162,9 +175,11 @@ const useLayoutStorage = (
       clearTimeout(timer.current);
       timer.current = null;
     }
+
     if (pending.current !== null) {
       const write = pending.current;
       pending.current = null;
+
       try {
         write.storage.setItem(write.key, write.value);
       } catch (error) {
@@ -176,13 +191,17 @@ const useLayoutStorage = (
   const save = useCallback(
     (next: Dashfoo): void => {
       const current = targetRef.current;
+
       if (current === null) {
         return;
       }
+
       pending.current = { key: current.key, storage: current.storage, value: toJSON(next) };
+
       if (timer.current !== null) {
         clearTimeout(timer.current);
       }
+
       timer.current = setTimeout(flush, current.debounceMs);
     },
     [flush],
@@ -192,13 +211,16 @@ const useLayoutStorage = (
     const handlePageHide = (): void => {
       flush();
     };
+
     const handleVisibilityChange = (): void => {
       if (document.visibilityState === "hidden") {
         flush();
       }
     };
+
     window.addEventListener("pagehide", handlePageHide);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       window.removeEventListener("pagehide", handlePageHide);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -211,8 +233,10 @@ const useLayoutStorage = (
       clearTimeout(timer.current);
       timer.current = null;
     }
+
     pending.current = null;
     const current = targetRef.current;
+
     if (current !== null) {
       removeStoredLayout(current);
     }
@@ -222,4 +246,5 @@ const useLayoutStorage = (
 };
 
 export { localStorageAdapter, memoryStorageAdapter, useLayoutStorage };
+
 export type { PersistInput, StorageAdapter };

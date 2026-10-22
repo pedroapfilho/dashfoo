@@ -15,6 +15,7 @@ const tabsetElement = (): { child: HTMLElement; element: HTMLElement } => {
   const child = document.createElement("button");
   element.append(child);
   document.body.append(element);
+
   return { child, element };
 };
 

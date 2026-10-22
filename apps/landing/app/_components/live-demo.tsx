@@ -11,8 +11,10 @@ import { showcaseModel } from "./model";
 import { renderPanel } from "./panels";
 
 const noopSubscribe = (): (() => void) => () => {};
+
 const BUTTON =
   "min-h-11 rounded-md border border-border px-3 text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-40";
+
 const ACTION_LABELS: Partial<Record<Action["type"], string>> = {
   adjustSplit: "Resized a split",
   deleteTab: "Closed a tab",
@@ -34,25 +36,30 @@ const LiveDemo = (): ReactNode => {
     () => true,
     () => false,
   );
+
   const defaultModel = useMemo(() => showcaseModel(), []);
   const layout = useRef<DashfooHandle>(null);
   const [history, setHistory] = useState({ redo: false, undo: false });
   const [activity, setActivity] = useState<Array<string>>([]);
+
   const handleModelChange = (_model: Dashfoo, action?: Action): void => {
     const label = action
       ? (ACTION_LABELS[action.type] ?? "Updated the layout")
       : "Changed layout history";
+
     setHistory({
       redo: layout.current?.canRedo() ?? false,
       undo: layout.current?.canUndo() ?? false,
     });
     setActivity((previous) => [label, ...previous].slice(0, 5));
   };
+
   const handleReset = (): void => {
     layout.current?.resetLayout();
     setHistory({ redo: false, undo: false });
     setActivity(["Reset the layout and cleared its saved arrangement"]);
   };
+
   const handleUndo = (): void => layout.current?.undo();
   const handleRedo = (): void => layout.current?.redo();
 

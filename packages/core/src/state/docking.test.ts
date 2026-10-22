@@ -245,9 +245,11 @@ describe("split weight geometry", () => {
     expect((wrap as RowNode).weight).toBe(100);
 
     const wrapRow = wrap as RowNode;
+
     const wrapped = wrapRow.children.find(
       (c): c is TabsetNode => c.type === "tabset" && c.id === "ts1",
     );
+
     expect(wrapped?.weight).toBe(50);
     expect(newTabsetIn(wrapRow, ["ts1"])?.weight).toBe(50);
   });

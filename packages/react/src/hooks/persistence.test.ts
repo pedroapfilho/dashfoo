@@ -36,6 +36,7 @@ const modelWith = (tabName: string): Dashfoo => ({
 
 const firstTabName = (model: Dashfoo | undefined): string | undefined => {
   const tabset = model?.layout.children[0];
+
   return tabset?.type === "tabset" ? tabset.children[0]?.name : undefined;
 };
 
@@ -80,7 +81,9 @@ describe("useDashfooStore persist", () => {
           onModelChange,
           persist: target(storage),
         });
+
         rendered.push(firstTabName(store.model));
+
         return store;
       },
       { wrapper: StrictMode },
@@ -187,11 +190,13 @@ describe("useDashfooStore persist", () => {
   test("a queued save lands in the target it was produced for after a change", () => {
     const oldStorage = memoryStorageAdapter();
     const newStorage = memoryStorageAdapter();
+
     const { rerender, result } = renderHook(
       ({ persist }: { persist: { key: string; storage: StorageAdapter } }) =>
         useDashfooStore({ defaultModel: modelWith("Default"), persist }),
       { initialProps: { persist: { key: "old", storage: oldStorage } } },
     );
+
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     act(() => {
@@ -263,6 +268,7 @@ describe("useDashfooStore persist", () => {
     const storage = memoryStorageAdapter();
     storage.setItem("layout", toJSON(modelWith("Saved")));
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
     const { result } = renderHook(() =>
       useDashfooStore({ model: modelWith("Controlled"), persist: target(storage) }),
     );

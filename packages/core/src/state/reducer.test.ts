@@ -241,6 +241,7 @@ describe("reducer", () => {
 describe("reducer rejects an action rather than losing the node", () => {
   test("moveNode keeps the tab when the target does not resolve", () => {
     const input = baseModel();
+
     const next = reducer(input, {
       location: "center",
       sourceId: "t1",
@@ -254,6 +255,7 @@ describe("reducer rejects an action rather than losing the node", () => {
 
   test("moveNode keeps the tab when a split target does not resolve", () => {
     const input = baseModel();
+
     const next = reducer(input, {
       location: "split-right",
       sourceId: "t1",
@@ -266,6 +268,7 @@ describe("reducer rejects an action rather than losing the node", () => {
 
   test("moveTabset keeps the tabset when a split target does not resolve", () => {
     const input = baseModel();
+
     const next = reducer(input, {
       location: "split-right",
       sourceId: "ts1",

@@ -21,8 +21,10 @@ const rectPolygon = (rect: Rect): Array<Point> => [
 
 const slotCells = (strip: Rect, midpoints: Array<number>, tabsetIndex: number): Array<ZoneCell> => {
   const bounds = [strip.x, ...midpoints, strip.x + strip.width];
+
   return bounds.slice(0, -1).map((left, slotIndex) => {
     const right = bounds[slotIndex + 1] ?? strip.x + strip.width;
+
     return {
       kind: "slot",
       points: rectPolygon({ height: strip.height, width: right - left, x: left, y: strip.y }),
@@ -56,17 +58,21 @@ type ActiveCell =
 const activeCellAt = (tabsets: Array<TabsetMeasurement>, point: Point): ActiveCell | null => {
   const tabsetIndex = tabsets.findIndex((tabset) => inRect(point, tabset.rect));
   const tabset = tabsets.at(tabsetIndex);
+
   if (tabsetIndex === -1 || !tabset) {
     return null;
   }
+
   if (tabset.strip && inRect(point, tabset.strip)) {
     const after = tabset.tabMidpoints.findIndex((mid) => point.x < mid);
+
     return {
       kind: "slot",
       slotIndex: after === -1 ? tabset.tabMidpoints.length : after,
       tabsetIndex,
     };
   }
+
   return { kind: "dock", location: resolveDockTarget(point, tabset.rect), tabsetIndex };
 };
 
@@ -76,4 +82,5 @@ const cellKey = (cell: ActiveCell | ZoneCell): string =>
     : `${cell.tabsetIndex}:slot:${cell.slotIndex}`;
 
 export { activeCellAt, buildZoneMap, cellKey };
+
 export type { ActiveCell, TabsetMeasurement, ZoneCell };

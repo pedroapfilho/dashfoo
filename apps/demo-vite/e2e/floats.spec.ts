@@ -59,6 +59,7 @@ test("a tab can be dragged out of a float and docked into the main layout", asyn
 
   const target = await page.getByRole("tab", { name: "Activity" }).evaluate((el) => {
     const r = el.closest('[data-dashfoo="tabset"]')!.getBoundingClientRect();
+
     return { height: r.height, width: r.width, x: r.x, y: r.y };
   });
 
@@ -77,8 +78,10 @@ test("dragging into a float over a docked tabset shows only the float's indicato
 
   const mainCenter = await page.getByRole("tab", { name: "Canvas" }).evaluate((el) => {
     const r = el.closest('[data-dashfoo="tabset"]')!.getBoundingClientRect();
+
     return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
   });
+
   const grip = (await float.locator('[data-dashfoo="float-titlebar"]').boundingBox())!;
   await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
   await page.mouse.down();
@@ -121,8 +124,10 @@ test("a drop indicator on a docked tabset renders behind the float layer", async
 
   const activity = await page.getByRole("tab", { name: "Activity" }).evaluate((el) => {
     const r = el.closest('[data-dashfoo="tabset"]')!.getBoundingClientRect();
+
     return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
   });
+
   const detail = (await page.getByRole("tab", { name: "Detail" }).boundingBox())!;
   await page.mouse.move(detail.x + detail.width / 2, detail.y + detail.height / 2);
   await page.mouse.down();

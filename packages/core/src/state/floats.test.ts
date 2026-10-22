@@ -29,6 +29,7 @@ const onlyFloat = (model: Dashfoo) => {
   expect(model.floats).toHaveLength(1);
   const [float] = model.floats;
   assert(float);
+
   return float;
 };
 
@@ -249,6 +250,7 @@ describe("setFloatMinimized", () => {
       minimized: true,
       type: "setFloatMinimized",
     });
+
     expect(onlyFloat(minimized).minimized).toBe(true);
 
     const restored = reducer(minimized, {
@@ -256,6 +258,7 @@ describe("setFloatMinimized", () => {
       minimized: false,
       type: "setFloatMinimized",
     });
+
     expect(onlyFloat(restored).minimized).toBe(false);
   });
 });

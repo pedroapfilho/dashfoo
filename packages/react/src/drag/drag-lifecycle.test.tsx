@@ -66,6 +66,7 @@ beforeEach(() => {
 
 const ContextProbe = ({ id }: { id: string }): null => {
   contexts.set(id, useContext(DragContext));
+
   return null;
 };
 
@@ -74,6 +75,7 @@ const renderTab = (tab: TabNode): ReactNode => <ContextProbe id={tab.id} />;
 const HandBuiltLayout = ({ withDragLayer = true }: { withDragLayer?: boolean }): ReactNode => {
   const store = useDashfooStore({ defaultModel: model() });
   const rows = <Layout.Rows node={store.model.layout} />;
+
   return (
     <Layout.Root dispatch={store.dispatch} model={store.model} renderers={{ tab: renderTab }}>
       <Layout.FloatLayer floats={store.model.floats}>
@@ -86,6 +88,7 @@ const HandBuiltLayout = ({ withDragLayer = true }: { withDragLayer?: boolean }):
 const captured = (id: string): DragContextValue => {
   const value = contexts.get(id);
   assert(value, `no drag context reached "${id}"`);
+
   return value;
 };
 
@@ -104,9 +107,11 @@ describe("one drag root per layout", () => {
     expect(main.layerId).not.toBeNull();
     expect(float.layerId).not.toBeNull();
     expect(float.layerId).not.toBe(main.layerId);
+
     const sources = [...main.manager.registry.draggables].filter(
       (source) => source.data.type === "tab",
     );
+
     expect(new Set(sources.map((source) => source.data.documentId)).size).toBe(1);
     expect(sources[0]?.data.documentId).toBeTruthy();
 
@@ -175,6 +180,7 @@ describe("one drag root per layout", () => {
     const Probe = (): null => {
       subject = useDragSubject();
       intent = useDropIntent();
+
       return null;
     };
 
@@ -204,6 +210,7 @@ const ExternalSource = (): ReactNode => {
     createTab: () => ({ component: "widget", id: "w1", name: "Widget", type: "tab" }),
     label: "Widget",
   });
+
   return <div ref={ref} />;
 };
 
@@ -215,6 +222,7 @@ describe("useExternalTabSource", () => {
         <ExternalSource />
       </DashfooDragProvider>,
     );
+
     await Promise.resolve();
 
     const { manager } = captured("external-root");
@@ -240,6 +248,7 @@ describe("useExternalTabSource", () => {
     const calls = warn.mock.calls.filter(([message]) =>
       String(message).includes("useExternalTabSource"),
     );
+
     expect(calls).toHaveLength(1);
     warn.mockRestore();
   });
@@ -247,6 +256,7 @@ describe("useExternalTabSource", () => {
 
 const DroppableTabset = ({ id }: { id: string }): ReactNode => {
   const { ref } = useTabsetDroppable(id);
+
   return <div ref={ref} />;
 };
 
@@ -266,6 +276,7 @@ describe("useTabsetDroppable", () => {
         </Layout.DragLayer>
       </LayerHarness>,
     );
+
     await Promise.resolve();
 
     const { manager } = captured("harness-root");

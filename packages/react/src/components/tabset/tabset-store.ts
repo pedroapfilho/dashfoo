@@ -76,6 +76,7 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
       const { node, renameTab } = get();
       const trimmed = value.trim();
       const current = node.children.find((tab) => tab.id === tabId)?.name;
+
       if (trimmed && trimmed !== current) {
         renameTab(tabId, trimmed);
       }
@@ -85,6 +86,7 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
     pendingCloseTabId: null,
     registerRenameInput: () => {
       set((state) => ({ renameInputCount: state.renameInputCount + 1 }));
+
       return () => {
         set((state) => ({ renameInputCount: state.renameInputCount - 1 }));
       };
@@ -92,15 +94,19 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
     registerTablist: (element) => {
       if (element) {
         const current = get().tablistElement;
+
         if (current && current !== element) {
           warnOnce(
             `duplicate-tablist-${get().node.id}`,
             "more than one <Tabset.Tablist> under the same <Tabset.Root>; the last one wins for keyboard focus and overflow",
           );
         }
+
         set({ tablistElement: element });
+
         return;
       }
+
       set({ tablistElement: null });
     },
     renameInputCount: 0,
@@ -110,9 +116,11 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
     selectOverflowTab: (tabId) => {
       const { dispatch, documentId, node, tablistElement } = get();
       const index = node.children.findIndex((tab) => tab.id === tabId);
+
       if (index === -1) {
         return;
       }
+
       dispatch({ index, tabsetId: node.id, type: "selectTab" });
       tabButtonIn(tablistElement, documentId, node.id, tabId)?.scrollIntoView({
         block: "nearest",
@@ -122,8 +130,10 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
     selectTab: (index, options) => {
       const { dispatch, documentId, node, tablistElement } = get();
       dispatch({ index, tabsetId: node.id, type: "selectTab" });
+
       if (options?.focus === true) {
         const tab = node.children[index];
+
         if (tab) {
           tabButtonIn(tablistElement, documentId, node.id, tab.id)?.focus();
         }
@@ -132,16 +142,20 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
     startEditing: (tabId) => {
       const { node, renameInputCount, tabsRenamable } = get();
       const tab = node.children.find((child) => child.id === tabId);
+
       if (!tabsRenamable || tab?.enableRename === false) {
         return;
       }
+
       if (renameInputCount === 0) {
         warnOnce(
           `missing-rename-input-${node.id}`,
           "startEditing needs a <Tabset.RenameInput> in the composition; ignoring",
         );
+
         return;
       }
+
       set({ editingTabId: tabId });
     },
     tablistElement: null,
@@ -155,9 +169,11 @@ const TabsetStoreContext = createContext<TabsetStore | null>(null);
 
 const useTabset = <T>(selector: (state: TabsetState) => T): T => {
   const store = useContext(TabsetStoreContext);
+
   if (store === null) {
     throw new Error("dashfoo Tabset parts must be rendered inside <Tabset.Root>.");
   }
+
   return useStore(store, selector);
 };
 
@@ -167,11 +183,14 @@ const TabContext = createContext<TabContextValue | null>(null);
 
 const useTab = (): TabContextValue => {
   const value = useContext(TabContext);
+
   if (value === null) {
     throw new Error("dashfoo tab parts must be rendered inside <Tabset.Tab>.");
   }
+
   return value;
 };
 
 export { createTabsetStore, TabContext, TabsetStoreContext, useTab, useTabset };
+
 export type { TabContextValue, TabsetSnapshot, TabsetState, TabsetStore };

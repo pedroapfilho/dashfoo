@@ -13,6 +13,7 @@ test.beforeEach(async ({ page }) => {
 test("dragging a tabset grip onto another tabset merges their tabs", async ({ page }) => {
   await expect(tabsets(page)).toHaveCount(2);
   const target = await tabsets(page).nth(1).boundingBox();
+
   if (!target) {
     throw new Error("no target box");
   }
@@ -28,6 +29,7 @@ test("dragging a tabset grip onto another tabset merges their tabs", async ({ pa
 test("dragging a tabset grip to an edge splits it beside the target", async ({ page }) => {
   await expect(tabsets(page)).toHaveCount(2);
   const target = await tabsets(page).nth(1).boundingBox();
+
   if (!target) {
     throw new Error("no target box");
   }

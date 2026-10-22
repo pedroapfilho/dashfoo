@@ -6,6 +6,7 @@ import { source } from "@/lib/source";
 const getLlmsIndex = async () => {
   "use cache";
   cacheLife("max");
+
   return llms(source).index();
 };
 

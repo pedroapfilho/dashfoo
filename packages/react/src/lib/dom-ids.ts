@@ -1,5 +1,6 @@
 const tabDomId = (documentId: string, tabsetId: string, tabId: string): string =>
   `dashfoo-tab-${encodeURIComponent(JSON.stringify([documentId, tabsetId, tabId]))}`;
+
 const panelDomId = (documentId: string, tabsetId: string): string =>
   `dashfoo-panel-${encodeURIComponent(JSON.stringify([documentId, tabsetId]))}`;
 

@@ -12,10 +12,13 @@ const INTERACTIVE_SELECTOR = `
 
 const preventActivation = (event: PointerEvent, source: Draggable): boolean => {
   const { target } = event;
+
   if (!(target instanceof Element)) {
     return false;
   }
+
   const interactive = target.closest(INTERACTIVE_SELECTOR);
+
   return interactive !== null && interactive !== source.element;
 };
 
@@ -32,4 +35,5 @@ const createDragManager = (): DashfooDragManager =>
   });
 
 export { createDragManager };
+
 export type { DashfooDragManager };

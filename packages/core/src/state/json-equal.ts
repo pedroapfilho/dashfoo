@@ -18,9 +18,11 @@ const jsonEqual = (a: JsonTree, b: JsonTree): boolean => {
   if (a === b) {
     return true;
   }
+
   if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) {
     return false;
   }
+
   if (isJsonArray(a) || isJsonArray(b)) {
     return (
       isJsonArray(a) &&
@@ -29,7 +31,9 @@ const jsonEqual = (a: JsonTree, b: JsonTree): boolean => {
       a.every((item, index) => jsonEqual(item, b[index]))
     );
   }
+
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+
   return [...keys].every((key) => jsonEqual(a[key], b[key]));
 };
 
