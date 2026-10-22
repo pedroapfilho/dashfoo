@@ -8,17 +8,21 @@ const clampSelected = (length: number, selected: number): number => {
   }
 
   const base = Number.isFinite(selected) ? Math.trunc(selected) : 0;
+
   if (base < 0) {
     return 0;
   }
+
   if (base > length - 1) {
     return length - 1;
   }
+
   return base;
 };
 
 const clampTabset = (tabset: TabsetNode): TabsetNode => {
   const selected = clampSelected(tabset.children.length, tabset.selected);
+
   return selected === tabset.selected ? tabset : { ...tabset, selected };
 };
 
@@ -36,6 +40,7 @@ const inheritSlot = (row: RowNode, survivor: RowChild): RowChild => {
   if (row.min !== undefined) {
     sized.min = row.min;
   }
+
   if (row.max !== undefined) {
     sized.max = row.max;
   }
@@ -43,6 +48,7 @@ const inheritSlot = (row: RowNode, survivor: RowChild): RowChild => {
   if (sized.type === "row" && row.snap !== undefined) {
     return { ...sized, snap: row.snap };
   }
+
   return sized;
 };
 
@@ -59,6 +65,7 @@ const normalizeRowChildren = (
         out.push(clampTabset(child));
         keptTabsetIds.push(child.id);
       }
+
       continue;
     }
 
@@ -66,13 +73,16 @@ const normalizeRowChildren = (
     // a dropped row never leaves ids behind.
     const grandchildren = normalizeRowChildren(child.children, keptTabsetIds);
     const [onlyGrandchild, ...otherGrandchildren] = grandchildren;
+
     if (!onlyGrandchild) {
       continue;
     }
+
     if (otherGrandchildren.length === 0) {
       out.push(inheritSlot(child, onlyGrandchild));
       continue;
     }
+
     out.push({ ...child, children: grandchildren });
   }
 
@@ -84,6 +94,7 @@ const normalizeLayout = (root: RowNode, keptTabsetIds: Array<string>): RowNode =
   let orientation = root.orientation;
 
   let inner = children[0];
+
   while (children.length === 1 && inner?.type === "row") {
     children = inner.children;
     orientation = inner.orientation;
@@ -99,9 +110,11 @@ const normalize = (model: Dashfoo): Dashfoo => {
 
   const floats: Array<FloatNode> = [];
   const floatTabsetIds: Array<string> = [];
+
   for (const float of model.floats) {
     const ownTabsetIds: Array<string> = [];
     const floatLayout = normalizeLayout(float.layout, ownTabsetIds);
+
     if (floatLayout.children.length > 0) {
       floats.push({ ...float, layout: floatLayout });
       floatTabsetIds.push(...ownTabsetIds);

@@ -12,6 +12,7 @@ const startDrag = () => {
   actor.on("COMMIT", (emitted) => {
     committed.push(emitted.action);
   });
+
   return { actor, committed };
 };
 

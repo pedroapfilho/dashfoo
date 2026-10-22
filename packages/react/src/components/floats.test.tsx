@@ -58,6 +58,7 @@ const floatNode = (id: string, tabId: string, component: string, name: string): 
 });
 
 const floatPanel = (): HTMLElement | null => document.querySelector('[data-dashfoo="float"]');
+
 const floatPanels = (): Array<HTMLElement> => [
   ...document.querySelectorAll<HTMLElement>('[data-dashfoo="float"]'),
 ];
@@ -93,7 +94,9 @@ describe("floating panels", () => {
     const titleBar = panel.querySelector('[data-dashfoo="float-titlebar"]')!;
 
     panel.setPointerCapture = () => {};
+
     panel.releasePointerCapture = () => {};
+
     panel.hasPointerCapture = () => true;
 
     fireEvent.pointerDown(titleBar, { buttons: 1, clientX: 0, clientY: 0, pointerId: 1 });
@@ -110,7 +113,9 @@ describe("floating panels", () => {
     const panel = floatPanel()!;
     vi.spyOn(panel, "getBoundingClientRect").mockReturnValue(new DOMRect(40, 40, 200, 160));
     panel.setPointerCapture = () => {};
+
     panel.releasePointerCapture = () => {};
+
     panel.hasPointerCapture = () => true;
     const handles = [...panel.querySelectorAll<HTMLElement>('[data-dashfoo="float-resize"]')];
     const se = handles.find((h) => h.dataset.edge === "se")!;
@@ -133,9 +138,12 @@ describe("floating panels", () => {
     const panel = floatPanel()!;
     vi.spyOn(panel, "getBoundingClientRect").mockReturnValue(new DOMRect(40, 40, 200, 160));
     panel.setPointerCapture = () => {};
+
     panel.releasePointerCapture = () => {};
+
     panel.hasPointerCapture = () => true;
     const startWidth = panel.style.getPropertyValue("--dashfoo-float-width");
+
     const se = [...panel.querySelectorAll<HTMLElement>('[data-dashfoo="float-resize"]')].find(
       (h) => h.dataset.edge === "se",
     )!;
@@ -155,9 +163,12 @@ describe("floating panels", () => {
     const panel = floatPanel()!;
     vi.spyOn(panel, "getBoundingClientRect").mockReturnValue(new DOMRect(40, 40, 200, 160));
     panel.setPointerCapture = () => {};
+
     panel.releasePointerCapture = () => {};
+
     panel.hasPointerCapture = () => false;
     const titleBar = panel.querySelector('[data-dashfoo="float-titlebar"]')!;
+
     const se = [...panel.querySelectorAll<HTMLElement>('[data-dashfoo="float-resize"]')].find(
       (h) => h.dataset.edge === "se",
     )!;
@@ -240,7 +251,9 @@ describe("floating panels", () => {
     expect(panel.querySelector('[data-dashfoo="float-rename"]')).toBeNull();
 
     panel.setPointerCapture = () => {};
+
     panel.releasePointerCapture = () => {};
+
     panel.hasPointerCapture = () => true;
     const titleBar = panel.querySelector('[data-dashfoo="float-titlebar"]')!;
     const startLeft = panel.style.getPropertyValue("--dashfoo-float-left");
@@ -257,6 +270,7 @@ describe("floating panels", () => {
       ...model(),
       floats: [floatNode("f1", "ft1", "chart", "Chart"), floatNode("f2", "ft2", "book", "Book")],
     };
+
     render(<DashfooLayout components={components} defaultModel={m} floatable />);
 
     const [first, second] = floatPanels();

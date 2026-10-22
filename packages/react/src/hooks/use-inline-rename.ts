@@ -30,9 +30,11 @@ const useInlineRename = ({
 
   const commit = (value: string): void => {
     const trimmed = value.trim();
+
     if (trimmed && trimmed !== currentName) {
       onCommit(trimmed);
     }
+
     onDone();
   };
 
@@ -50,6 +52,7 @@ const useInlineRename = ({
     if (done.current) {
       return;
     }
+
     done.current = true;
     commit(event.currentTarget.value);
   };

@@ -96,10 +96,13 @@ const actionSchema = z.discriminatedUnion("type", [
 ]);
 
 type DockLocation = z.infer<typeof dockLocationSchema>;
+
 type MutableNodeAttrs = z.infer<typeof mutableNodeAttrsSchema>;
+
 type Action = z.infer<typeof actionSchema>;
 
 type DropIntent = { index?: number; location: DockLocation; targetId: string };
 
 export { actionSchema, dockLocationSchema };
+
 export type { Action, DockLocation, DropIntent, MutableNodeAttrs };

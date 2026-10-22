@@ -9,10 +9,12 @@ const THEME_EVENT = "dashfoo:theme-change";
 
 const subscribe = (callback: () => void): (() => void) => {
   window.addEventListener(THEME_EVENT, callback);
+
   return () => {
     window.removeEventListener(THEME_EVENT, callback);
   };
 };
+
 const getSnapshot = (): boolean => document.documentElement.dataset.dashfooTheme === "dark";
 const getServerSnapshot = (): boolean => false;
 
@@ -21,16 +23,19 @@ const ThemeToggle = (): ReactNode => {
 
   const handleToggle = (): void => {
     const next = !dark;
+
     if (next) {
       document.documentElement.dataset.dashfooTheme = "dark";
     } else {
       delete document.documentElement.dataset.dashfooTheme;
     }
+
     try {
       localStorage.setItem(THEME_KEY, next ? "dark" : "light");
     } catch {
       void 0;
     }
+
     window.dispatchEvent(new Event(THEME_EVENT));
   };
 

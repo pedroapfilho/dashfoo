@@ -7,6 +7,7 @@ const ActivityContext = createContext<ReadonlyArray<string>>([]);
 
 const ActivityPanel = (): ReactNode => {
   const activity = useContext(ActivityContext);
+
   return (
     <section aria-label="Recent layout activity">
       <ul aria-live="polite" className="flex flex-col gap-2.5 text-xs">

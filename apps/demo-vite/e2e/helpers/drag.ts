@@ -9,9 +9,11 @@ const dragElementOver = async (
   y: number,
 ): Promise<void> => {
   const box = await source.boundingBox();
+
   if (!box) {
     throw new Error("no bounding box for the drag source");
   }
+
   const fromX = box.x + box.width / 2;
   const fromY = box.y + box.height / 2;
 

@@ -21,4 +21,5 @@ const buttonClassName = ({ icon = "none", variant = "secondary" }: ButtonStylePr
   `${BASE} ${ICON_PADDING[icon]} ${VARIANTS[variant]}`;
 
 export { buttonClassName };
+
 export type { ButtonStyleProps };

@@ -70,14 +70,17 @@ const ManagerProbe = ({
   useEffect(() => {
     onManager(manager);
   }, [manager, onManager]);
+
   return children;
 };
 
 const renderWithManager = (props?: LayoutOverrides) => {
   let manager: DashfooDragManager | null = null;
+
   const capture = (value: DashfooDragManager | null): void => {
     manager = value;
   };
+
   const tree = (overrides?: LayoutOverrides): ReactNode => (
     <DashfooDragProvider>
       <ManagerProbe onManager={capture}>
@@ -85,7 +88,9 @@ const renderWithManager = (props?: LayoutOverrides) => {
       </ManagerProbe>
     </DashfooDragProvider>
   );
+
   const view = render(tree());
+
   return {
     manager: (): DashfooDragManager => manager!,
     rerender: (overrides?: LayoutOverrides): void => {
@@ -195,6 +200,7 @@ describe("draggableTabs", () => {
     const { manager } = renderWithManager({
       defaultModel: { ...model(), global: { tabEnableDrag: false } },
     });
+
     await flushRegistrations();
 
     expect(

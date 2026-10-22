@@ -30,12 +30,15 @@ const TabOverflowMenu = ({
     if (!open) {
       return undefined;
     }
+
     const handlePointerDown = (event: PointerEvent): void => {
       if (event.target instanceof Node && rootRef.current?.contains(event.target) !== true) {
         setOpen(false);
       }
     };
+
     document.addEventListener("pointerdown", handlePointerDown);
+
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
     };
@@ -69,32 +72,38 @@ const TabOverflowMenu = ({
 
   const handleMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
     const last = items.length - 1;
+
     switch (event.key) {
       case "ArrowDown": {
         event.preventDefault();
         focusItem(activeIndex >= last ? 0 : activeIndex + 1);
         break;
       }
+
       case "ArrowUp": {
         event.preventDefault();
         focusItem(activeIndex <= 0 ? last : activeIndex - 1);
         break;
       }
+
       case "Home": {
         event.preventDefault();
         focusItem(0);
         break;
       }
+
       case "End": {
         event.preventDefault();
         focusItem(last);
         break;
       }
+
       case "Escape": {
         event.preventDefault();
         closeAndReturnFocus();
         break;
       }
+
       default: {
         break;
       }
@@ -108,6 +117,7 @@ const TabOverflowMenu = ({
     ) {
       return;
     }
+
     setOpen(false);
   };
 
@@ -157,4 +167,5 @@ const TabOverflowMenu = ({
 };
 
 export { TabOverflowMenu };
+
 export type { OverflowItem };

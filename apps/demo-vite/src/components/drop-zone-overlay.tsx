@@ -25,15 +25,19 @@ const toRect = (rect: DOMRect): Rect => ({
 const measureTabsets = (container: HTMLElement, draggedTabId?: string): Array<TabsetMeasurement> =>
   [...container.querySelectorAll<HTMLElement>('[data-dashfoo="tabset"]')].map((tabset) => {
     const strip = tabset.querySelector<HTMLElement>('[data-dashfoo="tabstrip"]');
+
     const tabMidpoints = strip
       ? [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].flatMap((tab) => {
           if (tab.dataset.tabId === draggedTabId) {
             return [];
           }
+
           const rect = tab.getBoundingClientRect();
+
           return [rect.x + rect.width / 2];
         })
       : [];
+
     return {
       rect: toRect(tabset.getBoundingClientRect()),
       strip: strip ? toRect(strip.getBoundingClientRect()) : null,
@@ -55,9 +59,11 @@ const cellFill = (cell: ZoneCell, highlighted: boolean, noop: boolean): string =
   if (noop) {
     return `hsl(0 0% 50% / ${highlighted ? 0.3 : 0.08})`;
   }
+
   if (highlighted) {
     return `hsl(${hueOf(cell.tabsetIndex)} 70% 55% / 0.38)`;
   }
+
   return `hsl(${hueOf(cell.tabsetIndex)} 70% 55% / ${cell.kind === "slot" ? 0.16 : 0.09})`;
 };
 
@@ -65,10 +71,13 @@ const chipText = (intent: DropIntent | null, activeCell: ActiveCell | null): str
   if (intent === null) {
     return activeCell === null ? null : "no-op";
   }
+
   if (intent.location !== "center") {
     return `${DOCK_LABELS[intent.location]} → ${intent.targetId}`;
   }
+
   const slot = intent.index === undefined ? "" : ` @ ${intent.index}`;
+
   return `stack${slot} → ${intent.targetId}`;
 };
 
@@ -84,6 +93,7 @@ const ZonePolygon = ({
   const hue = hueOf(cell.tabsetIndex);
   const center = centroid(cell.points);
   const label = cell.kind === "dock" ? DOCK_LABELS[cell.location] : String(cell.slotIndex);
+
   return (
     <g>
       <polygon
@@ -116,10 +126,13 @@ const useDragPointer = (dragging: boolean): Point | null => {
     if (!dragging) {
       return undefined;
     }
+
     let frame = 0;
     let latest: Point | null = null;
+
     const handlePointerMove = (event: PointerEvent): void => {
       latest = { x: event.clientX, y: event.clientY };
+
       if (frame === 0) {
         frame = requestAnimationFrame(() => {
           frame = 0;
@@ -129,8 +142,10 @@ const useDragPointer = (dragging: boolean): Point | null => {
     };
 
     window.addEventListener("pointermove", handlePointerMove, { capture: true });
+
     return () => {
       window.removeEventListener("pointermove", handlePointerMove, { capture: true });
+
       if (frame !== 0) {
         cancelAnimationFrame(frame);
       }
@@ -150,16 +165,22 @@ const useMeasuredTabsets = (
     if (subject === null) {
       return undefined;
     }
+
     const container = containerRef.current;
+
     if (!container) {
       return undefined;
     }
+
     const draggedTabId = subject.kind === "tab" ? subject.id : undefined;
+
     const measure = (): void => {
       setMeasured({ list: measureTabsets(container, draggedTabId), subject });
     };
+
     const frame = requestAnimationFrame(measure);
     window.addEventListener("resize", measure);
+
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", measure);
@@ -182,6 +203,7 @@ const DropZoneDrawing = ({
 }): ReactNode => {
   const activeCell = pointer ? activeCellAt(tabsets, pointer) : null;
   const activeKey = activeCell ? cellKey(activeCell) : null;
+
   const activePolygon =
     activeKey === null ? null : (cells.find((cell) => cellKey(cell) === activeKey)?.points ?? null);
 

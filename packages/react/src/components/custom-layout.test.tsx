@@ -93,6 +93,7 @@ const renderTabContent = (tab: TabNode): ReactNode => <div>{CONTENT[tab.componen
 const CustomLabel = (): ReactNode => {
   const { index, tab } = useTab();
   const selected = useTabset((state) => state.visualSelected === index);
+
   return (
     <span data-testid={`label-${tab.id}`}>
       {tab.name}
@@ -131,15 +132,18 @@ const CustomLayout = ({
   withDrag?: boolean;
 }): ReactNode => {
   const store = useDashfooStore({ defaultModel });
+
   const maximized =
     store.model.maximizedTabsetId === undefined
       ? undefined
       : findTabset(store.model, store.model.maximizedTabsetId);
+
   const tree = maximized ? (
     <Layout.Tabset node={maximized} />
   ) : (
     <Layout.Rows node={store.model.layout} renderTabset={(node) => <CustomTabset node={node} />} />
   );
+
   return (
     <Layout.Root
       dispatch={store.dispatch}
@@ -153,9 +157,11 @@ const CustomLayout = ({
 
 const MovableLayout = (): ReactNode => {
   const store = useDashfooStore({ defaultModel: model() });
+
   const handleMove = (): void => {
     store.dispatch({ location: "center", sourceId: "t1", targetId: "ts2", type: "moveNode" });
   };
+
   return (
     <Layout.Root
       dispatch={store.dispatch}
@@ -265,6 +271,7 @@ describe("misuse", () => {
 
     const TwoTablists = (): ReactNode => {
       const store = useDashfooStore({ defaultModel: model() });
+
       return (
         <Layout.Root
           dispatch={store.dispatch}
@@ -278,6 +285,7 @@ describe("misuse", () => {
         </Layout.Root>
       );
     };
+
     render(<TwoTablists />);
 
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("more than one <Tabset.Tablist>"));
@@ -291,6 +299,7 @@ describe("misuse", () => {
 
     const OrphanTab = (): ReactNode => {
       const store = useDashfooStore({ defaultModel: model() });
+
       return (
         <Layout.Root
           dispatch={store.dispatch}
@@ -307,6 +316,7 @@ describe("misuse", () => {
         </Layout.Root>
       );
     };
+
     render(<OrphanTab />);
 
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("not a child"));

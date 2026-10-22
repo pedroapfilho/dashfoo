@@ -20,4 +20,5 @@ const SPLIT_PLACEMENT = {
 } as const satisfies Record<SplitLocation, SplitPlacement>;
 
 export { SPLIT_PLACEMENT };
+
 export type { SplitLocation };

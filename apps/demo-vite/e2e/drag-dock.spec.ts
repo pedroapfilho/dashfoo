@@ -12,6 +12,7 @@ const tabsByTabset = (page: Page): Promise<Array<Array<string | null>>> =>
 
 const tasksCount = async (page: Page): Promise<number> => {
   const tabs = await tabsByTabset(page);
+
   return tabs.flat().filter((label) => label === "Tasks").length;
 };
 
@@ -22,6 +23,7 @@ test.beforeEach(async ({ page }) => {
 
 test("dragging a tab to the center of another tabset stacks it there", async ({ page }) => {
   const canvas = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
+
   if (!canvas) {
     throw new Error("no canvas tabset box");
   }
@@ -38,6 +40,7 @@ test("dropping a tab onto another tabset's tab strip stacks it there (not a spli
 }) => {
   const first = page.locator('[data-dashfoo="tabset"]').first();
   const strip = await first.locator('[data-dashfoo="tabstrip"]').boundingBox();
+
   if (!strip) {
     throw new Error("no tab strip box");
   }
@@ -55,9 +58,11 @@ test("dragging a tab to the left edge of a tabset splits it into a new tabset", 
   page,
 }) => {
   const canvas = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
+
   if (!canvas) {
     throw new Error("no canvas tabset box");
   }
+
   const initial = await tabsByTabset(page);
   const before = initial.length;
 
@@ -80,9 +85,11 @@ test("a dock indicator appears while dragging over a tabset and clears after dro
 }) => {
   const canvas = await page.locator('[data-dashfoo="tabset"]').first().boundingBox();
   const box = await page.getByRole("tab", { name: "Tasks" }).boundingBox();
+
   if (!canvas || !box) {
     throw new Error("missing boxes");
   }
+
   const indicator = page.locator('[data-dashfoo="dock-indicator"]');
   await expect(indicator).toHaveCount(0);
 
@@ -109,9 +116,11 @@ test("the stack indicator is a thin insertion line in the tab bar", async ({ pag
   const first = page.locator('[data-dashfoo="tabset"]').first();
   const strip = await first.locator('[data-dashfoo="tabstrip"]').boundingBox();
   const box = await page.getByRole("tab", { name: "Tasks" }).boundingBox();
+
   if (!strip || !box) {
     throw new Error("missing boxes");
   }
+
   const indicator = page.locator('[data-dashfoo="dock-indicator"]');
 
   const x = strip.x + strip.width - 24;
@@ -137,6 +146,7 @@ test("the stack indicator is a thin insertion line in the tab bar", async ({ pag
 
 test("dropping on a tab-strip slot inserts the tab at that position", async ({ page }) => {
   const detail = await page.getByRole("tab", { name: "Detail" }).boundingBox();
+
   if (!detail) {
     throw new Error("no Detail tab box");
   }
@@ -153,6 +163,7 @@ test("adjacent widgets are separated by a visible gutter", async ({ page }) => {
   const canvas = await tabsets.nth(0).boundingBox();
   const activity = await tabsets.nth(1).boundingBox();
   const metrics = await tabsets.nth(2).boundingBox();
+
   if (!canvas || !activity || !metrics) {
     throw new Error("missing tabset boxes");
   }
@@ -165,6 +176,7 @@ test("adjacent widgets are separated by a visible gutter", async ({ page }) => {
 
 test("reordering a tab within its own tabset ignores the tab being moved", async ({ page }) => {
   const detail = await page.getByRole("tab", { name: "Detail" }).boundingBox();
+
   if (!detail) {
     throw new Error("no Detail tab box");
   }

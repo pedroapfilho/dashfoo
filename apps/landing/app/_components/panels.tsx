@@ -16,6 +16,7 @@ const PANELS = new Map<string, () => ReactNode>([
 
 const renderPanel = (node: TabNode): ReactNode => {
   const Body = PANELS.get(node.component) ?? ChartPanel;
+
   return (
     <Panel.Root>
       <Panel.Header>

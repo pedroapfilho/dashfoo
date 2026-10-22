@@ -3,30 +3,37 @@ import { expect, test } from "@playwright/test";
 
 const aPanel = (page: Page): Locator =>
   page.locator("[data-panel]").filter({ has: page.getByRole("tab", { name: "Canvas" }) });
+
 const bPanel = (page: Page): Locator =>
   page.locator("[data-panel]").filter({ has: page.getByRole("tab", { name: "Activity" }) });
+
 const splitter = (page: Page): Locator => page.locator('[data-dashfoo="splitter"]').first();
 const rootGroup = (page: Page): Locator => page.locator('[data-dashfoo="row"]').first();
 
 const boundaryRatio = async (page: Page): Promise<number> => {
   const a = await panelWidth(aPanel(page));
   const b = await panelWidth(bPanel(page));
+
   return a / (a + b);
 };
 
 const panelWidth = async (panel: Locator): Promise<number> => {
   const box = await panel.boundingBox();
+
   if (!box) {
     throw new Error("panel has no bounding box");
   }
+
   return box.width;
 };
 
 const dragSplitterTo = async (page: Page, x: number): Promise<void> => {
   const box = await splitter(page).boundingBox();
+
   if (!box) {
     throw new Error("splitter has no bounding box");
   }
+
   const y = box.y + box.height / 2;
   await page.mouse.move(box.x + box.width / 2, y);
   await page.mouse.down();
@@ -41,6 +48,7 @@ test.beforeEach(async ({ page }) => {
 
 test("a tabset with an explicit min width cannot be dragged smaller", async ({ page }) => {
   const a = await aPanel(page).boundingBox();
+
   if (!a) {
     throw new Error("tabset a has no bounding box");
   }
@@ -52,6 +60,7 @@ test("a tabset with an explicit min width cannot be dragged smaller", async ({ p
 
 test("tabsets use the default min width when no node min is set", async ({ page }) => {
   const b = await bPanel(page).boundingBox();
+
   if (!b) {
     throw new Error("tabset b has no bounding box");
   }
@@ -63,6 +72,7 @@ test("tabsets use the default min width when no node min is set", async ({ page 
 
 test("magnetic snapping pulls the boundary onto the grid (default step 25%)", async ({ page }) => {
   const group = await rootGroup(page).boundingBox();
+
   if (!group) {
     throw new Error("root group has no bounding box");
   }
@@ -76,9 +86,11 @@ test("magnetic snapping pulls the boundary onto the grid (default step 25%)", as
 test("the splitter highlights while a snap is engaged and clears on release", async ({ page }) => {
   const group = await rootGroup(page).boundingBox();
   const box = await splitter(page).boundingBox();
+
   if (!group || !box) {
     throw new Error("splitter or group has no bounding box");
   }
+
   const y = box.y + box.height / 2;
 
   await page.mouse.move(box.x + box.width / 2, y);
@@ -99,6 +111,7 @@ test("with snapping off the boundary stays where it is dropped", async ({ page }
   await page.getByLabel("Snap").selectOption({ label: "Off" });
 
   const group = await rootGroup(page).boundingBox();
+
   if (!group) {
     throw new Error("root group has no bounding box");
   }
@@ -112,6 +125,7 @@ test("a divisions grid lets the boundary snap to a third", async ({ page }) => {
   await page.getByLabel("Snap").selectOption({ label: "Thirds" });
 
   const group = await rootGroup(page).boundingBox();
+
   if (!group) {
     throw new Error("root group has no bounding box");
   }
@@ -129,7 +143,9 @@ test("the overview side column keeps descendant tabset minimum width", async ({ 
   const rootSplitter = page
     .locator('[data-dashfoo="splitter"][aria-orientation="vertical"]')
     .first();
+
   const box = await rootSplitter.boundingBox();
+
   if (!box) {
     throw new Error("root splitter has no bounding box");
   }

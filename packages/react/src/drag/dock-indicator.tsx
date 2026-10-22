@@ -42,13 +42,17 @@ const DockIndicator = ({
   layerId: string;
 }): ReactNode => {
   const drag = useSelector(actorRef, (snapshot) => snapshot.context.drag);
+
   if (drag.kind !== "dragging" || drag.drop === null || drag.drop.scope !== layerId) {
     return null;
   }
+
   const { intent } = drag.drop;
+
   const element = manager.registry.droppables.get(
     tabsetDroppableId(layerId, intent.targetId),
   )?.element;
+
   if (!(element instanceof HTMLElement)) {
     return null;
   }
@@ -58,7 +62,9 @@ const DockIndicator = ({
     measureTabset(intent.targetId, element),
     intent,
   );
+
   const zIndex = element.closest('[data-dashfoo="float"]') ? FLOAT_Z_INDEX : "auto";
+
   return <DockZone insertion={kind === "insertion"} rect={rect} zIndex={zIndex} />;
 };
 

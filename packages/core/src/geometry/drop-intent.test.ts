@@ -21,6 +21,7 @@ const stripless = (id = "ts1"): MeasuredTabset => ({ id, rect: TABSET_RECT, stri
 
 const tab = (id: string): DragSubject => ({ documentId: "doc", id, kind: "tab" });
 const tabsetSubject = (id: string): DragSubject => ({ documentId: "doc", id, kind: "tabset" });
+
 const external: DragSubject = {
   id: "external-1",
   kind: "external",
@@ -108,6 +109,7 @@ describe("resolveDropIntent: strip vs body", () => {
 
 describe("resolveDropIntent: insertion index at each gap", () => {
   const target = tabset(["a", "b", "c"]);
+
   const atX = (x: number): number | undefined =>
     resolveDropIntent(tab("x"), target, { x, y: 15 })?.index;
 
@@ -205,6 +207,7 @@ describe("dropIndicator", () => {
       rect: TABSET_RECT,
       strip: { rect: STRIP, tabs: [tabAt("a", 340)] },
     };
+
     expect(
       dropIndicator(tab("x"), target, { index: 1, location: "center", targetId: "ts1" }),
     ).toEqual({ kind: "insertion", rect: { height: 30, width: 4, x: 396, y: 0 } });

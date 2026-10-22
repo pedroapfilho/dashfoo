@@ -30,11 +30,17 @@ const Tabset = {
 } as const;
 
 export { Tabset };
+
 export type { TabsetContentProps } from "./tabset-content";
+
 export type { TabsetRootProps } from "./tabset-root";
+
 export type { TabsetTabProps, TabsetTriggerProps } from "./tabset-tab";
+
 export type { TabsetCloseButtonProps, TabsetRenameInputProps } from "./tabset-rename-input";
+
 export type { TabsetTablistProps, TabsetTabStripProps } from "./tabset-tablist";
+
 export type {
   TabsetFloatButtonProps,
   TabsetGripProps,

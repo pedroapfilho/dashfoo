@@ -27,6 +27,7 @@ const sameDropIntent = (a: DropIntent | null, b: DropIntent | null): boolean =>
 /** Tabs and grips drag only inside a `Layout.DragLayer`: without one there is nowhere to drop. */
 const useLayerManager = (): DashfooDragManager | undefined => {
   const context = useContext(DragContext);
+
   return context?.layerId === null ? undefined : context?.manager;
 };
 
@@ -39,12 +40,15 @@ type DraggableHandle = {
 const useDraggableHandle = (): DraggableHandle => {
   const elementRef = useRef<Element | null>(null);
   const draggableRef = useRef<Draggable | null>(null);
+
   const ref = useCallback((element: Element | null): void => {
     elementRef.current = element;
+
     if (draggableRef.current) {
       draggableRef.current.element = element ?? undefined;
     }
   }, []);
+
   return { draggableRef, elementRef, ref };
 };
 
@@ -63,9 +67,11 @@ const useDraggableEntity = (
     if (!manager || disabled) {
       return undefined;
     }
+
     const draggable = new Draggable({ data: { ...data, label: "" }, id }, manager);
     draggable.element = elementRef.current ?? undefined;
     draggableRef.current = draggable;
+
     return () => {
       draggable.destroy();
       draggableRef.current = null;
@@ -74,6 +80,7 @@ const useDraggableEntity = (
 
   useEffect(() => {
     const draggable = draggableRef.current;
+
     if (draggable) {
       draggable.data = { ...data, label };
     }
@@ -90,10 +97,12 @@ const useNodeDraggable = (
 ): { ref: (element: Element | null) => void } => {
   const manager = useLayerManager();
   const documentId = useLayout((state) => state.documentId);
+
   const data = useMemo(
     () => ({ documentId, id, type: kind }) satisfies DashfooDragData,
     [documentId, id, kind],
   );
+
   return useDraggableEntity(
     manager,
     { data, id: JSON.stringify([documentId, kind, id]) },
@@ -106,12 +115,15 @@ const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | nu
   const context = useContext(DragContext);
   const elementRef = useRef<HTMLElement | null>(null);
   const droppableRef = useRef<Droppable | null>(null);
+
   const ref = useCallback((element: HTMLElement | null): void => {
     elementRef.current = element;
+
     if (droppableRef.current) {
       droppableRef.current.element = element ?? undefined;
     }
   }, []);
+
   const layerId = context?.layerId ?? null;
   const manager = context?.manager;
 
@@ -128,8 +140,10 @@ const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | nu
       },
       manager,
     );
+
     droppable.element = elementRef.current ?? undefined;
     droppableRef.current = droppable;
+
     return () => {
       droppable.destroy();
       droppableRef.current = null;
@@ -176,6 +190,7 @@ const useExternalTabSource = ({
       }) satisfies DashfooDragData,
     [],
   );
+
   return useDraggableEntity(manager, { data, id: `external-${id}` }, disabled, label);
 };
 
@@ -186,18 +201,22 @@ const useExternalTabSource = ({
  */
 const useDragSubject = (): DragSubject | null => {
   const actorRef = useContext(DragContext)?.actorRef;
+
   return useSelector(actorRef, (snapshot) => {
     const drag = snapshot?.context.drag;
+
     return drag?.kind === "dragging" ? drag.subject : null;
   });
 };
 
 const useDropIntent = (): DropIntent | null => {
   const actorRef = useContext(DragContext)?.actorRef;
+
   return useSelector(
     actorRef,
     (snapshot) => {
       const drag = snapshot?.context.drag;
+
       return drag?.kind === "dragging" ? (drag.drop?.intent ?? null) : null;
     },
     sameDropIntent,
@@ -205,6 +224,7 @@ const useDropIntent = (): DropIntent | null => {
 };
 
 export type { ExternalTabSourceOptions };
+
 export {
   sameDropIntent,
   tabsetDroppableId,

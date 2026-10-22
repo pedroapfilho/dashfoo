@@ -15,6 +15,7 @@ import { DragPreviewOverlay } from "./drag-preview";
 import { subjectFor } from "./drag-subject";
 
 type LayerTarget = { element: HTMLElement; layer: RegisteredLayer; tabsetId: string };
+
 type LayerTargetData = Data & { layerId: string; tabsetId: string };
 
 const isLayerTargetData = (data: Data): data is LayerTargetData =>
@@ -32,19 +33,25 @@ const useDragMonitor = (
       const target = manager.dragOperation.target;
       const data = target?.data;
       const element = target?.element;
+
       if (!data || !isLayerTargetData(data) || !(element instanceof HTMLElement)) {
         return null;
       }
+
       const layer = layers.get(data.layerId);
+
       return layer ? { element, layer, tabsetId: data.tabsetId } : null;
     };
 
     const syncIntent = (): void => {
       const drag = actorRef.getSnapshot().context.drag;
+
       if (drag.kind !== "dragging") {
         return;
       }
+
       const found = layerTarget();
+
       const intent =
         found === null
           ? null
@@ -54,6 +61,7 @@ const useDragMonitor = (
               found.element,
               manager.dragOperation.position.current,
             );
+
       actorRef.send({
         drop: intent === null || found === null ? null : { intent, scope: found.layer.layerId },
         type: "OVER",
@@ -62,14 +70,19 @@ const useDragMonitor = (
 
     const handleStart = (event: DragStartEvent): void => {
       const source = event.operation.source;
+
       if (!source) {
         return;
       }
+
       const subject = subjectFor(source);
+
       if (!subject) {
         manager.actions.stop({ canceled: true });
+
         return;
       }
+
       actorRef.send({ subject, type: "START" });
     };
 
@@ -77,15 +90,18 @@ const useDragMonitor = (
     // the target strip. The drop path stays synchronous: a deferred resolve
     // would land after the actor had already been asked to commit.
     let frame: number | null = null;
+
     const scheduleResolve = (): void => {
       if (frame !== null) {
         return;
       }
+
       frame = requestAnimationFrame(() => {
         frame = null;
         syncIntent();
       });
     };
+
     const cancelPendingResolve = (): void => {
       if (frame !== null) {
         cancelAnimationFrame(frame);
@@ -95,10 +111,13 @@ const useDragMonitor = (
 
     const handleEnd = (event: DragEndEvent): void => {
       cancelPendingResolve();
+
       if (event.canceled) {
         actorRef.send({ type: "CANCEL" });
+
         return;
       }
+
       syncIntent();
       actorRef.send({ type: "DROP" });
     };
@@ -106,10 +125,12 @@ const useDragMonitor = (
     const commitSubscription = actorRef.on("COMMIT", (emitted) => {
       layers.get(emitted.scope)?.commit(emitted.action, emitted.subject);
     });
+
     manager.monitor.addEventListener("dragstart", handleStart);
     manager.monitor.addEventListener("dragmove", scheduleResolve);
     manager.monitor.addEventListener("collision", scheduleResolve);
     manager.monitor.addEventListener("dragend", handleEnd);
+
     return () => {
       cancelPendingResolve();
       commitSubscription.unsubscribe();
@@ -135,9 +156,11 @@ const OwnedDragRoot = ({ children }: { children: ReactNode }): ReactNode => {
   const actorRef = useActorRef(dragDockMachine);
 
   const [layers] = useState(() => new Map<string, RegisteredLayer>());
+
   const registerLayer = useCallback(
     (layer: RegisteredLayer): (() => void) => {
       layers.set(layer.layerId, layer);
+
       return () => {
         layers.delete(layer.layerId);
       };
@@ -169,6 +192,7 @@ const SharedDragRoot = ({
   outer: DragContextValue;
 }): ReactNode => {
   const value = useMemo<DragContextValue>(() => ({ ...outer, layerId: null }), [outer]);
+
   return <DragContext.Provider value={value}>{children}</DragContext.Provider>;
 };
 
@@ -179,6 +203,7 @@ const SharedDragRoot = ({
  */
 const DashfooDragProvider = ({ children }: { children: ReactNode }): ReactNode => {
   const outer = useContext(DragContext);
+
   return outer === null ? (
     <OwnedDragRoot>{children}</OwnedDragRoot>
   ) : (

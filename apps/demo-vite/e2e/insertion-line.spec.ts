@@ -10,6 +10,7 @@ test("the end-of-strip insertion line sits past the last tab's close button", as
   const notesItem = firstTabset.locator('[data-dashfoo="tab-item"]', { hasText: "Notes" });
   const closeBox = await notesItem.locator('[data-dashfoo="tab-close"]').boundingBox();
   const tasks = await page.getByRole("tab", { name: "Tasks" }).boundingBox();
+
   if (!closeBox || !tasks) {
     throw new Error("missing boxes");
   }
@@ -30,6 +31,7 @@ test("the end-of-strip insertion line sits past the last tab's close button", as
   await expect
     .poll(async () => {
       const box = await line.boundingBox();
+
       return box?.x ?? -1;
     })
     .toBeGreaterThanOrEqual(closeBox.x + closeBox.width - 4);

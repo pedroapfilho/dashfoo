@@ -3,18 +3,22 @@ import type { Locator, Page } from "@playwright/test";
 
 const panelWidth = async (panel: Locator): Promise<number> => {
   const box = await panel.boundingBox();
+
   if (!box) {
     throw new Error("panel has no bounding box");
   }
+
   return box.width;
 };
 
 const dragSplitterBy = async (page: Page, deltaX: number): Promise<void> => {
   const splitter = page.locator('[data-dashfoo="splitter"]').first();
   const box = await splitter.boundingBox();
+
   if (!box) {
     throw new Error("splitter has no bounding box");
   }
+
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
   await page.mouse.move(x, y);
@@ -72,6 +76,7 @@ test("undo and redo restore resized panel dimensions", async ({ page }) => {
 
   const undo = page.getByRole("button", { name: "Undo" });
   const redo = page.getByRole("button", { name: "Redo" });
+
   const left = page
     .locator("[data-panel]")
     .filter({ has: page.getByRole("tab", { name: "Canvas" }) });

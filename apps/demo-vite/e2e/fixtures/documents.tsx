@@ -41,6 +41,7 @@ const Document = ({
       ),
     ),
   );
+
   return (
     <section data-document={name} data-testid={name}>
       <DashfooLayout factory={factory} model={value} onModelChange={setValue} />
@@ -55,9 +56,11 @@ const renderOuter = (node: TabNode): ReactNode =>
   node.component === "nested" ? <Document name="nested" /> : renderContent(node);
 
 const root = document.querySelector("#root");
+
 if (!root) {
   throw new Error("missing fixture root");
 }
+
 createRoot(root).render(
   <DashfooDragProvider>
     <div data-documents>

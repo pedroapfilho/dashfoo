@@ -8,8 +8,10 @@ const addMultiples = (targets: Set<number>, increment: number): void => {
   if (increment <= 0) {
     return;
   }
+
   for (let position = increment; position < 100; position += increment) {
     const rounded = Math.round(position * TARGET_PRECISION) / TARGET_PRECISION;
+
     if (rounded < 100) {
       targets.add(rounded);
     }
@@ -18,15 +20,19 @@ const addMultiples = (targets: Set<number>, increment: number): void => {
 
 const resolveSnapTargets = (config: SnapConfig, panelCount: number): Array<number> => {
   const targets = new Set<number>();
+
   if (config.step !== undefined && config.step > 0) {
     addMultiples(targets, config.step);
   }
+
   if (config.divisions !== undefined) {
     const divisions = config.divisions === "panels" ? panelCount : config.divisions;
+
     if (divisions >= 2) {
       addMultiples(targets, 100 / divisions);
     }
   }
+
   return [...targets].toSorted((a, b) => a - b);
 };
 
@@ -44,6 +50,7 @@ const nearestTarget = (position: number, targets: Array<number>): number | undef
     if (best === undefined || Math.abs(target - position) < Math.abs(best - position)) {
       return target;
     }
+
     return best;
   }, undefined);
 
@@ -53,21 +60,25 @@ const snapSizes = (sizes: Array<number>, boundaryIndex: number, grid: SnapGrid):
   const { targets, threshold } = grid;
   const left = sizes.at(boundaryIndex);
   const right = sizes.at(boundaryIndex + 1);
+
   if (boundaryIndex < 0 || left === undefined || right === undefined || targets.length === 0) {
     return { sizes, snapped: false };
   }
 
   let position = 0;
+
   for (let index = 0; index <= boundaryIndex; index++) {
     position += sizes[index] ?? 0;
   }
 
   const target = nearestTarget(position, targets);
+
   if (target === undefined || Math.abs(target - position) > threshold) {
     return { sizes, snapped: false };
   }
 
   const delta = target - position;
+
   if (left + delta < 0 || right - delta < 0) {
     return { sizes, snapped: false };
   }
@@ -75,6 +86,7 @@ const snapSizes = (sizes: Array<number>, boundaryIndex: number, grid: SnapGrid):
   const next = [...sizes];
   next[boundaryIndex] = left + delta;
   next[boundaryIndex + 1] = right - delta;
+
   return { sizes: next, snapped: true };
 };
 
@@ -91,7 +103,9 @@ const decideSnap = (
   if (boundaryIndex === null || !snapEnabled(grid)) {
     return { kind: "inactive" };
   }
+
   const { sizes: snappedSizes, snapped } = snapSizes(sizes, boundaryIndex, grid);
+
   return snapped ? { kind: "engage", sizes: snappedSizes } : { kind: "clear" };
 };
 
@@ -101,8 +115,10 @@ const settleSnap = (
   grid: SnapGrid,
 ): Array<number> => {
   const decision = decideSnap(sizes, boundaryIndex, grid);
+
   return decision.kind === "engage" ? decision.sizes : sizes;
 };
 
 export { decideSnap, resolveSnapGrid, resolveSnapTargets, settleSnap, snapEnabled, snapSizes };
+
 export type { SnapDecision, SnapGrid };

@@ -10,6 +10,7 @@ import { Header } from "./_components/header";
 
 const DESCRIPTION =
   "A headless React docking-layout library: tiled, resizable, tabbed regions with a serializable, zod-validated model and zero imposed styling. Build VS-Code-style dashboards you own.";
+
 const TITLE = "dashfoo: headless React docking layout";
 
 export const metadata: Metadata = {

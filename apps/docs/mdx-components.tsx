@@ -15,9 +15,11 @@ const codeText = (node: ReactNode): string =>
       if (typeof child === "string" || typeof child === "number") {
         return String(child);
       }
+
       if (isValidElement<{ children?: ReactNode }>(child)) {
         return codeText(child.props.children);
       }
+
       return "";
     })
     .join("");

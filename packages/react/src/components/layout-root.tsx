@@ -58,6 +58,7 @@ type CapabilityOptions = Required<
 
 const resolveCapabilities = (global: Dashfoo["global"], options: CapabilityOptions) => {
   const structural = options.editable && options.restructurable;
+
   return {
     canDock: structural,
     closableTabs: options.editable && options.closableTabs && global.tabEnableClose !== false,
@@ -91,6 +92,7 @@ const LayoutRoot = ({
 }: LayoutRootProps): ReactNode => {
   const documentId = useId();
   const global = model.global;
+
   const snapshot: LayoutState = {
     ...resolveCapabilities(global, {
       closableTabs,
@@ -168,4 +170,5 @@ const LayoutOverrides = ({ children, overrides }: LayoutOverridesProps): ReactNo
 };
 
 export { LayoutOverrides, LayoutRoot };
+
 export type { LayoutOverridesProps, LayoutRenderers, LayoutRootProps };

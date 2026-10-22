@@ -22,6 +22,7 @@ const renameNames = (dispatched: Array<Action>): Array<string> =>
 const renderFloatEditor = (): Harness => {
   const dispatched: Array<Action> = [];
   let closed = false;
+
   const node: FloatNode = {
     geometry: { height: 300, left: 0, top: 0, width: 400 },
     id: "f1",
@@ -29,6 +30,7 @@ const renderFloatEditor = (): Harness => {
     name: CURRENT_NAME,
     type: "float",
   };
+
   render(
     <FloatTitleEditor
       dispatch={(action) => {
@@ -40,6 +42,7 @@ const renderFloatEditor = (): Harness => {
       }}
     />,
   );
+
   return {
     dispatched,
     expectClosed: () => {
@@ -52,6 +55,7 @@ const renderFloatEditor = (): Harness => {
 const renderTabEditor = (): Harness => {
   const dispatched: Array<Action> = [];
   const tab: TabNode = { component: "c", id: "t1", name: CURRENT_NAME, type: "tab" };
+
   const node: TabsetNode = {
     children: [tab],
     id: "ts1",
@@ -59,6 +63,7 @@ const renderTabEditor = (): Harness => {
     type: "tabset",
     weight: 1,
   };
+
   const store = createTabsetStore({
     activeTab: tab,
     dispatch: (action) => {
@@ -72,6 +77,7 @@ const renderTabEditor = (): Harness => {
     tabsRenamable: true,
     visualSelected: 0,
   });
+
   store.setState({ editingTabId: "t1" });
   render(
     <TabsetStoreContext.Provider value={store}>
@@ -80,6 +86,7 @@ const renderTabEditor = (): Harness => {
       </TabContext.Provider>
     </TabsetStoreContext.Provider>,
   );
+
   return {
     dispatched,
     expectClosed: () => {

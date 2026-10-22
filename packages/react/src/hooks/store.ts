@@ -66,18 +66,23 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
     onModelChange,
     persist,
   } = options;
+
   const initialModel = controlledModel ?? defaultModel;
+
   if (initialModel === undefined) {
     throw new Error("useDashfooStore requires either a `model` or a `defaultModel`.");
   }
 
   const [controlled] = useState(() => controlledModel !== undefined);
+
   if (controlled !== (controlledModel !== undefined)) {
     warnOnce("controlled-mode-switch", CONTROLLED_MODE_SWITCH_MESSAGE);
   }
+
   if (controlled && defaultModel !== undefined) {
     warnOnce("controlled-with-default", CONTROLLED_WITH_DEFAULT_MESSAGE);
   }
+
   if (controlled && persist !== undefined) {
     warnOnce("controlled-persist", CONTROLLED_PERSIST_MESSAGE);
   }
@@ -105,11 +110,14 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
       if (Object.is(before, after)) {
         return;
       }
+
       persistence.save(after);
       onModelChange?.(after, action);
+
       if (after.activeTabsetId !== before.activeTabsetId) {
         onActiveTabsetChange?.(after.activeTabsetId);
       }
+
       if (after.maximizedTabsetId !== before.maximizedTabsetId) {
         onMaximizedTabsetChange?.(after.maximizedTabsetId);
       }
@@ -130,13 +138,17 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
   const dispatch = useCallback(
     (action: Action) => {
       const resolved = onAction ? onAction(action) : action;
+
       if (!resolved) {
         return;
       }
+
       if (controlled) {
         notify(model, reducer(model, resolved), resolved);
+
         return;
       }
+
       commit((current) => dispatchToHistory(current, resolved), resolved);
     },
     [commit, controlled, model, notify, onAction],
@@ -145,16 +157,20 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
   const undo = useCallback(() => {
     if (controlled) {
       warnOnce("controlled-undo", CONTROLLED_HISTORY_MESSAGE);
+
       return;
     }
+
     commit(undoHistory);
   }, [commit, controlled]);
 
   const redo = useCallback(() => {
     if (controlled) {
       warnOnce("controlled-redo", CONTROLLED_HISTORY_MESSAGE);
+
       return;
     }
+
     commit(redoHistory);
   }, [commit, controlled]);
 
@@ -162,8 +178,10 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
     (next: Dashfoo) => {
       if (controlled) {
         warnOnce("controlled-set-model", CONTROLLED_SET_MODEL_MESSAGE);
+
         return;
       }
+
       replaceSilently(next);
       persistence.save(historyStore.getState().present);
     },
@@ -173,8 +191,10 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
   const reset = useCallback(() => {
     if (controlled) {
       warnOnce("controlled-set-model", CONTROLLED_SET_MODEL_MESSAGE);
+
       return;
     }
+
     persistence.clear();
     replaceSilently(initialModel);
   }, [controlled, initialModel, persistence, replaceSilently]);
@@ -195,4 +215,5 @@ const useDashfooStore = (options: UseDashfooStoreOptions): DashfooStore => {
 };
 
 export { useDashfooStore };
+
 export type { DashfooStore, UseDashfooStoreOptions };

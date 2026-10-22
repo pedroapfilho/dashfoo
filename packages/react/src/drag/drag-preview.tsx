@@ -15,6 +15,7 @@ const labelOf = (source: DragSource | null): string => {
   if (typeof source?.data.label !== "string") {
     return "";
   }
+
   return source.data.label;
 };
 
@@ -26,9 +27,11 @@ const DragPreviewOverlay = ({ manager }: { manager: DashfooDragManager }): React
   useEffect(() => {
     const handleStart = (event: DragStartEvent): void => {
       const source = event.operation.source;
+
       if (!source) {
         return;
       }
+
       const rect = source.element?.getBoundingClientRect();
       const point = event.operation.position.current;
       setChip({
@@ -37,11 +40,14 @@ const DragPreviewOverlay = ({ manager }: { manager: DashfooDragManager }): React
         y: PREVIEW_OFFSET.y + (rect ? point.y - rect.top : 0),
       });
     };
+
     const handleEnd = (): void => {
       setChip(null);
     };
+
     manager.monitor.addEventListener("dragstart", handleStart);
     manager.monitor.addEventListener("dragend", handleEnd);
+
     return () => {
       manager.monitor.removeEventListener("dragstart", handleStart);
       manager.monitor.removeEventListener("dragend", handleEnd);
@@ -51,6 +57,7 @@ const DragPreviewOverlay = ({ manager }: { manager: DashfooDragManager }): React
   const attachOverlay = useCallback(
     (element: HTMLDivElement | null): void => {
       const feedback = manager.registry.plugins.get(Feedback);
+
       if (feedback) {
         feedback.overlay = element ?? undefined;
       }

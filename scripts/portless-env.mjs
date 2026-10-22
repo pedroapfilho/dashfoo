@@ -12,6 +12,7 @@ const resolve = (name) => {
   if (!urls.has(name)) {
     urls.set(name, portless("get", name));
   }
+
   return urls.get(name);
 };
 
@@ -22,6 +23,7 @@ export const applyPortlessUrls = (mapping, env = process.env) => {
     if (env[envKey]) {
       continue;
     }
+
     env[envKey] = names.map(resolve).join(",");
   }
 

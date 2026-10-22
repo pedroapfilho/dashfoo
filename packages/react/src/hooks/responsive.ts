@@ -16,11 +16,14 @@ type ResponsiveLayout = {
 const observeWidth = (element: HTMLElement, onWidth: (width: number) => void): (() => void) => {
   const observer = new ResizeObserver((entries) => {
     const entry = entries.at(0);
+
     if (entry) {
       onWidth(entry.contentRect.width);
     }
   });
+
   observer.observe(element);
+
   return () => {
     observer.disconnect();
   };
@@ -35,6 +38,7 @@ const useContainerWidth = (): [(element: HTMLElement | null) => void, number] =>
     if (!container) {
       return undefined;
     }
+
     // React 18 replays effects without replaying callback refs in StrictMode.
     // Create and disconnect the observer in the same lifecycle.
     return observeWidth(container, setWidth);
@@ -47,6 +51,7 @@ const compactRow = (node: RowNode, orientation: Orientation): RowNode => {
   const children = node.children.map((child) =>
     child.type === "row" ? compactRow(child, orientation) : { ...child, weight: 1 },
   );
+
   return {
     ...node,
     children,
@@ -92,4 +97,5 @@ const useResponsiveLayout = (
 };
 
 export { useResponsiveLayout };
+
 export type { ResponsiveLayout, ResponsiveOptions };

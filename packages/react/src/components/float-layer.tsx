@@ -9,9 +9,11 @@ import { FloatPanel } from "./float-panel";
 
 const FloatOverlay = ({ floats }: { floats: Array<FloatNode> }): ReactNode => {
   const [topId, setTopId] = useState<string | null>(null);
+
   if (floats.length === 0) {
     return null;
   }
+
   return (
     <div data-dashfoo="float-overlay">
       {floats.map((node) => (
@@ -41,4 +43,5 @@ const FloatLayer = ({ children, floats }: FloatLayerProps): ReactNode => (
 );
 
 export { FloatLayer };
+
 export type { FloatLayerProps };

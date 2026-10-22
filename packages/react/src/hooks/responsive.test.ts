@@ -60,6 +60,7 @@ const renderMeasured = (source: Dashfoo, options: ResponsiveOptions | undefined)
   act(() => {
     rendered.result.current.rootRef(document.createElement("div"));
   });
+
   return rendered;
 };
 

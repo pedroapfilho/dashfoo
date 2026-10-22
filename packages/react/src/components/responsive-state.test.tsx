@@ -26,6 +26,7 @@ class MeasuredContainerObserver {
 
 const Notes = (): ReactNode => {
   const [value, setValue] = useState("");
+
   return (
     <input
       aria-label="Nested notes"
@@ -39,6 +40,7 @@ const Notes = (): ReactNode => {
 
 test("nested panel state survives entering and leaving the compact projection", () => {
   vi.stubGlobal("ResizeObserver", MeasuredContainerObserver);
+
   const nested = row(
     [
       tabset([tab("notes", "Notes")], { id: "notes" }),
@@ -46,9 +48,11 @@ test("nested panel state survives entering and leaving the compact projection", 
     ],
     { id: "nested", orientation: "column" },
   );
+
   const tree = row([tabset([tab("main", "Main")], { id: "main" }), nested], { id: "root" });
   const seed = model(tree);
   const components = { main: () => <p>Main</p>, notes: Notes, other: () => <p>Other</p> };
+
   const view = (maxWidth: number): ReactNode => (
     <DashfooLayout
       components={components}
@@ -57,6 +61,7 @@ test("nested panel state survives entering and leaving the compact projection", 
       responsive={{ maxWidth }}
     />
   );
+
   const { rerender } = render(view(720));
   const input = screen.getByRole("textbox", { name: "Nested notes" });
   fireEvent.change(input, { target: { value: "Retain this draft" } });

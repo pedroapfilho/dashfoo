@@ -68,6 +68,7 @@ describe("normalize", () => {
       min: { unit: "px", value: 240 },
       weight: 30,
     });
+
     const result = normalize(model(row("root", [collapsing, tabset("ts2", [tab("t2")])])));
 
     const lifted = result.layout.children[0];

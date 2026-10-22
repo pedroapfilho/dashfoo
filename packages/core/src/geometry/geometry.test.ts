@@ -42,6 +42,7 @@ const centroid = (points: ReadonlyArray<Point>): Point => ({
 
 const interiorSamples = (points: ReadonlyArray<Point>): Array<Point> => {
   const c = centroid(points);
+
   return [
     c,
     ...points.flatMap((vertex) =>
@@ -71,6 +72,7 @@ describe("dockZonePolygons", () => {
   test("honors a custom band fraction", () => {
     const r: Rect = { height: 100, width: 200, x: 0, y: 0 };
     const opts: BandOptions = { bandFraction: 0.1 };
+
     for (const zone of dockZonePolygons(r, opts)) {
       for (const point of interiorSamples(zone.points)) {
         expect(resolveDockTarget(point, r, opts)).toBe(zone.location);

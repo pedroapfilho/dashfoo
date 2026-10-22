@@ -71,6 +71,7 @@ const rowNodeSchema = z.object({
 });
 
 type RowNode = z.infer<typeof rowNodeSchema>;
+
 type RowNodeInput = z.input<typeof rowNodeSchema>;
 
 const geometrySchema = z.object({
@@ -114,19 +115,32 @@ const dashfooSchema = z.object({
 });
 
 type Json = JsonValue;
+
 type Edge = z.infer<typeof edgeSchema>;
+
 type Unit = z.infer<typeof unitSchema>;
+
 type Orientation = z.infer<typeof orientationSchema>;
+
 type Dimension = z.infer<typeof dimensionSchema>;
+
 type SnapConfig = z.infer<typeof snapSchema>;
+
 type TabNode = z.infer<typeof tabNodeSchema>;
+
 type TabsetNode = z.infer<typeof tabsetNodeSchema>;
+
 type Geometry = z.infer<typeof geometrySchema>;
+
 type FloatNode = z.infer<typeof floatNodeSchema>;
+
 type GlobalAttributes = z.infer<typeof globalAttributesSchema>;
+
 type Dashfoo = z.infer<typeof dashfooSchema>;
+
 /** The loose shape `dashfooSchema` accepts: `weight` and `floats` may be omitted. */
 type DashfooInput = z.input<typeof dashfooSchema>;
+
 type Node = RowNode | TabsetNode | TabNode;
 
 export {

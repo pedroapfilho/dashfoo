@@ -37,14 +37,17 @@ const ImperativeControlPage = (): ReactNode => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
       const target = event.target;
+
       if (
         target instanceof HTMLElement &&
         (target.tagName === "INPUT" || target.tagName === "TEXTAREA")
       ) {
         return;
       }
+
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
+
         if (event.shiftKey) {
           layout.current?.redo();
         } else {
@@ -52,7 +55,9 @@ const ImperativeControlPage = (): ReactNode => {
         }
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };

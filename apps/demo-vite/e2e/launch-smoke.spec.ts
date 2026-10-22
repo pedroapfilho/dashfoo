@@ -19,9 +19,11 @@ test("@smoke docking, split resizing, floats, persistence and keyboard focus", a
 
   const splitter = page.getByRole("separator").first();
   const box = await splitter.boundingBox();
+
   if (!box) {
     throw new Error("Missing splitter");
   }
+
   const before = await splitter.getAttribute("aria-valuenow");
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
@@ -40,10 +42,13 @@ test("@smoke docking, split resizing, floats, persistence and keyboard focus", a
   const target = page
     .locator('[data-dashfoo="tabset"]')
     .filter({ has: page.getByRole("tab", { exact: true, name: "Activity" }) });
+
   const targetBox = await target.locator('[data-dashfoo="tabstrip"]').boundingBox();
+
   if (!targetBox) {
     throw new Error("Missing target tabstrip");
   }
+
   await dragElementOver(page, canvas, targetBox.x + 80, targetBox.y + targetBox.height / 2);
   // WebKit can deliver pointer moves before the collision observer catches up.
   // Releasing against the old target reorders Canvas in its original tabset.
@@ -51,6 +56,7 @@ test("@smoke docking, split resizing, floats, persistence and keyboard focus", a
     .poll(
       async () => {
         const indicator = await page.locator('[data-dashfoo="dock-indicator"]').boundingBox();
+
         return (
           indicator !== null &&
           indicator.x >= targetBox.x &&
@@ -98,9 +104,11 @@ test("closing and renaming the sole remaining tab retains valid names and focus"
   await canvas.dblclick();
   const rename = page.getByRole("textbox", { exact: true, name: "Rename Canvas" });
   await expect(rename).toBeFocused();
+
   const results = await new AxeBuilder({ page })
     .withRules(["aria-required-children", "aria-valid-attr-value"])
     .analyze();
+
   expect(results.violations).toEqual([]);
   expect(results.incomplete).toEqual([]);
   await expect(page.getByRole("tabpanel", { exact: true, name: "Canvas" })).toBeVisible();
@@ -116,13 +124,16 @@ test("@smoke saved desktop floats fit narrow screens without overwriting geometr
   const float = page.locator('[data-dashfoo="float"]');
   await expect(float).toHaveCSS("transform", "none");
   const wide = await float.boundingBox();
+
   if (!wide) {
     throw new Error("Missing float");
   }
+
   await page.setViewportSize({ height: 844, width: 390 });
   await expect
     .poll(async () => {
       const box = await float.boundingBox();
+
       return (
         box !== null &&
         box.x >= 0 &&
@@ -139,6 +150,7 @@ test("@smoke saved desktop floats fit narrow screens without overwriting geometr
   await expect
     .poll(async () => {
       const box = await float.boundingBox();
+
       return box?.width;
     })
     .toBeCloseTo(wide.width, 0);

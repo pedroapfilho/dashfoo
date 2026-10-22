@@ -46,6 +46,7 @@ describe("tabset", () => {
       selected: 1,
       weight: 2,
     });
+
     expect(node.id).toBe("ts-1");
     expect(node.selected).toBe(1);
     expect(node.weight).toBe(2);
@@ -92,6 +93,7 @@ describe("row", () => {
       orientation: "column",
       weight: 3,
     });
+
     expect(node.id).toBe("root");
     expect(node.orientation).toBe("column");
     expect(node.weight).toBe(3);
@@ -133,12 +135,14 @@ describe("model", () => {
       activeTabsetId: "ts",
       global: { splitterSize: 8 },
     });
+
     expect(m.activeTabsetId).toBe("ts");
     expect(m.global).toEqual({ splitterSize: 8 });
   });
 
   test("warns on duplicate node ids from two same-component tabs lacking explicit ids", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
     try {
       model(
         row([tabset([tab("chart", "Left"), tab("chart", "Right")], { id: "ts" })], { id: "root" }),
@@ -164,6 +168,7 @@ describe("model", () => {
       ),
       { activeTabsetId: "left" },
     );
+
     expect(() => dashfooSchema.parse(m)).not.toThrow();
   });
 });

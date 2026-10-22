@@ -20,18 +20,23 @@ describe("dist/dashfoo.css", () => {
     const vertical = /\[data-separator\]\[aria-orientation="vertical"\]\s*\{[^\}]*\}/v.exec(
       artifact,
     )?.[0];
+
     expect(vertical).toContain("width: var(--dashfoo-splitter-size)");
+
     const horizontal = /\[data-separator\]\[aria-orientation="horizontal"\]\s*\{[^\}]*\}/v.exec(
       artifact,
     )?.[0];
+
     expect(horizontal).toContain("height: var(--dashfoo-splitter-size)");
   });
 
   test("ships the magnetic-snap highlight token and rule", () => {
     expect(artifact).toContain("--dashfoo-snap:");
+
     const snapped = /\[data-separator\]\[data-dashfoo-snapped="true"\]::before\s*\{[^\}]*\}/v.exec(
       artifact,
     )?.[0];
+
     expect(snapped).toContain("background: var(--dashfoo-snap)");
   });
 
@@ -40,6 +45,7 @@ describe("dist/dashfoo.css", () => {
       /\[data-dashfoo="row"\]\[data-dashfoo-snapping="true"\] > \[data-panel\]\s*\{[^\}]*\}/v.exec(
         artifact,
       )?.[0];
+
     expect(glide).toContain("transition: var(--dashfoo-snap-transition");
 
     const reduced = /prefers-reduced-motion: reduce[^@]*/v.exec(artifact)?.[0];

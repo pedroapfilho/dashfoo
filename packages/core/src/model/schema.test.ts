@@ -85,6 +85,7 @@ describe("dashfooSchema", () => {
       ...validModel,
       global: { splitterSize: 6 },
     });
+
     expect(parsed.global.splitterSize).toBe(6);
   });
 
@@ -93,6 +94,7 @@ describe("dashfooSchema", () => {
       ...validModel,
       global: { enableSplitResize: false, tabEnableDrag: false },
     });
+
     expect(parsed.global.enableSplitResize).toBe(false);
     expect(parsed.global.tabEnableDrag).toBe(false);
   });
@@ -130,6 +132,7 @@ describe("dashfooSchema", () => {
 
     const [badChild] = (badUnit.layout.children[1] as { children: Array<{ min: unknown }> })
       .children;
+
     assert(badChild);
     badChild.min = { unit: "parsecs", value: 240 };
 

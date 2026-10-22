@@ -103,6 +103,7 @@ describe("DashfooLayout", () => {
 
   test("warns once for an unregistered component and renders an empty panel body", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
     try {
       const { rerender } = render(
         <DashfooLayout components={components} defaultModel={missingComponentModel()} />,
@@ -116,6 +117,7 @@ describe("DashfooLayout", () => {
       const warnCalls = warn.mock.calls.filter((args) =>
         String(args[0]).includes(MISSING_COMPONENT),
       );
+
       expect(warnCalls).toHaveLength(1);
     } finally {
       warn.mockRestore();

@@ -23,6 +23,7 @@ const WidgetCard = ({
     createTab: () => createWidgetTab(widget),
     label: widget.name,
   });
+
   const handleAdd = (): void => {
     onAdd(widget);
   };
@@ -59,6 +60,7 @@ const SNAP_CONFIGS = new Map<string, SnapConfig | undefined>([
   ["Off", undefined],
   ["Thirds", { divisions: 3 }],
 ]);
+
 const SNAP_KEYS = ["Off", "Even", "Thirds", "25%", "50%"] as const;
 
 const DockingPage = (): ReactNode => {

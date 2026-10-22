@@ -30,28 +30,37 @@ const walk = <T>(
   index = -1,
 ): T | undefined => {
   const atRoot = visit({ index, node: row, parent });
+
   if (atRoot !== undefined) {
     return atRoot;
   }
+
   for (const [childIndex, child] of row.children.entries()) {
     if (child.type === "row") {
       const inRow = walk(child, visit, row, childIndex);
+
       if (inRow !== undefined) {
         return inRow;
       }
+
       continue;
     }
+
     const atTabset = visit({ index: childIndex, node: child, parent: row });
+
     if (atTabset !== undefined) {
       return atTabset;
     }
+
     for (const [tabIndex, tab] of child.children.entries()) {
       const atTab = visit({ index: tabIndex, node: tab, parent: child });
+
       if (atTab !== undefined) {
         return atTab;
       }
     }
   }
+
   return undefined;
 };
 
@@ -75,10 +84,12 @@ const locate = <N extends AttributedNode>(
     const found = walk(root, ({ index, node, parent }) =>
       node.id === id && is(node) ? { index, node, parent } : undefined,
     );
+
     if (found) {
       return found;
     }
   }
+
   return undefined;
 };
 
@@ -87,15 +98,18 @@ const collectTabsetsInRow = (row: RowNode, acc: Array<TabsetNode>): void => {
     if (node.type === "tabset") {
       acc.push(node);
     }
+
     return undefined;
   });
 };
 
 const collectTabsets = (model: Dashfoo): Array<TabsetNode> => {
   const acc: Array<TabsetNode> = [];
+
   for (const root of collectRoots(model)) {
     collectTabsetsInRow(root, acc);
   }
+
   return acc;
 };
 
@@ -106,6 +120,7 @@ const findTabset = (model: Dashfoo, tabsetId: string): TabsetNode | undefined =>
 
 const findTab = (model: Dashfoo, tabId: string): TabLocation | undefined => {
   const found = locate(model, tabId, isTab);
+
   return found?.parent?.type === "tabset"
     ? { container: found.parent, index: found.index, tab: found.node }
     : undefined;
@@ -116,10 +131,12 @@ const findRow = (model: Dashfoo, id: string): RowNode | undefined => locate(mode
 const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefined => {
   for (const root of collectRoots(model)) {
     const found = walk(root, ({ node }) => (node.id === id ? node : undefined));
+
     if (found) {
       return found;
     }
   }
+
   return undefined;
 };
 
@@ -128,32 +145,40 @@ const findTabsetParent = (
   tabsetId: string,
 ): { index: number; parent: RowNode } | undefined => {
   const found = locate(model, tabsetId, isTabset);
+
   return found?.parent?.type === "row" ? { index: found.index, parent: found.parent } : undefined;
 };
 
 const collectIdsInRow = (row: RowNode, acc: Array<string>): void => {
   walk(row, ({ node }) => {
     acc.push(node.id);
+
     return undefined;
   });
 };
 
 const findDuplicateIds = (model: Dashfoo): Array<string> => {
   const ids: Array<string> = [];
+
   for (const float of model.floats) {
     ids.push(float.id);
   }
+
   for (const root of collectRoots(model)) {
     collectIdsInRow(root, ids);
   }
+
   const seen = new Set<string>();
   const duplicates = new Set<string>();
+
   for (const id of ids) {
     if (seen.has(id)) {
       duplicates.add(id);
     }
+
     seen.add(id);
   }
+
   return [...duplicates];
 };
 
@@ -170,4 +195,5 @@ export {
   findTabsetParent,
   getFirstTabset,
 };
+
 export type { AttributedNode, TabLocation };

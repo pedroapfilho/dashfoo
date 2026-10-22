@@ -54,6 +54,7 @@ test("documentation routes, Markdown, search index and metadata are available", 
     "theming",
     "api-reference",
   ];
+
   for (const route of pages) {
     await page.goto(`http://localhost:4011/${route}`);
     await expect(page.locator("h1")).toHaveCount(1);
@@ -61,10 +62,12 @@ test("documentation routes, Markdown, search index and metadata are available", 
     expect(markdown.ok()).toBe(true);
     expect(await markdown.text()).toContain("dashfoo");
   }
+
   for (const endpoint of ["llms.txt", "llms-full.txt", "api/search", "robots.txt", "sitemap.xml"]) {
     const response = await request.get(`http://localhost:4011/${endpoint}`);
     expect(response.ok()).toBe(true);
   }
+
   for (const endpoint of ["robots.txt", "sitemap.xml", "opengraph-image"]) {
     const response = await request.get(`http://localhost:4110/${endpoint}`);
     expect(response.ok()).toBe(true);

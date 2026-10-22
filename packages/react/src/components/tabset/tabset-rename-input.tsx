@@ -26,6 +26,7 @@ const RenameEditor = forwardRef<HTMLInputElement, TabsetRenameInputProps>(
     const cancelRename = useTabset((state) => state.cancelRename);
     const commitRename = useTabset((state) => state.commitRename);
     const inputRef = useRef<HTMLInputElement | null>(null);
+
     const rename = useInlineRename({
       currentName: tab.name,
       inputRef,
@@ -34,6 +35,7 @@ const RenameEditor = forwardRef<HTMLInputElement, TabsetRenameInputProps>(
       },
       onDone: cancelRename,
     });
+
     const refCallback = useMemo(() => mergeRefs<HTMLInputElement>(inputRef, userRef), [userRef]);
 
     const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
@@ -74,6 +76,7 @@ const TabsetRenameInput = forwardRef<HTMLInputElement, TabsetRenameInputProps>(
     if (!editing) {
       return null;
     }
+
     return <RenameEditor {...props} ref={ref} />;
   },
 );
@@ -91,6 +94,7 @@ const TabsetCloseButton = forwardRef<HTMLButtonElement, TabsetCloseButtonProps>(
     const visualSelected = useTabset((state) => state.visualSelected);
 
     const closable = tabsClosable && tab.enableClose !== false;
+
     if (!closable || editing) {
       return null;
     }
@@ -122,4 +126,5 @@ const TabsetCloseButton = forwardRef<HTMLButtonElement, TabsetCloseButtonProps>(
 TabsetCloseButton.displayName = "TabsetCloseButton";
 
 export { RenameEditor, TabsetCloseButton, TabsetRenameInput };
+
 export type { TabsetCloseButtonProps, TabsetRenameInputProps };

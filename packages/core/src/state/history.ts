@@ -29,17 +29,21 @@ const canRedoHistory = (history: History): boolean => history.future.length > 0;
  */
 const dispatchToHistory = (history: History, action: Action): History => {
   const present = reducer(history.present, action);
+
   if (Object.is(present, history.present)) {
     return history;
   }
+
   return { future: [], past: [...history.past, history.present].slice(-HISTORY_LIMIT), present };
 };
 
 const undoHistory = (history: History): History => {
   const previous = history.past.at(-1);
+
   if (previous === undefined) {
     return history;
   }
+
   return {
     future: [history.present, ...history.future],
     past: history.past.slice(0, -1),
@@ -49,9 +53,11 @@ const undoHistory = (history: History): History => {
 
 const redoHistory = (history: History): History => {
   const next = history.future.at(0);
+
   if (next === undefined) {
     return history;
   }
+
   return {
     future: history.future.slice(1),
     past: [...history.past, history.present].slice(-HISTORY_LIMIT),
@@ -68,4 +74,5 @@ export {
   redoHistory,
   undoHistory,
 };
+
 export type { History };

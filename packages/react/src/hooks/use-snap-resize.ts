@@ -58,6 +58,7 @@ const stepResize = (state: ResizeState, event: ResizeEvent, context: ResizeConte
   if (event.type === "boundaryDown") {
     return enter({ boundary: event.boundary, kind: "dragging" });
   }
+
   // rrp reports its mount-time measurement as a non-user layoutChanged;
   // committing it would rewrite the model before anyone touched a splitter.
   if (state.kind === "syncing" || (event.type === "layoutChanged" && !event.isUserInteraction)) {
@@ -65,11 +66,14 @@ const stepResize = (state: ResizeState, event: ResizeEvent, context: ResizeConte
   }
 
   const boundary = boundaryOf(state);
+
   if (event.type === "layoutChanged") {
     if (!context.resizableSplits) {
       return enter(IDLE);
     }
+
     const weights = settleSnap(event.sizes, boundary, context.snap);
+
     return {
       effect: sizesMatch(weights, context.weights) ? null : { type: "settle", weights },
       state: IDLE,
@@ -79,13 +83,17 @@ const stepResize = (state: ResizeState, event: ResizeEvent, context: ResizeConte
   if (!context.resizableSplits || boundary === null) {
     return enter(state);
   }
+
   const decision = decideSnap(event.sizes, boundary, context.snap);
+
   if (decision.kind === "inactive") {
     return enter(state);
   }
+
   if (decision.kind === "clear") {
     return enter({ boundary, kind: "dragging" });
   }
+
   return {
     effect: sizesMatch(event.sizes, decision.sizes)
       ? null
@@ -100,11 +108,13 @@ const sizesFromLayout = (layout: Layout, panels: ResizePanels): Array<number> =>
 const layoutFromSizes = (sizes: Array<number>, panels: ResizePanels): Layout =>
   panels.reduce<Layout>((layout, child, index) => {
     layout[child.id] = sizes[index] ?? 0;
+
     return layout;
   }, {});
 
 const percentagesOf = (panels: ResizePanels): Array<number> => {
   const total = panels.reduce((sum, child) => sum + child.weight, 0);
+
   return panels.map((child) => (child.weight / total) * 100);
 };
 
@@ -140,22 +150,28 @@ const useSnapResize = ({
 
   useLayoutEffect(() => {
     const group = groupRef.current;
+
     if (!group) {
       return undefined;
     }
+
     const current = group.getLayout();
     const desired = percentagesOf(panels);
+
     const samePanelSet =
       Object.keys(current).length === panels.length && panels.every((child) => child.id in current);
+
     if (!samePanelSet || sizesMatch(sizesFromLayout(current, panels), desired)) {
       return undefined;
     }
 
     commit(SYNCING);
     group.setLayout(layoutFromSizes(desired, panels));
+
     const frame = requestAnimationFrame(() => {
       commit(IDLE);
     });
+
     return () => {
       cancelAnimationFrame(frame);
       commit(IDLE);
@@ -168,17 +184,23 @@ const useSnapResize = ({
       snap,
       weights: panels.map((child) => child.weight),
     });
+
     if (next !== state.current) {
       commit(next);
     }
+
     if (effect?.type === "settle") {
       onWeightsSettled(effect.weights);
+
       return;
     }
+
     const group = groupRef.current;
+
     if (effect?.type !== "setLayout" || !group) {
       return;
     }
+
     commit(SYNCING);
     group.setLayout(layoutFromSizes(effect.sizes, panels));
     commit(next);
@@ -204,6 +226,7 @@ const useSnapResize = ({
 };
 
 export { stepResize, useSnapResize };
+
 export type {
   ResizeContext,
   ResizeEffect,

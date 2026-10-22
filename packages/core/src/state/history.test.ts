@@ -109,6 +109,7 @@ describe("history", () => {
 
   test("past is capped at HISTORY_LIMIT", () => {
     let history = createHistory(model());
+
     for (let i = 0; i < HISTORY_LIMIT + 10; i++) {
       history = dispatchToHistory(history, { name: `tab-${i}`, tabId: "t1", type: "renameTab" });
     }
@@ -124,6 +125,7 @@ describe("history", () => {
     }
 
     const stateAfterTenth = history.present;
+
     for (let i = 0; i < HISTORY_LIMIT; i++) {
       history = dispatchToHistory(history, { name: `late-${i}`, tabId: "t1", type: "renameTab" });
     }
@@ -160,9 +162,11 @@ describe("history", () => {
 
   test("redo respects the cap", () => {
     let history = createHistory(model());
+
     for (let i = 0; i < HISTORY_LIMIT; i++) {
       history = dispatchToHistory(history, { name: `step-${i}`, tabId: "t1", type: "renameTab" });
     }
+
     const preUndoPresent = history.present;
 
     history = undoHistory(history);

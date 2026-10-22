@@ -49,11 +49,14 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
       dragSubject?.kind === "tab" && dragSubject.documentId === documentId
         ? node.children.findIndex((tab) => tab.id === dragSubject.id)
         : -1;
+
     const visualSelected =
       draggingTabIndex !== -1 && draggingTabIndex === node.selected
         ? fallbackSelectedIndex(node.children.length, draggingTabIndex)
         : node.selected;
+
     const activeTab = node.children[visualSelected];
+
     const isDragSource =
       dragSubject?.kind === "tabset" &&
       dragSubject.documentId === documentId &&
@@ -70,6 +73,7 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
       tabsRenamable,
       visualSelected,
     };
+
     const [store] = useState(() => createTabsetStore(snapshot));
 
     useLayoutEffect(() => {
@@ -83,8 +87,10 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
 
     const overflowItems = useMemo(() => {
       const names = new Map(node.children.map((tab) => [tab.id, tab.name]));
+
       return overflow.map((id) => ({ id, name: names.get(id) ?? id }));
     }, [overflow, node.children]);
+
     useLayoutEffect(() => {
       store.setState({ overflowItems });
     }, [overflowItems, store]);
@@ -93,14 +99,19 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
     // unrelated to a close; the pending id is what keeps a vetoed one from firing.
     useEffect(() => {
       const { pendingCloseTabId } = store.getState();
+
       if (pendingCloseTabId === null) {
         return;
       }
+
       store.setState({ pendingCloseTabId: null });
+
       if (node.children.some((tab) => tab.id === pendingCloseTabId)) {
         return;
       }
+
       const selectedTab = node.children[node.selected];
+
       if (selectedTab) {
         tabsetRef.current
           ?.querySelector<HTMLElement>(
@@ -122,6 +133,7 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
           ref={(element) => {
             ref(element);
             tabsetRef.current = element;
+
             if (typeof userRef === "function") {
               userRef(element);
             } else if (userRef) {
@@ -141,4 +153,5 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
 TabsetRoot.displayName = "TabsetRoot";
 
 export { TabsetRoot };
+
 export type { TabsetRootProps };

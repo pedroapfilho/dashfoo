@@ -9,12 +9,14 @@ const getPageMarkdown = async (slug?: Array<string>) => {
   cacheLife("max");
   const page = source.getPage(slug);
   const markdown = page ? await getLLMText(page) : null;
+
   return markdown;
 };
 
 const GET = async (_req: Request, { params }: { params: Promise<{ slug?: Array<string> }> }) => {
   const { slug } = await params;
   const markdown = await getPageMarkdown(slug);
+
   if (markdown === null) {
     notFound();
   }

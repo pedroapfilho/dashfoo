@@ -42,9 +42,11 @@ test("splitters are disabled in place: same gutter, no resize, no grab pill", as
   expect(pillDisplay).toBe("none");
 
   const before = await splitter.boundingBox();
+
   if (!before) {
     throw new Error("no bounding box for splitter");
   }
+
   expect(before.width).toBeGreaterThan(0);
 
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
@@ -62,9 +64,11 @@ test("dragging a tab in a locked layout is a no-op", async ({ page }) => {
   const before = await tabsByTabset(page);
 
   const target = await page.getByRole("tab", { name: "Activity" }).boundingBox();
+
   if (!target) {
     throw new Error("no bounding box for target tab");
   }
+
   await dragTabTo(page, "Canvas", target.x + target.width / 2, target.y + target.height / 2);
 
   expect(await tabsByTabset(page)).toEqual(before);
@@ -85,8 +89,10 @@ test("a locked layout stays responsive: it stacks into one column when narrow", 
     const xs = await page
       .locator('[data-dashfoo="tabset"]')
       .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)));
+
     return new Set(xs).size;
   };
+
   expect(await columns()).toBe(2);
 
   await page.setViewportSize({ height: 900, width: 600 });

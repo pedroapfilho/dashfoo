@@ -22,6 +22,7 @@ const run = (
   events.reduce<{ effects: Array<ResizeEffect>; state: ResizeState }>(
     (acc, event) => {
       const { effect, state } = stepResize(acc.state, event, context);
+
       return { effects: effect ? [...acc.effects, effect] : acc.effects, state };
     },
     { effects: [], state: start },
@@ -29,11 +30,13 @@ const run = (
 
 const down = (boundary: number): ResizeEvent => ({ boundary, type: "boundaryDown" });
 const move = (sizes: Array<number>): ResizeEvent => ({ sizes, type: "layoutChange" });
+
 const release = (sizes: Array<number>): ResizeEvent => ({
   isUserInteraction: true,
   sizes,
   type: "layoutChanged",
 });
+
 const measured = (sizes: Array<number>): ResizeEvent => ({
   isUserInteraction: false,
   sizes,
@@ -66,6 +69,7 @@ describe("stepResize", () => {
       [down(0), move([55, 45]), move([62, 38]), move([65, 35]), release([65, 35])],
       FREE_CONTEXT,
     );
+
     expect(result).toEqual({ effects: [{ type: "settle", weights: [65, 35] }], state: IDLE });
   });
 

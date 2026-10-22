@@ -20,15 +20,20 @@ const MobileNav = (): ReactNode => {
       if (event.key !== "Escape") {
         return;
       }
+
       const orphansFocus =
         panelRef.current?.contains(document.activeElement) === true ||
         document.activeElement === triggerRef.current;
+
       if (orphansFocus) {
         triggerRef.current?.focus();
       }
+
       setOpen(false);
     };
+
     window.addEventListener("keydown", handleKeyDown);
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };

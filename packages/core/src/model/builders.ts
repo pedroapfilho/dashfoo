@@ -49,6 +49,7 @@ type TabsetOptions = {
 
 const tabset = (children: Array<TabNode>, options: TabsetOptions = {}): TabsetNode => {
   const { max, min, ...rest } = options;
+
   const built: TabsetNode = {
     children,
     type: "tabset",
@@ -57,12 +58,15 @@ const tabset = (children: Array<TabNode>, options: TabsetOptions = {}): TabsetNo
     selected: clampSelected(children.length, options.selected ?? 0),
     weight: options.weight ?? DEFAULT_WEIGHT,
   };
+
   if (max !== undefined) {
     built.max = toDimension(max);
   }
+
   if (min !== undefined) {
     built.min = toDimension(min);
   }
+
   return built;
 };
 
@@ -77,6 +81,7 @@ type RowOptions = {
 
 const row = (children: RowNode["children"], options: RowOptions = {}): RowNode => {
   const { max, min, ...rest } = options;
+
   const built: RowNode = {
     children,
     type: "row",
@@ -85,12 +90,15 @@ const row = (children: RowNode["children"], options: RowOptions = {}): RowNode =
     orientation: options.orientation ?? "row",
     weight: options.weight ?? DEFAULT_WEIGHT,
   };
+
   if (max !== undefined) {
     built.max = toDimension(max);
   }
+
   if (min !== undefined) {
     built.min = toDimension(min);
   }
+
   return built;
 };
 
@@ -122,14 +130,18 @@ const model = (layout: RowNode, options: ModelOptions = {}): Dashfoo => {
     floats: options.floats ?? [],
     global: options.global ?? {},
   };
+
   const duplicates = findDuplicateIds(built);
+
   if (duplicates.length > 0) {
     warn(
       `builder produced duplicate node ids: ${duplicates.join(", ")}. Pass explicit ids when reusing a component`,
     );
   }
+
   return built;
 };
 
 export { floatNode, model, row, tab, tabset };
+
 export type { FloatOptions, ModelOptions, RowOptions, TabOptions, TabsetOptions };

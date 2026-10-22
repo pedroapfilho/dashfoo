@@ -15,6 +15,7 @@ const MobileToc = ({ items }: { items: Array<TOCItemType> }): ReactNode => (
               href={item.url}
               onClick={(event) => {
                 const details = event.currentTarget.closest("details");
+
                 if (details) {
                   details.open = false;
                 }

@@ -13,6 +13,7 @@ const TabsetOverflowMenu = (): ReactNode => {
   if (overflowItems.length === 0) {
     return null;
   }
+
   return <TabOverflowMenu items={overflowItems} onSelect={selectOverflowTab} />;
 };
 

@@ -25,7 +25,9 @@ const addWidget = (handle: DashfooHandle | null, widget: WidgetDefinition): void
   if (!handle) {
     return;
   }
+
   const targetId = addTargetId(handle.getModel());
+
   if (targetId !== undefined) {
     handle.addTab(createWidgetTab(widget), { location: "center", targetId });
   }
@@ -35,14 +37,17 @@ const closeActiveTab = (handle: DashfooHandle | null): void => {
   if (!handle) {
     return;
   }
+
   const model = handle.getModel();
   const targetId = addTargetId(model);
   const tabset = targetId === undefined ? undefined : findTabset(model, targetId);
   const activeTab = tabset?.children[tabset.selected];
+
   if (activeTab) {
     handle.closeTab(activeTab.id);
   }
 };
 
 export { addTargetId, addWidget, closeActiveTab, createWidgetTab, WIDGETS };
+
 export type { WidgetDefinition };
