@@ -1,6 +1,7 @@
 ---
 title: 'Packed-consumer benchmark factory fails strict typechecking'
 severity: 'minor'
+issue: 'pedroapfilho/dashfoo#196'
 ---
 
 ### Expected Behavior
