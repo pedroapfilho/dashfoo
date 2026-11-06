@@ -5,11 +5,16 @@
 Accepted · 2026-06-02
 
 The decision remains current. The markup table below was refreshed on
-2026-10-06 for the compound components and the drag adapter directory; source
-paths are relative to `packages/react/src`. The React package README remains
-the full selector reference, including floats and panels.
+2026-10-06 for the compound components and the drag adapter directory, and
+again for the `layout/` and `tabset/` source directories; source paths are
+relative to `packages/react/src`. The React package README remains the full
+selector reference, including floats and panels.
 “Zero CSS” here means no stylesheet in the React package; structural inline
-positioning and sizing styles are still required and shipped.
+positioning and sizing styles are still required and shipped. Since then the
+structural rules moved into the required `@dashfoo/react/styles.css`: the
+views set only custom properties inline (geometry such as the dock indicator's
+`--dashfoo-dock-left/top/width/height` and a float's `--dashfoo-float-*`), and
+the only colors the stylesheet carries are the dock indicator's fallbacks.
 
 ## Context
 
@@ -42,23 +47,23 @@ Three rules make this concrete.
 The markup is the styling contract. Consumers select on `data-dashfoo`, never on
 internal class names (there are none). The values shipped today:
 
-| `data-dashfoo`    | Element                                               | Source                                      |
-| ----------------- | ----------------------------------------------------- | ------------------------------------------- |
-| `layout`          | layout root                                           | `components/layout-root.tsx`                |
-| `row`             | the rrp `Group`                                       | `components/row-view.tsx`                   |
-| `splitter`        | the rrp `Separator`                                   | `components/row-view.tsx`                   |
-| `tabset`          | tabset container                                      | `components/tabset/tabset-root.tsx`         |
-| `tabstrip`        | strip row (tablist + toolbar)                         | `components/tabset/tabset-tablist.tsx`      |
-| `tablist`         | scrolling viewport around the `role="tablist"` marker | `components/tabset/tabset-tablist.tsx`      |
-| `tab-item`        | one tab's wrapper (`<span>` carrying `data-tab-id`)   | `components/tabset/tabset-tab.tsx`          |
-| `tab`             | the `role="tab"` button                               | `components/tabset/tabset-tab.tsx`          |
-| `tab-close`       | per-tab close button                                  | `components/tabset/tabset-rename-input.tsx` |
-| `tab-rename`      | inline rename `<input>`                               | `components/tabset/tabset-rename-input.tsx` |
-| `tabset-toolbar`  | trailing toolbar                                      | `components/tabset/tabset-toolbar.tsx`      |
-| `tabset-maximize` | maximize / restore button                             | `components/tabset/tabset-toolbar.tsx`      |
-| `tabcontent`      | the `role="tabpanel"`                                 | `components/tabset/tabset-content.tsx`      |
-| `dock-indicator`  | the drag drop-zone overlay                            | `drag/dock-indicator.tsx`                   |
-| `drag-preview`    | the drag preview chip                                 | `drag/drag-preview.tsx`                     |
+| `data-dashfoo`    | Element                                               | Source                           |
+| ----------------- | ----------------------------------------------------- | -------------------------------- |
+| `layout`          | layout root                                           | `layout/layout-root.tsx`         |
+| `row`             | the rrp `Group`                                       | `layout/row-view.tsx`            |
+| `splitter`        | the rrp `Separator`                                   | `layout/row-view.tsx`            |
+| `tabset`          | tabset container                                      | `tabset/tabset-root.tsx`         |
+| `tabstrip`        | strip row (tablist + toolbar)                         | `tabset/tabset-tablist.tsx`      |
+| `tablist`         | scrolling viewport around the `role="tablist"` marker | `tabset/tabset-tablist.tsx`      |
+| `tab-item`        | one tab's wrapper (`<span>` carrying `data-tab-id`)   | `tabset/tabset-tab.tsx`          |
+| `tab`             | the `role="tab"` button                               | `tabset/tabset-tab.tsx`          |
+| `tab-close`       | per-tab close button                                  | `tabset/tabset-tab.tsx`          |
+| `tab-rename`      | inline rename `<input>`                               | `tabset/tabset-rename-input.tsx` |
+| `tabset-toolbar`  | trailing toolbar                                      | `tabset/tabset-toolbar.tsx`      |
+| `tabset-maximize` | maximize / restore button                             | `tabset/tabset-toolbar.tsx`      |
+| `tabcontent`      | the `role="tabpanel"`                                 | `tabset/tabset-content.tsx`      |
+| `dock-indicator`  | the drag drop-zone overlay                            | `drag/dock-indicator.tsx`        |
+| `drag-preview`    | the drag preview chip                                 | `drag/drag-preview.tsx`          |
 
 State that the consumer styles against rides on standard ARIA and small data
 attributes, not class toggles: `aria-selected` / `aria-pressed` for the active

@@ -86,7 +86,8 @@ one screen.
 
 ### The interaction machine — `dragDockMachine`
 
-Defined in `packages/core/src/machines/drag-dock-machine.ts`. This one is a real
+Defined in `packages/core/src/dock/drag-dock-machine.ts` (originally
+`packages/core/src/machines/drag-dock-machine.ts`). This one is a real
 lifecycle: `idle → dragging → (drop | cancel) → idle`.
 
 ```ts
@@ -129,12 +130,14 @@ the two machines, not a convention someone has to remember.
 
 ### Binding to React
 
-`packages/react/src/hooks/store.ts` binds a document actor with `useActorRef`
-and reads its history with `useSelector` from `@xstate/react`. The same hook covers
-both control modes: uncontrolled (`defaultModel`) lets the actor own the document
-with full undo/redo; controlled (`model`) makes the prop the source of truth, routes
-every change through `onModelChange`, and keeps the actor synced via `SET_MODEL` so
-an inspector still sees the live document.
+`packages/react/src/hooks/store.ts` bound a document actor with `useActorRef`
+and read its history with `useSelector` from `@xstate/react`. The same hook
+covered both control modes: uncontrolled (`defaultModel`) let the actor own the
+document with full undo/redo; controlled (`model`) made the prop the source of
+truth, routed every change through `onModelChange`, and kept the actor synced
+via `SET_MODEL` so an inspector still saw the live document. The hook now lives
+in `packages/react/src/store/store.ts` and holds the `History` itself (see the
+2026-10 amendment); the two control modes are unchanged.
 
 ## Why not zustand
 
@@ -165,7 +168,7 @@ use it for layout persistence, and the reason is the same as the zustand `persis
 rejection: a persisted actor snapshot includes the full undo/redo history and machine
 bookkeeping, and it carries no schema validation.
 
-Instead, `packages/react/src/hooks/persistence.ts` persists the **model**, through the
+Instead, `packages/react/src/store/persistence.ts` persists the **model**, through the
 serialization contract in `packages/core/src/model/serialize.ts`:
 
 | Concern    | Function        | What it does                                           |

@@ -17,10 +17,12 @@ A hand-built layout wires three things:
    undo/redo and, with `persist`, saving and restoring: the same store
    `DashfooLayout` uses internally.
 2. **The `Layout` frame.** `Layout.Root` takes `model`, `dispatch`, and
-   `renderers`, and provides the layout store every part below reads through
-   selectors. `Layout.DragLayer` opts the tree into drag-dock (omit it and the
+   `renderers`, plus `LayoutOptions`, the same capability props `DashfooLayout`
+   takes, with the same defaults. It provides the layout
+   store every part below reads through selectors. `Layout.DragLayer` opts the tree into drag-dock (omit it and the
    layout still works without dragging). `Layout.Rows` renders the split
-   tree on the resize adapter.
+   tree on the resize adapter, or only the maximized tabset while one is
+   maximized.
 3. **A tabset composition.** Pass `renderTabset` to `Layout.Rows` to substitute
    your own arrangement of `Tabset.*` parts at every leaf, or use
    `Layout.Tabset`, the stock composition, where custom chrome isn't needed.
@@ -78,11 +80,16 @@ Custom parts read the same stores the built-in parts do:
 ```tsx
 import { useTab, useTabset } from "@dashfoo/react";
 
-// A label that knows which tab it is and whether it's selected.
+// A label that knows which tab it is, whether it's selected, and whether it can close.
 const MyLabel = () => {
-  const { index, tab } = useTab();
+  const { closable, index, tab } = useTab();
   const selected = useTabset((state) => state.visualSelected === index);
-  return <span className={selected ? "font-bold" : undefined}>{tab.name}</span>;
+  return (
+    <span className={selected ? "font-bold" : undefined}>
+      {tab.name}
+      {closable ? null : " (pinned)"}
+    </span>
+  );
 };
 
 // A toolbar add-on the stock composition doesn't have.
@@ -95,6 +102,12 @@ const TabCounter = () => {
 The hooks are selector-based: a part re-renders only when its selected slice
 changes, so a drag pulse or a rename in one tab doesn't wake the rest of the
 strip.
+
+`useTab()` returns `{ closable, draggable, index, renamable, tab }`. The flags
+combine the layout, the tabset and the tab's own `enableClose` / `enableDrag` /
+`enableRename`, the same answers the built-in parts act on. Read them in custom
+parts rather than the tabset store's `tabsClosable` / `tabsRenamable`, which are
+only the layout and tabset half.
 
 ## What each part owns
 
@@ -117,24 +130,17 @@ invalid tablist children. Every part forwards its ref to the element it renders.
 
 ## Maximize
 
-In a hand-built layout, maximize is the host's branch. `DashfooLayout` uses the
-same branch internally:
-
-```tsx
-import { findTabset } from "@dashfoo/core";
-
-const maximized = store.model.maximizedTabsetId
-  ? findTabset(store.model, store.model.maximizedTabsetId)
-  : undefined;
-
-{maximized ? <MyTabset node={maximized} /> : <Layout.Rows node={store.model.layout} … />}
-```
+Maximize needs no code in a hand-built layout. While a tabset in its tree is
+maximized, `Layout.Rows` renders only that tabset, through `renderTabset` when
+you pass one, so `<Layout.Rows node={store.model.layout} renderTabset={…} />`
+covers both states. `DashfooLayout` renders the same `Layout.Rows`.
 
 ## Responsive
 
 `DashfooLayout`'s [`responsive` prop](/responsive) runs on `useResponsiveLayout`,
 which is exported for hand-built layouts. Pass it the store's model and the
-breakpoint, then hand its view, lock and `rootRef` to `Layout.Root`. The
+breakpoint, then hand its view and `rootRef` to `Layout.Root` and spread its
+`locks` after any capability props you set, so compact mode overrides them. The
 projection is view-only: `dispatch` still targets `store.model`, so nothing maps
 back and widening up is lossless. The store, history, and mounted panels survive
 the breakpoint cross.
@@ -149,11 +155,10 @@ const App = () => {
 
   return (
     <Layout.Root
+      {...responsive.locks}
       dispatch={store.dispatch}
-      maximizable={responsive.maximizable}
       model={view}
       renderers={{ tab: renderTab }}
-      restructurable={responsive.restructurable}
       rootRef={responsive.rootRef}
     >
       <Layout.DragLayer>
@@ -165,8 +170,9 @@ const App = () => {
 ```
 
 `rootRef` is forwarded onto the layout's root element so the hook can measure
-it. Maximize and the projection compose: branch on `view`, not `store.model`,
-since the compact view clears the maximized tabset.
+it. Maximize and the projection compose: pass `view.layout` to `Layout.Rows`,
+not `store.model.layout`, and pass `view` as the root's `model`, since the
+compact view clears the maximized tabset.
 
 ## Guard rails
 

@@ -43,7 +43,8 @@ export { Dashboard };
 ```
 
 Clicking the `[data-dashfoo="tabset-float"]` control floats the whole tabset into an
-overlay positioned over where it was docked. Drag the **title bar** to move it
+overlay positioned over where it was docked, offset by 16px and capped at the
+default float size of 480×360 (`DEFAULT_FLOAT_GEOMETRY` from `@dashfoo/core`). Drag the **title bar** to move it
 anywhere on the page, drag the **edge/corner handles** to resize, **minimize** it to
 a small chip (and click the chip to restore), and **Dock back** to return it to the
 layout. You can also drag tabs **into and out of** a float: it is a full
@@ -69,11 +70,18 @@ The reducer actions are `floatTab`, `floatTabset`, `dockFloat`, `moveFloat` (per
 a float's rect as you drag or resize it, one undo step per gesture),
 `setFloatMinimized`, and `renameFloat`. `geometry` is in viewport CSS pixels (the
 overlay is fixed), so a float can be dragged anywhere on the page. A float carries
-its own `name` ("Panel", "Panel 1", … assigned when it is floated), shown as the
-window title, never the active tab's name. `normalize` heals each float's own
+its own `name` ("Panel", "Panel 1", … assigned when it is floated, from
+`DEFAULT_FLOAT_NAME`), shown as the window title, never the active tab's name.
+A `floatTab` or `floatTabset` without `geometry` gets `DEFAULT_FLOAT_GEOMETRY`
+(`{ left: 80, top: 80, width: 480, height: 360 }`). `normalize` heals each float's own
 layout and drops a float the moment its last panel leaves, the same way it removes an
 empty tabset. Because a float owns a full `RowNode`, a floated panel is a real
 container: it can hold one tab or several.
+
+`dockFloat` without a `targetId` docks against the active main tabset, else the
+first one, and into an empty main layout the float's layout becomes the layout.
+With a `targetId`, that id must name a tabset in the main layout; anything else
+is a no-op.
 
 `floatTab` and `floatTabset` generate a fresh float ID unless given `floatId`.
 A supplied ID already used by any node or float is rejected before detaching
@@ -97,9 +105,11 @@ geometry visible at that time.
 - **Named, renamable title.** Each float is titled with its own unique name
   ("Panel", "Panel 1", …); double-click the title to rename it (`renameFloat`),
   which dedupes the new name against the other floats so two never collide.
-- **Minimize.** A title-bar control collapses the float to a small chip
-  (`setFloatMinimized`); tapping the chip (draggable itself) restores it to its
-  saved rect.
+- **Minimize.** A title-bar control collapses the float to a small chip at the
+  float's own position (`setFloatMinimized`); tapping the chip (draggable
+  itself) restores it to its saved rect. The chip is kept on screen at
+  `--dashfoo-chip-width` × `--dashfoo-chip-height`, the size the skin gives it
+  (see [theming](/theming#the-minimized-chip)).
 - **Dock back as a panel.** The "Dock back" control returns the float as its own
   panel (all its tabs, grouped) rather than flattening them into another tabset.
 - **Bring to front.** Clicking anywhere in a float (its body, a tab, or its

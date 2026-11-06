@@ -133,6 +133,12 @@ floating. `addNode` ignores a tab whose id is already in the layout and warns.
 node or float, including their source. Rejection warns and leaves the model
 and undo/redo history unchanged; omitting the ID generates a fresh one.
 
+`dockFloat` with a `targetId` needs a tabset in the main layout; any other id
+is a no-op. Without one it targets the active main tabset, else the first main
+tabset, and when the main layout has no tabsets the float's layout becomes the
+main layout. A `moveNode` that splits a one-tab tabset off its own tab is a
+no-op, and so is a `setMaximizedTabset` naming a tabset that lives in a float.
+
 When a tab leaves its strip (closed, moved, floated), the selection stays on the
 tab that was selected. If that tab is the one leaving, its right neighbour
 inherits the selection, else its left one. `fallbackSelectedIndex(count, removedIndex)`
@@ -198,18 +204,21 @@ Read-only lookups over a model, all exported:
 ```ts
 collectRoots(model): Array<RowNode>;            // main layout + each float's layout
 collectTabsets(model): Array<TabsetNode>;       // depth-first, across all roots
+collectTabsetsInRow(row): Array<TabsetNode>;    // depth-first, within one row
 getFirstTabset(model): TabsetNode | undefined;
 findTabset(model, tabsetId): TabsetNode | undefined;
 findTab(model, tabId): TabLocation | undefined; // searches tabsets
 findFloat(model, floatId): FloatNode | undefined;
 findRow(model, rowId): RowNode | undefined;
 findAttributedNode(model, id): AttributedNode | undefined; // row, tabset, or tab
-findTabsetParent(model, tabsetId): { index: number; parent: RowNode } | undefined;
+findTabsetParent(model, tabsetId): TabsetSlot | undefined;
 findDuplicateIds(model): Array<string>;         // ids used more than once
 ```
 
 `findTab` returns `{ container, index, tab }` so a caller knows where the tab
-lives (a tabset in some root). Lookups span every root, so a floated tab is as
+lives (a tabset in some root). `findTabsetParent` returns a `TabsetSlot`,
+`{ index, parent, tabset }`: the row holding the tabset, its index in that row,
+and the tabset itself. Lookups span every root, so a floated tab is as
 reachable as a docked one.
 
 ## Floating panels
@@ -223,7 +232,7 @@ self-heal like the main tree:
 import { reducer } from "@dashfoo/core";
 
 // Float the whole tabset "left" (the React layer supplies the in-app geometry;
-// omit it for a default rect).
+// omit it for DEFAULT_FLOAT_GEOMETRY).
 const floated = reducer(model, { type: "floatTabset", tabsetId: "left" });
 floated.floats; // [{ type: "float", id, layout: RowNode, geometry }]
 
@@ -235,6 +244,12 @@ const docked = reducer(floated, { type: "dockFloat", floatId: floated.floats[0].
 panel leaves. The `floatNode(layout, geometry, opts?)` builder constructs one,
 and `model(layout, { floats })` seeds them.
 
+A float made without a `geometry` gets `DEFAULT_FLOAT_GEOMETRY`
+(`{ left: 80, top: 80, width: 480, height: 360 }`). Every new float is named
+from `DEFAULT_FLOAT_NAME` (`"Panel"`, then `"Panel 1"`, `"Panel 2"`, …, skipping
+names other floats already use). `@dashfoo/react` reads both constants, so the
+default title and size each have one definition.
+
 ## Geometry
 
 Pure functions translate a pointer position into a drop intent and back into an
@@ -242,22 +257,22 @@ indicator rect. The @dnd-kit adapter in `@dashfoo/react` feeds them rects; you c
 call them directly for custom drag logic.
 
 ```ts
-resolveDockTarget(pointer, rect, opts?): DockLocation;
-dockZonePolygons(rect, opts?): Array<DockZone>;
+resolveDockTarget(pointer, rect): DockLocation;
+dockZonePolygons(rect): Array<DockZone>;
 zoneRect(rect, location): Rect;
 ```
 
 `resolveDockTarget` decides where a drag over a tabset should land: `"center"`
 when the pointer is in the interior, or `split-${edge}` when it is within an
-outer band of one of the four edges (default 22%; the closer edge wins in
-corners). It accepts `{ bandFraction }` to tune the band. `zoneRect` returns the
+outer band of one of the four edges (a fixed 22%; the closer edge wins in
+corners). `zoneRect` returns the
 region the dock indicator highlights for a `DockLocation`: the whole tabset for a
 `center` stack, the matching half for a split. `Point` and `Rect` are exported.
 
 `dockZonePolygons` enumerates the full hit-region partition behind
 `resolveDockTarget` as five polygons (`{ location, points }`): the inner center
 rect and four edge trapezoids whose seams run from each rect corner to the
-matching inner corner. The two functions share the band default, so a map
+matching inner corner. The two functions share the band, so a map
 painted from the polygons always agrees with the live hit-test; use it to
 visualize drop zones or to build custom drop indicators.
 
@@ -273,7 +288,8 @@ resolveDropIntent(subject, tabset, point, { splitDock }?): DropIntent | null;
 dropIndicator(subject, tabset, intent): DropIndicator;
 ```
 
-`subject` is the drag machine's `DragSubject`. `tabset` is a `MeasuredTabset`:
+`subject` is a `DragSubject`: what is being dragged (see the drag machine
+below). `tabset` is a `MeasuredTabset`:
 `{ id, rect, strip }`, where `strip` is `{ rect, tabs }` with `tabs` in strip
 order (`MeasuredTab`: `{ id, rect }`, each rect spanning the whole tab item), or
 `null` for a tabset without a strip.
@@ -290,8 +306,13 @@ stack drops carry no index.
 clamped inside the strip) for a `center` intent onto a strip, and
 `{ kind: "zone", rect }` (`zoneRect`) otherwise.
 
-Exports: `resolveDropIntent`, `dropIndicator`; types `MeasuredTabset`,
-`MeasuredStrip`, `MeasuredTab`, `DropIntentOptions`, `DropIndicator`.
+`@dashfoo/react` exports the DOM read behind its drag layer as `measureTabset`,
+so a custom drop overlay can build the same `MeasuredTabset` and match the
+library's indicator.
+
+Exports: `resolveDropIntent`, `dropIndicator`; types `DragSubject`,
+`DropIntent`, `MeasuredTabset`, `MeasuredStrip`, `MeasuredTab`,
+`DropIntentOptions`, `DropIndicator`.
 
 ## Snapping
 
@@ -403,10 +424,12 @@ and float layers and imports from external factories.
 ## Public exports
 
 `schema`: `dashfooSchema`, `rowNodeSchema`, `tabsetNodeSchema`, `tabNodeSchema`,
-`floatNodeSchema`, `geometrySchema`, `dimensionSchema`, `snapSchema`, `edgeSchema`,
+`floatNodeSchema`, `geometrySchema`, `dimensionSchema`, `snapSchema`,
 `unitSchema`, `orientationSchema`, `globalAttributesSchema`,
-`jsonValueSchema`; types `Dashfoo`, `DashfooInput`, `RowNodeInput`, `RowNode`, `TabsetNode`, `TabNode`,
-`FloatNode`, `Geometry`, `Dimension`, `SnapConfig`, `Edge`, `Unit`, `Orientation`,
+`jsonValueSchema`; constants `DEFAULT_WEIGHT` (`1`), `DEFAULT_FLOAT_NAME`
+(`"Panel"`), `DEFAULT_FLOAT_GEOMETRY` (`{ height: 360, left: 80, top: 80, width: 480 }`);
+types `Dashfoo`, `DashfooInput`, `RowNodeInput`, `RowNode`, `TabsetNode`, `TabNode`,
+`FloatNode`, `Geometry`, `Dimension`, `SnapConfig`, `Unit`, `Orientation`,
 `GlobalAttributes`, `Node`, `Json`.
 
 `builders`: `model`, `row`, `tabset`, `tab`, `floatNode`; option types
@@ -414,18 +437,22 @@ and float layers and imports from external factories.
 
 `ids`: `createNodeId`, `createTabId`.
 
-`actions`: `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`; types
-`Action`, `DockLocation`, `DropIntent`, `MutableNodeAttrs`.
+`actions`: `actionSchema`, `mutableNodeAttrsSchema`; types `Action`,
+`MutableNodeAttrs`.
 
 `reducer`: `reducer`. `docking`: `fallbackSelectedIndex`. `invariants`: `normalize`.
 
 `tree`: `collectRoots`, `collectTabsets`, `collectTabsetsInRow`, `getFirstTabset`,
 `findTabset`, `findTab`, `findFloat`, `findRow`, `findAttributedNode`,
 `findTabsetParent`, `findDuplicateIds`;
-types `AttributedNode`, `TabLocation`.
+types `AttributedNode`, `TabLocation`, `TabsetSlot`.
 
-`geometry`: `resolveDockTarget`, `dockZonePolygons`, `zoneRect`; types
-`DockZone`, `BandOptions`, `Point`, `Rect`.
+`dock`: `dockLocationSchema`; `resolveDockTarget`, `dockZonePolygons`,
+`zoneRect`; `resolveDropIntent`, `dropIndicator`; `dragDockMachine`,
+`dropAction`; types `DockLocation`, `DockZone`, `Point`, `Rect`,
+`DragSubject`, `DropIntent`, `DropIntentOptions`, `DropIndicator`,
+`MeasuredTabset`, `MeasuredStrip`, `MeasuredTab`, `DragState`,
+`DropResolution`.
 
 `snap`: `resolveSnapGrid`, `decideSnap`, `settleSnap`, `snapEnabled`;
 types `SnapGrid`, `SnapDecision`.
@@ -434,9 +461,6 @@ types `SnapGrid`, `SnapDecision`.
 `canUndoHistory`, `canRedoHistory`, `HISTORY_LIMIT`; type `History`.
 
 `serialize`: `toJSON`, `fromJSON`, `parseModel`.
-
-`machines`: `dragDockMachine`, `dropAction`; types `DragState`, `DragSubject`,
-`DropResolution`.
 
 `warn`: `warn`, `warnOnce`. Both prefix the message with `[dashfoo]` and write it
 with `console.warn`; `@dashfoo/react` reports its degraded paths through them.

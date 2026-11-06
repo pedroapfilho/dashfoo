@@ -88,7 +88,6 @@ like the built-in one.
 
 ```tsx
 import type { Dashfoo, TabNode } from "@dashfoo/core";
-import { findTabset } from "@dashfoo/core";
 import { Layout, useDashfooStore, useResponsiveLayout } from "@dashfoo/react";
 import type { ReactNode } from "react";
 
@@ -98,20 +97,17 @@ const HandBuilt = ({ defaultModel }: { defaultModel: Dashfoo }): ReactNode => {
   const store = useDashfooStore({ defaultModel });
   const responsive = useResponsiveLayout(store.model, { maxWidth: 720 });
   const view = responsive.model;
-  const maximized =
-    view.maximizedTabsetId === undefined ? undefined : findTabset(view, view.maximizedTabsetId);
 
   return (
     <Layout.Root
+      {...responsive.locks}
       dispatch={store.dispatch}
-      maximizable={responsive.maximizable}
       model={view}
       renderers={{ tab: renderPanel }}
-      restructurable={responsive.restructurable}
       rootRef={responsive.rootRef}
     >
       <Layout.DragLayer>
-        {maximized ? <Layout.Tabset node={maximized} /> : <Layout.Rows node={view.layout} />}
+        <Layout.Rows node={view.layout} />
       </Layout.DragLayer>
     </Layout.Root>
   );
@@ -124,13 +120,20 @@ export { HandBuilt };
 `{ maxWidth: number; orientation?: Orientation }` as the prop, or `undefined` to
 never compact. It returns:
 
-| Field            | Type                                     | Description                                                                                              |
-| ---------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `model`          | `Dashfoo`                                | The compact projection at or below `maxWidth`, otherwise the model you passed, unchanged.                |
-| `isCompact`      | `boolean`                                | Whether the container is at or below `maxWidth`.                                                         |
-| `restructurable` | `boolean`                                | `false` when compact. On `Layout.Root` it switches off tab and tabset drag, split resizing and floating. |
-| `maximizable`    | `boolean`                                | `false` when compact: the projection clears the maximized tabset, so maximizing would show nothing.      |
-| `rootRef`        | `(element: HTMLElement \| null) => void` | Put it on `Layout.Root` so the hook measures the layout's own container.                                 |
+| Field       | Type                                                     | Description                                                                               |
+| ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `model`     | `Dashfoo`                                                | The compact projection at or below `maxWidth`, otherwise the model you passed, unchanged. |
+| `isCompact` | `boolean`                                                | Whether the container is at or below `maxWidth`.                                          |
+| `locks`     | `Pick<LayoutOptions, "maximizable" \| "restructurable">` | `{}` when wide, `{ maximizable: false, restructurable: false }` when compact. See below.  |
+| `rootRef`   | `(element: HTMLElement \| null) => void`                 | Put it on `Layout.Root` so the hook measures the layout's own container.                  |
+
+Spread `locks` onto `Layout.Root` after any capability props you set, so
+compact mode overrides them. `restructurable: false` switches off tab and
+tabset drag, split resizing and floating. `maximizable: false` hides maximize:
+the projection clears the maximized tabset, so maximizing would show nothing.
+Wide, `locks` is empty and your own props apply. `Layout.Rows` handles
+maximize itself: while a tabset in `view.layout` is maximized it renders only
+that tabset, so the example needs no maximize branch.
 
 The width starts at infinity, so the server render and the first client render
 agree on the wide layout before the container is measured. The projection is

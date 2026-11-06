@@ -251,3 +251,30 @@ describe("float id reservation", () => {
     },
   );
 });
+
+describe("drops that change nothing", () => {
+  test("splitting a one-tab tabset off its own tab is a no-op", () => {
+    const model = createHistory(dockingModel()).present;
+
+    for (const location of ["split-left", "split-right", "split-top", "split-bottom"] as const) {
+      expect(reducer(model, { location, sourceId: "t3", targetId: "ts2", type: "moveNode" })).toBe(
+        model,
+      );
+    }
+  });
+
+  test("maximizing a tabset that lives in a float keeps the current maximize", () => {
+    const model = reducer(createHistory(dockingModel()).present, {
+      tabsetId: "ts1",
+      type: "setMaximizedTabset",
+    });
+
+    expect(reducer(model, { tabsetId: "fts", type: "setMaximizedTabset" })).toBe(model);
+  });
+
+  test("docking a float onto a tabset that is not in the main layout is a no-op", () => {
+    const model = createHistory(dockingModel()).present;
+
+    expect(reducer(model, { floatId: "f1", targetId: "missing", type: "dockFloat" })).toBe(model);
+  });
+});

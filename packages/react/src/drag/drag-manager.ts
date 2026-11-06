@@ -1,26 +1,10 @@
 import type { Draggable } from "@dnd-kit/dom";
 import { Accessibility, DragDropManager, Feedback, PointerSensor } from "@dnd-kit/dom";
 
-const INTERACTIVE_SELECTOR = `
-  input:not([disabled]),
-  select:not([disabled]),
-  textarea:not([disabled]),
-  button:not([disabled]),
-  a[href],
-  [contenteditable]:not([contenteditable="false"])
-`;
+import { startsOnControl } from "../lib/interactive";
 
-const preventActivation = (event: PointerEvent, source: Draggable): boolean => {
-  const { target } = event;
-
-  if (!(target instanceof Element)) {
-    return false;
-  }
-
-  const interactive = target.closest(INTERACTIVE_SELECTOR);
-
-  return interactive !== null && interactive !== source.element;
-};
+const preventActivation = (event: PointerEvent, source: Draggable): boolean =>
+  startsOnControl(event.target, source.element);
 
 type DashfooDragManager = DragDropManager;
 

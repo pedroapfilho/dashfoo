@@ -1,16 +1,9 @@
 import { z } from "zod";
 
+import { dockLocationSchema } from "../model/dock-location";
 import { geometrySchema, globalAttributesSchema, tabNodeSchema } from "../model/schema";
 
 import { mutableNodeAttrsSchema } from "./node-attrs";
-
-const dockLocationSchema = z.enum([
-  "center",
-  "split-bottom",
-  "split-left",
-  "split-right",
-  "split-top",
-]);
 
 const splitWeightsSchema = z.array(z.number());
 
@@ -53,7 +46,7 @@ const actionSchema = z.discriminatedUnion("type", [
     nodeId: z.string(),
     type: z.literal("updateNodeAttributes"),
   }),
-  z.object({ attrs: globalAttributesSchema.partial(), type: z.literal("updateGlobalAttributes") }),
+  z.object({ attrs: globalAttributesSchema, type: z.literal("updateGlobalAttributes") }),
 
   z.object({
     floatId: z.string().optional(),
@@ -95,14 +88,8 @@ const actionSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-type DockLocation = z.infer<typeof dockLocationSchema>;
-
-type MutableNodeAttrs = z.infer<typeof mutableNodeAttrsSchema>;
-
 type Action = z.infer<typeof actionSchema>;
 
-type DropIntent = { index?: number; location: DockLocation; targetId: string };
+export { actionSchema };
 
-export { actionSchema, dockLocationSchema };
-
-export type { Action, DockLocation, DropIntent, MutableNodeAttrs };
+export type { Action };

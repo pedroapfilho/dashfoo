@@ -42,7 +42,7 @@ It is part of the **uncontrolled** half of the props union (you pass `defaultMod
 where you pass `model` + `onModelChange` and already own the state, skip `persist`
 and save the model yourself in `onModelChange`.
 
-Everything below maps to [`packages/react/src/hooks/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/hooks/persistence.ts)
+Everything below maps to [`packages/react/src/store/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/store/persistence.ts)
 and the validation pipeline in [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts).
 The `persist` prop is the `persist` option of `useDashfooStore`, so hand-built
 layouts get the same behaviour from the hook (see
@@ -68,16 +68,20 @@ adapter that returns promises. Two adapters ship from `@dashfoo/react`.
 
 ### `localStorageAdapter` (default)
 
-The default, and SSR-safe by construction. Every method guards
-`typeof window === "undefined"` and wraps the call in `try/catch`:
+The default. Each method calls `window.localStorage` directly and throws
+wherever `localStorage` throws. The persistence loop catches errors from any
+adapter, this one included:
 
-- On the server, `getItem` returns `null` (so you load `defaultModel`) and
-  writes are no-ops.
-- In the browser, a read that throws (private mode, blocked storage)
-  warns and returns `null` rather than crashing.
-- A write that throws (quota exceeded, private mode) is not swallowed
-  silently: it logs `console.warn("[dashfoo] failed to persist layout", …)`.
-  The layout keeps working; only persistence is degraded.
+- Storage is only touched after mount (the restore runs in an effect, saves run
+  on a timer, page hide or unmount), so the server render never reaches it.
+- A read that throws (private mode, blocked storage) warns
+  `[dashfoo] failed to load persisted layout` and the layout keeps
+  `defaultModel`.
+- A write that throws (quota exceeded, private mode) warns
+  `[dashfoo] failed to persist layout`. The layout keeps working; only
+  persistence is degraded.
+
+A custom adapter can throw the same way; it does not need its own `try/catch`.
 
 ### `memoryStorageAdapter` for SSR and tests
 
@@ -243,11 +247,11 @@ Points worth copying:
 
 ## SSR safety
 
-The default adapter is already SSR-safe, so persistence does not crash during a
-server render: `getItem` returns `null`, you load `defaultModel`, and the
-server and the first client render agree. The browser then loads the saved
-model after mount, applies it without an undo entry, and does not save the seed
-over the restored data. Custom adapter read, write, and remove failures also
+Persistence does not crash during a server render because it never reads
+storage while rendering: the server and the first client render both show
+`defaultModel` and agree. The browser then loads the saved model after mount,
+applies it without an undo entry, and does not save the seed over the restored
+data. Read, write, and remove failures from any adapter, the default included,
 warn without taking down the layout.
 
 If you want each request to start from an isolated store (no shared module
@@ -290,7 +294,7 @@ React `key` to load another arrangement.
 
 ## See also
 
-- [`packages/react/src/hooks/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/hooks/persistence.ts)
+- [`packages/react/src/store/persistence.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/store/persistence.ts)
   for the persistence loop, both adapters, and the `StorageAdapter` type.
 - [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts)
   for `fromJSON` / `toJSON` and `parseModel`.

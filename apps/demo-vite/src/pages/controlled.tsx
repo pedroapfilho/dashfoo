@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button, DemoStage } from "../components/demo-stage";
 import { PlaceholderPanel } from "../components/placeholder-panel";
-import { playgroundModel } from "../models";
+import { COMPACT, playgroundModel } from "../models";
 import type { WidgetDefinition } from "../widgets";
 import { addTargetId, addWidget, closeActiveTab, WIDGETS } from "../widgets";
 
@@ -111,7 +111,7 @@ const ImperativeControlPage = (): ReactNode => {
             factory={PlaceholderPanel}
             onModelChange={handleModelChange}
             ref={layout}
-            responsive={{ maxWidth: 720 }}
+            responsive={COMPACT}
           />
         </div>
         <pre className="border-border-default text-foreground-muted dark:border-border-inverse-faint dark:bg-surface-inverse dark:text-foreground-disabled hidden w-80 shrink-0 overflow-auto rounded-lg border bg-white p-3 text-xs leading-relaxed xl:block">

@@ -28,7 +28,7 @@ const DemoStage = ({
   description,
   title,
 }: {
-  actions?: ReactNode;
+  actions: ReactNode;
   children: ReactNode;
   description: ReactNode;
   title: string;
@@ -43,9 +43,7 @@ const DemoStage = ({
           {description}
         </p>
       </div>
-      {actions !== undefined && actions !== null ? (
-        <div className="flex shrink-0 items-center gap-2">{actions}</div>
-      ) : null}
+      <div className="flex shrink-0 items-center gap-2">{actions}</div>
     </header>
     <div className="min-h-0 flex-1 px-4 pb-4 sm:px-6 sm:pb-6">{children}</div>
   </div>

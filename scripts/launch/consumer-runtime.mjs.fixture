@@ -73,6 +73,7 @@ const view = h(
     factory: (node) => h("p", null, node.name),
     persist: { key: "consumer", storage },
     ref: handle,
+    responsive: { maxWidth: 1 },
   }),
 );
 const html = renderToString(view);

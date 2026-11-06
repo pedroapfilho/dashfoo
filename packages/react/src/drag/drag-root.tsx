@@ -52,10 +52,10 @@ const useDragMonitor = (
 
       const found = layerTarget();
 
-      const intent =
+      const resolved =
         found === null
           ? null
-          : found.layer.resolveIntent(
+          : found.layer.resolveDrop(
               drag.subject,
               found.tabsetId,
               found.element,
@@ -63,7 +63,8 @@ const useDragMonitor = (
             );
 
       actorRef.send({
-        drop: intent === null || found === null ? null : { intent, scope: found.layer.layerId },
+        drop:
+          resolved === null || found === null ? null : { ...resolved, scope: found.layer.layerId },
         type: "OVER",
       });
     };

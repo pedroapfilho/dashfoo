@@ -2,12 +2,20 @@ import { assertNever } from "../lib/assert-never";
 import { normalize } from "../model/invariants";
 import type { Dashfoo } from "../model/schema";
 import type { AttributedNode } from "../model/tree";
-import { findAttributedNode, findFloat, findRow, findTab, findTabset } from "../model/tree";
+import {
+  collectTabsetsInRow,
+  findAttributedNode,
+  findFloat,
+  findRow,
+  findTab,
+  findTabset,
+} from "../model/tree";
 
-import type { Action, MutableNodeAttrs } from "./actions";
+import type { Action } from "./actions";
 import { dock, removeTab, removeTabset } from "./docking";
 import { uniqueFloatName } from "./floats";
 import { jsonEqual } from "./json-equal";
+import type { MutableNodeAttrs } from "./node-attrs";
 import {
   mutableRowAttrsSchema,
   mutableTabAttrsSchema,
@@ -140,7 +148,9 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
     case "setMaximizedTabset": {
       if (action.tabsetId === null) {
         draft.maximizedTabsetId = undefined;
-      } else if (findTabset(draft, action.tabsetId)) {
+      } else if (
+        collectTabsetsInRow(draft.layout).some((tabset) => tabset.id === action.tabsetId)
+      ) {
         draft.maximizedTabsetId = action.tabsetId;
       }
 

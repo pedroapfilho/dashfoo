@@ -1,5 +1,6 @@
 import type { Dashfoo } from "@dashfoo/core";
 import { model, row, tab, tabset } from "@dashfoo/core";
+import type { ResponsiveOptions } from "@dashfoo/react";
 
 const overviewModel = (): Dashfoo =>
   model(
@@ -65,4 +66,7 @@ const playgroundModel = (): Dashfoo =>
     { activeTabsetId: "left" },
   );
 
-export { dockingModel, overviewModel, playgroundModel };
+/** Every demo page stacks at the same width. */
+const COMPACT: ResponsiveOptions = { maxWidth: 720 };
+
+export { COMPACT, dockingModel, overviewModel, playgroundModel };

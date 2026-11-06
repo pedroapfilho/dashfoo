@@ -1,12 +1,12 @@
 "use client";
 
-import type { DragSubject, DropIntent, TabNode } from "@dashfoo/core";
+import type { DragSubject, DropIndicator, DropIntent, TabNode } from "@dashfoo/core";
 import { warnOnce } from "@dashfoo/core";
 import { Draggable, Droppable } from "@dnd-kit/dom";
 import { useSelector } from "@xstate/react";
 import { useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";
 
-import { useLayout } from "../hooks/layout-store";
+import { useLayout } from "../layout/layout-store";
 
 import { DragContext } from "./drag-context";
 import type { DashfooDragManager } from "./drag-manager";
@@ -31,25 +31,45 @@ const useLayerManager = (): DashfooDragManager | undefined => {
   return context?.layerId === null ? undefined : context?.manager;
 };
 
-type DraggableHandle = {
-  draggableRef: { current: Draggable | null };
-  elementRef: { current: Element | null };
+type DndEntity = { destroy: () => void; element?: Element };
+
+type DndEntityBinding<E extends DndEntity> = {
+  entityRef: { current: E | null };
   ref: (element: Element | null) => void;
 };
 
-const useDraggableHandle = (): DraggableHandle => {
+/**
+ * Binds a dnd-kit entity to whatever element the returned ref receives. The
+ * entity lives as long as `create` keeps its identity; `null` means none.
+ */
+const useDndEntity = <E extends DndEntity>(create: (() => E) | null): DndEntityBinding<E> => {
   const elementRef = useRef<Element | null>(null);
-  const draggableRef = useRef<Draggable | null>(null);
+  const entityRef = useRef<E | null>(null);
 
   const ref = useCallback((element: Element | null): void => {
     elementRef.current = element;
 
-    if (draggableRef.current) {
-      draggableRef.current.element = element ?? undefined;
+    if (entityRef.current) {
+      entityRef.current.element = element ?? undefined;
     }
   }, []);
 
-  return { draggableRef, elementRef, ref };
+  useEffect(() => {
+    if (!create) {
+      return undefined;
+    }
+
+    const entity = create();
+    entity.element = elementRef.current ?? undefined;
+    entityRef.current = entity;
+
+    return () => {
+      entity.destroy();
+      entityRef.current = null;
+    };
+  }, [create]);
+
+  return { entityRef, ref };
 };
 
 type DraggableDescriptor = { data: DashfooDragData; id: string };
@@ -60,31 +80,25 @@ const useDraggableEntity = (
   disabled: boolean,
   label: string,
 ): { ref: (element: Element | null) => void } => {
-  const { draggableRef, elementRef, ref } = useDraggableHandle();
   const { data, id } = descriptor;
 
-  useEffect(() => {
-    if (!manager || disabled) {
-      return undefined;
-    }
+  const create = useMemo(
+    () =>
+      manager && !disabled
+        ? () => new Draggable({ data: { ...data, label: "" }, id }, manager)
+        : null,
+    [data, disabled, id, manager],
+  );
 
-    const draggable = new Draggable({ data: { ...data, label: "" }, id }, manager);
-    draggable.element = elementRef.current ?? undefined;
-    draggableRef.current = draggable;
-
-    return () => {
-      draggable.destroy();
-      draggableRef.current = null;
-    };
-  }, [data, disabled, draggableRef, elementRef, id, manager]);
+  const { entityRef, ref } = useDndEntity(create);
 
   useEffect(() => {
-    const draggable = draggableRef.current;
+    const draggable = entityRef.current;
 
     if (draggable) {
       draggable.data = { ...data, label };
     }
-  }, [data, draggableRef, label]);
+  }, [create, data, entityRef, label]);
 
   return useMemo(() => ({ ref }), [ref]);
 };
@@ -111,44 +125,28 @@ const useNodeDraggable = (
   );
 };
 
-const useTabsetDroppable = (tabsetId: string): { ref: (element: HTMLElement | null) => void } => {
+const useTabsetDroppable = (tabsetId: string): { ref: (element: Element | null) => void } => {
   const context = useContext(DragContext);
-  const elementRef = useRef<HTMLElement | null>(null);
-  const droppableRef = useRef<Droppable | null>(null);
-
-  const ref = useCallback((element: HTMLElement | null): void => {
-    elementRef.current = element;
-
-    if (droppableRef.current) {
-      droppableRef.current.element = element ?? undefined;
-    }
-  }, []);
-
   const layerId = context?.layerId ?? null;
   const manager = context?.manager;
 
-  useEffect(() => {
-    if (!manager || layerId === null) {
-      return undefined;
-    }
+  const create = useMemo(
+    () =>
+      manager && layerId !== null
+        ? () =>
+            new Droppable(
+              {
+                collisionDetector: topmostPointerIntersection,
+                data: { layerId, tabsetId },
+                id: tabsetDroppableId(layerId, tabsetId),
+              },
+              manager,
+            )
+        : null,
+    [layerId, manager, tabsetId],
+  );
 
-    const droppable = new Droppable(
-      {
-        collisionDetector: topmostPointerIntersection,
-        data: { layerId, tabsetId, type: "tabset" },
-        id: tabsetDroppableId(layerId, tabsetId),
-      },
-      manager,
-    );
-
-    droppable.element = elementRef.current ?? undefined;
-    droppableRef.current = droppable;
-
-    return () => {
-      droppable.destroy();
-      droppableRef.current = null;
-    };
-  }, [layerId, manager, tabsetId]);
+  const { ref } = useDndEntity(create);
 
   return useMemo(() => ({ ref }), [ref]);
 };
@@ -209,6 +207,22 @@ const useDragSubject = (): DragSubject | null => {
   });
 };
 
+/** The id of the node of `kind` this layout's document is dragging, or `null`. */
+const useDraggedNodeId = (kind: "tab" | "tabset"): string | null => {
+  const actorRef = useContext(DragContext)?.actorRef;
+  const documentId = useLayout((state) => state.documentId);
+
+  return useSelector(actorRef, (snapshot) => {
+    const drag = snapshot?.context.drag;
+
+    return drag?.kind === "dragging" &&
+      drag.subject.kind === kind &&
+      drag.subject.documentId === documentId
+      ? drag.subject.id
+      : null;
+  });
+};
+
 const useDropIntent = (): DropIntent | null => {
   const actorRef = useContext(DragContext)?.actorRef;
 
@@ -223,12 +237,24 @@ const useDropIntent = (): DropIntent | null => {
   );
 };
 
+/** The insertion line or split zone the built-in indicator draws, in viewport pixels. */
+const useDropIndicator = (): DropIndicator | null => {
+  const actorRef = useContext(DragContext)?.actorRef;
+
+  return useSelector(actorRef, (snapshot) => {
+    const drag = snapshot?.context.drag;
+
+    return drag?.kind === "dragging" ? (drag.drop?.indicator ?? null) : null;
+  });
+};
+
 export type { ExternalTabSourceOptions };
 
 export {
   sameDropIntent,
-  tabsetDroppableId,
+  useDraggedNodeId,
   useDragSubject,
+  useDropIndicator,
   useDropIntent,
   useExternalTabSource,
   useNodeDraggable,

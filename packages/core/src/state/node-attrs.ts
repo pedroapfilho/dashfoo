@@ -1,12 +1,6 @@
 import { z } from "zod";
 
-import {
-  dimensionSchema,
-  orientationSchema,
-  snapSchema,
-  tabNodeSchema,
-  tabsetNodeSchema,
-} from "../model/schema";
+import { rowNodeSchema, tabNodeSchema, tabsetNodeSchema } from "../model/schema";
 
 const mutableTabAttrsSchema = tabNodeSchema
   .pick({
@@ -30,14 +24,14 @@ const mutableTabsetAttrsSchema = tabsetNodeSchema
   .extend({ weight: z.number() })
   .partial();
 
-const mutableRowAttrsSchema = z
-  .object({
-    max: dimensionSchema.optional(),
-    min: dimensionSchema.optional(),
-    orientation: orientationSchema,
-    snap: snapSchema.optional(),
-    weight: z.number(),
+const mutableRowAttrsSchema = rowNodeSchema
+  .pick({
+    max: true,
+    min: true,
+    orientation: true,
+    snap: true,
   })
+  .extend({ weight: z.number() })
   .partial();
 
 /**
@@ -48,9 +42,13 @@ const mutableNodeAttrsSchema = mutableTabAttrsSchema
   .extend(mutableTabsetAttrsSchema.shape)
   .extend(mutableRowAttrsSchema.shape);
 
+type MutableNodeAttrs = z.infer<typeof mutableNodeAttrsSchema>;
+
 export {
   mutableNodeAttrsSchema,
   mutableRowAttrsSchema,
   mutableTabAttrsSchema,
   mutableTabsetAttrsSchema,
 };
+
+export type { MutableNodeAttrs };
