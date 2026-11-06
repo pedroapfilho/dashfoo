@@ -5,9 +5,9 @@ import type { ReactNode } from "react";
 import { useContext } from "react";
 import { assert, beforeEach, describe, expect, test } from "vitest";
 
-import { Layout } from "../components/layout";
-import { useLayout } from "../hooks/layout-store";
-import { useDashfooStore } from "../hooks/store";
+import { Layout } from "../layout/layout";
+import { useLayout } from "../layout/layout-store";
+import { useDashfooStore } from "../store/store";
 
 import type { DragContextValue } from "./drag-context";
 import { DragContext } from "./drag-context";
@@ -83,7 +83,14 @@ const commitTo = (target: DocumentSnapshot, subject: DragSubject): void => {
   assert(scope !== null);
   act(() => {
     actor.send({ subject, type: "START" });
-    actor.send({ drop: { intent: { location: "center", targetId: "ts2" }, scope }, type: "OVER" });
+    actor.send({
+      drop: {
+        indicator: { kind: "zone", rect: { height: 1, width: 1, x: 0, y: 0 } },
+        intent: { location: "center", targetId: "ts2" },
+        scope,
+      },
+      type: "OVER",
+    });
     actor.send({ type: "DROP" });
   });
 };

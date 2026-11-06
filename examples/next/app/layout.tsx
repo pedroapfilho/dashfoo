@@ -9,4 +9,5 @@ const RootLayout = ({ children }: { children: ReactNode }): ReactNode => (
     <body>{children}</body>
   </html>
 );
+
 export default RootLayout;

@@ -1,25 +1,12 @@
 "use client";
 
 import type { Rect } from "@dashfoo/core";
-import { dropIndicator } from "@dashfoo/core";
 import { useSelector } from "@xstate/react";
 import type { ReactNode } from "react";
 
-import type { DragContextValue } from "./drag-context";
-import { tabsetDroppableId } from "./drag-hooks";
-import { measureTabset } from "./measure-tabset";
+import type { DragActor } from "./drag-context";
 
-const FLOAT_Z_INDEX = 9999;
-
-const DockZone = ({
-  insertion,
-  rect,
-  zIndex,
-}: {
-  insertion: boolean;
-  rect: Rect;
-  zIndex: number | "auto";
-}): ReactNode => (
+const DockZone = ({ insertion, rect }: { insertion: boolean; rect: Rect }): ReactNode => (
   <div
     data-dashfoo="dock-indicator"
     data-insertion={insertion || undefined}
@@ -28,44 +15,27 @@ const DockZone = ({
       "--dashfoo-dock-left": `${rect.x}px`,
       "--dashfoo-dock-top": `${rect.y}px`,
       "--dashfoo-dock-width": `${rect.width}px`,
-      "--dashfoo-dock-z": zIndex,
     }}
   />
 );
 
 /** Rendered by each layer, inside its own DOM, for the drops that layer resolved. */
 const DockIndicator = ({
-  context: { actorRef, manager },
+  actorRef,
   layerId,
 }: {
-  context: DragContextValue;
+  actorRef: DragActor;
   layerId: string;
 }): ReactNode => {
-  const drag = useSelector(actorRef, (snapshot) => snapshot.context.drag);
+  const indicator = useSelector(actorRef, (snapshot) => {
+    const { drag } = snapshot.context;
 
-  if (drag.kind !== "dragging" || drag.drop === null || drag.drop.scope !== layerId) {
-    return null;
-  }
+    return drag.kind === "dragging" && drag.drop?.scope === layerId ? drag.drop.indicator : null;
+  });
 
-  const { intent } = drag.drop;
-
-  const element = manager.registry.droppables.get(
-    tabsetDroppableId(layerId, intent.targetId),
-  )?.element;
-
-  if (!(element instanceof HTMLElement)) {
-    return null;
-  }
-
-  const { kind, rect } = dropIndicator(
-    drag.subject,
-    measureTabset(intent.targetId, element),
-    intent,
+  return indicator === null ? null : (
+    <DockZone insertion={indicator.kind === "insertion"} rect={indicator.rect} />
   );
-
-  const zIndex = element.closest('[data-dashfoo="float"]') ? FLOAT_Z_INDEX : "auto";
-
-  return <DockZone insertion={kind === "insertion"} rect={rect} zIndex={zIndex} />;
 };
 
 export { DockIndicator };

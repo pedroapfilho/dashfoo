@@ -68,12 +68,5 @@ export default defineConfig({
       files: ["packages/react/src/drag/**"],
       rules: { "no-restricted-imports": "off" },
     },
-
-    {
-      files: ["packages/react/src/hooks/responsive.ts"],
-      rules: {
-        "react-doctor/effect-needs-cleanup": "off",
-      },
-    },
   ],
 });

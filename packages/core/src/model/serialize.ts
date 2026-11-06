@@ -2,7 +2,7 @@ import { warn } from "../lib/warn";
 
 import { normalize } from "./invariants";
 import type { Dashfoo } from "./schema";
-import { dashfooSchema, jsonValueSchema } from "./schema";
+import { dashfooSchema } from "./schema";
 import { findDuplicateIds } from "./tree";
 
 // oxlint-disable-next-line anti-slop/no-unknown-parameters -- parseModel is the public I/O boundary that runs dashfooSchema on untrusted input
@@ -19,6 +19,10 @@ const parseModel = (value: unknown): Dashfoo => {
 
 const toJSON = (model: Dashfoo): string => JSON.stringify(model);
 
-const fromJSON = (json: string): Dashfoo => parseModel(jsonValueSchema.parse(JSON.parse(json)));
+const fromJSON = (json: string): Dashfoo => {
+  const value: unknown = JSON.parse(json);
+
+  return parseModel(value);
+};
 
 export { fromJSON, parseModel, toJSON };

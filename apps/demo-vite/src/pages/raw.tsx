@@ -1,5 +1,4 @@
 import type { TabsetNode } from "@dashfoo/core";
-import { findTabset } from "@dashfoo/core";
 import {
   Layout,
   Tabset,
@@ -14,7 +13,7 @@ import { useMemo } from "react";
 
 import { Button, DemoStage } from "../components/demo-stage";
 import { PlaceholderPanel } from "../components/placeholder-panel";
-import { dockingModel } from "../models";
+import { COMPACT, dockingModel } from "../models";
 
 const RawTabLabel = (): ReactNode => {
   const { index, tab } = useTab();
@@ -69,11 +68,8 @@ const RawTabset = ({ node }: { node: TabsetNode }): ReactNode => (
 const RawPage = (): ReactNode => {
   const defaultModel = useMemo(() => dockingModel(), []);
   const store = useDashfooStore({ defaultModel });
-  const responsive = useResponsiveLayout(store.model, { maxWidth: 720 });
+  const responsive = useResponsiveLayout(store.model, COMPACT);
   const view = responsive.model;
-
-  const maximized =
-    view.maximizedTabsetId === undefined ? undefined : findTabset(view, view.maximizedTabsetId);
 
   const handleUndo = (): void => {
     store.undo();
@@ -99,22 +95,14 @@ const RawPage = (): ReactNode => {
       title="Raw primitives"
     >
       <Layout.Root
+        {...responsive.locks}
         dispatch={store.dispatch}
-        maximizable={responsive.maximizable}
         model={view}
         renderers={{ tab: PlaceholderPanel }}
-        restructurable={responsive.restructurable}
         rootRef={responsive.rootRef}
       >
         <Layout.DragLayer>
-          {maximized ? (
-            <RawTabset node={maximized} />
-          ) : (
-            <Layout.Rows
-              node={view.layout}
-              renderTabset={(tabset) => <RawTabset node={tabset} />}
-            />
-          )}
+          <Layout.Rows node={view.layout} renderTabset={(tabset) => <RawTabset node={tabset} />} />
         </Layout.DragLayer>
       </Layout.Root>
     </DemoStage>

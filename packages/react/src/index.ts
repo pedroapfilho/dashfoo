@@ -1,12 +1,12 @@
 "use client";
 
-export * from "./components/dashfoo-layout";
+export * from "./layout/dashfoo-layout";
 
-export * from "./components/layout";
+export * from "./layout/layout";
 
-export * from "./components/panel";
+export * from "./ui/panel";
 
-export { Tabset } from "./components/tabset/tabset";
+export { Tabset } from "./tabset/tabset";
 
 export type {
   TabsetCloseButtonProps,
@@ -21,26 +21,33 @@ export type {
   TabsetTabStripProps,
   TabsetToolbarProps,
   TabsetTriggerProps,
-} from "./components/tabset/tabset";
+} from "./tabset/tabset";
 
-export { useTab, useTabset } from "./components/tabset/tabset-store";
+export { useTab, useTabset } from "./tabset/tabset-store";
 
-export type { TabContextValue, TabsetState } from "./components/tabset/tabset-store";
+export type { TabContextValue, TabsetState } from "./tabset/tabset-store";
 
-export { useLayout } from "./hooks/layout-store";
+export { useLayout } from "./layout/layout-store";
 
-export type { LayoutState } from "./hooks/layout-store";
+export type { LayoutState } from "./layout/layout-store";
 
-export { localStorageAdapter, memoryStorageAdapter } from "./hooks/persistence";
+export { localStorageAdapter, memoryStorageAdapter } from "./store/persistence";
 
-export type { PersistInput, StorageAdapter } from "./hooks/persistence";
+export type { PersistInput, StorageAdapter } from "./store/persistence";
 
-export * from "./hooks/responsive";
+export * from "./layout/responsive";
 
-export * from "./hooks/store";
+export * from "./store/store";
 
-export { useDragSubject, useDropIntent, useExternalTabSource } from "./drag/drag-hooks";
+export {
+  useDragSubject,
+  useDropIndicator,
+  useDropIntent,
+  useExternalTabSource,
+} from "./drag/drag-hooks";
 
 export type { ExternalTabSourceOptions } from "./drag/drag-hooks";
 
 export { DashfooDragProvider } from "./drag/drag-root";
+
+export { measureTabset } from "./tabset/measure-tabset";

@@ -1,17 +1,17 @@
 "use client";
 
 import type { DragSubject } from "@dashfoo/core";
-import { resolveDropIntent, warnOnce } from "@dashfoo/core";
+import { dropIndicator, resolveDropIntent, warnOnce } from "@dashfoo/core";
 import type { ReactNode } from "react";
 import { useContext, useEffect, useId, useMemo } from "react";
 
-import type { LayoutState, LayoutStore } from "../hooks/layout-store";
-import { LayoutStoreContext } from "../hooks/layout-store";
+import type { LayoutState, LayoutStore } from "../layout/layout-store";
+import { LayoutStoreContext } from "../layout/layout-store";
+import { measureTabset } from "../tabset/measure-tabset";
 
 import { DockIndicator } from "./dock-indicator";
 import type { DragContextValue, RegisteredLayer } from "./drag-context";
 import { DragContext } from "./drag-context";
-import { measureTabset } from "./measure-tabset";
 
 type DragLayerProps = { children: ReactNode };
 
@@ -27,14 +27,17 @@ const createLayer = (layerId: string, store: LayoutStore): RegisteredLayer => ({
     }
   },
   layerId,
-  resolveIntent: (subject, tabsetId, element, point) => {
+  resolveDrop: (subject, tabsetId, element, point) => {
     const state = store.getState();
 
-    return canDrop(state, subject)
-      ? resolveDropIntent(subject, measureTabset(tabsetId, element), point, {
-          splitDock: state.splitDock,
-        })
-      : null;
+    if (!canDrop(state, subject)) {
+      return null;
+    }
+
+    const tabset = measureTabset(tabsetId, element);
+    const intent = resolveDropIntent(subject, tabset, point, { splitDock: state.splitDock });
+
+    return intent && { indicator: dropIndicator(subject, tabset, intent), intent };
   },
 });
 
@@ -70,7 +73,7 @@ const DragLayer = ({ children }: DragLayerProps): ReactNode => {
   return (
     <DragContext.Provider value={layer}>
       {children}
-      <DockIndicator context={layer} layerId={layerId} />
+      <DockIndicator actorRef={layer.actorRef} layerId={layerId} />
     </DragContext.Provider>
   );
 };

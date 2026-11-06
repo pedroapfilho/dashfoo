@@ -6,7 +6,7 @@ import { useMemo, useRef } from "react";
 
 import { Button, DemoStage } from "../components/demo-stage";
 import { OverviewPanel } from "../components/overview-panel";
-import { overviewModel } from "../models";
+import { COMPACT, overviewModel } from "../models";
 
 const OverviewPage = (): ReactNode => {
   const defaultModel = useMemo(() => overviewModel(), []);
@@ -41,7 +41,7 @@ const OverviewPage = (): ReactNode => {
         keepMounted
         persist="dashfoo:demo:overview"
         ref={layout}
-        responsive={{ maxWidth: 720 }}
+        responsive={COMPACT}
       />
     </DemoStage>
   );

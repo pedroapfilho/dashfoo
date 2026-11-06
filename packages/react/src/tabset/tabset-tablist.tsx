@@ -1,0 +1,74 @@
+"use client";
+
+import type { ComponentProps, ReactNode } from "react";
+import { forwardRef, useCallback, useContext, useMemo } from "react";
+
+import { tabDomId } from "../lib/dom-ids";
+import { mergeRefs } from "../lib/merge-refs";
+
+import type { OverflowItem } from "./tabset-store";
+import { TabsetStoreContext, useTabset } from "./tabset-store";
+import { useTabOverflow } from "./use-tab-overflow";
+
+type TabsetTabStripProps = ComponentProps<"div">;
+
+const TabsetTabStrip = forwardRef<HTMLDivElement, TabsetTabStripProps>(
+  ({ style, ...props }, ref): ReactNode => (
+    <div {...props} data-dashfoo="tabstrip" ref={ref} style={style} />
+  ),
+);
+
+TabsetTabStrip.displayName = "TabsetTabStrip";
+
+type TabsetTablistProps = ComponentProps<"div">;
+
+const TabsetTablist = forwardRef<HTMLDivElement, TabsetTablistProps>(
+  ({ "aria-label": ariaLabel, children, style, ...props }, userRef): ReactNode => {
+    const store = useContext(TabsetStoreContext);
+    const node = useTabset((state) => state.node);
+    const documentId = useTabset((state) => state.documentId);
+    const registerTablist = useTabset((state) => state.registerTablist);
+    const tablistElement = useTabset((state) => state.tablistElement);
+    const editingTabId = useTabset((state) => state.editingTabId);
+
+    const reportOverflow = useCallback(
+      (overflowItems: Array<OverflowItem>): void => {
+        store?.setState({ overflowItems });
+      },
+      [store],
+    );
+
+    useTabOverflow(tablistElement, node.children, reportOverflow);
+
+    const refCallback = useMemo(
+      () => mergeRefs<HTMLDivElement>(registerTablist, userRef),
+      [registerTablist, userRef],
+    );
+
+    const ownedTabs = node.children
+      .flatMap((tab) => (tab.id === editingTabId ? [] : [tabDomId(documentId, node.id, tab.id)]))
+      .join(" ");
+
+    return (
+      <div {...props} data-dashfoo="tablist" ref={refCallback} style={style} tabIndex={-1}>
+        {/* Close buttons and rename inputs stay outside the tablist in the
+          accessibility tree. Ownership keeps custom tab chrome composable. */}
+        {ownedTabs ? (
+          <span
+            aria-label={ariaLabel ?? node.name ?? "Tabs"}
+            aria-orientation="horizontal"
+            aria-owns={ownedTabs}
+            role="tablist"
+          />
+        ) : null}
+        {children}
+      </div>
+    );
+  },
+);
+
+TabsetTablist.displayName = "TabsetTablist";
+
+export { TabsetTablist, TabsetTabStrip };
+
+export type { TabsetTablistProps, TabsetTabStripProps };

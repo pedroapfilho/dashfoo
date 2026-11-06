@@ -3,12 +3,12 @@ import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooDragProvider, DashfooLayout, useExternalTabSource } from "@dashfoo/react";
 import { Grid2x2, GripVertical, Plus, RotateCcw } from "lucide-react";
 import type { ChangeEvent, ReactNode } from "react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { Button, DemoStage } from "../components/demo-stage";
 import { DropZoneOverlay } from "../components/drop-zone-overlay";
 import { PlaceholderPanel } from "../components/placeholder-panel";
-import { dockingModel } from "../models";
+import { COMPACT, dockingModel } from "../models";
 import type { WidgetDefinition } from "../widgets";
 import { addWidget, createWidgetTab, WIDGETS } from "../widgets";
 
@@ -53,17 +53,16 @@ const WidgetCard = ({
   );
 };
 
-const SNAP_CONFIGS = new Map<string, SnapConfig | undefined>([
+const SNAP_OPTIONS = new Map<string, SnapConfig | undefined>([
+  ["Off", undefined],
+  ["Even", { divisions: "panels" }],
+  ["Thirds", { divisions: 3 }],
   ["25%", { step: 25 }],
   ["50%", { step: 50 }],
-  ["Even", { divisions: "panels" }],
-  ["Off", undefined],
-  ["Thirds", { divisions: 3 }],
 ]);
 
-const SNAP_KEYS = ["Off", "Even", "Thirds", "25%", "50%"] as const;
-
 const DockingPage = (): ReactNode => {
+  const defaultModel = useMemo(() => dockingModel(), []);
   const layout = useRef<DashfooHandle>(null);
   const layoutContainer = useRef<HTMLDivElement>(null);
   const [showDropZones, setShowDropZones] = useState(true);
@@ -96,7 +95,7 @@ const DockingPage = (): ReactNode => {
               onChange={handleSnapChange}
               value={snapKey}
             >
-              {SNAP_KEYS.map((key) => (
+              {[...SNAP_OPTIONS.keys()].map((key) => (
                 <option key={key} value={key}>
                   {key}
                 </option>
@@ -126,11 +125,11 @@ const DockingPage = (): ReactNode => {
           </aside>
           <div className="min-h-0 min-w-0 flex-1" ref={layoutContainer}>
             <DashfooLayout
-              defaultModel={dockingModel()}
+              defaultModel={defaultModel}
               factory={PlaceholderPanel}
               ref={layout}
-              responsive={{ maxWidth: 720 }}
-              snap={SNAP_CONFIGS.get(snapKey)}
+              responsive={COMPACT}
+              snap={SNAP_OPTIONS.get(snapKey)}
             />
           </div>
         </div>

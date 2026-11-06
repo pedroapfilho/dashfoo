@@ -79,6 +79,7 @@ a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-att
 | `renderTabLabel`          | `(tab: TabNode) => ReactNode`                                           | (none)  | Override the tab label (the accessible name stays `tab.name`).                                                                                                                                                                                                                                                                                                                                                                              |
 | `renderTabsetToolbar`     | `(tabset: TabsetNode) => ReactNode`                                     | (none)  | Inject custom controls into a tabset's toolbar.                                                                                                                                                                                                                                                                                                                                                                                             |
 | `editable`                | `boolean`                                                               | `true`  | `false` renders a static layout: no drag, close, rename, or splitter resize. Tab selection, maximize, and the ref API keep working.                                                                                                                                                                                                                                                                                                         |
+| `restructurable`          | `boolean`                                                               | `true`  | `false` freezes the tree: no tab or tabset drag, split resizing or floating. Tabs stay closable and renamable. Compact `responsive` mode forces it off.                                                                                                                                                                                                                                                                                     |
 | `closableTabs`            | `boolean`                                                               | `true`  | Show the per-tab close control.                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `renamableTabs`           | `boolean`                                                               | `true`  | Allow double-click inline rename.                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `maximizable`             | `boolean`                                                               | `true`  | Show the tabset maximize/restore control.                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -91,6 +92,13 @@ a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-att
 | `snap`                    | `{ step?: number; divisions?: number \| "panels"; threshold?: number }` | (none)  | Magnetic splitter snapping onto a grid: the union of `step` (multiples of a fixed percent) and `divisions` (even splits: `100/d`, or `"panels"` to divide by the row's panel count, so a 3-panel row snaps to thirds). Within `threshold` percent (default `4`) it snaps and commits on release as one undo step. Off when omitted; replaces `global.snap`; a row overrides via its own `snap` (`{}` disables). Locked off in compact mode. |
 
 You must pass either `model` or `defaultModel`. Passing neither throws.
+
+The capability props (`editable`, `restructurable`, `closableTabs`,
+`renamableTabs`, `maximizable`, `floatable`, `draggableTabs`,
+`draggableTabsets`, `resizableSplits`, `keepMounted`, `snap`) are the exported
+`LayoutOptions` type. `DashfooLayout` passes them through to `Layout.Root`,
+which takes the same type and resolves every default above in one place. With
+`responsive`, the compact locks override `maximizable` and `restructurable`.
 
 A `ref` exposes a `DashfooHandle` for imperative control:
 `addTab`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `floatTab`,
@@ -131,9 +139,10 @@ model gets the same invariants the reducer guarantees.
 
 ### Resolving tab content: registry or factory
 
-`factory` wins when both are set. With `components`, a tab whose `component` key
-is not registered renders nothing and logs a one-time dev warning:
-`[dashfoo] no component registered for "<key>"`.
+`factory` wins when both are set. Without `factory`, a tab whose `component`
+key has no registered component renders nothing and warns once per key, whether
+or not `components` was passed:
+`` [dashfoo] no component registered for "<key>"; pass it in `components` or render tabs with `factory` ``.
 
 ```tsx
 // Registry: keyed lookup, the common case.
@@ -288,11 +297,10 @@ const store = useDashfooStore({ defaultModel });
 const responsive = useResponsiveLayout(store.model, { maxWidth: 720 });
 
 <Layout.Root
+  {...responsive.locks}
   dispatch={store.dispatch}
-  maximizable={responsive.maximizable}
   model={responsive.model}
   renderers={{ tab: renderTab }}
-  restructurable={responsive.restructurable}
   rootRef={responsive.rootRef}
 >
   <Layout.DragLayer>
@@ -302,11 +310,13 @@ const responsive = useResponsiveLayout(store.model, { maxWidth: 720 });
 ```
 
 `useResponsiveLayout(model, options)` takes `{ maxWidth, orientation? }` (or
-`undefined` to never compact) and returns `{ model, isCompact, maximizable,
-restructurable, rootRef }`. Put `rootRef` on `Layout.Root` so it measures the
-layout's own container. In compact mode `restructurable` is `false`, which
-switches off tab and tabset drag, split resizing and floating, and `maximizable`
-is `false`. Dispatch still targets the canonical store.
+`undefined` to never compact) and returns `{ isCompact, locks, model, rootRef }`.
+Put `rootRef` on `Layout.Root` so it measures the layout's own container.
+`locks` is `{}` when wide and `{ maximizable: false, restructurable: false }`
+when compact, which switches off tab and tabset drag, split resizing, floating
+and maximize. Spread it after any capability props you set on `Layout.Root`
+(`floatable`, `maximizable`, …), so compact mode overrides them.
+Dispatch still targets the canonical store.
 
 ## Floating panels
 
@@ -417,7 +427,7 @@ type StorageAdapter = {
 
 Two adapters ship with the package:
 
-- `localStorageAdapter`: SSR-safe `window.localStorage`. Reads return `null` and writes are swallowed (with a warning) when storage is unavailable or throws (no window, private mode, quota exceeded). This is the default.
+- `localStorageAdapter`: `window.localStorage`, unwrapped. It throws wherever `localStorage` throws (private mode, quota exceeded); the persistence loop catches every adapter error and warns, so a failed read falls back to `defaultModel` and a failed write leaves the layout working. Storage is only touched after mount, so server renders never reach it. This is the default.
 - `memoryStorageAdapter()`: a fresh in-memory `Map`, returned by a factory call. Good for tests and SSR previews.
 
 ```tsx
@@ -434,53 +444,65 @@ Every styleable element carries a `data-dashfoo` attribute. Selectors are stable
 target them in your stylesheet. The required `@dashfoo/react/styles.css` owns
 structure and consumes runtime geometry through CSS custom properties.
 
-| `data-dashfoo` value | Element         | Notes                                                                                                                              |
-| -------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `layout`             | root `div`      | The outer container. `display: flex` over the full parent.                                                                         |
-| `row`                | rrp `Group`     | A resizable row/column. `orientation` comes from the node.                                                                         |
-| `splitter`           | rrp `Separator` | Resize handle between siblings (also matches `[data-separator]`, see below).                                                       |
-| `tabset`             | `div`           | A tabbed region. Carries `data-dragging-source` while the whole tabset is being dragged, and `data-tab-location` (`top`/`bottom`). |
-| `tabstrip`           | `div`           | The strip row: tablist plus a trailing toolbar slot.                                                                               |
-| `tablist`            | `div`           | `role="tablist"`, the tabs themselves.                                                                                             |
-| `tab-item`           | `span`          | Wraps one tab's button and its close button. `data-dragging` while dragged.                                                        |
-| `tab`                | `button`        | `role="tab"`. Carries `aria-selected` and `data-tab-id`.                                                                           |
-| `tab-close`          | `button`        | Per-tab close. `aria-label="Close <name>"`.                                                                                        |
-| `tab-rename`         | `input`         | Inline rename editor, shown during a rename.                                                                                       |
-| `tabset-toolbar`     | `div`           | Trailing controls in the strip: overflow menu, grip, custom toolbar slot, pop-out, maximize.                                       |
-| `tab-overflow-root`  | `div`           | Wraps the overflow trigger and its menu; rendered when tabs don't fit the strip.                                                   |
-| `tab-overflow`       | `button`        | Overflow menu trigger. `aria-label="More tabs"`.                                                                                   |
-| `tab-overflow-menu`  | `div`           | `role="menu"`, lists the hidden tabs while open.                                                                                   |
-| `tab-overflow-item`  | `button`        | `role="menuitem"`, one hidden tab; selecting it activates the tab.                                                                 |
-| `tabset-grip`        | `button`        | Drags the whole tabset. `aria-label="Move tabset"`; shown when `draggableTabsets` is on and the tabset is not maximized.           |
-| `tabset-float`       | `button`        | Floats the tabset into a movable overlay. `aria-label="Float panel"`; shown when `floatable` is on and not maximized.              |
-| `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                                                                            |
-| `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                  |
-| `float-overlay`      | `div`           | The `pointer-events: none` overlay covering the layout; holds the floats.                                                          |
-| `float`              | `div`           | A floating panel's elevated frame. `display: flex; flex-direction: column`, positioned absolutely.                                 |
-| `float-titlebar`     | `div`           | The float's drag handle / title bar (grip + title + dock control).                                                                 |
-| `float-grip`         | `span`          | Drag-affordance dots in the title bar (decorative, `aria-hidden`).                                                                 |
-| `float-title`        | `span`          | The float's window title (its own name); double-click to rename. `aria-hidden` grip precedes it.                                   |
-| `float-rename`       | `input`         | The inline title editor, shown while renaming. `aria-label="Rename <name>"`.                                                       |
-| `float-minimize`     | `button`        | Collapses the float to a chip. `aria-label="Minimize panel"`.                                                                      |
-| `float-dock`         | `button`        | Docks the panel back into the main layout. `aria-label="Dock panel back into the main layout"`.                                    |
-| `float-body`         | `div`           | The float's content area; holds the panel's layout.                                                                                |
-| `float-resize`       | `div`           | An edge/corner resize handle (eight in total); `data-edge` is the direction.                                                       |
-| `float-chip`         | `button`        | A minimized float: a rounded chip you click (or drag) to restore.                                                                  |
-| `float-chip-label`   | `span`          | The chip's panel title.                                                                                                            |
-| `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone pane). `pointer-events: none`.                                                    |
-| `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label.                                                        |
-| `separator`          | rrp `Separator` | rrp emits `data-separator` with `aria-orientation`; style splitters here.                                                          |
+| `data-dashfoo` value | Element         | Notes                                                                                                                                          |
+| -------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `layout`             | root `div`      | The outer container. `display: flex` over the full parent.                                                                                     |
+| `row`                | rrp `Group`     | A resizable row/column. `orientation` comes from the node.                                                                                     |
+| `splitter`           | rrp `Separator` | Resize handle between siblings (also matches `[data-separator]`, see below).                                                                   |
+| `tabset`             | `div`           | A tabbed region. Carries `data-tabset-id`, `data-dragging-source` while dragged by its grip, and `data-tab-location`.                          |
+| `tabstrip`           | `div`           | The strip row: tablist plus a trailing toolbar slot.                                                                                           |
+| `tablist`            | `div`           | The scrolling viewport around the tabs. An inner `span` carries `role="tablist"` and owns the tabs through `aria-owns`.                        |
+| `tab-item`           | `span`          | Wraps one tab's button and its close button. `data-dragging` while dragged.                                                                    |
+| `tab`                | `button`        | `role="tab"`. Carries `aria-selected` and `data-tab-id`.                                                                                       |
+| `tab-close`          | `button`        | Per-tab close. `aria-label="Close <name>"`.                                                                                                    |
+| `tab-rename`         | `input`         | Inline rename editor, shown during a rename.                                                                                                   |
+| `tabset-toolbar`     | `div`           | Trailing controls in the strip: overflow menu, grip, custom toolbar slot, pop-out, maximize.                                                   |
+| `tab-overflow-root`  | `div`           | Wraps the overflow trigger and its menu; rendered when tabs don't fit the strip.                                                               |
+| `tab-overflow`       | `button`        | Overflow menu trigger. `aria-label="More tabs"`.                                                                                               |
+| `tab-overflow-menu`  | `div`           | `role="menu"`, lists the hidden tabs while open.                                                                                               |
+| `tab-overflow-item`  | `button`        | `role="menuitem"`, one hidden tab; selecting it activates the tab.                                                                             |
+| `tabset-grip`        | `button`        | Drags the whole tabset. `aria-label="Move tabset"`; shown when `draggableTabsets` is on and the tabset is not maximized.                       |
+| `tabset-float`       | `button`        | Floats the tabset into a movable overlay. `aria-label="Float panel"`; shown when `floatable` is on and not maximized.                          |
+| `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                                                                                        |
+| `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                              |
+| `float-overlay`      | `div`           | The `pointer-events: none` overlay covering the layout; holds the floats.                                                                      |
+| `float`              | `div`           | A floating panel's elevated frame. `display: flex; flex-direction: column`, positioned absolutely.                                             |
+| `float-titlebar`     | `div`           | The float's drag handle / title bar (grip + title + dock control). `data-editable` while the layout is editable; `cursor: default` without it. |
+| `float-grip`         | `span`          | Drag-affordance dots in the title bar (decorative, `aria-hidden`).                                                                             |
+| `float-title`        | `span`          | The float's window title (its own name); double-click to rename. `aria-hidden` grip precedes it.                                               |
+| `float-rename`       | `input`         | The inline title editor, shown while renaming. `aria-label="Rename <name>"`.                                                                   |
+| `float-minimize`     | `button`        | Collapses the float to a chip. `aria-label="Minimize panel"`.                                                                                  |
+| `float-dock`         | `button`        | Docks the panel back into the main layout. `aria-label="Dock panel back into the main layout"`.                                                |
+| `float-body`         | `div`           | The float's content area; holds the panel's layout.                                                                                            |
+| `float-resize`       | `div`           | An edge/corner resize handle (eight in total); `data-edge` is the direction.                                                                   |
+| `float-chip`         | `button`        | A minimized float: a rounded chip you click (or drag) to restore. Clamped on screen by `--dashfoo-chip-width` / `--dashfoo-chip-height`.       |
+| `float-chip-label`   | `span`          | The chip's panel title.                                                                                                                        |
+| `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone pane). `pointer-events: none`.                                                                |
+| `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label. `pointer-events: none`.                                            |
+| `icon`               | `svg`           | The built-in close, grip, maximize, float, minimize, dock and overflow icons. `aria-hidden`, `pointer-events: none`.                           |
 
 The `splitter` handle is dashfoo's name; react-resizable-panels also stamps the
 same element with `data-separator` and an `aria-orientation` of `vertical` or
 `horizontal`. Either selector works. Orientation lives on the separator, so size
 the handle and pick the cursor off `[data-separator][aria-orientation="..."]`.
 
+### Minimized chip size
+
+`styles.css` does not size `[data-dashfoo="float-chip"]`. It only clamps the
+chip's position so a chip of `--dashfoo-chip-width` × `--dashfoo-chip-height`
+stays on screen, falling back to `168px` × `34px` when the vars are unset.
+`@dashfoo/theme` sets them to `11rem` and `2.25rem` and sizes the chip from
+them (`max-width` and `height`). A custom skin that sizes the chip should set
+the same two vars on it, so the clamp matches the real size.
+
 ### Dock indicator CSS variables
 
-The `[data-dashfoo="dock-indicator"]` overlay reads its geometry from CSS custom properties, and every
-visual property reads from a CSS variable with a neutral fallback. Override them
-to theme the drag preview without touching layout.
+The `[data-dashfoo="dock-indicator"]` overlay reads its geometry from CSS custom
+properties the library sets on it (`--dashfoo-dock-left`, `--dashfoo-dock-top`,
+`--dashfoo-dock-width`, `--dashfoo-dock-height`), and every visual property
+reads from a CSS variable with a neutral fallback. Override the visual ones to
+theme the drag preview without touching layout. `styles.css` gives the
+indicator `z-index: auto`, and `9999` inside a `[data-dashfoo="float"]`.
 
 | Variable                      | Used for                 | Fallback                                       |
 | ----------------------------- | ------------------------ | ---------------------------------------------- |
@@ -522,8 +544,14 @@ Each takes a selector and re-renders only when the selected slice changes:
 ```ts
 const dispatch = useLayout((state) => state.dispatch); // layout-wide config + dispatch; throws outside <DashfooLayout>/<Layout.Root>
 const node = useTabset((state) => state.node); // per-tabset state; throws outside <Tabset.Root>
-const { index, tab } = useTab(); // which tab a part belongs to; throws outside <Tabset.Tab>
+const { closable, index, tab } = useTab(); // which tab a part belongs to and what it allows; throws outside <Tabset.Tab>
 ```
+
+`useTab()` returns `{ closable, draggable, index, renamable, tab }`. The three
+flags combine the layout, the tabset and the tab's own `enableClose` /
+`enableDrag` / `enableRename`. Custom parts should read them rather than the
+tabset store's `tabsClosable` / `tabsRenamable`, which are only the layout and
+tabset half.
 
 `useDragSubject()` returns the live drag subject (`{ kind, id, documentId }` for a tab or
 tabset being dragged) or `null` (including outside any layout or provider) for
@@ -544,32 +572,42 @@ hooks work anywhere under a layout; under a `DashfooDragProvider` they work
 anywhere under the provider (the provider hosts the drag root, so widget lists
 and overlays outside the layout observe the same drag).
 
+`useDropIndicator()` returns what the built-in dock indicator draws
+(`{ kind: "insertion" | "zone"; rect }` in viewport pixels), taken from the same
+measurement as the intent, or `null`. Use it to draw your own indicator.
+
+`measureTabset(id, element)` returns the `MeasuredTabset` the library resolves
+drops against: the tabset's rect, plus its own strip's rect and tab items when it
+has a strip. Pass it to `resolveDropIntent` or `dropIndicator` from
+`@dashfoo/core` to build a zone map for every tabset. Tabset roots carry
+`data-tabset-id`.
+
 ## Build your own layout
 
 `DashfooLayout` is a thin assembly of exported primitives; you can compose the
 same parts yourself when you need custom chrome. Two compound namespaces, same
 pattern as `Panel`:
 
-| Part                    | Element                                  | Role                                                                                                                        |
-| ----------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `Layout.Root`           | `div[data-dashfoo="layout"]`             | Creates the layout store and the drag root. Takes `model`, `dispatch`, `renderers`, and the flags `DashfooLayout` accepts.  |
-| `Layout.DragLayer`      | none (overlays)                          | Opts the tree into the enclosing `Layout.Root`'s drag root. Omit it and everything else still works, just without dragging. |
-| `Layout.Rows`           | rrp split tree                           | Renders a `RowNode` recursively. `renderTabset` swaps in a custom tabset composition at every leaf.                         |
-| `Layout.Tabset`         | the stock `Tabset.*` composition         | The stock tabset composition, for leaves that don't need custom chrome.                                                     |
-| `Layout.FloatLayer`     | overlay                                  | Wrap the tree's content to enable floating panels; renders `model.floats` as draggable overlays. Takes `floats`.            |
-| `Tabset.Root`           | `div[data-dashfoo="tabset"]`             | Creates the per-tabset store; owns drop registration, overflow measurement, and focus restore after close.                  |
-| `Tabset.TabStrip`       | `div[data-dashfoo="tabstrip"]`           | The strip row (drag hit-testing targets this attribute).                                                                    |
-| `Tabset.Tablist`        | `div[data-dashfoo="tablist"]`            | The scrolling viewport holding the `role="tablist"` marker that owns the triggers.                                          |
-| `Tabset.Tab`            | `span[data-dashfoo="tab-item"]`          | Per-tab wrapper carrying `data-tab-id`; provides identity to the parts inside. Drop slots are measured on these items.      |
-| `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: arrow/Home/End navigation, select on click, rename on double-click, draggable. Children override the label. |
-| `Tabset.RenameInput`    | `input[data-dashfoo="tab-rename"]`       | Inline rename editor; renders only while its tab is being renamed.                                                          |
-| `Tabset.CloseButton`    | `button[data-dashfoo="tab-close"]`       | Closes the tab with focus restore; hides when the tab isn't closable.                                                       |
-| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted`. Children render-prop overrides `renderers.tab`.                        |
-| `Tabset.Toolbar`        | `div[data-dashfoo="tabset-toolbar"]`     | Trailing toolbar container.                                                                                                 |
-| `Tabset.OverflowMenu`   | menu button                              | Lists clipped tabs; hides when nothing overflows.                                                                           |
-| `Tabset.Grip`           | `button[data-dashfoo="tabset-grip"]`     | Drag handle for the whole tabset; hides when tabset dragging is off.                                                        |
-| `Tabset.MaximizeButton` | `button[data-dashfoo="tabset-maximize"]` | Maximize/restore toggle; hides when maximize is off.                                                                        |
-| `Tabset.FloatButton`    | `button[data-dashfoo="tabset-float"]`    | Floats the tabset into a movable overlay; hides when `floatable` is off or the tabset is maximized.                         |
+| Part                    | Element                                  | Role                                                                                                                                                           |
+| ----------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Layout.Root`           | `div[data-dashfoo="layout"]`             | Creates the layout store and the drag root. Takes `model`, `dispatch`, `renderers`, and `LayoutOptions`.                                                       |
+| `Layout.DragLayer`      | none (overlays)                          | Opts the tree into the enclosing `Layout.Root`'s drag root. Omit it and everything else still works, just without dragging.                                    |
+| `Layout.Rows`           | rrp split tree                           | Renders a `RowNode` recursively, or only the maximized tabset while one in it is maximized. `renderTabset` swaps in a custom tabset composition at every leaf. |
+| `Layout.Tabset`         | the stock `Tabset.*` composition         | The stock tabset composition, for leaves that don't need custom chrome.                                                                                        |
+| `Layout.FloatLayer`     | overlay                                  | Wrap the tree's content to enable floating panels; renders `model.floats` as draggable overlays. Takes `floats`.                                               |
+| `Tabset.Root`           | `div[data-dashfoo="tabset"]`             | Per-tabset store, drop registration, overflow measurement, focus restore after close; sets `data-tabset-id`.                                                   |
+| `Tabset.TabStrip`       | `div[data-dashfoo="tabstrip"]`           | The strip row (drag hit-testing targets this attribute).                                                                                                       |
+| `Tabset.Tablist`        | `div[data-dashfoo="tablist"]`            | The scrolling viewport holding the `role="tablist"` marker that owns the triggers.                                                                             |
+| `Tabset.Tab`            | `span[data-dashfoo="tab-item"]`          | Per-tab wrapper carrying `data-tab-id`; provides identity to the parts inside. Drop slots are measured on these items.                                         |
+| `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: arrow/Home/End navigation, select on click, rename on double-click, draggable. Children override the label.                                    |
+| `Tabset.RenameInput`    | `input[data-dashfoo="tab-rename"]`       | Inline rename editor; renders only while its tab is being renamed.                                                                                             |
+| `Tabset.CloseButton`    | `button[data-dashfoo="tab-close"]`       | Closes the tab with focus restore; hides when the tab isn't closable.                                                                                          |
+| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted`. Children render-prop overrides `renderers.tab`.                                                           |
+| `Tabset.Toolbar`        | `div[data-dashfoo="tabset-toolbar"]`     | Trailing toolbar container.                                                                                                                                    |
+| `Tabset.OverflowMenu`   | menu button                              | Lists clipped tabs; hides when nothing overflows.                                                                                                              |
+| `Tabset.Grip`           | `button[data-dashfoo="tabset-grip"]`     | Drag handle for the whole tabset; hides when tabset dragging is off.                                                                                           |
+| `Tabset.MaximizeButton` | `button[data-dashfoo="tabset-maximize"]` | Maximize/restore toggle; hides when maximize is off.                                                                                                           |
+| `Tabset.FloatButton`    | `button[data-dashfoo="tabset-float"]`    | Floats the tabset into a movable overlay; hides when `floatable` is off or the tabset is maximized.                                                            |
 
 Parts forward native props such as `className` and handlers. `Layout.Root`
 accepts `className` for styling and reserves geometry for CSS custom properties;
@@ -615,10 +653,9 @@ const MyLayout = () => {
 };
 ```
 
-Maximize is the host's concern in a hand-built layout: when
-`model.maximizedTabsetId` is set, render that tabset alone (via `findTabset`
-from `@dashfoo/core`) instead of `Layout.Rows`; that's all `DashfooLayout`
-does. The demo's "Raw primitives" page (`apps/demo-vite/src/pages/raw.tsx`) is
+Maximize needs no branch in a hand-built layout: while a tabset in its tree is
+maximized, `Layout.Rows` renders only that tabset, through `renderTabset` when
+you pass one. The demo's "Raw primitives" page (`apps/demo-vite/src/pages/raw.tsx`) is
 a complete working reference.
 
 Misuse is never silent: parts outside their provider throw, and soft mistakes
@@ -633,6 +670,7 @@ From the package root:
 // Component + types
 DashfooLayout;
 type DashfooLayoutProps;
+type DashfooLayoutCommonProps; // the props shared by the controlled and uncontrolled forms
 type DashfooHandle; // the imperative ref handle (undo/redo, addTab, resetLayout, …)
 type TabComponent;
 
@@ -646,15 +684,17 @@ type PanelRootProps;
 type PanelTitleProps;
 
 // Layout primitives (build your own layout)
-Layout; // Layout.Root / Layout.DragLayer / Layout.Rows / Layout.Tabset
+Layout; // Layout.Root / Layout.DragLayer / Layout.Rows / Layout.Tabset / Layout.FloatLayer
+type LayoutOptions; // the capability props, keepMounted and snap, shared with DashfooLayout
 type LayoutRootProps;
 type LayoutRenderers;
 type LayoutDragLayerProps;
+type LayoutFloatLayerProps;
 type LayoutRowsProps;
 type LayoutTabsetProps;
 
 // Tabset primitives
-Tabset; // Tabset.Root / .TabStrip / .Tablist / .Tab / .Trigger / .RenameInput / .CloseButton / .Content / .Toolbar / .OverflowMenu / .Grip / .MaximizeButton
+Tabset; // Tabset.Root / .TabStrip / .Tablist / .Tab / .Trigger / .RenameInput / .CloseButton / .Content / .Toolbar / .OverflowMenu / .Grip / .MaximizeButton / .FloatButton
 type TabsetRootProps; // …and a Props type per part
 
 // Store + selector hooks
@@ -665,10 +705,12 @@ useLayout; // select from the layout store (throws outside Layout.Root/DashfooLa
 type LayoutState;
 useTabset; // select from the enclosing tabset store (throws outside Tabset.Root)
 type TabsetState;
-useTab; // { tab, index } identity (throws outside Tabset.Tab)
+useTab; // { closable, draggable, index, renamable, tab } (throws outside Tabset.Tab)
 type TabContextValue;
 useDragSubject; // the live drag subject, or null
 useDropIntent; // where the drag would land if dropped right now, or null
+useDropIndicator; // the insertion line or split zone the built-in indicator draws, or null
+measureTabset; // the MeasuredTabset drops are resolved against
 
 // External drag sources
 DashfooDragProvider; // a drag root shared by layouts and outside sources (Layout.Root mounts one otherwise)

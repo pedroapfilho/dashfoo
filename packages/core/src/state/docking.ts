@@ -1,7 +1,11 @@
 import { assertNever } from "../lib/assert-never";
 import { warn } from "../lib/warn";
 import { floatNode, row, tabset } from "../model/builders";
-import type { Dashfoo, Geometry, RowNode, TabNode, TabsetNode } from "../model/schema";
+import type { DockLocation, SplitLocation } from "../model/dock-location";
+import { SPLIT_PLACEMENT } from "../model/dock-location";
+import type { Dashfoo, Geometry, TabNode, TabsetNode } from "../model/schema";
+import { DEFAULT_FLOAT_GEOMETRY, DEFAULT_FLOAT_NAME } from "../model/schema";
+import type { TabsetSlot } from "../model/tree";
 import {
   collectTabsetsInRow,
   findAttributedNode,
@@ -10,19 +14,13 @@ import {
   findTabsetParent,
 } from "../model/tree";
 
-import type { Action, DockLocation } from "./actions";
-import type { SplitLocation } from "./dock-placement";
-import { SPLIT_PLACEMENT } from "./dock-placement";
+import type { Action } from "./actions";
 import { uniqueFloatName } from "./floats";
 
 type DockingAction = Extract<
   Action,
   { type: "addNode" | "dockFloat" | "floatTab" | "floatTabset" | "moveNode" | "moveTabset" }
 >;
-
-type Slot = { parent: RowNode; tabset: TabsetNode };
-
-const DEFAULT_FLOAT_GEOMETRY: Geometry = { height: 360, left: 80, top: 80, width: 480 };
 
 /**
  * The index, in the strip as it stands, of the tab that inherits the selection
@@ -32,23 +30,19 @@ const DEFAULT_FLOAT_GEOMETRY: Geometry = { height: 360, left: 80, top: 80, width
 const fallbackSelectedIndex = (count: number, removedIndex: number): number =>
   removedIndex + 1 < count ? removedIndex + 1 : removedIndex - 1;
 
-const locateTabset = (draft: Dashfoo, tabsetId: string): Slot | undefined => {
-  const found = findTabsetParent(draft, tabsetId);
-  const node = found?.parent.children.at(found.index);
-
-  return found && node?.type === "tabset" ? { parent: found.parent, tabset: node } : undefined;
-};
-
-const locateMainTarget = (draft: Dashfoo, targetId: string | undefined): Slot | undefined => {
-  const mainTabsets: Array<TabsetNode> = [];
-  collectTabsetsInRow(draft.layout, mainTabsets);
-
+/** An explicit target must exist; without one, the active main tabset, else the first. */
+const locateMainTarget = (
+  draft: Dashfoo,
+  mainTabsets: Array<TabsetNode>,
+  targetId: string | undefined,
+): TabsetSlot | undefined => {
   const target =
-    mainTabsets.find((candidate) => candidate.id === targetId) ??
-    mainTabsets.find((candidate) => candidate.id === draft.activeTabsetId) ??
-    mainTabsets.at(0);
+    targetId === undefined
+      ? (mainTabsets.find((candidate) => candidate.id === draft.activeTabsetId) ??
+        mainTabsets.at(0))
+      : mainTabsets.find((candidate) => candidate.id === targetId);
 
-  return target && locateTabset(draft, target.id);
+  return target && findTabsetParent(draft, target.id);
 };
 
 const detachTab = (container: TabsetNode, index: number): TabNode | undefined => {
@@ -69,14 +63,14 @@ const removeTab = (draft: Dashfoo, tabId: string): TabNode | undefined => {
   return location && detachTab(location.container, location.index);
 };
 
-const detachTabset = ({ parent, tabset: detached }: Slot): TabsetNode => {
+const detachTabset = ({ parent, tabset: detached }: TabsetSlot): TabsetNode => {
   parent.children.splice(parent.children.indexOf(detached), 1);
 
   return detached;
 };
 
 const removeTabset = (draft: Dashfoo, tabsetId: string): void => {
-  const slot = locateTabset(draft, tabsetId);
+  const slot = findTabsetParent(draft, tabsetId);
 
   if (slot) {
     detachTabset(slot);
@@ -85,7 +79,7 @@ const removeTabset = (draft: Dashfoo, tabsetId: string): void => {
 
 /** Located at attach time, not resolve time: detaching a sibling shifts the target's index. */
 const placeBeside = (
-  { parent, tabset: target }: Slot,
+  { parent, tabset: target }: TabsetSlot,
   placed: TabsetNode,
   location: SplitLocation,
 ): TabsetNode => {
@@ -121,7 +115,7 @@ const mergeTabs = (target: TabsetNode, tabs: Array<TabNode>, selected: number): 
 };
 
 const attachTab = (
-  target: Slot,
+  target: TabsetSlot,
   tab: TabNode,
   location: DockLocation,
   index: number | undefined,
@@ -146,7 +140,7 @@ const floatOut = (
 ): TabsetNode => {
   const float = floatNode(row([placed]), geometry ?? DEFAULT_FLOAT_GEOMETRY, {
     id: floatId,
-    name: uniqueFloatName("Panel", draft.floats),
+    name: uniqueFloatName(DEFAULT_FLOAT_NAME, draft.floats),
   });
 
   draft.floats = [...draft.floats, float];
@@ -179,7 +173,7 @@ const addTab = (
     return undefined;
   }
 
-  const target = locateTabset(draft, targetId);
+  const target = findTabsetParent(draft, targetId);
 
   return target && attachTab(target, tab, location, index);
 };
@@ -188,13 +182,23 @@ const moveTab = (
   draft: Dashfoo,
   { index, location, sourceId, targetId }: Extract<DockingAction, { type: "moveNode" }>,
 ): TabsetNode | undefined => {
-  const target = locateTabset(draft, targetId);
+  const target = findTabsetParent(draft, targetId);
+  const source = findTab(draft, sourceId);
 
-  if (!target) {
+  if (!target || !source) {
     return undefined;
   }
 
-  const tab = removeTab(draft, sourceId);
+  // Splitting a strip off its own only tab would land the tab back in a fresh, half-sized slot.
+  if (
+    location !== "center" &&
+    source.container === target.tabset &&
+    source.container.children.length === 1
+  ) {
+    return undefined;
+  }
+
+  const tab = detachTab(source.container, source.index);
 
   return tab && attachTab(target, tab, location, index);
 };
@@ -203,8 +207,8 @@ const moveTabset = (
   draft: Dashfoo,
   { location, sourceId, targetId }: Extract<DockingAction, { type: "moveTabset" }>,
 ): TabsetNode | undefined => {
-  const target = locateTabset(draft, targetId);
-  const source = sourceId === targetId ? undefined : locateTabset(draft, sourceId);
+  const target = findTabsetParent(draft, targetId);
+  const source = sourceId === targetId ? undefined : findTabsetParent(draft, sourceId);
 
   if (!target || !source) {
     return undefined;
@@ -230,7 +234,7 @@ const floatTabset = (
   draft: Dashfoo,
   { floatId, geometry, tabsetId }: Extract<DockingAction, { type: "floatTabset" }>,
 ): TabsetNode | undefined => {
-  const source = canCreateFloat(draft, floatId) ? locateTabset(draft, tabsetId) : undefined;
+  const source = canCreateFloat(draft, floatId) ? findTabsetParent(draft, tabsetId) : undefined;
 
   return source && floatOut(draft, detachTabset(source), geometry, floatId);
 };
@@ -246,23 +250,32 @@ const dockFloat = (
     return undefined;
   }
 
-  const floatTabsets: Array<TabsetNode> = [];
-  collectTabsetsInRow(float.layout, floatTabsets);
-  const filled = floatTabsets.filter((candidate) => candidate.children.length > 0);
+  const filled = collectTabsetsInRow(float.layout).filter(
+    (candidate) => candidate.children.length > 0,
+  );
+
   const lead = filled.at(0);
 
   if (!lead) {
     return undefined;
   }
 
-  const target = locateMainTarget(draft, targetId);
-  draft.floats = draft.floats.filter((other) => other !== float);
+  const mainTabsets = collectTabsetsInRow(draft.layout);
 
-  if (!target) {
+  if (mainTabsets.length === 0 && targetId === undefined) {
+    draft.floats = draft.floats.filter((other) => other !== float);
     draft.layout = float.layout;
 
     return lead;
   }
+
+  const target = locateMainTarget(draft, mainTabsets, targetId);
+
+  if (!target) {
+    return undefined;
+  }
+
+  draft.floats = draft.floats.filter((other) => other !== float);
 
   const tabs = filled.flatMap((candidate) => candidate.children);
 

@@ -6,4 +6,5 @@ const metadata: Metadata = {
 };
 
 export { metadata };
+
 export { Dashboard as default } from "./dashboard";

@@ -34,7 +34,7 @@ changes `weight` rather than storing pixel widths.
 | Splitter / gutter | renderer chrome                                                              | The draggable resize handle between a row's children; `global.splitterSize` sets its thickness.                                            |
 | Dock location     | `"center" \| "split-left" \| "split-right" \| "split-top" \| "split-bottom"` | Where a drop lands: stack into the tab strip, or split the pane toward an edge.                                                            |
 | Floating panel    | `FloatNode`                                                                  | A window-like panel above the grid with its own layout subtree and pixel `geometry`.                                                       |
-| Minimized chip    | `minimized: true`                                                            | A floating panel collapsed to a small pill docked at the layout edge.                                                                      |
+| Minimized chip    | `minimized: true`                                                            | A floating panel collapsed to a small pill at the float's own position.                                                                    |
 
 The floating panel is as close as dashfoo gets to a window. It renders in the
 same React tree, never in a separate browser window, so context, events, and

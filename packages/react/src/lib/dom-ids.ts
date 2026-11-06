@@ -7,4 +7,13 @@ const panelDomId = (documentId: string, tabsetId: string): string =>
 const resizePanelId = (documentId: string, nodeId: string): string =>
   `dashfoo-resize-${encodeURIComponent(JSON.stringify([documentId, nodeId]))}`;
 
-export { panelDomId, resizePanelId, tabDomId };
+const findTabButton = (
+  scope: HTMLElement | null,
+  documentId: string,
+  tabsetId: string,
+  tabId: string,
+): HTMLElement | null =>
+  scope?.querySelector<HTMLElement>(`#${CSS.escape(tabDomId(documentId, tabsetId, tabId))}`) ??
+  null;
+
+export { findTabButton, panelDomId, resizePanelId, tabDomId };

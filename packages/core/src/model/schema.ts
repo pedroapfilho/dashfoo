@@ -3,6 +3,9 @@ import { z } from "zod";
 /** Weights are relative shares of a row, not percentages. */
 const DEFAULT_WEIGHT = 1;
 
+/** The title of a float that has no `name`, and the base new floats are numbered from. */
+const DEFAULT_FLOAT_NAME = "Panel";
+
 type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };
 
 const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
@@ -16,7 +19,6 @@ const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
   ]),
 );
 
-const edgeSchema = z.enum(["top", "bottom", "left", "right"]);
 const unitSchema = z.enum(["px", "%", "em", "rem", "vh", "vw"]);
 const orientationSchema = z.enum(["row", "column"]);
 
@@ -81,6 +83,11 @@ const geometrySchema = z.object({
   width: z.number(),
 });
 
+type Geometry = z.infer<typeof geometrySchema>;
+
+/** Where a float opens when nothing measured it, and the largest size a lifted tabset keeps. */
+const DEFAULT_FLOAT_GEOMETRY: Geometry = { height: 360, left: 80, top: 80, width: 480 };
+
 const floatNodeSchema = z.object({
   geometry: geometrySchema,
   id: z.string(),
@@ -116,8 +123,6 @@ const dashfooSchema = z.object({
 
 type Json = JsonValue;
 
-type Edge = z.infer<typeof edgeSchema>;
-
 type Unit = z.infer<typeof unitSchema>;
 
 type Orientation = z.infer<typeof orientationSchema>;
@@ -129,8 +134,6 @@ type SnapConfig = z.infer<typeof snapSchema>;
 type TabNode = z.infer<typeof tabNodeSchema>;
 
 type TabsetNode = z.infer<typeof tabsetNodeSchema>;
-
-type Geometry = z.infer<typeof geometrySchema>;
 
 type FloatNode = z.infer<typeof floatNodeSchema>;
 
@@ -145,9 +148,10 @@ type Node = RowNode | TabsetNode | TabNode;
 
 export {
   dashfooSchema,
+  DEFAULT_FLOAT_GEOMETRY,
+  DEFAULT_FLOAT_NAME,
   DEFAULT_WEIGHT,
   dimensionSchema,
-  edgeSchema,
   floatNodeSchema,
   geometrySchema,
   globalAttributesSchema,
@@ -164,7 +168,6 @@ export type {
   Dashfoo,
   DashfooInput,
   Dimension,
-  Edge,
   FloatNode,
   Geometry,
   GlobalAttributes,

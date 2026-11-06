@@ -7,8 +7,8 @@
     "build": "tsc --noEmit && vite build"
   },
   "dependencies": {
-    "@dashfoo/core": "^1.1.3",
-    "@dashfoo/react": "^0.9.0",
+    "@dashfoo/core": "^2.0.0",
+    "@dashfoo/react": "^0.10.0",
     "@dashfoo/theme": "^0.2.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

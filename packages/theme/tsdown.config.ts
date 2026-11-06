@@ -1,7 +1,10 @@
 import { defineConfig } from "tsdown";
 
+import packageJson from "./package.json" with { type: "json" };
+
 export default defineConfig({
   clean: false,
+  define: { PACKAGE_VERSION: JSON.stringify(packageJson.version) },
   dts: true,
   entry: ["src/index.ts"],
   format: "esm",

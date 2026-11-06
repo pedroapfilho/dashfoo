@@ -1,17 +1,18 @@
 import type { Dashfoo, TabNode } from "@dashfoo/core";
 import { Feedback } from "@dnd-kit/dom";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { StrictMode, useContext } from "react";
 import { assert, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { Layout } from "../components/layout";
-import { useDashfooStore } from "../hooks/store";
+import { Layout } from "../layout/layout";
+import { useDashfooStore } from "../store/store";
 
 import type { DragContextValue } from "./drag-context";
 import { DragContext } from "./drag-context";
 import {
   useDragSubject,
+  useDropIndicator,
   useDropIntent,
   useExternalTabSource,
   useTabsetDroppable,
@@ -188,6 +189,57 @@ describe("one drag root per layout", () => {
 
     expect(subject).toBeNull();
     expect(intent).toBeNull();
+  });
+
+  test("the resolving layer paints the indicator it was resolved with, and only that layer", async () => {
+    let read: unknown = "unset";
+
+    const IndicatorProbe = (): null => {
+      read = useDropIndicator();
+
+      return null;
+    };
+
+    render(
+      <DashfooDragProvider>
+        <HandBuiltLayout />
+        <IndicatorProbe />
+      </DashfooDragProvider>,
+    );
+    await Promise.resolve();
+
+    const main = captured("main-tab");
+    const indicator = { kind: "zone" as const, rect: { height: 40, width: 30, x: 10, y: 20 } };
+    const scope = main.layerId;
+    assert(scope !== null);
+
+    act(() => {
+      main.actorRef.send({
+        subject: { documentId: "doc", id: "main-tab", kind: "tab" },
+        type: "START",
+      });
+      main.actorRef.send({
+        drop: {
+          indicator,
+          intent: { location: "split-left", targetId: "ts2" },
+          scope,
+        },
+        type: "OVER",
+      });
+    });
+
+    expect(read).toBe(indicator);
+
+    const painted = document.querySelectorAll<HTMLElement>('[data-dashfoo="dock-indicator"]');
+    expect(painted).toHaveLength(1);
+    expect(painted[0]?.style.getPropertyValue("--dashfoo-dock-left")).toBe("10px");
+    expect(painted[0]?.closest('[data-dashfoo="float"]')).toBeNull();
+
+    act(() => {
+      main.actorRef.send({ type: "CANCEL" });
+    });
+
+    expect(document.querySelectorAll('[data-dashfoo="dock-indicator"]')).toHaveLength(0);
   });
 
   test("a Layout.DragLayer outside a Layout.Root warns and renders its children", () => {
