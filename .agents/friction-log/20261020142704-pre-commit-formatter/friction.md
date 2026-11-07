@@ -1,6 +1,7 @@
 ---
 title: 'Pre-commit formatter rejects standalone friction entries'
 severity: 'minor'
+issue: 'pedroapfilho/dashfoo#197'
 ---
 
 ### Expected Behavior
