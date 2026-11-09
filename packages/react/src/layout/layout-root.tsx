@@ -60,6 +60,9 @@ type ResolvedOptions = Omit<
   | "renderTabsetToolbar"
 >;
 
+const noneSwitchedOff = (...switches: Array<boolean | undefined>): boolean =>
+  switches.every((value) => value !== false);
+
 /** The host's options and the model's `global` attributes, combined: either side can switch a capability off. */
 const resolveLayoutOptions = (
   global: GlobalAttributes,
@@ -70,16 +73,15 @@ const resolveLayoutOptions = (
 
   return {
     canDock: structural,
-    closableTabs: editable && options.closableTabs !== false && global.tabEnableClose !== false,
-    draggableTabs: structural && options.draggableTabs !== false && global.tabEnableDrag !== false,
-    draggableTabsets: structural && options.draggableTabsets !== false,
+    closableTabs: noneSwitchedOff(editable, options.closableTabs, global.tabEnableClose),
+    draggableTabs: noneSwitchedOff(structural, options.draggableTabs, global.tabEnableDrag),
+    draggableTabsets: noneSwitchedOff(structural, options.draggableTabsets),
     editable,
     floatable: structural && options.floatable === true,
     keepMounted: options.keepMounted === true,
-    maximizable: options.maximizable !== false && global.tabSetEnableMaximize !== false,
-    renamableTabs: editable && options.renamableTabs !== false && global.tabEnableRename !== false,
-    resizableSplits:
-      structural && options.resizableSplits !== false && global.enableSplitResize !== false,
+    maximizable: noneSwitchedOff(options.maximizable, global.tabSetEnableMaximize),
+    renamableTabs: noneSwitchedOff(editable, options.renamableTabs, global.tabEnableRename),
+    resizableSplits: noneSwitchedOff(structural, options.resizableSplits, global.enableSplitResize),
     snap: options.snap ?? global.snap ?? null,
     splitDock: global.enableSplitDock !== false,
     tabLocation: global.tabLocation ?? "top",
