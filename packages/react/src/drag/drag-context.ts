@@ -1,6 +1,6 @@
 "use client";
 
-import type { Action, dragDockMachine, DragSubject, DropIntent, Point } from "@dashfoo/core";
+import type { Action, dragDockMachine, DragSubject, DropResolution, Point } from "@dashfoo/core";
 import { createContext } from "react";
 import type { ActorRefFrom } from "xstate";
 
@@ -16,12 +16,12 @@ type DragActor = ActorRefFrom<typeof dragDockMachine>;
 type RegisteredLayer = {
   commit: (action: Action, subject: DragSubject) => void;
   layerId: string;
-  resolveIntent: (
+  resolveDrop: (
     subject: DragSubject,
     tabsetId: string,
     element: HTMLElement,
     point: Point,
-  ) => DropIntent | null;
+  ) => Omit<DropResolution, "scope"> | null;
 };
 
 /** The root's value with `layerId: null`; each `Layout.DragLayer` republishes it with its own id. */

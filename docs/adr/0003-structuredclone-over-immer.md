@@ -81,7 +81,7 @@ schema boundary agree.
   drags are handled in the React adapters; the reducer only fires on
   committed actions (drop, resize end, select, rename, close). The clone cost
   is irrelevant at this scale.
-- **`applyAction` is plain imperative code.** Helpers like `insertTab`,
+- **`applyAction` is plain imperative code.** Helpers like `attachTab`,
   `removeTabset`, and the `applyAction` switch mutate `draft` in place. They
   read straightforwardly because they are not fighting an immutability layer.
   The purity guarantee lives in one place — the `structuredClone` call — not

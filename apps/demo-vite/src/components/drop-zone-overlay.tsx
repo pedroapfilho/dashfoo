@@ -1,11 +1,11 @@
-import type { DragSubject, DropIntent, Point, Rect } from "@dashfoo/core";
-import { useDragSubject, useDropIntent } from "@dashfoo/react";
+import type { DragSubject, DropIntent, MeasuredTabset, Point } from "@dashfoo/core";
+import { measureTabset, useDragSubject, useDropIntent } from "@dashfoo/react";
 import type { ReactNode, RefObject } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
-import type { ActiveCell, TabsetMeasurement, ZoneCell } from "../lib/drop-zone-map";
-import { activeCellAt, buildZoneMap, cellKey } from "../lib/drop-zone-map";
+import type { ZoneCell } from "../lib/drop-zone-map";
+import { buildZoneMap, cellKey, intentKey } from "../lib/drop-zone-map";
 
 const DOCK_LABELS = {
   center: "stack",
@@ -15,35 +15,16 @@ const DOCK_LABELS = {
   "split-top": "split ↑",
 };
 
-const toRect = (rect: DOMRect): Rect => ({
-  height: rect.height,
-  width: rect.width,
-  x: rect.x,
-  y: rect.y,
-});
+const measureTabsets = (container: HTMLElement): Array<MeasuredTabset> =>
+  [...container.querySelectorAll<HTMLElement>('[data-dashfoo="tabset"]')].flatMap((element) => {
+    const id = element.dataset.tabsetId;
 
-const measureTabsets = (container: HTMLElement, draggedTabId?: string): Array<TabsetMeasurement> =>
-  [...container.querySelectorAll<HTMLElement>('[data-dashfoo="tabset"]')].map((tabset) => {
-    const strip = tabset.querySelector<HTMLElement>('[data-dashfoo="tabstrip"]');
-
-    const tabMidpoints = strip
-      ? [...strip.querySelectorAll<HTMLElement>('[data-dashfoo="tab"]')].flatMap((tab) => {
-          if (tab.dataset.tabId === draggedTabId) {
-            return [];
-          }
-
-          const rect = tab.getBoundingClientRect();
-
-          return [rect.x + rect.width / 2];
-        })
-      : [];
-
-    return {
-      rect: toRect(tabset.getBoundingClientRect()),
-      strip: strip ? toRect(strip.getBoundingClientRect()) : null,
-      tabMidpoints,
-    };
+    return id === undefined ? [] : [measureTabset(id, element)];
   });
+
+/** The library resolves drops against the topmost element, so these checks do too. */
+const isUnder = (pointer: Point, selector: string): boolean =>
+  (document.elementFromPoint(pointer.x, pointer.y)?.closest(selector) ?? null) !== null;
 
 const centroid = (points: ReadonlyArray<Point>): Point => ({
   x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
@@ -55,21 +36,14 @@ const svgPoints = (points: ReadonlyArray<Point>): string =>
 
 const hueOf = (tabsetIndex: number): number => (210 + tabsetIndex * 67) % 360;
 
-const cellFill = (cell: ZoneCell, highlighted: boolean, noop: boolean): string => {
-  if (noop) {
-    return `hsl(0 0% 50% / ${highlighted ? 0.3 : 0.08})`;
-  }
+const cellFill = (cell: ZoneCell, hue: number, highlighted: boolean): string =>
+  highlighted
+    ? `hsl(${hue} 70% 55% / 0.38)`
+    : `hsl(${hue} 70% 55% / ${cell.kind === "slot" ? 0.16 : 0.09})`;
 
-  if (highlighted) {
-    return `hsl(${hueOf(cell.tabsetIndex)} 70% 55% / 0.38)`;
-  }
-
-  return `hsl(${hueOf(cell.tabsetIndex)} 70% 55% / ${cell.kind === "slot" ? 0.16 : 0.09})`;
-};
-
-const chipText = (intent: DropIntent | null, activeCell: ActiveCell | null): string | null => {
+const chipText = (intent: DropIntent | null, noop: boolean): string | null => {
   if (intent === null) {
-    return activeCell === null ? null : "no-op";
+    return noop ? "no-op" : null;
   }
 
   if (intent.location !== "center") {
@@ -84,40 +58,39 @@ const chipText = (intent: DropIntent | null, activeCell: ActiveCell | null): str
 const ZonePolygon = ({
   cell,
   highlighted,
-  noop,
+  hue,
 }: {
   cell: ZoneCell;
   highlighted: boolean;
-  noop: boolean;
+  hue: number;
 }): ReactNode => {
-  const hue = hueOf(cell.tabsetIndex);
   const center = centroid(cell.points);
   const label = cell.kind === "dock" ? DOCK_LABELS[cell.location] : String(cell.slotIndex);
 
   return (
     <g>
       <polygon
-        fill={cellFill(cell, highlighted, noop)}
+        fill={cellFill(cell, hue, highlighted)}
         points={svgPoints(cell.points)}
-        stroke={noop ? "hsl(0 0% 50% / 0.6)" : `hsl(${hue} 70% 50% / 0.55)`}
+        stroke={`hsl(${hue} 70% 50% / 0.55)`}
         strokeDasharray={highlighted ? "5 3" : undefined}
         strokeWidth={highlighted ? 1.5 : 0.75}
       />
       <text
-        fill={noop ? "hsl(0 0% 50%)" : `hsl(${hue} 60% 45%)`}
+        fill={`hsl(${hue} 60% 45%)`}
         fontSize={10}
         paintOrder="stroke"
         textAnchor="middle"
         x={center.x}
         y={center.y + 3}
       >
-        {noop && highlighted ? "no-op" : label}
+        {label}
       </text>
     </g>
   );
 };
 
-type Measured = { list: Array<TabsetMeasurement>; subject: DragSubject };
+type Measured = { list: Array<MeasuredTabset>; subject: DragSubject };
 
 const useDragPointer = (dragging: boolean): Point | null => {
   const [pointer, setPointer] = useState<Point | null>(null);
@@ -158,7 +131,7 @@ const useDragPointer = (dragging: boolean): Point | null => {
 const useMeasuredTabsets = (
   containerRef: RefObject<HTMLElement | null>,
   subject: DragSubject | null,
-): Array<TabsetMeasurement> | null => {
+): Array<MeasuredTabset> | null => {
   const [measured, setMeasured] = useState<Measured | null>(null);
 
   useEffect(() => {
@@ -172,10 +145,8 @@ const useMeasuredTabsets = (
       return undefined;
     }
 
-    const draggedTabId = subject.kind === "tab" ? subject.id : undefined;
-
     const measure = (): void => {
-      setMeasured({ list: measureTabsets(container, draggedTabId), subject });
+      setMeasured({ list: measureTabsets(container), subject });
     };
 
     const frame = requestAnimationFrame(measure);
@@ -192,24 +163,24 @@ const useMeasuredTabsets = (
 
 const DropZoneDrawing = ({
   cells,
+  hues,
   intent,
   pointer,
-  tabsets,
 }: {
   cells: Array<ZoneCell>;
+  hues: Map<string, number>;
   intent: DropIntent | null;
   pointer: Point | null;
-  tabsets: Array<TabsetMeasurement>;
 }): ReactNode => {
-  const activeCell = pointer ? activeCellAt(tabsets, pointer) : null;
-  const activeKey = activeCell ? cellKey(activeCell) : null;
+  const overStrip = pointer !== null && isUnder(pointer, '[data-dashfoo="tabstrip"]');
+  const activeKey = intent === null ? null : intentKey(intent, overStrip);
 
   const activePolygon =
     activeKey === null ? null : (cells.find((cell) => cellKey(cell) === activeKey)?.points ?? null);
 
-  const noop = intent === null && activeCell !== null;
-  const chip = chipText(intent, activeCell);
-  const lineColor = noop ? "hsl(0 0% 50% / 0.6)" : "hsl(210 80% 55% / 0.6)";
+  const noop = intent === null && pointer !== null && isUnder(pointer, '[data-dashfoo="tabset"]');
+  const chip = chipText(intent, noop);
+  const lineColor = "hsl(210 80% 55% / 0.6)";
 
   return (
     <svg
@@ -221,8 +192,8 @@ const DropZoneDrawing = ({
         <ZonePolygon
           cell={cell}
           highlighted={cellKey(cell) === activeKey}
+          hue={hues.get(cell.tabsetId) ?? hueOf(0)}
           key={cellKey(cell)}
-          noop={noop && cellKey(cell) === activeKey}
         />
       ))}
       {pointer && activePolygon ? (
@@ -271,14 +242,23 @@ const DropZoneOverlay = ({
   const dragging = enabled && subject !== null;
   const pointer = useDragPointer(dragging);
   const tabsets = useMeasuredTabsets(containerRef, enabled ? subject : null);
-  const cells = useMemo(() => (tabsets ? buildZoneMap(tabsets) : []), [tabsets]);
+
+  const cells = useMemo(
+    () => (tabsets && subject ? buildZoneMap(subject, tabsets) : []),
+    [subject, tabsets],
+  );
+
+  const hues = useMemo(
+    () => new Map((tabsets ?? []).map((tabset, index) => [tabset.id, hueOf(index)])),
+    [tabsets],
+  );
 
   if (!dragging || !tabsets || typeof document === "undefined") {
     return null;
   }
 
   return createPortal(
-    <DropZoneDrawing cells={cells} intent={intent} pointer={pointer} tabsets={tabsets} />,
+    <DropZoneDrawing cells={cells} hues={hues} intent={intent} pointer={pointer} />,
     document.body,
   );
 };

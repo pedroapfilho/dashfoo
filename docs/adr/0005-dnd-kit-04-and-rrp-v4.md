@@ -11,7 +11,7 @@ The historical 0.4 update below describes an earlier adapter and is superseded.
 `react-resizable-panels` remains v4, and docking remains pointer-only.
 
 > **Amendment (2026-10, floats).** Moving and resizing a floating panel stays
-> a hand-written pointer gesture (`hooks/use-float-gesture.ts`), not a dnd-kit
+> a hand-written pointer gesture (`float/use-float-gesture.ts`), not a dnd-kit
 > draggable. dnd-kit 0.5 can't express it cleanly: `Feedback.overlay` is one
 > element for the whole manager, so `feedback: 'move'` on a float would move the
 > tab preview chip instead of the panel. `feedback: 'move'` also promotes the
@@ -25,14 +25,18 @@ The historical 0.4 update below describes an earlier adapter and is superseded.
 > `packages/react/src/drag/`, rather than the single `drag-adapter.tsx` file this
 > ADR names. It holds the root (`drag-root.tsx`: manager, actor, layer registry
 > and preview, mounted by every `Layout.Root`), the per-layer scope
-> (`drag-layer.tsx`), the hooks, the one DOM measurement of a tabset, the dock
-> indicator and the preview chip. The rule for what a pointer over a tabset
+> (`drag-layer.tsx`), the hooks, the dock indicator and the preview chip. The
+> one DOM measurement of a tabset lives beside the tabset parts, in
+> `packages/react/src/tabset/measure-tabset.ts`. The rule for what a pointer over a tabset
 > means moved out of the adapter into `@dashfoo/core`
-> (`geometry/drop-intent.ts`), so the adapter only measures and forwards. The
+> (`dock/drop-intent.ts`), so the adapter only measures and forwards. The
 > import-boundary lint guard promised under Consequences now exists: oxlint's
 > `no-restricted-imports` rejects any `@dnd-kit/*` import outside
 > `packages/react/src/drag/`. Wherever this ADR says `drag-adapter.tsx`, read
-> that directory.
+> that directory. The tab and grip draggables share one internal hook,
+> `useNodeDraggable(kind, id, disabled, label)`, beside `useTabsetDroppable` in
+> `drag/drag-hooks.ts`; read it wherever this ADR says `useTabDraggable`. The
+> resize adapter is `packages/react/src/layout/row-view.tsx`.
 
 > **Update (2026-06).** The drag layer was re-architected off the `@dnd-kit/react`
 > bindings onto the framework-agnostic **`@dnd-kit/dom` 0.4 core**, driven

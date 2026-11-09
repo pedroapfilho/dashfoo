@@ -3,10 +3,10 @@ import { render } from "@testing-library/react";
 import { useContext } from "react";
 import { assert, describe, expect, test, vi } from "vitest";
 
-import { Layout } from "../components/layout";
-import type { LayoutRootProps } from "../components/layout-root";
-import type { LayoutStore } from "../hooks/layout-store";
-import { LayoutStoreContext } from "../hooks/layout-store";
+import { Layout } from "../layout/layout";
+import type { LayoutRootProps } from "../layout/layout-root";
+import type { LayoutStore } from "../layout/layout-store";
+import { LayoutStoreContext } from "../layout/layout-store";
 
 import { createLayer } from "./drag-layer";
 
@@ -46,7 +46,7 @@ const mountLayer = (options: Partial<LayoutRootProps> = {}) => {
   element.getBoundingClientRect = () => new DOMRect(0, 0, 400, 300);
 
   const resolve = (subject: DragSubject, x = 200) =>
-    layer.resolveIntent(subject, "target", element, { x, y: 150 });
+    layer.resolveDrop(subject, "target", element, { x, y: 150 })?.intent ?? null;
 
   return {
     dispatch,

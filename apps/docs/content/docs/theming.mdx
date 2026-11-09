@@ -99,46 +99,47 @@ Every value of `data-dashfoo` the renderer emits, what element carries it, and
 where it comes from. Read the right-hand column against the source files if you
 want to confirm a selector before you write the rule.
 
-| `data-dashfoo` value | Element                 | Role                                                                      |
-| -------------------- | ----------------------- | ------------------------------------------------------------------------- |
-| `layout`             | root `<div>`            | The whole frame; the root the skin paints background, color, and font on. |
-| `row`                | rrp `<Group>`           | A horizontal or vertical split container.                                 |
-| `tabset`             | `<div>`                 | One tiled region: a strip of tabs over a content panel.                   |
-| `tabstrip`           | `<div>`                 | The strip row: tablist plus trailing toolbar.                             |
-| `tablist`            | `<div>`                 | The scrollable run of tabs, holding the `role="tablist"` marker.          |
-| `tab-item`           | `<span>`                | One tab's group: the tab button and its close button.                     |
-| `tab`                | `<button role="tab">`   | The selectable tab itself.                                                |
-| `tab-close`          | `<button>`              | Per-tab close control.                                                    |
-| `tab-rename`         | `<input>`               | Inline rename editor, mounted on double-click.                            |
-| `tabset-toolbar`     | `<div>`                 | Trailing controls area in the strip.                                      |
-| `tabset-grip`        | `<button>`              | Drag grip that moves the whole tabset.                                    |
-| `tabset-float`       | `<button>`              | Floats the tabset into a movable overlay (shown when `floatable`).        |
-| `tabset-maximize`    | `<button>`              | Maximize / restore toggle.                                                |
-| `tabcontent`         | `<div role="tabpanel">` | The active tab's content panel.                                           |
-| `tab-overflow`       | `<button>`              | "More tabs" button when the strip overflows.                              |
-| `tab-overflow-root`  | `<div>`                 | Popper root for the overflow menu.                                        |
-| `tab-overflow-menu`  | `<div>`                 | The overflow dropdown.                                                    |
-| `tab-overflow-item`  | `<button>`              | One tab inside the overflow dropdown.                                     |
-| `panel`              | `<div>`                 | `Panel.Root` shell.                                                       |
-| `panel-header`       | `<div>`                 | `Panel.Header` row.                                                       |
-| `panel-title`        | `<span>`                | `Panel.Title` text.                                                       |
-| `panel-icon`         | `<span>`                | `Panel.Icon` leading slot.                                                |
-| `panel-badge`        | `<span>`                | `Panel.Badge` trailing slot.                                              |
-| `panel-body`         | `<div>`                 | `Panel.Body` scrollable content.                                          |
-| `float`              | `<div>`                 | A floating panel's elevated frame (overlaying the layout).                |
-| `float-titlebar`     | `<div>`                 | The float's drag handle / title bar (grip + title + dock control).        |
-| `float-grip`         | `<span>`                | Drag-affordance dots in the title bar (decorative).                       |
-| `float-title`        | `<span>`                | The float's window title (its own name); double-click to rename.          |
-| `float-rename`       | `<input>`               | The inline title editor, shown while renaming a float.                    |
-| `float-minimize`     | `<button>`              | Collapses the float to a chip.                                            |
-| `float-dock`         | `<button>`              | Docks the floating panel back into the main layout.                       |
-| `float-body`         | `<div>`                 | The float's content area.                                                 |
-| `float-resize`       | `<div>`                 | An edge/corner resize handle on a float (eight in total).                 |
-| `float-chip`         | `<button>`              | A minimized float: a rounded chip you click (or drag) to restore.         |
-| `float-chip-label`   | `<span>`                | The chip's panel title.                                                   |
-| `dock-indicator`     | `<div>`                 | The drag overlay: insertion line or drop-zone pane.                       |
-| `drag-preview`       | `<div>`                 | The chip that follows the pointer while dragging a tab/tabset.            |
-| `splitter`           | rrp `<Separator>`       | The resize handle between panels. Also matchable as `[data-separator]`.   |
+| `data-dashfoo` value | Element                 | Role                                                                          |
+| -------------------- | ----------------------- | ----------------------------------------------------------------------------- |
+| `layout`             | root `<div>`            | The whole frame; the root the skin paints background, color, and font on.     |
+| `row`                | rrp `<Group>`           | A horizontal or vertical split container.                                     |
+| `tabset`             | `<div>`                 | One tiled region: strip over content. Carries `data-tabset-id`.               |
+| `tabstrip`           | `<div>`                 | The strip row: tablist plus trailing toolbar.                                 |
+| `tablist`            | `<div>`                 | The scrollable run of tabs, holding the `role="tablist"` marker.              |
+| `tab-item`           | `<span>`                | One tab's group: the tab button and its close button.                         |
+| `tab`                | `<button role="tab">`   | The selectable tab itself.                                                    |
+| `tab-close`          | `<button>`              | Per-tab close control.                                                        |
+| `tab-rename`         | `<input>`               | Inline rename editor, mounted on double-click.                                |
+| `tabset-toolbar`     | `<div>`                 | Trailing controls area in the strip.                                          |
+| `tabset-grip`        | `<button>`              | Drag grip that moves the whole tabset.                                        |
+| `tabset-float`       | `<button>`              | Floats the tabset into a movable overlay (shown when `floatable`).            |
+| `tabset-maximize`    | `<button>`              | Maximize / restore toggle.                                                    |
+| `tabcontent`         | `<div role="tabpanel">` | The active tab's content panel.                                               |
+| `tab-overflow`       | `<button>`              | "More tabs" button when the strip overflows.                                  |
+| `tab-overflow-root`  | `<div>`                 | Popper root for the overflow menu.                                            |
+| `tab-overflow-menu`  | `<div>`                 | The overflow dropdown.                                                        |
+| `tab-overflow-item`  | `<button>`              | One tab inside the overflow dropdown.                                         |
+| `panel`              | `<div>`                 | `Panel.Root` shell.                                                           |
+| `panel-header`       | `<div>`                 | `Panel.Header` row.                                                           |
+| `panel-title`        | `<span>`                | `Panel.Title` text.                                                           |
+| `panel-icon`         | `<span>`                | `Panel.Icon` leading slot.                                                    |
+| `panel-badge`        | `<span>`                | `Panel.Badge` trailing slot.                                                  |
+| `panel-body`         | `<div>`                 | `Panel.Body` scrollable content.                                              |
+| `float`              | `<div>`                 | A floating panel's elevated frame (overlaying the layout).                    |
+| `float-titlebar`     | `<div>`                 | The float's drag handle / title bar (grip + title + dock control).            |
+| `float-grip`         | `<span>`                | Drag-affordance dots in the title bar (decorative).                           |
+| `float-title`        | `<span>`                | The float's window title (its own name); double-click to rename.              |
+| `float-rename`       | `<input>`               | The inline title editor, shown while renaming a float.                        |
+| `float-minimize`     | `<button>`              | Collapses the float to a chip.                                                |
+| `float-dock`         | `<button>`              | Docks the floating panel back into the main layout.                           |
+| `float-body`         | `<div>`                 | The float's content area.                                                     |
+| `float-resize`       | `<div>`                 | An edge/corner resize handle on a float (eight in total).                     |
+| `float-chip`         | `<button>`              | A minimized float: a chip you click (or drag) to restore.                     |
+| `float-chip-label`   | `<span>`                | The chip's panel title.                                                       |
+| `dock-indicator`     | `<div>`                 | The drag overlay: insertion line or drop-zone pane.                           |
+| `drag-preview`       | `<div>`                 | The pointer-following chip while dragging; `pointer-events: none`.            |
+| `splitter`           | rrp `<Separator>`       | The resize handle between panels. Also matchable as `[data-separator]`.       |
+| `icon`               | `<svg aria-hidden>`     | The built-in close, grip, maximize, float, minimize, dock and overflow icons. |
 
 A few of these warrant detail.
 
@@ -207,6 +208,23 @@ mount, commits on Enter or blur, and cancels on Escape.
 }
 ```
 
+### The minimized chip
+
+A minimized float renders as `[data-dashfoo="float-chip"]` at the float's own
+position. `@dashfoo/react/styles.css` does not size it; it only clamps the
+chip's position so a chip of `--dashfoo-chip-width` × `--dashfoo-chip-height`
+stays on screen. `@dashfoo/theme` sets the two vars and sizes the chip from
+them:
+
+| Variable                | Clamp fallback | `@dashfoo/theme` | The theme sizes        |
+| ----------------------- | -------------- | ---------------- | ---------------------- |
+| `--dashfoo-chip-width`  | `168px`        | `11rem`          | the chip's `max-width` |
+| `--dashfoo-chip-height` | `34px`         | `2.25rem`        | the chip's `height`    |
+
+A custom skin that sizes the chip should set the same two vars on
+`[data-dashfoo="float-chip"]` and size from them, so the clamp matches the real
+size and the chip cannot leave the viewport.
+
 ## State hooks
 
 State does not arrive as extra `data-dashfoo` values. It rides on the native
@@ -220,9 +238,10 @@ the structural attribute with the state attribute.
 | `data-dragging`        | `[data-dashfoo="tab-item"]`        | This tab is being lifted into the drag preview (dim the source) |
 | `data-dragging-source` | `[data-dashfoo="tabset"]`          | This whole tabset is being dragged by its grip                  |
 | `data-tab-location`    | `[data-dashfoo="tabset"]`          | `"top"` (default) or `"bottom"` strip placement                 |
+| `data-editable`        | `[data-dashfoo="float-titlebar"]`  | Movable float; without it `styles.css` sets `cursor: default`   |
 | `tabIndex={0 / -1}`    | `[data-dashfoo="tab"]`             | Roving tabindex: the selected tab is the one tab stop           |
 
-The boolean `data-*` attributes (`data-dragging`, `data-dragging-source`) are
+The boolean `data-*` attributes (`data-dragging`, `data-dragging-source`, `data-editable`) are
 only present when true. They are set to `undefined` otherwise, so the attribute
 is absent rather than `="false"`. Select on presence:
 
@@ -364,12 +383,14 @@ instantly.
 
 ## Dock indicators and the `--dashfoo-dock-*` vars
 
-The drag overlay is the one place dashfoo writes color inline, and only as a
-fallback. While a tab is dragged, a single `data-dashfoo="dock-indicator"`
-element is positioned over the frame. Its position and size are fixed inline (the
-library computes them from geometry), but every visual property reads a CSS
-custom property with a neutral fallback. Set the variables to own the look
-without touching the element's selector.
+While a tab is dragged, a single `data-dashfoo="dock-indicator"` element is
+positioned over the frame. The library computes its position and size from
+geometry and sets them on the element as the custom properties
+`--dashfoo-dock-left`, `--dashfoo-dock-top`, `--dashfoo-dock-width` and
+`--dashfoo-dock-height`, which `@dashfoo/react/styles.css` reads. The same
+stylesheet sets its z-index (`auto`, and `9999` inside a float) and reads every
+visual property from a CSS custom property with a neutral fallback. Set the
+variables to own the look without touching the element's selector.
 
 | Variable                      | Default fallback                               | Controls                                                    |
 | ----------------------------- | ---------------------------------------------- | ----------------------------------------------------------- |
@@ -407,9 +428,9 @@ tokens:
 ```
 
 You can still select `[data-dashfoo="dock-indicator"]` directly for properties
-the vars do not cover, such as `box-shadow`. The inline `left/top/width/height`
-are owned by the library; leave those alone or the indicator will not track the
-pointer.
+the vars do not cover, such as `box-shadow`. The `--dashfoo-dock-left/top/width/height`
+properties and the `left`/`top`/`width`/`height` that read them are owned by the
+library; leave those alone or the indicator will not track the pointer.
 
 ## Focus and hit targets
 
@@ -457,23 +478,27 @@ scale.
 | `--dashfoo-muted`             | `oklch(0.97 0 0)`                                              | Tab strip + panel-badge background          |
 | `--dashfoo-accent`            | `oklch(0.97 0 0)`                                              | Hover surface on controls + menu items      |
 | `--dashfoo-foreground`        | `oklch(0.145 0 0)`                                             | Primary text, active tab                    |
-| `--dashfoo-muted-foreground`  | `oklch(0.556 0 0)`                                             | Idle tabs, icons, secondary text            |
+| `--dashfoo-muted-foreground`  | `oklch(0.5 0 0)`                                               | Idle tabs, icons, secondary text            |
 | `--dashfoo-accent-foreground` | `oklch(0.205 0 0)`                                             | Text on hovered controls + menu items       |
 | `--dashfoo-primary`           | `oklch(0.205 0 0)`                                             | Active-tab underline, dock-indicator accent |
 | `--dashfoo-border`            | `oklch(0.922 0 0)`                                             | Default borders                             |
 | `--dashfoo-ring`              | `oklch(0.708 0 0)`                                             | Focus rings, rename input, splitter grip    |
 | `--dashfoo-radius`            | `0.625rem`                                                     | Tabset / menu corner radius                 |
+| `--dashfoo-radius-sm`         | `0.375rem`                                                     | Tab corners, tab focus ring, float buttons  |
 | `--dashfoo-font`              | `ui-sans-serif, system-ui, …`                                  | Chrome font family                          |
 | `--dashfoo-font-size`         | `13px`                                                         | Base chrome font size                       |
 | `--dashfoo-splitter-size`     | `1rem`                                                         | Resize-handle hit area (see note)           |
+| `--dashfoo-snap`              | `var(--dashfoo-primary)`                                       | Splitter grip while a snap is engaged       |
 | `--dashfoo-dock-fill`         | `color-mix(in oklab, var(--dashfoo-primary) 10%, transparent)` | Dock-indicator fill while dragging          |
 | `--dashfoo-dock-border`       | `var(--dashfoo-ring)`                                          | Dock-indicator border                       |
+| `--dashfoo-dock-radius`       | `var(--dashfoo-radius)`                                        | Dock-indicator corner radius                |
 | `--dashfoo-dock-line-radius`  | `2px`                                                          | Insertion-line corner radius                |
 
-The three optional dock tokens from the indicator table above
-(`--dashfoo-dock-border-width`, `--dashfoo-dock-radius`,
-`--dashfoo-dock-transition`) are unset by default and complete the set: 21
-overridable tokens in total.
+`tokens.css` defines these 21 tokens. Three more properties stay unset and fall
+back to the defaults in the tables above: `--dashfoo-dock-border-width`,
+`--dashfoo-dock-transition` and `--dashfoo-snap-transition` (the theme sets both
+transitions to `none` under reduced motion). The skin sizes the minimized chip
+on the chip itself (see [the minimized chip](#the-minimized-chip)).
 
 > **Splitter size.** `--dashfoo-splitter-size` is the default; the model's
 > `global.splitterSize` (a number, in px) overrides it per-layout via an inline
@@ -546,6 +571,7 @@ you can target is the attribute and state tables above.
 
 - [`packages/theme/src/css/skin.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/src/css/skin.css) for the complete worked skin, and [`packages/theme/src/css/tokens.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/theme/src/css/tokens.css) for the token defaults + dark overrides.
 - [`apps/demo-vite/src/index.css`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/index.css) for how the demo imports the theme.
-- [`packages/react/src/components/tabset/tabset-view.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/tabset/tabset-view.tsx) for the tabset markup and ARIA wiring.
-- [`packages/react/src/components/row-view.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/components/row-view.tsx) for the splitter (`<Separator data-dashfoo="splitter">`).
+- [`packages/react/src/tabset/tabset-view.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/tabset/tabset-view.tsx) for the tabset markup and ARIA wiring.
+- [`packages/react/src/layout/row-view.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/layout/row-view.tsx) for the splitter (`<Separator data-dashfoo="splitter">`).
+- [`packages/react/src/styles.css`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/styles.css) for the structural rules, including the chip and dock-indicator geometry.
 - [`packages/react/src/drag/dock-indicator.tsx`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/react/src/drag/dock-indicator.tsx) for the dock indicator and the `--dashfoo-dock-*` geometry variables.

@@ -128,33 +128,43 @@ inverted neutral scale.
 | `--dashfoo-muted`             | `oklch(0.97 0 0)`                                              | Tab strip + panel-badge background          |
 | `--dashfoo-accent`            | `oklch(0.97 0 0)`                                              | Hover surface on controls + menu items      |
 | `--dashfoo-foreground`        | `oklch(0.145 0 0)`                                             | Primary text, active tab                    |
-| `--dashfoo-muted-foreground`  | `oklch(0.556 0 0)`                                             | Idle tabs, icons, secondary text            |
+| `--dashfoo-muted-foreground`  | `oklch(0.5 0 0)`                                               | Idle tabs, icons, secondary text            |
 | `--dashfoo-accent-foreground` | `oklch(0.205 0 0)`                                             | Text on hovered controls + menu items       |
 | `--dashfoo-primary`           | `oklch(0.205 0 0)`                                             | Active-tab underline, dock-indicator accent |
 | `--dashfoo-border`            | `oklch(0.922 0 0)`                                             | Default borders                             |
 | `--dashfoo-ring`              | `oklch(0.708 0 0)`                                             | Focus rings, rename input, splitter grip    |
 | `--dashfoo-radius`            | `0.625rem`                                                     | Tabset / menu corner radius                 |
+| `--dashfoo-radius-sm`         | `0.375rem`                                                     | Tab corners, tab focus ring, float buttons  |
 | `--dashfoo-font`              | `ui-sans-serif, system-ui, …`                                  | Chrome font family                          |
 | `--dashfoo-font-size`         | `13px`                                                         | Base chrome font size                       |
 | `--dashfoo-splitter-size`     | `1rem`                                                         | Resize-handle hit area (see note)           |
+| `--dashfoo-snap`              | `var(--dashfoo-primary)`                                       | Splitter grip while a snap is engaged       |
 | `--dashfoo-dock-fill`         | `color-mix(in oklab, var(--dashfoo-primary) 10%, transparent)` | Dock-indicator fill while dragging          |
 | `--dashfoo-dock-border`       | `var(--dashfoo-ring)`                                          | Dock-indicator border                       |
+| `--dashfoo-dock-radius`       | `var(--dashfoo-radius)`                                        | Dock-indicator corner radius                |
 | `--dashfoo-dock-line-radius`  | `2px`                                                          | Insertion-line corner radius (pill ends)    |
 
 The dock tokens are derived from the semantic tokens, so they track theme and
-overrides automatically. When no theme CSS is loaded at all, `@dashfoo/react`
-falls back inline to neutral values: `oklch(0.556 0 0 / 0.18)` fill and
-`oklch(0.708 0 0 / 0.75)` border.
+overrides automatically. When no theme CSS is loaded at all,
+`@dashfoo/react/styles.css` falls back to neutral values:
+`oklch(0.556 0 0 / 0.18)` fill, `oklch(0.708 0 0 / 0.75)` border and a `6px`
+radius.
 
-The drag/dock indicator also reads three **optional** properties that are unset by
+The drag/dock indicator also reads two **optional** properties that are unset by
 default (they fall back to the value shown). Override them only to retune the
 indicator look:
 
 | Token                         | Fallback                                       | Controls                               |
 | ----------------------------- | ---------------------------------------------- | -------------------------------------- |
 | `--dashfoo-dock-border-width` | `1px`                                          | Indicator border width                 |
-| `--dashfoo-dock-radius`       | `6px`                                          | Indicator corner radius                |
 | `--dashfoo-dock-transition`   | `left 60ms, top 60ms, width 60ms, height 60ms` | Indicator glide; set `none` to disable |
+
+The skin sets `--dashfoo-chip-width: 11rem` and `--dashfoo-chip-height: 2.25rem`
+on `[data-dashfoo="float-chip"]` itself, not in `tokens.css`, and sizes the chip
+from them (`max-width` and `height`). `@dashfoo/react/styles.css` reads the same
+two vars, falling back to `168px` and `34px`, only to clamp the chip's position
+on screen. Override both on the chip, or set them in a custom skin that sizes
+the chip, so the clamp matches the real size.
 
 > **Splitter size.** `--dashfoo-splitter-size` is the default; the model's
 > `global.splitterSize` (a number, in px) overrides it per-layout via an inline
@@ -170,9 +180,9 @@ emitted by `@dashfoo/react` with zero imposed styling.
 | `[data-dashfoo="layout"]`            | Root layout container                                                   |
 | `[data-dashfoo="row"]`               | A resizable row/column group                                            |
 | `[data-dashfoo="splitter"]`          | Resize handle (also carries rrp's `[data-separator][aria-orientation]`) |
-| `[data-dashfoo="tabset"]`            | A tabbed pane (bordered surface)                                        |
+| `[data-dashfoo="tabset"]`            | A tabbed pane (bordered surface); carries `data-tabset-id`              |
 | `[data-dashfoo="tabstrip"]`          | Tab strip row (tablist + trailing toolbar)                              |
-| `[data-dashfoo="tablist"]`           | The ARIA tablist                                                        |
+| `[data-dashfoo="tablist"]`           | Scrolling viewport around the `role="tablist"` span that owns the tabs  |
 | `[data-dashfoo="tab-item"]`          | A tab wrapper (label + close)                                           |
 | `[data-dashfoo="tab"]`               | The tab button                                                          |
 | `[data-dashfoo="tab-close"]`         | Close-tab control                                                       |
@@ -193,6 +203,7 @@ emitted by `@dashfoo/react` with zero imposed styling.
 | `[data-dashfoo="panel-body"]`        | `Panel` scrollable body                                                 |
 | `[data-dashfoo="dock-indicator"]`    | Live dock indicator (insertion line / split zone)                       |
 | `[data-dashfoo="drag-preview"]`      | The chip that follows the pointer while dragging                        |
+| `[data-dashfoo="icon"]`              | A built-in control icon (`svg`)                                         |
 
 ### State selectors
 
@@ -203,6 +214,7 @@ Read state off standard ARIA and data attributes:
 - `[data-dashfoo="tab-item"][data-dragging]`: a tab being lifted into the drag preview (the source, dimmed)
 - `[data-dashfoo="tabset"][data-dragging-source]`: a tabset being dragged by its grip
 - `[data-dashfoo="tabset"][data-tab-location="bottom"]`: a tabset with its strip on the bottom
+- `[data-dashfoo="float-titlebar"][data-editable]`: a float title bar you can drag (the skin shows the grab cursor only here)
 - `[data-separator][aria-orientation="vertical"]`: a column resize handle (also `horizontal`)
 - `:focus-visible` / `:focus-within` for focus rings
 
@@ -213,4 +225,5 @@ Read state off standard ARIA and data attributes:
 - **No JS API.** The package exports a `DASHFOO_THEME_VERSION` constant for
   tooling; everything else is CSS. There are no React components to import.
 - **Reduced motion** is honored: `@media (prefers-reduced-motion: reduce)` drops
-  the dock-indicator glide.
+  the dock-indicator glide, the snap glide, and the float and chip entry
+  animation.

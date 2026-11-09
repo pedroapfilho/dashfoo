@@ -93,25 +93,22 @@ const locate = <N extends AttributedNode>(
   return undefined;
 };
 
-const collectTabsetsInRow = (row: RowNode, acc: Array<TabsetNode>): void => {
+const collectTabsetsInRow = (row: RowNode): Array<TabsetNode> => {
+  const tabsets: Array<TabsetNode> = [];
+
   walk(row, ({ node }) => {
     if (node.type === "tabset") {
-      acc.push(node);
+      tabsets.push(node);
     }
 
     return undefined;
   });
+
+  return tabsets;
 };
 
-const collectTabsets = (model: Dashfoo): Array<TabsetNode> => {
-  const acc: Array<TabsetNode> = [];
-
-  for (const root of collectRoots(model)) {
-    collectTabsetsInRow(root, acc);
-  }
-
-  return acc;
-};
+const collectTabsets = (model: Dashfoo): Array<TabsetNode> =>
+  collectRoots(model).flatMap(collectTabsetsInRow);
 
 const getFirstTabset = (model: Dashfoo): TabsetNode | undefined => collectTabsets(model)[0];
 
@@ -140,13 +137,14 @@ const findAttributedNode = (model: Dashfoo, id: string): AttributedNode | undefi
   return undefined;
 };
 
-const findTabsetParent = (
-  model: Dashfoo,
-  tabsetId: string,
-): { index: number; parent: RowNode } | undefined => {
+type TabsetSlot = { index: number; parent: RowNode; tabset: TabsetNode };
+
+const findTabsetParent = (model: Dashfoo, tabsetId: string): TabsetSlot | undefined => {
   const found = locate(model, tabsetId, isTabset);
 
-  return found?.parent?.type === "row" ? { index: found.index, parent: found.parent } : undefined;
+  return found?.parent?.type === "row"
+    ? { index: found.index, parent: found.parent, tabset: found.node }
+    : undefined;
 };
 
 const collectIdsInRow = (row: RowNode, acc: Array<string>): void => {
@@ -196,4 +194,4 @@ export {
   getFirstTabset,
 };
 
-export type { AttributedNode, TabLocation };
+export type { AttributedNode, TabLocation, TabsetSlot };
