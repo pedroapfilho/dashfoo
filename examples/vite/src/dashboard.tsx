@@ -15,6 +15,7 @@ const layout = model(
 
 const Notes = (): ReactNode => {
   const [text, setText] = useState("");
+
   return (
     <label>
       Notes
