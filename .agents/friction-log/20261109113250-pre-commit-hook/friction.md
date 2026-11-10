@@ -1,6 +1,7 @@
 ---
 title: 'Pre-commit hook rejects commits whose only staged scripts are under `examples/`'
 severity: 'minor'
+issue: 'pedroapfilho/dashfoo#206'
 ---
 
 ### Expected Behavior

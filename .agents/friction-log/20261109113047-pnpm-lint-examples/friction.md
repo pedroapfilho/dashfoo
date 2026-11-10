@@ -1,6 +1,7 @@
 ---
 title: '`pnpm lint:examples` runs in `pnpm verify` but in no CI job'
 severity: 'minor'
+issue: 'pedroapfilho/dashfoo#205'
 ---
 
 ### Expected Behavior
