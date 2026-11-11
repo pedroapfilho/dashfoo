@@ -1,5 +1,5 @@
 import type { Dashfoo } from "@dashfoo/core";
-import { model, row, tab, tabset } from "@dashfoo/core";
+import { findTabset, model, row, tab, tabset } from "@dashfoo/core";
 import type { ResponsiveOptions } from "@dashfoo/react";
 
 const overviewModel = (): Dashfoo =>
@@ -48,6 +48,20 @@ const dockingModel = (): Dashfoo =>
     { activeTabsetId: "a" },
   );
 
+/** The docking layout with a collapsible right sidebar and IDE-style "recent" tab selection. */
+const rawModel = (): Dashfoo => {
+  const raw = dockingModel();
+  const sidebar = findTabset(raw, "b");
+
+  if (sidebar) {
+    sidebar.collapsible = true;
+  }
+
+  raw.global.tabSetSelectOnRemove = "recent";
+
+  return raw;
+};
+
 const playgroundModel = (): Dashfoo =>
   model(
     row(
@@ -69,4 +83,4 @@ const playgroundModel = (): Dashfoo =>
 /** Every demo page stacks at the same width. */
 const COMPACT: ResponsiveOptions = { maxWidth: 720 };
 
-export { COMPACT, dockingModel, overviewModel, playgroundModel };
+export { COMPACT, dockingModel, overviewModel, playgroundModel, rawModel };

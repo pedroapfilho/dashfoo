@@ -7,13 +7,13 @@ import {
   useTab,
   useTabset,
 } from "@dashfoo/react";
-import { Redo2, Undo2 } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, Redo2, Undo2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo } from "react";
 
 import { Button, DemoStage } from "../components/demo-stage";
 import { PlaceholderPanel } from "../components/placeholder-panel";
-import { COMPACT, dockingModel } from "../models";
+import { COMPACT, rawModel } from "../models";
 
 const RawTabLabel = (): ReactNode => {
   const { index, tab } = useTab();
@@ -57,6 +57,13 @@ const RawTabset = ({ node }: { node: TabsetNode }): ReactNode => (
       <Tabset.Toolbar>
         <TabCountBadge />
         <Tabset.OverflowMenu />
+        <Tabset.CollapseButton
+          title={({ isCollapsed }) => (isCollapsed ? "Show panel" : "Hide panel")}
+        >
+          {({ isCollapsed }) =>
+            isCollapsed ? <PanelRightOpen size={14} /> : <PanelRightClose size={14} />
+          }
+        </Tabset.CollapseButton>
         <Tabset.MaximizeButton />
         <Tabset.Grip />
       </Tabset.Toolbar>
@@ -66,7 +73,7 @@ const RawTabset = ({ node }: { node: TabsetNode }): ReactNode => (
 );
 
 const RawPage = (): ReactNode => {
-  const defaultModel = useMemo(() => dockingModel(), []);
+  const defaultModel = useMemo(() => rawModel(), []);
   const store = useDashfooStore({ defaultModel });
   const responsive = useResponsiveLayout(store.model, COMPACT);
   const view = responsive.model;
@@ -91,7 +98,7 @@ const RawPage = (): ReactNode => {
           </Button>
         </>
       }
-      description="No DashfooLayout here. This page wires useDashfooStore to Layout.Root, Layout.DragLayer, and Layout.Rows by hand, and composes every tabset from the Tabset.* parts: custom tab labels, a tab counter in the toolbar, reordered controls. Everything still drags, docks, renames, and maximizes."
+      description="No DashfooLayout here. This page wires useDashfooStore to Layout.Root, Layout.DragLayer, and Layout.Rows by hand, and composes every tabset from the Tabset.* parts: custom tab labels, a tab counter in the toolbar, reordered controls, and a collapse button that draws its own icon from its state. Everything still drags, docks, renames, collapses, and maximizes. Closing a tab hands the selection back to the tab you had open before."
       title="Raw primitives"
     >
       <Layout.Root
