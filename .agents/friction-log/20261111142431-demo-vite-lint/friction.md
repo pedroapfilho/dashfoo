@@ -21,4 +21,4 @@ Add two statements with no blank line between them to any `apps/demo-vite/e2e/*.
 
 ### Context
 
-Hit while adding `apps/demo-vite/e2e/edge-dock.spec.ts` for the Workspace drag and drop port.
+Hit while adding `apps/demo-vite/e2e/edge-dock.spec.ts` for the tabset drag and drop PR.

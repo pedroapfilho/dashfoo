@@ -3,7 +3,7 @@
 "@dashfoo/react": minor
 ---
 
-Drag and drop catches up with the react-resizable-panels Workspace (4.17 to 4.20).
+Richer drag and drop: whole-tabset drags from the header, edge docking, one gliding drop indicator and right-to-left support.
 
 - A whole tabset drags by the empty space in its header as well as its grip. The drag preview shows the extra tab count, like `Canvas (+2)`.
 - Tabsets take an `enableDrag` flag. A tabset with it off, or holding a tab with it off, can't be dragged whole.
