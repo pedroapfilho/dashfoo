@@ -3,7 +3,7 @@ import { warn } from "../lib/warn";
 import { floatNode, row, tabset } from "../model/builders";
 import type { DockLocation, SplitLocation } from "../model/dock-location";
 import { SPLIT_PLACEMENT } from "../model/dock-location";
-import type { Dashfoo, Geometry, TabNode, TabsetNode } from "../model/schema";
+import type { Dashfoo, Geometry, SelectOnRemove, TabNode, TabsetNode } from "../model/schema";
 import { DEFAULT_FLOAT_GEOMETRY, DEFAULT_FLOAT_NAME } from "../model/schema";
 import type { TabsetSlot } from "../model/tree";
 import {
@@ -23,12 +23,27 @@ type DockingAction = Extract<
 >;
 
 /**
- * The index, in the strip as it stands, of the tab that inherits the selection
- * when the selected tab at `removedIndex` leaves: its right neighbour, else its
- * left one. `-1` when the strip empties.
+ * The index of the tab that inherits the selection when the selected tab at
+ * `removedIndex` leaves: under `"recent"` the last other tab selected, else
+ * (or with no history) its right neighbour, else its left. `-1` when none is left.
  */
-const fallbackSelectedIndex = (count: number, removedIndex: number): number =>
-  removedIndex + 1 < count ? removedIndex + 1 : removedIndex - 1;
+const fallbackSelectedIndex = (
+  strip: TabsetNode,
+  removedIndex: number,
+  policy: SelectOnRemove = "neighbor",
+): number => {
+  const indexById = new Map(strip.children.map((tab, index) => [tab.id, index]));
+  indexById.delete(strip.children[removedIndex]?.id ?? "");
+
+  const recent =
+    policy === "recent" ? strip.selectionHistory?.find((id) => indexById.has(id)) : undefined;
+
+  if (recent !== undefined) {
+    return indexById.get(recent) ?? -1;
+  }
+
+  return removedIndex + 1 < strip.children.length ? removedIndex + 1 : removedIndex - 1;
+};
 
 /** An explicit target must exist; without one, the active main tabset, else the first. */
 const locateMainTarget = (
@@ -45,10 +60,10 @@ const locateMainTarget = (
   return target && findTabsetParent(draft, target.id);
 };
 
-const detachTab = (container: TabsetNode, index: number): TabNode | undefined => {
+const detachTab = (draft: Dashfoo, container: TabsetNode, index: number): TabNode | undefined => {
   const heir =
     index === container.selected
-      ? fallbackSelectedIndex(container.children.length, index)
+      ? fallbackSelectedIndex(container, index, draft.global.tabSetSelectOnRemove)
       : container.selected;
 
   const removed = container.children.splice(index, 1).at(0);
@@ -60,7 +75,7 @@ const detachTab = (container: TabsetNode, index: number): TabNode | undefined =>
 const removeTab = (draft: Dashfoo, tabId: string): TabNode | undefined => {
   const location = findTab(draft, tabId);
 
-  return location && detachTab(location.container, location.index);
+  return location && detachTab(draft, location.container, location.index);
 };
 
 const detachTabset = ({ parent, tabset: detached }: TabsetSlot): TabsetNode => {
@@ -198,7 +213,7 @@ const moveTab = (
     return undefined;
   }
 
-  const tab = detachTab(source.container, source.index);
+  const tab = detachTab(draft, source.container, source.index);
 
   return tab && attachTab(target, tab, location, index);
 };

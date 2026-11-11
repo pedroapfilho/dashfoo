@@ -12,10 +12,15 @@ type OverflowItem = { id: string; name: string };
 
 type TabsetState = {
   activeTab: TabNode | undefined;
+  /** The split lets this tabset collapse now: it is collapsible and has an expanded sibling. */
+  canCollapse: boolean;
   closeTab: (tabId: string) => void;
   dispatch: (action: Action) => void;
   documentId: string;
   editingTabId: string | null;
+  isCollapsed: boolean;
+  /** Collapsed only because the split is too small; it cannot expand until there is room. */
+  isCollapsedToFit: boolean;
   isMaximized: boolean;
   node: TabsetNode;
   overflowItems: Array<OverflowItem>;
@@ -33,6 +38,7 @@ type TabsetState = {
   tablistElement: HTMLDivElement | null;
   tabsClosable: boolean;
   tabsRenamable: boolean;
+  toggleCollapsed: () => void;
   toggleMaximize: () => void;
   visualSelected: number;
 };
@@ -42,8 +48,11 @@ type TabsetStore = StoreApi<TabsetState>;
 type TabsetSnapshot = Pick<
   TabsetState,
   | "activeTab"
+  | "canCollapse"
   | "dispatch"
   | "documentId"
+  | "isCollapsed"
+  | "isCollapsedToFit"
   | "isMaximized"
   | "node"
   | "showMaximize"
@@ -146,6 +155,10 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
       set({ editingTabId: null });
     },
     tablistElement: null,
+    toggleCollapsed: () => {
+      const { dispatch, isCollapsed, node } = get();
+      dispatch({ collapsed: !isCollapsed, tabsetId: node.id, type: "setTabsetCollapsed" });
+    },
     toggleMaximize: () => {
       const { dispatch, isMaximized, node } = get();
       dispatch({ tabsetId: isMaximized ? null : node.id, type: "setMaximizedTabset" });

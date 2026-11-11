@@ -4,12 +4,15 @@ import { warnOnce } from "@dashfoo/core";
 import type { ComponentProps, MouseEvent, ReactNode } from "react";
 import { forwardRef, useMemo } from "react";
 
-import { useNodeDraggable } from "../drag/drag-hooks";
+import { useDraggedNodeId, useNodeDraggable } from "../drag/drag-hooks";
 import { useHasFloatLayer } from "../float/float-context";
 import { measureFloatRect } from "../float/float-geometry";
 import { useLayout } from "../layout/layout-store";
+import { panelDomId } from "../lib/dom-ids";
 import { mergeRefs } from "../lib/merge-refs";
-import { FloatIcon, GripIcon, MaximizeIcon } from "../ui/icons";
+import type { StatefulButtonProps } from "../lib/state-props";
+import { resolveStateProps } from "../lib/state-props";
+import { CollapseIcon, FloatIcon, GripIcon, MaximizeIcon } from "../ui/icons";
 
 import { useTabset } from "./tabset-store";
 
@@ -23,13 +26,22 @@ const TabsetToolbar = forwardRef<HTMLDivElement, TabsetToolbarProps>(
 
 TabsetToolbar.displayName = "TabsetToolbar";
 
-type TabsetChrome = { float: boolean; grip: boolean; maximize: boolean; overflow: boolean };
+type TabsetChrome = {
+  collapse: boolean;
+  float: boolean;
+  grip: boolean;
+  maximize: boolean;
+  overflow: boolean;
+};
 
 /**
  * One answer per control, shared by the controls and by the layout deciding
  * whether to render a toolbar at all, so the two cannot disagree.
  */
 const useTabsetChrome = (): TabsetChrome => {
+  const canCollapse = useTabset((state) => state.canCollapse);
+  const isCollapsed = useTabset((state) => state.isCollapsed);
+  const isCollapsedToFit = useTabset((state) => state.isCollapsedToFit);
   const draggableTabsets = useLayout((state) => state.draggableTabsets);
   const floatable = useLayout((state) => state.floatable);
   const isMaximized = useTabset((state) => state.isMaximized);
@@ -45,6 +57,7 @@ const useTabsetChrome = (): TabsetChrome => {
   }
 
   return {
+    collapse: canCollapse || (isCollapsed && !isCollapsedToFit),
     float: floatable && !isMaximized && hasFloatLayer,
     grip: draggableTabsets && !isMaximized,
     maximize: showMaximize,
@@ -52,41 +65,46 @@ const useTabsetChrome = (): TabsetChrome => {
   };
 };
 
-type TabsetGripProps = ComponentProps<"button">;
+type TabsetGripState = { isDragging: boolean };
 
-const TabsetGrip = forwardRef<HTMLButtonElement, TabsetGripProps>(
-  ({ children, ...props }, userRef): ReactNode => {
-    const activeTabName = useTabset((state) => state.activeTab?.name ?? "");
-    const node = useTabset((state) => state.node);
-    const { grip } = useTabsetChrome();
-    const { ref } = useNodeDraggable("tabset", node.id, !grip, activeTabName);
-    const refCallback = useMemo(() => mergeRefs<HTMLButtonElement>(ref, userRef), [ref, userRef]);
+type TabsetGripProps = StatefulButtonProps<TabsetGripState>;
 
-    if (!grip) {
-      return null;
-    }
+const TabsetGrip = forwardRef<HTMLButtonElement, TabsetGripProps>((props, userRef): ReactNode => {
+  const activeTabName = useTabset((state) => state.activeTab?.name ?? "");
+  const node = useTabset((state) => state.node);
+  const isDragging = useDraggedNodeId("tabset") === node.id;
+  const { grip } = useTabsetChrome();
+  const { ref } = useNodeDraggable("tabset", node.id, !grip, activeTabName);
+  const refCallback = useMemo(() => mergeRefs<HTMLButtonElement>(ref, userRef), [ref, userRef]);
 
-    return (
-      <button
-        aria-label="Move tabset"
-        title="Move tabset"
-        {...props}
-        data-dashfoo="tabset-grip"
-        ref={refCallback}
-        type="button"
-      >
-        {children ?? <GripIcon />}
-      </button>
-    );
-  },
-);
+  if (!grip) {
+    return null;
+  }
+
+  const { buttonProps, children } = resolveStateProps(props, { isDragging });
+
+  return (
+    <button
+      aria-label="Move tabset"
+      title="Move tabset"
+      {...buttonProps}
+      data-dashfoo="tabset-grip"
+      ref={refCallback}
+      type="button"
+    >
+      {children ?? <GripIcon />}
+    </button>
+  );
+});
 
 TabsetGrip.displayName = "TabsetGrip";
 
-type TabsetMaximizeButtonProps = ComponentProps<"button">;
+type TabsetMaximizeButtonState = { isMaximized: boolean };
+
+type TabsetMaximizeButtonProps = StatefulButtonProps<TabsetMaximizeButtonState>;
 
 const TabsetMaximizeButton = forwardRef<HTMLButtonElement, TabsetMaximizeButtonProps>(
-  ({ children, onClick, ...props }, ref): ReactNode => {
+  ({ onClick, ...props }, ref): ReactNode => {
     const isMaximized = useTabset((state) => state.isMaximized);
     const toggleMaximize = useTabset((state) => state.toggleMaximize);
     const { maximize } = useTabsetChrome();
@@ -100,11 +118,13 @@ const TabsetMaximizeButton = forwardRef<HTMLButtonElement, TabsetMaximizeButtonP
       toggleMaximize();
     };
 
+    const { buttonProps, children } = resolveStateProps(props, { isMaximized });
+
     return (
       <button
         aria-label={isMaximized ? "Restore" : "Maximize"}
         title={isMaximized ? "Restore tabset" : "Maximize tabset"}
-        {...props}
+        {...buttonProps}
         aria-pressed={isMaximized}
         data-dashfoo="tabset-maximize"
         onClick={handleClick}
@@ -118,6 +138,49 @@ const TabsetMaximizeButton = forwardRef<HTMLButtonElement, TabsetMaximizeButtonP
 );
 
 TabsetMaximizeButton.displayName = "TabsetMaximizeButton";
+
+type TabsetCollapseButtonState = { isCollapsed: boolean };
+
+type TabsetCollapseButtonProps = StatefulButtonProps<TabsetCollapseButtonState>;
+
+const TabsetCollapseButton = forwardRef<HTMLButtonElement, TabsetCollapseButtonProps>(
+  ({ onClick, ...props }, ref): ReactNode => {
+    const documentId = useTabset((state) => state.documentId);
+    const isCollapsed = useTabset((state) => state.isCollapsed);
+    const node = useTabset((state) => state.node);
+    const toggleCollapsed = useTabset((state) => state.toggleCollapsed);
+    const { collapse } = useTabsetChrome();
+
+    if (!collapse) {
+      return null;
+    }
+
+    const handleClick = (event: MouseEvent<HTMLButtonElement>): void => {
+      onClick?.(event);
+      toggleCollapsed();
+    };
+
+    const { buttonProps, children } = resolveStateProps(props, { isCollapsed });
+
+    return (
+      <button
+        aria-label={isCollapsed ? "Expand" : "Collapse"}
+        title={isCollapsed ? "Expand tabset" : "Collapse tabset"}
+        {...buttonProps}
+        aria-controls={panelDomId(documentId, node.id)}
+        aria-expanded={!isCollapsed}
+        data-dashfoo="tabset-collapse"
+        onClick={handleClick}
+        ref={ref}
+        type="button"
+      >
+        {children ?? <CollapseIcon collapsed={isCollapsed} />}
+      </button>
+    );
+  },
+);
+
+TabsetCollapseButton.displayName = "TabsetCollapseButton";
 
 type TabsetFloatButtonProps = ComponentProps<"button">;
 
@@ -155,11 +218,22 @@ const TabsetFloatButton = forwardRef<HTMLButtonElement, TabsetFloatButtonProps>(
 
 TabsetFloatButton.displayName = "TabsetFloatButton";
 
-export { TabsetFloatButton, TabsetGrip, TabsetMaximizeButton, TabsetToolbar, useTabsetChrome };
+export {
+  TabsetCollapseButton,
+  TabsetFloatButton,
+  TabsetGrip,
+  TabsetMaximizeButton,
+  TabsetToolbar,
+  useTabsetChrome,
+};
 
 export type {
+  TabsetCollapseButtonProps,
+  TabsetCollapseButtonState,
   TabsetFloatButtonProps,
   TabsetGripProps,
+  TabsetGripState,
   TabsetMaximizeButtonProps,
+  TabsetMaximizeButtonState,
   TabsetToolbarProps,
 };

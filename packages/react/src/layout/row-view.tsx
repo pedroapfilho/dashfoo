@@ -3,14 +3,16 @@
 import type { Dimension, RowNode, SnapConfig, TabsetNode } from "@dashfoo/core";
 import { collectTabsetsInRow, resolveSnapGrid, snapEnabled } from "@dashfoo/core";
 import type { ReactNode } from "react";
-import { Fragment, useMemo } from "react";
-import type { Orientation } from "react-resizable-panels";
+import { Fragment, useMemo, useRef, useState } from "react";
+import type { GroupImperativeHandle, Orientation } from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
 import { resizePanelId } from "../lib/dom-ids";
 import { TabsetView } from "../tabset/tabset-view";
 
 import { useLayout } from "./layout-store";
+import { TabsetSlotContext } from "./tabset-slot";
+import { useCollapsiblePanels } from "./use-collapsible-panels";
 import { percentagesOf, useSnapResize } from "./use-snap-resize";
 
 const dimensionToSize = (dimension: Dimension): string => `${dimension.value}${dimension.unit}`;
@@ -66,12 +68,16 @@ type RowViewProps = {
   renderTabset?: (node: TabsetNode) => ReactNode;
 };
 
-const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
+type RowGroupProps = RowViewProps & { isRoot?: boolean };
+
+const RowGroup = ({ isRoot = false, node, renderTabset }: RowGroupProps): ReactNode => {
   const dispatch = useLayout((state) => state.dispatch);
   const documentId = useLayout((state) => state.documentId);
   const resizableSplits = useLayout((state) => state.resizableSplits);
   const tabsetMinSize = useLayout((state) => state.tabsetMinSize);
   const globalSnap = useLayout((state) => state.snap);
+  const [groupElement, setGroupElement] = useState<HTMLDivElement | null>(null);
+  const groupRef = useRef<GroupImperativeHandle | null>(null);
 
   const effectiveSnap: SnapConfig | null = node.snap ?? globalSnap;
 
@@ -85,33 +91,50 @@ const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
   const snapActive = snapEnabled(snapGrid);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
 
+  const minPixels = (child: LayoutChild): number | undefined =>
+    dimensionToPixels(child.min) ??
+    (child.min === undefined
+      ? descendantMinSize(child, node.orientation, tabsetMinSize)
+      : undefined);
+
+  const collapse = useCollapsiblePanels({
+    dispatch,
+    groupElement,
+    groupRef,
+    minPixels,
+    node,
+    panelIdOf: (childId) => resizePanelId(documentId, childId),
+  });
+
+  const { collapsedIds } = collapse;
+
   const panels = useMemo(
     () =>
       node.children.map((child) => ({
         child,
+        collapsed: collapsedIds.has(child.id),
         id: resizePanelId(documentId, child.id),
         weight: child.weight,
       })),
-    [documentId, node.children],
+    [collapsedIds, documentId, node.children],
   );
 
   const percentages = percentagesOf(panels);
 
-  const { beginBoundaryDrag, groupRef, onLayoutChange, onLayoutChanged, snappedBoundary } =
-    useSnapResize({
-      onWeightsSettled: (weights) => {
-        dispatch({ rowId: node.id, type: "adjustSplit", weights });
-      },
-      panels,
-      resizableSplits,
-      snap: snapGrid,
-    });
+  const { beginBoundaryDrag, onLayoutChange, onLayoutChanged, snappedBoundary } = useSnapResize({
+    groupRef,
+    onWeightsSettled: collapse.settle,
+    panels,
+    resizableSplits,
+    snap: snapGrid,
+  });
 
   return (
     <Group
       data-dashfoo="row"
       data-dashfoo-snapping={snappedBoundary === null ? undefined : "true"}
       disabled={!resizableSplits}
+      elementRef={setGroupElement}
       groupRef={groupRef}
       key={node.id}
       onLayoutChange={snapActive ? onLayoutChange : undefined}
@@ -127,6 +150,8 @@ const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
         }
 
         const max = child.max ? dimensionToSize(child.max) : undefined;
+        const collapsible = collapse.isCollapsible(child);
+        const headerSize = collapse.headerSizes.get(child.id);
 
         return (
           <Fragment key={child.id}>
@@ -144,11 +169,36 @@ const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
                 }
               />
             ) : null}
-            <Panel defaultSize={`${percentages[index] ?? 0}%`} id={id} maxSize={max} minSize={min}>
+            <Panel
+              collapsedSize={
+                collapsible && headerSize !== undefined ? `${headerSize}px` : undefined
+              }
+              collapsible={collapsible}
+              defaultSize={`${percentages[index] ?? 0}%`}
+              elementRef={(element) => {
+                collapse.registerElement(child.id, element);
+              }}
+              id={id}
+              maxSize={max}
+              minSize={min}
+              panelRef={(handle) => {
+                collapse.registerHandle(child.id, handle);
+              }}
+            >
               {child.type === "row" ? (
                 <RowGroup node={child} renderTabset={renderTabset} />
               ) : (
-                (renderTabset?.(child) ?? <TabsetView node={child} />)
+                <TabsetSlotContext.Provider
+                  value={{
+                    alone: isRoot && node.children.length === 1,
+                    canCollapse: collapsible && !collapsedIds.has(child.id),
+                    collapsed: collapsedIds.has(child.id),
+                    collapsedToFit: collapse.fitIds.has(child.id),
+                    orientation: node.orientation,
+                  }}
+                >
+                  {renderTabset?.(child) ?? <TabsetView node={child} />}
+                </TabsetSlotContext.Provider>
               )}
             </Panel>
           </Fragment>
@@ -174,7 +224,7 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     return renderTabset?.(maximized) ?? <TabsetView node={maximized} />;
   }
 
-  return <RowGroup node={node} renderTabset={renderTabset} />;
+  return <RowGroup isRoot node={node} renderTabset={renderTabset} />;
 };
 
 export { RowView };

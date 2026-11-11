@@ -15,6 +15,7 @@ const mutableTabAttrsSchema = tabNodeSchema
 /** `weight` is re-declared, not picked: `.partial()` over a defaulted field still injects the default. */
 const mutableTabsetAttrsSchema = tabsetNodeSchema
   .pick({
+    collapsible: true,
     enableClose: true,
     enableMaximize: true,
     max: true,

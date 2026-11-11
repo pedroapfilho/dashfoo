@@ -82,6 +82,7 @@ const resolveLayoutOptions = (
     maximizable: noneSwitchedOff(options.maximizable, global.tabSetEnableMaximize),
     renamableTabs: noneSwitchedOff(editable, options.renamableTabs, global.tabEnableRename),
     resizableSplits: noneSwitchedOff(structural, options.resizableSplits, global.enableSplitResize),
+    selectOnRemove: global.tabSetSelectOnRemove ?? "neighbor",
     snap: options.snap ?? global.snap ?? null,
     splitDock: global.enableSplitDock !== false,
     tabLocation: global.tabLocation ?? "top",

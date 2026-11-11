@@ -37,6 +37,8 @@ const tab = (component: string, name: string, options: TabOptions = {}): TabNode
 });
 
 type TabsetOptions = {
+  collapsed?: boolean;
+  collapsible?: boolean;
   enableClose?: boolean;
   enableMaximize?: boolean;
   id?: string;

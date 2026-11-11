@@ -1,6 +1,6 @@
 "use client";
 
-import type { Action, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
+import type { Action, SelectOnRemove, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
@@ -24,6 +24,7 @@ type LayoutState = {
   renderTabLabel: ((tab: TabNode) => ReactNode) | undefined;
   renderTabsetToolbar: ((tabset: TabsetNode) => ReactNode) | undefined;
   resizableSplits: boolean;
+  selectOnRemove: SelectOnRemove;
 
   snap: SnapConfig | null;
   splitDock: boolean;

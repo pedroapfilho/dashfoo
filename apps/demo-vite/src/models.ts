@@ -18,7 +18,7 @@ const overviewModel = (): Dashfoo =>
             }),
             tabset(
               [tab("metrics", "Metrics"), tab("history", "History"), tab("reports", "Reports")],
-              { id: "ts-side-bottom", weight: 1 },
+              { collapsible: true, id: "ts-side-bottom", weight: 1 },
             ),
           ],
           { id: "right", orientation: "column", weight: 1 },

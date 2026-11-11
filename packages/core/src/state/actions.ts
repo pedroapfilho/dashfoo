@@ -33,6 +33,7 @@ const actionSchema = z.discriminatedUnion("type", [
   z.object({ index: z.number().int(), tabsetId: z.string(), type: z.literal("selectTab") }),
   z.object({ tabsetId: z.string(), type: z.literal("setActiveTabset") }),
   z.object({ tabsetId: z.string().nullable(), type: z.literal("setMaximizedTabset") }),
+  z.object({ collapsed: z.boolean(), tabsetId: z.string(), type: z.literal("setTabsetCollapsed") }),
   z.object({ name: z.string(), tabId: z.string(), type: z.literal("renameTab") }),
   z.object({ tabId: z.string(), type: z.literal("deleteTab") }),
   z.object({ tabsetId: z.string(), type: z.literal("deleteTabset") }),

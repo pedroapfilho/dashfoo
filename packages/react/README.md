@@ -101,7 +101,8 @@ which takes the same type and resolves every default above in one place. With
 `responsive`, the compact locks override `maximizable` and `restructurable`.
 
 A `ref` exposes a `DashfooHandle` for imperative control:
-`addTab`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `floatTab`,
+`addTab`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `collapseTabset`,
+`expandTabset`, `floatTab`,
 `dockFloat`, `dispatch`, `getModel`, `undo` / `redo` / `canUndo` / `canRedo`,
 and `resetLayout()` (reset to the original `defaultModel`, clearing undo history and
 any persisted copy).
@@ -191,7 +192,8 @@ with the right role and ARIA wiring, ready for you to style.
 
 - **Close**: a `[data-dashfoo="tab-close"]` button next to each tab label, shown when closing is enabled. Dispatches `deleteTab`.
 - **Rename**: double-click a tab to swap its label for a `[data-dashfoo="tab-rename"]` input. Enter commits, Escape cancels, blur commits. A trimmed, changed value dispatches `renameTab`; focus returns to the tab afterward.
-- **Maximize**: a `[data-dashfoo="tabset-maximize"]` toggle in the tabset toolbar. Dispatches `setMaximizedTabset`; one maximized tabset fills the frame and `aria-pressed` reflects state.
+- **Maximize**: a `[data-dashfoo="tabset-maximize"]` toggle in the tabset toolbar. Dispatches `setMaximizedTabset`; one maximized tabset fills the frame and `aria-pressed` reflects state. Hidden for the only tabset in the layout.
+- **Collapse**: a `[data-dashfoo="tabset-collapse"]` toggle on `collapsible` tabsets. Dispatches `setTabsetCollapsed`; the tabset shrinks to its strip, `aria-expanded` reflects state and `aria-controls` names its tab panel. Dragging a splitter past the tabset's minimum collapses it too, and clicking one of its tabs expands it. When a split is too small for its minimums, collapsible tabsets are collapsed to fit (`data-collapsed-to-fit`) without touching the model, and expand again once there is room.
 - **Float**: a `[data-dashfoo="tabset-float"]` button in the tabset toolbar, shown when `floatable`. Floats the tabset into a movable, resizable overlay (`floatTabset`); the float's `[data-dashfoo="float-dock"]` control docks it back (`dockFloat`). See "Floating panels" below.
 - **Tabs**: roving-tabindex keyboard model (WAI-ARIA APG): Arrow keys move and select, Home/End jump to the ends, focus follows selection.
 - **Drag-to-dock**: drag a tab to restack it or split a tabset (when split-dock is on). A `[data-dashfoo="dock-indicator"]` previews where it lands.
@@ -204,16 +206,17 @@ explicitly `false`). A control shows only when the `editable` umbrella, the
 chrome prop, the model global, and the node's flag all allow it (`maximizable`
 ignores `editable`; maximize is view state, not a structural edit).
 
-| Field               | On node | Disables                                         |
-| ------------------- | ------- | ------------------------------------------------ |
-| `enableClose`       | tab     | the close control for that tab                   |
-| `enableClose`       | tabset  | closing for every tab in the tabset              |
-| `enableRename`      | tab     | double-click rename for that tab                 |
-| `enableDrag`        | tab     | dragging that tab                                |
-| `enableMaximize`    | tabset  | the maximize control for that tabset             |
-| `tabEnableDrag`     | global  | tree-wide default behind `tab.enableDrag`        |
-| `enableSplitDock`   | global  | splitting a tabset on drop (drops stack instead) |
-| `enableSplitResize` | global  | dragging the splitters (gutters keep their size) |
+| Field               | On node | Disables                                            |
+| ------------------- | ------- | --------------------------------------------------- |
+| `enableClose`       | tab     | the close control for that tab                      |
+| `enableClose`       | tabset  | closing for every tab in the tabset                 |
+| `enableRename`      | tab     | double-click rename for that tab                    |
+| `enableDrag`        | tab     | dragging that tab                                   |
+| `enableMaximize`    | tabset  | the maximize control for that tabset                |
+| `collapsible`       | tabset  | opt-in (`true`): collapsing the tabset to its strip |
+| `tabEnableDrag`     | global  | tree-wide default behind `tab.enableDrag`           |
+| `enableSplitDock`   | global  | splitting a tabset on drop (drops stack instead)    |
+| `enableSplitResize` | global  | dragging the splitters (gutters keep their size)    |
 
 ```ts
 { id: "logs", type: "tab", name: "Logs", component: "logs", enableClose: false }
@@ -444,42 +447,42 @@ Every styleable element carries a `data-dashfoo` attribute. Selectors are stable
 target them in your stylesheet. The required `@dashfoo/react/styles.css` owns
 structure and consumes runtime geometry through CSS custom properties.
 
-| `data-dashfoo` value | Element         | Notes                                                                                                                                          |
-| -------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `layout`             | root `div`      | The outer container. `display: flex` over the full parent.                                                                                     |
-| `row`                | rrp `Group`     | A resizable row/column. `orientation` comes from the node.                                                                                     |
-| `splitter`           | rrp `Separator` | Resize handle between siblings (also matches `[data-separator]`, see below).                                                                   |
-| `tabset`             | `div`           | A tabbed region. Carries `data-tabset-id`, `data-dragging-source` while dragged by its grip, and `data-tab-location`.                          |
-| `tabstrip`           | `div`           | The strip row: tablist plus a trailing toolbar slot.                                                                                           |
-| `tablist`            | `div`           | The scrolling viewport around the tabs. An inner `span` carries `role="tablist"` and owns the tabs through `aria-owns`.                        |
-| `tab-item`           | `span`          | Wraps one tab's button and its close button. `data-dragging` while dragged.                                                                    |
-| `tab`                | `button`        | `role="tab"`. Carries `aria-selected` and `data-tab-id`.                                                                                       |
-| `tab-close`          | `button`        | Per-tab close. `aria-label="Close <name>"`.                                                                                                    |
-| `tab-rename`         | `input`         | Inline rename editor, shown during a rename.                                                                                                   |
-| `tabset-toolbar`     | `div`           | Trailing controls in the strip: overflow menu, grip, custom toolbar slot, pop-out, maximize.                                                   |
-| `tab-overflow-root`  | `div`           | Wraps the overflow trigger and its menu; rendered when tabs don't fit the strip.                                                               |
-| `tab-overflow`       | `button`        | Overflow menu trigger. `aria-label="More tabs"`.                                                                                               |
-| `tab-overflow-menu`  | `div`           | `role="menu"`, lists the hidden tabs while open.                                                                                               |
-| `tab-overflow-item`  | `button`        | `role="menuitem"`, one hidden tab; selecting it activates the tab.                                                                             |
-| `tabset-grip`        | `button`        | Drags the whole tabset. `aria-label="Move tabset"`; shown when `draggableTabsets` is on and the tabset is not maximized.                       |
-| `tabset-float`       | `button`        | Floats the tabset into a movable overlay. `aria-label="Float panel"`; shown when `floatable` is on and not maximized.                          |
-| `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                                                                                        |
-| `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                              |
-| `float-overlay`      | `div`           | The `pointer-events: none` overlay covering the layout; holds the floats.                                                                      |
-| `float`              | `div`           | A floating panel's elevated frame. `display: flex; flex-direction: column`, positioned absolutely.                                             |
-| `float-titlebar`     | `div`           | The float's drag handle / title bar (grip + title + dock control). `data-editable` while the layout is editable; `cursor: default` without it. |
-| `float-grip`         | `span`          | Drag-affordance dots in the title bar (decorative, `aria-hidden`).                                                                             |
-| `float-title`        | `span`          | The float's window title (its own name); double-click to rename. `aria-hidden` grip precedes it.                                               |
-| `float-rename`       | `input`         | The inline title editor, shown while renaming. `aria-label="Rename <name>"`.                                                                   |
-| `float-minimize`     | `button`        | Collapses the float to a chip. `aria-label="Minimize panel"`.                                                                                  |
-| `float-dock`         | `button`        | Docks the panel back into the main layout. `aria-label="Dock panel back into the main layout"`.                                                |
-| `float-body`         | `div`           | The float's content area; holds the panel's layout.                                                                                            |
-| `float-resize`       | `div`           | An edge/corner resize handle (eight in total); `data-edge` is the direction.                                                                   |
-| `float-chip`         | `button`        | A minimized float: a rounded chip you click (or drag) to restore. Clamped on screen by `--dashfoo-chip-width` / `--dashfoo-chip-height`.       |
-| `float-chip-label`   | `span`          | The chip's panel title.                                                                                                                        |
-| `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone pane). `pointer-events: none`.                                                                |
-| `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label. `pointer-events: none`.                                            |
-| `icon`               | `svg`           | The built-in close, grip, maximize, float, minimize, dock and overflow icons. `aria-hidden`, `pointer-events: none`.                           |
+| `data-dashfoo` value | Element         | Notes                                                                                                                                                                                                                             |
+| -------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `layout`             | root `div`      | The outer container. `display: flex` over the full parent.                                                                                                                                                                        |
+| `row`                | rrp `Group`     | A resizable row/column. `orientation` comes from the node.                                                                                                                                                                        |
+| `splitter`           | rrp `Separator` | Resize handle between siblings (also matches `[data-separator]`, see below).                                                                                                                                                      |
+| `tabset`             | `div`           | A tabbed region. Carries `data-tabset-id`, `data-dragging-source` while dragged by its grip, `data-tab-location`, `data-collapsed` (`"row"` or `"column"`, the split's orientation) while collapsed, and `data-collapsed-to-fit`. |
+| `tabstrip`           | `div`           | The strip row: tablist plus a trailing toolbar slot.                                                                                                                                                                              |
+| `tablist`            | `div`           | The scrolling viewport around the tabs. An inner `span` carries `role="tablist"` and owns the tabs through `aria-owns`.                                                                                                           |
+| `tab-item`           | `span`          | Wraps one tab's button and its close button. `data-dragging` while dragged.                                                                                                                                                       |
+| `tab`                | `button`        | `role="tab"`. Carries `aria-selected` and `data-tab-id`.                                                                                                                                                                          |
+| `tab-close`          | `button`        | Per-tab close. `aria-label="Close <name>"`.                                                                                                                                                                                       |
+| `tab-rename`         | `input`         | Inline rename editor, shown during a rename.                                                                                                                                                                                      |
+| `tabset-toolbar`     | `div`           | Trailing controls in the strip: overflow menu, grip, custom toolbar slot, pop-out, maximize.                                                                                                                                      |
+| `tab-overflow-root`  | `div`           | Wraps the overflow trigger and its menu; rendered when tabs don't fit the strip.                                                                                                                                                  |
+| `tab-overflow`       | `button`        | Overflow menu trigger. `aria-label="More tabs"`.                                                                                                                                                                                  |
+| `tab-overflow-menu`  | `div`           | `role="menu"`, lists the hidden tabs while open.                                                                                                                                                                                  |
+| `tab-overflow-item`  | `button`        | `role="menuitem"`, one hidden tab; selecting it activates the tab.                                                                                                                                                                |
+| `tabset-grip`        | `button`        | Drags the whole tabset. `aria-label="Move tabset"`; shown when `draggableTabsets` is on and the tabset is not maximized.                                                                                                          |
+| `tabset-float`       | `button`        | Floats the tabset into a movable overlay. `aria-label="Float panel"`; shown when `floatable` is on and not maximized.                                                                                                             |
+| `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                                                                                                                                                                           |
+| `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                                                                                                                 |
+| `float-overlay`      | `div`           | The `pointer-events: none` overlay covering the layout; holds the floats.                                                                                                                                                         |
+| `float`              | `div`           | A floating panel's elevated frame. `display: flex; flex-direction: column`, positioned absolutely.                                                                                                                                |
+| `float-titlebar`     | `div`           | The float's drag handle / title bar (grip + title + dock control). `data-editable` while the layout is editable; `cursor: default` without it.                                                                                    |
+| `float-grip`         | `span`          | Drag-affordance dots in the title bar (decorative, `aria-hidden`).                                                                                                                                                                |
+| `float-title`        | `span`          | The float's window title (its own name); double-click to rename. `aria-hidden` grip precedes it.                                                                                                                                  |
+| `float-rename`       | `input`         | The inline title editor, shown while renaming. `aria-label="Rename <name>"`.                                                                                                                                                      |
+| `float-minimize`     | `button`        | Collapses the float to a chip. `aria-label="Minimize panel"`.                                                                                                                                                                     |
+| `float-dock`         | `button`        | Docks the panel back into the main layout. `aria-label="Dock panel back into the main layout"`.                                                                                                                                   |
+| `float-body`         | `div`           | The float's content area; holds the panel's layout.                                                                                                                                                                               |
+| `float-resize`       | `div`           | An edge/corner resize handle (eight in total); `data-edge` is the direction.                                                                                                                                                      |
+| `float-chip`         | `button`        | A minimized float: a rounded chip you click (or drag) to restore. Clamped on screen by `--dashfoo-chip-width` / `--dashfoo-chip-height`.                                                                                          |
+| `float-chip-label`   | `span`          | The chip's panel title.                                                                                                                                                                                                           |
+| `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone pane). `pointer-events: none`.                                                                                                                                                   |
+| `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label. `pointer-events: none`.                                                                                                                               |
+| `icon`               | `svg`           | The built-in close, grip, maximize, float, minimize, dock and overflow icons. `aria-hidden`, `pointer-events: none`.                                                                                                              |
 
 The `splitter` handle is dashfoo's name; react-resizable-panels also stamps the
 same element with `data-separator` and an `aria-orientation` of `vertical` or
@@ -606,7 +609,8 @@ pattern as `Panel`:
 | `Tabset.Toolbar`        | `div[data-dashfoo="tabset-toolbar"]`     | Trailing toolbar container.                                                                                                                                    |
 | `Tabset.OverflowMenu`   | menu button                              | Lists clipped tabs; hides when nothing overflows.                                                                                                              |
 | `Tabset.Grip`           | `button[data-dashfoo="tabset-grip"]`     | Drag handle for the whole tabset; hides when tabset dragging is off.                                                                                           |
-| `Tabset.MaximizeButton` | `button[data-dashfoo="tabset-maximize"]` | Maximize/restore toggle; hides when maximize is off.                                                                                                           |
+| `Tabset.CollapseButton` | `button[data-dashfoo="tabset-collapse"]` | Collapse/expand toggle with `aria-expanded` and `aria-controls`; hides unless the tabset is `collapsible` and the action is available.                         |
+| `Tabset.MaximizeButton` | `button[data-dashfoo="tabset-maximize"]` | Maximize/restore toggle; hides when maximize is off or the tabset is the only one.                                                                             |
 | `Tabset.FloatButton`    | `button[data-dashfoo="tabset-float"]`    | Floats the tabset into a movable overlay; hides when `floatable` is off or the tabset is maximized.                                                            |
 
 Parts forward native props such as `className` and handlers. `Layout.Root`
@@ -694,7 +698,7 @@ type LayoutRowsProps;
 type LayoutTabsetProps;
 
 // Tabset primitives
-Tabset; // Tabset.Root / .TabStrip / .Tablist / .Tab / .Trigger / .RenameInput / .CloseButton / .Content / .Toolbar / .OverflowMenu / .Grip / .MaximizeButton / .FloatButton
+Tabset; // Tabset.Root / .TabStrip / .Tablist / .Tab / .Trigger / .RenameInput / .CloseButton / .Content / .Toolbar / .OverflowMenu / .Grip / .CollapseButton / .MaximizeButton / .FloatButton
 type TabsetRootProps; // …and a Props type per part
 
 // Store + selector hooks

@@ -10,10 +10,15 @@ export { Tabset } from "./tabset/tabset";
 
 export type {
   TabsetCloseButtonProps,
+  TabsetCloseButtonState,
+  TabsetCollapseButtonProps,
+  TabsetCollapseButtonState,
   TabsetContentProps,
   TabsetFloatButtonProps,
   TabsetGripProps,
+  TabsetGripState,
   TabsetMaximizeButtonProps,
+  TabsetMaximizeButtonState,
   TabsetRenameInputProps,
   TabsetRootProps,
   TabsetTablistProps,
@@ -51,3 +56,5 @@ export type { ExternalTabSourceOptions } from "./drag/drag-hooks";
 export { DashfooDragProvider } from "./drag/drag-root";
 
 export { measureTabset } from "./tabset/measure-tabset";
+
+export type { StateProp, StatefulButtonProps } from "./lib/state-props";
