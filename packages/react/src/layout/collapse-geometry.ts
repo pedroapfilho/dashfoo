@@ -25,7 +25,7 @@ const measureHeader = (panel: HTMLElement): number | undefined => {
 };
 
 /**
- * rrp's `expand()` restores the size a panel had before it collapsed, and does
+ * A panel's `expand()` restores the size it had before it collapsed, and does
  * nothing when that size was already below the minimum.
  */
 const expandToMinimum = (handle: PanelImperativeHandle, minimum: number | undefined): void => {
@@ -93,7 +93,7 @@ const collapseUntilFit = (budget: FitBudget, targets: Set<string>): void => {
   }
 };
 
-/** Read from the DOM, not from rrp, whose sizes lag a container resize. */
+/** Read from the DOM, not from the panel group, whose sizes lag a container resize. */
 const spaceForPanels = (group: HTMLElement, orientation: RowNode["orientation"]): number => {
   const sizeOf = (element: Element): number => {
     const rect = element.getBoundingClientRect();

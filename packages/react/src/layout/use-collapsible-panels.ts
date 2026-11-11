@@ -54,7 +54,7 @@ type CollapsiblePanels = {
 const EMPTY: ReadonlySet<string> = new Set();
 
 /**
- * Keeps rrp's collapsed panels in step with the model, and collapses panels to
+ * Keeps the group's collapsed panels in step with the model, and collapses panels to
  * fit a split too small for its minimums without touching the model.
  */
 const useCollapsiblePanels = ({
@@ -133,7 +133,7 @@ const useCollapsiblePanels = ({
   };
 
   /**
-   * rrp lets panels shrink below their minimums when the container does, so
+   * The group lets panels shrink below their minimums when the container does, so
    * collapsible children collapse, last first, until the minimums fit, and
    * expand again, first first, once there is room.
    */
@@ -146,7 +146,7 @@ const useCollapsiblePanels = ({
   };
 
   /**
-   * rrp refuses `collapse()` while its layout breaks the minimums (a saved
+   * The group refuses `collapse()` while its layout breaks the minimums (a saved
    * layout that never fit), so the whole layout is set instead: collapsed
    * panels at their strip size, the rest sharing what is left by weight.
    */
@@ -174,7 +174,7 @@ const useCollapsiblePanels = ({
     group.setLayout(layout);
   };
 
-  /** rrp throws from a panel handle until its group has registered the panel. */
+  /** A panel handle throws until its group has registered the panel. */
   const registered = (): boolean => {
     const layout = groupRef.current?.getLayout();
 
@@ -251,7 +251,7 @@ const useCollapsiblePanels = ({
 
   // Only the container's own size can make room for a panel collapsed to fit;
   // a separator drag leaves it unchanged, so this never fights the user. The
-  // frame lets rrp take in the new size first, or it refuses the resize.
+  // frame lets the group take in the new size first, or it refuses the resize.
   useEffect(() => {
     if (!groupElement || typeof ResizeObserver === "undefined") {
       return undefined;

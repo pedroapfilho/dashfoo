@@ -118,7 +118,7 @@ const percentagesOf = (panels: ResizePanels): Array<number> => {
   return panels.map((child) => (child.weight / total) * 100);
 };
 
-/** A collapsed panel keeps the size rrp gave it; the expanded ones share the rest by weight. */
+/** A collapsed panel keeps the size it has; the expanded ones share the rest by weight. */
 const targetSizes = (current: Array<number>, panels: ResizePanels): Array<number> => {
   let collapsedTotal = 0;
   let weightTotal = 0;
