@@ -485,7 +485,7 @@ structure and consumes runtime geometry through CSS custom properties.
 | `tabset-float`       | `button`        | Floats the tabset into a movable overlay. `aria-label="Float panel"`; shown when `floatable` is on and not maximized.                          |
 | `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                                                                                        |
 | `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                              |
-| `float-overlay`      | `div`           | The `pointer-events: none` overlay covering the layout; holds the floats.                                                                      |
+| `float-overlay`      | `div`           | The `pointer-events: none` overlay covering the layout; holds the floats. Always rendered, so a new float opens in its coordinates.            |
 | `float`              | `div`           | A floating panel's elevated frame. `display: flex; flex-direction: column`, positioned absolutely.                                             |
 | `float-titlebar`     | `div`           | The float's drag handle / title bar (grip + title + dock control). `data-editable` while the layout is editable; `cursor: default` without it. |
 | `float-grip`         | `span`          | Drag-affordance dots in the title bar (decorative, `aria-hidden`).                                                                             |
@@ -778,8 +778,9 @@ The compact projection retains nested row identities so mounted widget state sur
 
 ### Tablist space
 
-Every tablist measures the space its tabs leave free, in layout pixels: positive
-while there is room, negative once the tabs overflow, and still falling when the
+Every tabset measures the space its tabs leave free in the tab strip, after the
+toolbar and any other strip parts take theirs, in layout pixels: positive while
+there is room, negative once the tabs overflow, and still falling when the
 tablist is squeezed to nothing and the rest of the strip overflows too. A
 toolbar can use it to move its own items into a menu as the header runs out of
 room. It is updated before paint whenever the tablist, its strip, a toolbar or

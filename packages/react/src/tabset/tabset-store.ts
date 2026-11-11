@@ -31,7 +31,7 @@ type TabsetState = {
   startEditing: (tabId: string) => void;
   stopEditing: () => void;
   tablistElement: HTMLDivElement | null;
-  /** Layout pixels the tabs leave free in the tablist, negative once they overflow; `undefined` until measured. */
+  /** Layout pixels the tabs leave free in the strip, negative once they overflow; `undefined` until measured. */
   tablistSpace: number | undefined;
   tabsClosable: boolean;
   tabsRenamable: boolean;

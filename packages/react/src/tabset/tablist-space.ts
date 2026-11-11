@@ -47,24 +47,50 @@ const createTablistSpace = (): TablistSpace => {
 
 const TAB_ITEM_SELECTOR = '[data-dashfoo="tab-item"]';
 
-/**
- * Layout pixels the tabs leave free in `tablist`; negative once they overflow
- * it, and still falling when the tablist is squeezed to nothing and the rest of
- * the strip overflows too.
- */
-const measureTablistSpace = (tablist: HTMLElement): number => {
+const horizontalPadding = (element: HTMLElement): number => {
+  const style = getComputedStyle(element);
+
+  return cssPixels(style.paddingLeft) + cssPixels(style.paddingRight);
+};
+
+/** The width `tablist` would take to show every tab: their extent plus its padding. */
+const tablistNeed = (tablist: HTMLElement): number => {
   const items = [...tablist.querySelectorAll<HTMLElement>(TAB_ITEM_SELECTOR)];
   const first = items[0];
   const last = items.at(-1);
-  const used = first && last ? last.offsetLeft + last.offsetWidth - first.offsetLeft : 0;
-  const style = getComputedStyle(tablist);
+  const extent = first && last ? last.offsetLeft + last.offsetWidth - first.offsetLeft : 0;
 
-  const padding = cssPixels(style.paddingLeft) + cssPixels(style.paddingRight);
+  return extent + horizontalPadding(tablist);
+};
 
+/**
+ * Layout pixels the tabs leave free in the strip: its content width minus what
+ * every part needs at its natural size. Measured against the strip rather than
+ * the tablist, because the tablist shrinks to its tabs and the space between
+ * them and the toolbar belongs to the strip. Negative once the tabs overflow,
+ * and still falling when the strip's other parts overflow it too.
+ */
+const measureTablistSpace = (tablist: HTMLElement): number => {
   const strip = tablist.closest<HTMLElement>('[data-dashfoo="tabstrip"]');
-  const stripOverflow = strip ? Math.max(0, strip.scrollWidth - strip.clientWidth) : 0;
 
-  return tablist.clientWidth - padding - used - stripOverflow;
+  if (!strip) {
+    return tablist.clientWidth - tablistNeed(tablist);
+  }
+
+  const parts = [...strip.children].filter((part) => part instanceof HTMLElement);
+  const gap = cssPixels(getComputedStyle(strip).columnGap) * Math.max(0, parts.length - 1);
+
+  // A part's auto margin absorbs the free space, so only border boxes count.
+  const needed = parts.reduce(
+    (sum, part) =>
+      sum +
+      (part.contains(tablist)
+        ? part.offsetWidth - tablist.offsetWidth + tablistNeed(tablist)
+        : part.offsetWidth),
+    0,
+  );
+
+  return strip.clientWidth - horizontalPadding(strip) - gap - needed;
 };
 
 const TABLIST_SPACE_PROPERTY = "--dashfoo-tablist-space";

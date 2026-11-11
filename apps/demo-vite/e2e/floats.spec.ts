@@ -37,9 +37,11 @@ test("dragging the title bar moves the float", async ({ page }) => {
   expect(after!.y).toBeLessThan(before!.y);
 });
 
-for (const [name, style] of [
-  ["CSS zoom", "zoom: 1.5"],
-  ["a scale transform", "transform: scale(1.5); transform-origin: 0 0"],
+// Each float opens where it has room to move: high under zoom, which shrinks the
+// overlay to the viewport's layout size, and at the top of a scaled layout.
+for (const { dy, name, style } of [
+  { dy: -60, name: "CSS zoom", style: "zoom: 1.5" },
+  { dy: 60, name: "a scale transform", style: "transform: scale(1.5); transform-origin: 0 0" },
 ]) {
   test(`a float follows the pointer under ${name}`, async ({ page }) => {
     await page.locator('[data-dashfoo="layout"]').evaluate((element, css) => {
@@ -57,13 +59,13 @@ for (const [name, style] of [
 
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width / 2 + 90, box.y + box.height / 2 - 60, { steps: 8 });
+    await page.mouse.move(box.x + box.width / 2 + 90, box.y + box.height / 2 + dy, { steps: 8 });
     await page.mouse.up();
 
     const after = (await float.boundingBox())!;
     // Unscaled pointer math would move it 1.5x as far: 135 by 90.
     expect(Math.abs(after.x - before.x - 90)).toBeLessThan(2);
-    expect(Math.abs(after.y - before.y + 60)).toBeLessThan(2);
+    expect(Math.abs(after.y - before.y - dy)).toBeLessThan(2);
   });
 }
 

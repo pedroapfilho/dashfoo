@@ -10,7 +10,8 @@ import { DashfooLayout } from "../layout/dashfoo-layout";
 import { useTabset } from "./tabset-store";
 
 const TAB_WIDTH = 80;
-const TABLIST_WIDTH = 300;
+const STRIP_WIDTH = 400;
+const TOOLBAR_WIDTH = 100;
 
 const model = (): Dashfoo => ({
   activeTabsetId: "ts1",
@@ -39,17 +40,34 @@ const model = (): Dashfoo => ({
 
 const isPart = (element: HTMLElement, part: string): boolean => element.dataset.dashfoo === part;
 
-/** jsdom has no layout: tabs are TAB_WIDTH wide, side by side, in a TABLIST_WIDTH tablist. */
+const tabCount = (element: HTMLElement): number =>
+  element.querySelectorAll('[data-dashfoo="tab-item"]').length;
+
+/**
+ * jsdom has no layout, so this stands in for styles.css: tabs are TAB_WIDTH wide
+ * side by side, the tablist shrinks to them (up to what the toolbar leaves), and
+ * the free space sits in the STRIP_WIDTH strip between the tabs and the toolbar.
+ */
 const fakeLayout = (): void => {
   vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function clientWidth(
     this: HTMLElement,
   ) {
-    return isPart(this, "tablist") ? TABLIST_WIDTH : 0;
+    return isPart(this, "tabstrip") ? STRIP_WIDTH : 0;
   });
   vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function offsetWidth(
     this: HTMLElement,
   ) {
-    return isPart(this, "tab-item") ? TAB_WIDTH : 0;
+    if (isPart(this, "tab-item")) {
+      return TAB_WIDTH;
+    }
+
+    if (isPart(this, "tabset-toolbar")) {
+      return TOOLBAR_WIDTH;
+    }
+
+    return isPart(this, "tablist")
+      ? Math.min(tabCount(this) * TAB_WIDTH, STRIP_WIDTH - TOOLBAR_WIDTH)
+      : 0;
   });
   vi.spyOn(HTMLElement.prototype, "offsetLeft", "get").mockImplementation(function offsetLeft(
     this: HTMLElement,

@@ -398,7 +398,8 @@ instantly.
 ## Tablist space
 
 Every `[data-dashfoo="tablist"]` carries `--dashfoo-tablist-space`: the layout
-pixels its tabs leave free, negative once they overflow. It is set before
+pixels its tabs leave free in the strip once the toolbar takes its share,
+negative once they overflow. It is set before
 paint, so a rule can react to a crowded header without a flash. This one fades
 the trailing edge in, up to 24px, as the tabs overflow:
 
