@@ -2,7 +2,7 @@
 
 import type { Point } from "@dashfoo/core";
 import { Feedback } from "@dnd-kit/dom";
-import type { DragStartEvent } from "@dnd-kit/dom";
+import type { DragMoveEvent, DragStartEvent } from "@dnd-kit/dom";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -47,8 +47,10 @@ const DragPreviewOverlay = ({ isTearOff, manager }: DragPreviewOverlayProps): Re
       });
     };
 
-    const handleMove = (): void => {
-      setTearOff(isTearOff(manager.dragOperation.position.current));
+    // dnd-kit commits `position.current` in a microtask after `dragmove`, so
+    // only the event's own `to` is the point the pointer moved to.
+    const handleMove = (event: DragMoveEvent): void => {
+      setTearOff(isTearOff(event.to ?? manager.dragOperation.position.current));
     };
 
     const handleEnd = (): void => {
