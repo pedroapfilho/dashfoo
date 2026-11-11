@@ -131,7 +131,7 @@ const createLayer = (layerId: string, store: LayoutStore): RegisteredLayer => ({
 
     const intent = resolveDropIntent(subject, tabset, point, {
       foreign: isForeign(state, subject),
-      splitDock: state.splitDock,
+      splitDock: state.splitDock && element.dataset.dashfoo !== "layout-empty",
     });
 
     return intent && { indicator: dropIndicator(subject, tabset, intent), intent };

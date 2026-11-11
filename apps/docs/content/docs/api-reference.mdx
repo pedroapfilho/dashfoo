@@ -374,7 +374,9 @@ floated tabset when floating. `addNode` with an id already in the layout is
 ignored with a `[dashfoo]` warning. `dockFloat` with a `targetId` needs a tabset
 in the main layout (any other id is a no-op); without one it targets the active
 main tabset, else the first, and into an empty main layout the float's layout
-becomes the layout. A `moveNode` that splits a one-tab tabset off its own tab is
+becomes the layout. `addNode`, `moveNode`, `moveTabset` and `transferIn` also
+take the main layout's row id as `targetId` while that layout is empty: it seeds
+a tabset there, so an emptied layout still takes drops. A `moveNode` that splits a one-tab tabset off its own tab is
 a no-op, as is a `setMaximizedTabset` naming a tabset in a float. When a tab leaves a strip, the selection
 stays on the selected tab; if that tab is the one leaving, it passes to the right
 neighbour, else the left.

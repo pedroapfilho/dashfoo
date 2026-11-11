@@ -16,6 +16,7 @@ import {
 } from "../model/tree";
 
 import type { Action } from "./actions";
+import { locateDropTarget } from "./drop-target";
 import { uniqueFloatName } from "./floats";
 
 type DockingAction = Extract<
@@ -192,7 +193,7 @@ const addTab = (
     return undefined;
   }
 
-  const target = findTabsetParent(draft, targetId);
+  const target = locateDropTarget(draft, targetId);
 
   return target && attachTab(target, tab, location, index);
 };
@@ -201,7 +202,7 @@ const moveTab = (
   draft: Dashfoo,
   { index, location, sourceId, targetId }: Extract<DockingAction, { type: "moveNode" }>,
 ): TabsetNode | undefined => {
-  const target = findTabsetParent(draft, targetId);
+  const target = locateDropTarget(draft, targetId);
   const source = findTab(draft, sourceId);
 
   if (!target || !source) {
@@ -226,7 +227,7 @@ const moveTabset = (
   draft: Dashfoo,
   { location, sourceId, targetId }: Extract<DockingAction, { type: "moveTabset" }>,
 ): TabsetNode | undefined => {
-  const target = findTabsetParent(draft, targetId);
+  const target = locateDropTarget(draft, targetId);
   const source = sourceId === targetId ? undefined : findTabsetParent(draft, sourceId);
 
   if (!target || !source) {
@@ -324,7 +325,7 @@ const transferIn = (
     return undefined;
   }
 
-  const target = findTabsetParent(draft, targetId);
+  const target = locateDropTarget(draft, targetId);
 
   if (!target) {
     return undefined;

@@ -136,7 +136,9 @@ floating. `addNode` ignores a tab whose id is already in the layout and warns.
 node or float, including their source. Rejection warns and leaves the model
 and undo/redo history unchanged; omitting the ID generates a fresh one.
 `transferIn` rejects a node whose tab ids are already in the layout, with a
-warning, and gives a tabset whose id is taken a fresh one.
+warning, and gives a tabset whose id is taken a fresh one. While the main
+layout is empty, `addNode`, `moveNode`, `moveTabset` and `transferIn` take its
+row id as `targetId` and seed a tabset there.
 
 `dockFloat` with a `targetId` needs a tabset in the main layout; any other id
 is a no-op. Without one it targets the active main tabset, else the first main

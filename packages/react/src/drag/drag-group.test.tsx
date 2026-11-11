@@ -129,6 +129,26 @@ describe("drag groups", () => {
     expect(left.changes.at(-1)).toEqual({ nodeId: "a2", type: "transferOut" });
   });
 
+  test("an empty layout of the group takes a dropped tab", async () => {
+    const left = mount("left", layoutWith("a", ["a1", "a2"]), { dragGroup: "desk" });
+    const right = mount("right", model(row([], { id: "empty-root" })), { dragGroup: "desk" });
+    await act(async () => {});
+
+    const transfer = fakeTransfer();
+    fire(draggableTab(left.container, "a1"), "dragstart", transfer);
+    const target = right.container.querySelector('[data-dashfoo="layout-empty"]');
+    assert(target);
+    expect(fire(target, "dragover", transfer).defaultPrevented).toBe(true);
+    act(() => {
+      fire(target, "drop", transfer);
+    });
+
+    expect(
+      collectTabsets(right.latest()).map(({ children }) => children.map(({ id }) => id)),
+    ).toEqual([["a1"]]);
+    expect(findTab(left.latest(), "a1")).toBeUndefined();
+  });
+
   test("layouts in different groups refuse each other's drags", async () => {
     const left = mount("left", layoutWith("a", ["a1"]), { dragGroup: "desk" });
     const right = mount("right", layoutWith("b", ["b1"]), { dragGroup: "other" });

@@ -3,7 +3,7 @@ import { collectTabsets, findTabset, standaloneModel } from "@dashfoo/core";
 import type { DashfooHandle, DashfooLayoutCommonProps, TearOffRequest } from "@dashfoo/react";
 import { DashfooLayout } from "@dashfoo/react";
 import { ExternalLink } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -13,17 +13,24 @@ import { windowsModels } from "../models";
 
 const DRAG_GROUP = "demo-windows";
 
+/** Grouped layouts drag with the browser's drag and drop; ungrouped ones keep the pointer drag and its preview chip. */
+const DRAG_MODES = new Map([
+  ["Across windows", DRAG_GROUP],
+  ["This window", undefined],
+]);
+
 const MIN_POPUP = { height: 280, width: 360 };
 
 type Popup = { container: HTMLElement; id: string; model: Dashfoo; view: Window };
 
-/** A popup starts blank, so it borrows the opener's stylesheets and theme class. */
+/** A popup starts blank, so it borrows the opener's stylesheets and theme. */
 const adoptStyles = (target: Document): void => {
   for (const node of document.head.querySelectorAll('style, link[rel="stylesheet"]')) {
     target.head.append(node.cloneNode(true));
   }
 
   target.documentElement.className = document.documentElement.className;
+  target.documentElement.dataset.dashfooTheme = document.documentElement.dataset.dashfooTheme;
 };
 
 const openPopup = ({ model, point, size }: TearOffRequest): Popup | null => {
@@ -150,19 +157,41 @@ const WindowsPage = (): ReactNode => {
     }
   };
 
+  const [dragMode, setDragMode] = useState("Across windows");
+
+  const handleDragModeChange = (event: ChangeEvent<HTMLSelectElement>): void => {
+    setDragMode(event.target.value);
+  };
+
   const layoutProps = useMemo(
-    () => ({ dragGroup: DRAG_GROUP, factory: PlaceholderPanel, floatable: true }),
-    [],
+    () => ({ dragGroup: DRAG_MODES.get(dragMode), factory: PlaceholderPanel, floatable: true }),
+    [dragMode],
   );
 
   return (
     <DemoStage
       actions={
-        <Button icon={<ExternalLink size={14} />} onClick={handlePopOut}>
-          Pop out active tab
-        </Button>
+        <>
+          <label className="text-foreground-muted dark:text-foreground-disabled inline-flex items-center gap-1.5 text-xs">
+            Drag
+            <select
+              className="border-border-default text-foreground-secondary dark:border-border-inverse-subtle dark:bg-surface-inverse dark:text-foreground-pale rounded-md border bg-white px-2 py-1.5 text-base sm:text-xs"
+              onChange={handleDragModeChange}
+              value={dragMode}
+            >
+              {[...DRAG_MODES.keys()].map((key) => (
+                <option key={key} value={key}>
+                  {key}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button icon={<ExternalLink size={14} />} onClick={handlePopOut}>
+            Pop out active tab
+          </Button>
+        </>
       }
-      description="Both layouts share a drag group: drag tabs or tabsets between them, into a float, or out of the browser window to open them in a popup. Popups join the group, so tabs drag back in the same way. A popup closes once its last tab leaves."
+      description="Across windows, both layouts share a drag group: drag tabs or tabsets between them, into a float, or out of the browser window to open them in a popup, and back. This window keeps each layout to itself with the pointer drag, whose preview chip shows when a release would open a new window. A popup closes once its last tab leaves."
       title="Multiple windows"
     >
       <div className="grid h-full min-h-0 grid-cols-1 gap-3 md:grid-cols-2">

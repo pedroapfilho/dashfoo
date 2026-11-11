@@ -55,7 +55,8 @@ reports it as `action.type === "tearOff"` and it is one undo step. Returning
 `standaloneModel(model, nodeId)` from `@dashfoo/core` builds the same model, for
 a keyboard path such as a "Pop out" button.
 
-While a release would tear off, the drag preview carries `data-tear-off`, so a
+While a release would tear off, the drag preview carries `data-tear-off`.
+`@dashfoo/theme` dashes its border and adds a "new window" hint; your own
 theme can restyle it:
 
 ```css
@@ -79,6 +80,9 @@ Two rules keep the documents valid:
 - **Tab ids are unique within the group.** A layout that already has one of
   the dragged tab ids refuses the drop: no indicator, no change. A dragged
   tabset whose id is taken in the target gets a fresh one.
+- **Empty layouts still take drops.** A layout whose last tabset left renders
+  a `[data-dashfoo="layout-empty"]` target, so a popup or a side layout that
+  was emptied can take tabs back.
 - **Floats join in.** A float's tabsets can be dragged out of it, so a float
   docks into another layout the same way it docks into its own.
 

@@ -433,6 +433,16 @@
   box-shadow: 0 10px 15px -3px oklch(0 0 0 / 0.2);
 }
 
+[data-dashfoo="drag-preview"][data-tear-off] {
+  border-color: var(--dashfoo-ring);
+  border-style: dashed;
+}
+
+[data-dashfoo="drag-preview"][data-tear-off]::after {
+  content: "new window";
+  color: var(--dashfoo-muted-foreground);
+}
+
 [data-separator] {
   position: relative;
   display: flex;

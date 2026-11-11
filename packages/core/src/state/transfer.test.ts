@@ -140,3 +140,48 @@ describe("standaloneModel", () => {
     expect(standaloneModel(baseModel(), "missing")).toBeUndefined();
   });
 });
+
+const emptyLayout = (): Dashfoo =>
+  reducer(reducer(baseModel(), { nodeId: "ts1", type: "transferOut" }), {
+    nodeId: "ts2",
+    type: "transferOut",
+  });
+
+describe("an empty main layout as the drop target", () => {
+  test("its row id seeds a tabset that receives the node", () => {
+    const empty = emptyLayout();
+    expect(collectTabsets(empty)).toEqual([]);
+
+    const next = reducer(empty, {
+      location: "split-left",
+      node: tab("x"),
+      targetId: "root",
+      type: "transferIn",
+    });
+
+    expect(collectTabsets(next).map(({ children }) => children.map(({ id }) => id))).toEqual([
+      ["x"],
+    ]);
+  });
+
+  test("a row id is no target while the layout has tabsets", () => {
+    const model = baseModel();
+
+    expect(
+      reducer(model, { location: "center", node: tab("x"), targetId: "root", type: "transferIn" }),
+    ).toBe(model);
+  });
+
+  test("a failed drop leaves the empty layout as it was", () => {
+    const empty = emptyLayout();
+
+    expect(
+      reducer(empty, {
+        location: "center",
+        sourceId: "missing",
+        targetId: "root",
+        type: "moveNode",
+      }),
+    ).toBe(empty);
+  });
+});
