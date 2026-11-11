@@ -1,0 +1,123 @@
+---
+title: Multiple windows
+description: Tear tabs off into popup windows and drag tabs and tabsets between layouts, windows and browser tabs with a drag group.
+---
+
+A dashboard can spread across windows. Two props cover it:
+
+- **`onTearOff`** is called when a tab or tabset is released outside the
+  browser window, so the app can open it somewhere else, e.g. in a popup.
+- **`dragGroup`** connects layouts: tabs and tabsets drag between any layouts
+  with the same group, including layouts rendered into popup windows and
+  layouts in other browser tabs of the same origin.
+
+The demo's [Multiple windows page](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/pages/windows.tsx)
+puts both together.
+
+## Tear-off
+
+```tsx
+import type { TearOffRequest } from "@dashfoo/react";
+import { DashfooLayout } from "@dashfoo/react";
+
+const handleTearOff = ({ model, point, size }: TearOffRequest): boolean => {
+  const popup = window.open(
+    "",
+    "",
+    `popup,left=${point.x},top=${point.y},width=${size.width},height=${size.height}`,
+  );
+
+  if (!popup) {
+    return false;
+  }
+
+  openLayoutIn(popup, model);
+
+  return true;
+};
+
+<DashfooLayout defaultModel={model} factory={renderPanel} onTearOff={handleTearOff} />;
+```
+
+`TearOffRequest` carries:
+
+| Field    | Type                                | Description                                                                                        |
+| -------- | ----------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `kind`   | `"tab" \| "tabset"`                 | What was dragged.                                                                                  |
+| `nodeId` | `string`                            | Its id.                                                                                            |
+| `model`  | `Dashfoo`                           | A model holding just that node (a tab gets a tabset of its own), with the layout's `global` block. |
+| `point`  | `Point`                             | Where the pointer was released, in screen pixels, ready for `window.open`.                         |
+| `size`   | `{ width: number; height: number }` | The size of the tabset it was dragged from.                                                        |
+
+Returning `true` removes the node with a `tearOff` action, so `onModelChange`
+reports it as `action.type === "tearOff"` and it is one undo step. Returning
+`false` (the popup was blocked, say) leaves the layout untouched.
+`standaloneModel(model, nodeId)` from `@dashfoo/core` builds the same model, for
+a keyboard path such as a "Pop out" button.
+
+While a release would tear off, the drag preview carries `data-tear-off`, so a
+theme can restyle it:
+
+```css
+[data-dashfoo="drag-preview"][data-tear-off] {
+  outline: 2px dashed currentColor;
+}
+```
+
+## Drag groups
+
+```tsx
+<DashfooLayout dragGroup="desk" defaultModel={main} factory={renderPanel} />
+<DashfooLayout dragGroup="desk" defaultModel={side} factory={renderPanel} />
+```
+
+A tab or tabset dropped into another layout of the group keeps its id and
+config. The receiving layout records a `transferIn` action and the source a
+`transferOut`, so each side's `onModelChange` and undo history see the move.
+Two rules keep the documents valid:
+
+- **Tab ids are unique within the group.** A layout that already has one of
+  the dragged tab ids refuses the drop: no indicator, no change. A dragged
+  tabset whose id is taken in the target gets a fresh one.
+- **Floats join in.** A float's tabsets can be dragged out of it, so a float
+  docks into another layout the same way it docks into its own.
+
+### Popup windows
+
+A layout rendered into a popup through `createPortal` stays in the same React
+tree, so it shares context, the drag group and the document registry. Give it
+the same `dragGroup` and the same `onTearOff`, and tabs drag back and forth
+between the windows. The popup starts blank, so copy your stylesheets into its
+`<head>` before rendering into it.
+
+Mouse drags in a layout with a `dragGroup` use the browser's drag and drop,
+the only kind of drag that crosses windows. Touch and pen drags keep the
+pointer-based drag, which moves between grouped layouts that share a
+`DashfooDragProvider` in one window. Some browsers (Safari) block popups
+opened at the end of a native drag; offer a keyboard "Pop out" path for them.
+
+### Other browser tabs
+
+Layouts with the same group in other copies of the app on the same origin
+(another window or browser tab) are part of the group too. The node travels in
+the drag data as JSON, which every dashfoo node already is, and the receiver
+confirms the drop to the sender over a `BroadcastChannel`, which then removes
+its copy. Drags from another origin are ignored.
+
+Set `dragGroupScope="app"` to keep a layout's drags within its copy of the
+app: it neither sends nodes to other copies nor accepts theirs.
+
+### Vetoing transfers
+
+`onAction` sees `transferIn` like any other action, but vetoing it does not
+reach the source layout, which still removes the node. To limit who can
+exchange nodes, use separate groups.
+
+## Sizes in popups
+
+Panel sizes in `vh`, `vw` and `em` (a tabset's `min` or `max`) resolve against
+the window the layout renders in, so a layout portaled into a popup is sized
+against the popup, not the opener. The same holds for float placement, hit
+testing during a drag and the overflow menu's outside click.
+
+See also: [Floating panels](/floating-panels) · [Drag and dock](/drag-and-dock).

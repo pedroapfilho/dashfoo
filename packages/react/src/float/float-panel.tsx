@@ -20,7 +20,6 @@ const floatTitle = (node: FloatNode): string => node.name ?? DEFAULT_FLOAT_NAME;
 
 /** `maximizedTabsetId` is cleared here, not only by `normalize`: the parent store syncs after render. */
 const FLOAT_OVERRIDES: Partial<LayoutState> = {
-  draggableTabsets: false,
   floatable: false,
   maximizable: false,
   maximizedTabsetId: undefined,

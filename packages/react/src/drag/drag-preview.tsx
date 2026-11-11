@@ -21,8 +21,14 @@ const labelOf = (source: DragSource | null): string => {
 
 type ChipState = { label: string; x: number; y: number };
 
-const DragPreviewOverlay = ({ manager }: { manager: DashfooDragManager }): ReactNode => {
+type DragPreviewOverlayProps = {
+  isTearOff: (point: Point) => boolean;
+  manager: DashfooDragManager;
+};
+
+const DragPreviewOverlay = ({ isTearOff, manager }: DragPreviewOverlayProps): ReactNode => {
   const [chip, setChip] = useState<ChipState | null>(null);
+  const [tearOff, setTearOff] = useState(false);
 
   useEffect(() => {
     const handleStart = (event: DragStartEvent): void => {
@@ -41,18 +47,25 @@ const DragPreviewOverlay = ({ manager }: { manager: DashfooDragManager }): React
       });
     };
 
+    const handleMove = (): void => {
+      setTearOff(isTearOff(manager.dragOperation.position.current));
+    };
+
     const handleEnd = (): void => {
       setChip(null);
+      setTearOff(false);
     };
 
     manager.monitor.addEventListener("dragstart", handleStart);
+    manager.monitor.addEventListener("dragmove", handleMove);
     manager.monitor.addEventListener("dragend", handleEnd);
 
     return () => {
       manager.monitor.removeEventListener("dragstart", handleStart);
+      manager.monitor.removeEventListener("dragmove", handleMove);
       manager.monitor.removeEventListener("dragend", handleEnd);
     };
-  }, [manager]);
+  }, [isTearOff, manager]);
 
   const attachOverlay = useCallback(
     (element: HTMLDivElement | null): void => {
@@ -70,6 +83,7 @@ const DragPreviewOverlay = ({ manager }: { manager: DashfooDragManager }): React
       {chip === null ? null : (
         <div
           data-dashfoo="drag-preview"
+          data-tear-off={tearOff || undefined}
           style={{
             "--dashfoo-preview-x": `${chip.x}px`,
             "--dashfoo-preview-y": `${chip.y}px`,

@@ -86,6 +86,14 @@ describe("floating panels", () => {
     expect(float.getByLabelText("Dock panel back into the main layout")).toBeInTheDocument();
   });
 
+  test("a float's tabset keeps its grip, so it can be dragged out to dock", () => {
+    render(<DashfooLayout components={components} defaultModel={model()} floatable />);
+
+    fireEvent.click(screen.getByLabelText("Float panel"));
+
+    expect(within(floatPanel()!).getByLabelText("Move tabset")).toBeInTheDocument();
+  });
+
   test("dragging the title bar moves the float and commits one update", () => {
     render(<DashfooLayout components={components} defaultModel={model()} floatable />);
     fireEvent.click(screen.getByLabelText("Float panel"));

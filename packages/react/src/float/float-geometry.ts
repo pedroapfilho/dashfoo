@@ -26,7 +26,11 @@ const measureFloatRect = (element: Element): Geometry => {
     width: Math.max(MIN_WIDTH, Math.min(Math.round(rect.width), DEFAULT_FLOAT_GEOMETRY.width)),
   };
 
-  return clampToBounds(seeded, { height: window.innerHeight, width: window.innerWidth });
+  const view = element.ownerDocument.defaultView;
+
+  return view
+    ? clampToBounds(seeded, { height: view.innerHeight, width: view.innerWidth })
+    : seeded;
 };
 
 type ResizeEdges = { x: -1 | 0 | 1; y: -1 | 0 | 1 };

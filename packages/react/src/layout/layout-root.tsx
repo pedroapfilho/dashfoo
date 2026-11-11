@@ -9,9 +9,12 @@ import type {
   TabsetNode,
 } from "@dashfoo/core";
 import type { ComponentProps, ReactNode, Ref } from "react";
-import { useId } from "react";
+import { useEffect, useId, useLayoutEffect, useRef } from "react";
 
+import type { DragGroupScope } from "../drag/drag-group";
+import { registerDocument } from "../drag/drag-group";
 import { DashfooDragProvider } from "../drag/drag-root";
+import type { TearOffHandler } from "../drag/tear-off";
 import { useMirroredStore } from "../lib/use-mirrored-store";
 
 import type { LayoutState } from "./layout-store";
@@ -24,10 +27,15 @@ type LayoutOptions = {
   closableTabs?: boolean;
   draggableTabs?: boolean;
   draggableTabsets?: boolean;
+  /** Layouts sharing a group exchange tabs and tabsets by drag, across windows and browser tabs of one origin. */
+  dragGroup?: string;
+  dragGroupScope?: DragGroupScope;
   editable?: boolean;
   floatable?: boolean;
   keepMounted?: boolean;
   maximizable?: boolean;
+  /** Called when a tab or tabset is released outside the window; return `true` to remove it. */
+  onTearOff?: TearOffHandler;
   renamableTabs?: boolean;
   resizableSplits?: boolean;
   /** When false, the tree itself is frozen: no dragging, splitting or floating. Tabs stay closable and renamable. */
@@ -76,10 +84,13 @@ const resolveLayoutOptions = (
     closableTabs: noneSwitchedOff(editable, options.closableTabs, global.tabEnableClose),
     draggableTabs: noneSwitchedOff(structural, options.draggableTabs, global.tabEnableDrag),
     draggableTabsets: noneSwitchedOff(structural, options.draggableTabsets),
+    dragGroup: structural ? options.dragGroup : undefined,
+    dragGroupScope: options.dragGroupScope ?? "origin",
     editable,
     floatable: structural && options.floatable === true,
     keepMounted: options.keepMounted === true,
     maximizable: noneSwitchedOff(options.maximizable, global.tabSetEnableMaximize),
+    onTearOff: options.onTearOff,
     renamableTabs: noneSwitchedOff(editable, options.renamableTabs, global.tabEnableRename),
     resizableSplits: noneSwitchedOff(structural, options.resizableSplits, global.enableSplitResize),
     snap: options.snap ?? global.snap ?? null,
@@ -96,11 +107,14 @@ const LayoutRoot = ({
   dispatch,
   draggableTabs,
   draggableTabsets,
+  dragGroup,
+  dragGroupScope,
   editable,
   floatable,
   keepMounted,
   maximizable,
   model,
+  onTearOff,
   renamableTabs,
   renderers,
   resizableSplits,
@@ -117,10 +131,13 @@ const LayoutRoot = ({
       closableTabs,
       draggableTabs,
       draggableTabsets,
+      dragGroup,
+      dragGroupScope,
       editable,
       floatable,
       keepMounted,
       maximizable,
+      onTearOff,
       renamableTabs,
       resizableSplits,
       restructurable,
@@ -133,6 +150,25 @@ const LayoutRoot = ({
     renderTabLabel: renderers.tabLabel,
     renderTabsetToolbar: renderers.tabsetToolbar,
   });
+
+  const latest = useRef({ dispatch, model });
+  useLayoutEffect(() => {
+    latest.current = { dispatch, model };
+  });
+
+  const scope = dragGroupScope ?? "origin";
+  useEffect(
+    () =>
+      registerDocument(documentId, {
+        dispatch: (action) => {
+          latest.current.dispatch(action);
+        },
+        getModel: () => latest.current.model,
+        group: dragGroup,
+        scope,
+      }),
+    [documentId, dragGroup, scope],
+  );
 
   return (
     <LayoutStoreContext.Provider value={store}>

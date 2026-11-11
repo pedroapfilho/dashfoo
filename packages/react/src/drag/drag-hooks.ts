@@ -7,10 +7,12 @@ import { useSelector } from "@xstate/react";
 import { useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";
 
 import { useLayout } from "../layout/layout-store";
+import { mergeRefs } from "../lib/merge-refs";
 
 import { DragContext } from "./drag-context";
 import type { DashfooDragManager } from "./drag-manager";
 import type { DashfooDragData } from "./drag-subject";
+import { useNativeSource, useNativeTarget } from "./native-drag";
 import { topmostPointerIntersection } from "./topmost-collision";
 
 const tabsetDroppableId = (layerId: string, tabsetId: string): string => `${layerId}:${tabsetId}`;
@@ -117,12 +119,16 @@ const useNodeDraggable = (
     [documentId, id, kind],
   );
 
-  return useDraggableEntity(
+  const { ref } = useDraggableEntity(
     manager,
     { data, id: JSON.stringify([documentId, kind, id]) },
     disabled,
     label,
   );
+
+  const nativeRef = useNativeSource(kind, id, disabled);
+
+  return useMemo(() => ({ ref: mergeRefs(ref, nativeRef) }), [nativeRef, ref]);
 };
 
 const useTabsetDroppable = (tabsetId: string): { ref: (element: Element | null) => void } => {
@@ -147,8 +153,9 @@ const useTabsetDroppable = (tabsetId: string): { ref: (element: Element | null) 
   );
 
   const { ref } = useDndEntity(create);
+  const nativeRef = useNativeTarget(tabsetId);
 
-  return useMemo(() => ({ ref }), [ref]);
+  return useMemo(() => ({ ref: mergeRefs(ref, nativeRef) }), [nativeRef, ref]);
 };
 
 type ExternalTabSourceOptions = {

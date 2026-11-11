@@ -8,19 +8,22 @@ type TopmostDetectorInput = {
 
 type TopmostDetector = (input: TopmostDetectorInput) => Collision | null;
 
-const createTopmostPointerIntersection = (
-  topElementAt: (x: number, y: number) => Element | null = (x, y) =>
-    document.elementFromPoint(x, y),
-): TopmostDetector => {
-  let cached: { top: Element | null; x: number; y: number } | null = null;
+/** The droppable's own document: a layout rendered into a popup hit-tests that window. */
+const elementAtPoint = (droppable: Element, x: number, y: number): Element | null =>
+  droppable.ownerDocument.elementFromPoint(x, y);
 
-  const topAt = (x: number, y: number): Element | null => {
-    if (cached?.x === x && cached.y === y) {
+const createTopmostPointerIntersection = (
+  topElementAt: (droppable: Element, x: number, y: number) => Element | null = elementAtPoint,
+): TopmostDetector => {
+  let cached: { document: Document; top: Element | null; x: number; y: number } | null = null;
+
+  const topAt = (droppable: Element, x: number, y: number): Element | null => {
+    if (cached?.x === x && cached.y === y && cached.document === droppable.ownerDocument) {
       return cached.top;
     }
 
-    const top = topElementAt(x, y);
-    cached = { top, x, y };
+    const top = topElementAt(droppable, x, y);
+    cached = { document: droppable.ownerDocument, top, x, y };
     queueMicrotask(() => {
       cached = null;
     });
@@ -36,7 +39,7 @@ const createTopmostPointerIntersection = (
     }
 
     const point = dragOperation.position.current;
-    const top = topAt(point.x, point.y);
+    const top = topAt(element, point.x, point.y);
 
     if (!top || !element.contains(top)) {
       return null;
