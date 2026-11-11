@@ -57,6 +57,23 @@ const openPopup = ({ model, point, size }: TearOffRequest): Popup | null => {
   return { container, id: crypto.randomUUID(), model, view };
 };
 
+/** The keyboard path to a tear-off: the active tab, opened near the window's corner. */
+const popOutRequest = (model: Dashfoo): TearOffRequest | undefined => {
+  const tabset = findTabset(model, model.activeTabsetId ?? "");
+  const tab = tabset?.children[tabset.selected];
+  const detached = tab && standaloneModel(model, tab.id);
+
+  return (
+    detached && {
+      kind: "tab",
+      model: detached,
+      nodeId: tab.id,
+      point: { x: window.screenX + 80, y: window.screenY + 80 },
+      size: { height: 360, width: 480 },
+    }
+  );
+};
+
 const hasTabs = (model: Dashfoo): boolean =>
   collectTabsets(model).some((tabset) => tabset.children.length > 0);
 
@@ -130,30 +147,15 @@ const WindowsPage = (): ReactNode => {
 
   const handlePopOut = (): void => {
     const handle = main.current;
-    const model = handle?.getModel();
 
-    if (!handle || model?.activeTabsetId === undefined) {
+    if (!handle) {
       return;
     }
 
-    const tabset = findTabset(model, model.activeTabsetId);
-    const tab = tabset?.children[tabset.selected];
-    const detached = tab && standaloneModel(model, tab.id);
+    const request = popOutRequest(handle.getModel());
 
-    if (!tab || !detached) {
-      return;
-    }
-
-    const opened = handleTearOff({
-      kind: "tab",
-      model: detached,
-      nodeId: tab.id,
-      point: { x: window.screenX + 80, y: window.screenY + 80 },
-      size: { height: 360, width: 480 },
-    });
-
-    if (opened) {
-      handle.dispatch({ nodeId: tab.id, type: "tearOff" });
+    if (request && handleTearOff(request)) {
+      handle.dispatch({ nodeId: request.nodeId, type: "tearOff" });
     }
   };
 

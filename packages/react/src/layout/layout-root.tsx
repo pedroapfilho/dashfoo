@@ -9,12 +9,12 @@ import type {
   TabsetNode,
 } from "@dashfoo/core";
 import type { ComponentProps, ReactNode, Ref } from "react";
-import { useEffect, useId, useLayoutEffect, useRef } from "react";
+import { useId } from "react";
 
 import type { DragGroupScope } from "../drag/drag-group";
-import { registerDocument } from "../drag/drag-group";
 import { DashfooDragProvider } from "../drag/drag-root";
 import type { TearOffHandler } from "../drag/tear-off";
+import { useGroupDocument } from "../drag/use-group-document";
 import { useMirroredStore } from "../lib/use-mirrored-store";
 
 import type { LayoutState } from "./layout-store";
@@ -71,6 +71,15 @@ type ResolvedOptions = Omit<
 const noneSwitchedOff = (...switches: Array<boolean | undefined>): boolean =>
   switches.every((value) => value !== false);
 
+/** A layout that cannot dock joins no group, so drags never land in or leave it. */
+const resolveDragGroup = (
+  structural: boolean,
+  { dragGroup, dragGroupScope = "origin" }: LayoutOptions,
+): Pick<ResolvedOptions, "dragGroup" | "dragGroupScope"> => ({
+  dragGroup: structural ? dragGroup : undefined,
+  dragGroupScope,
+});
+
 /** The host's options and the model's `global` attributes, combined: either side can switch a capability off. */
 const resolveLayoutOptions = (
   global: GlobalAttributes,
@@ -84,8 +93,7 @@ const resolveLayoutOptions = (
     closableTabs: noneSwitchedOff(editable, options.closableTabs, global.tabEnableClose),
     draggableTabs: noneSwitchedOff(structural, options.draggableTabs, global.tabEnableDrag),
     draggableTabsets: noneSwitchedOff(structural, options.draggableTabsets),
-    dragGroup: structural ? options.dragGroup : undefined,
-    dragGroupScope: options.dragGroupScope ?? "origin",
+    ...resolveDragGroup(structural, options),
     editable,
     floatable: structural && options.floatable === true,
     keepMounted: options.keepMounted === true,
@@ -101,10 +109,11 @@ const resolveLayoutOptions = (
   };
 };
 
-const LayoutRoot = ({
-  children,
+type OwnRootProps = "children" | "dispatch" | "model" | "renderers" | "rootRef";
+
+/** Separates the capability props from the ones forwarded to the root `div`. */
+const splitLayoutOptions = ({
   closableTabs,
-  dispatch,
   draggableTabs,
   draggableTabsets,
   dragGroup,
@@ -113,36 +122,46 @@ const LayoutRoot = ({
   floatable,
   keepMounted,
   maximizable,
-  model,
   onTearOff,
   renamableTabs,
-  renderers,
   resizableSplits,
   restructurable,
-  rootRef,
   snap,
   ...props
+}: Omit<LayoutRootProps, OwnRootProps>) => ({
+  options: {
+    closableTabs,
+    draggableTabs,
+    draggableTabsets,
+    dragGroup,
+    dragGroupScope,
+    editable,
+    floatable,
+    keepMounted,
+    maximizable,
+    onTearOff,
+    renamableTabs,
+    resizableSplits,
+    restructurable,
+    snap,
+  } satisfies LayoutOptions,
+  props,
+});
+
+const LayoutRoot = ({
+  children,
+  dispatch,
+  model,
+  renderers,
+  rootRef,
+  ...rest
 }: LayoutRootProps): ReactNode => {
   const documentId = useId();
   const { global } = model;
+  const { options, props } = splitLayoutOptions(rest);
 
   const store = useMirroredStore(createLayoutStore, {
-    ...resolveLayoutOptions(global, {
-      closableTabs,
-      draggableTabs,
-      draggableTabsets,
-      dragGroup,
-      dragGroupScope,
-      editable,
-      floatable,
-      keepMounted,
-      maximizable,
-      onTearOff,
-      renamableTabs,
-      resizableSplits,
-      restructurable,
-      snap,
-    }),
+    ...resolveLayoutOptions(global, options),
     dispatch,
     documentId,
     maximizedTabsetId: model.maximizedTabsetId,
@@ -151,24 +170,13 @@ const LayoutRoot = ({
     renderTabsetToolbar: renderers.tabsetToolbar,
   });
 
-  const latest = useRef({ dispatch, model });
-  useLayoutEffect(() => {
-    latest.current = { dispatch, model };
+  useGroupDocument({
+    dispatch,
+    documentId,
+    dragGroup: options.dragGroup,
+    dragGroupScope: options.dragGroupScope,
+    model,
   });
-
-  const scope = dragGroupScope ?? "origin";
-  useEffect(
-    () =>
-      registerDocument(documentId, {
-        dispatch: (action) => {
-          latest.current.dispatch(action);
-        },
-        getModel: () => latest.current.model,
-        group: dragGroup,
-        scope,
-      }),
-    [documentId, dragGroup, scope],
-  );
 
   return (
     <LayoutStoreContext.Provider value={store}>

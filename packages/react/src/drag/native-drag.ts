@@ -246,47 +246,55 @@ const bindTarget = (
   };
 };
 
+/** The layer, store and element a native binding needs; `null` until all are there and the layout is grouped. */
+const useGroupedElement = () => {
+  const context = useContext(DragContext);
+  const store = useContext(LayoutStoreContext);
+  const [element, setElement] = useState<Element | null>(null);
+  const grouped = useLayout((state) => state.dragGroup !== undefined);
+  const layerId = context?.layerId ?? null;
+
+  const binding =
+    grouped && store && context && layerId !== null && isHTMLElement(element)
+      ? { actorRef: context.actorRef, element, layerId, store }
+      : null;
+
+  return { binding, setElement };
+};
+
 /** Mouse drags in a drag group use the browser's drag and drop, the only kind that crosses windows. */
 const useNativeSource = (
   kind: "tab" | "tabset",
   id: string,
   disabled: boolean,
 ): ((element: Element | null) => void) => {
-  const context = useContext(DragContext);
-  const store = useContext(LayoutStoreContext);
-  const [element, setElement] = useState<Element | null>(null);
-  const grouped = useLayout((state) => state.dragGroup !== undefined);
+  const { binding, setElement } = useGroupedElement();
   const documentId = useLayout((state) => state.documentId);
-  const actorRef = context?.layerId === null ? undefined : context?.actorRef;
-
   const subject = useMemo(() => ({ documentId, id, kind }), [documentId, id, kind]);
+  const { actorRef, element, store } = binding ?? {};
 
   useEffect(() => {
-    if (!isHTMLElement(element) || !actorRef || !store || disabled || !grouped) {
+    if (!actorRef || !element || !store || disabled) {
       return undefined;
     }
 
     return bindSource(element, { actorRef, store, subject });
-  }, [actorRef, disabled, element, grouped, store, subject]);
+  }, [actorRef, disabled, element, store, subject]);
 
   return setElement;
 };
 
 const useNativeTarget = (tabsetId: string): ((element: Element | null) => void) => {
-  const context = useContext(DragContext);
-  const store = useContext(LayoutStoreContext);
-  const [element, setElement] = useState<Element | null>(null);
-  const grouped = useLayout((state) => state.dragGroup !== undefined);
-  const layerId = context?.layerId ?? null;
-  const actorRef = context?.actorRef;
+  const { binding, setElement } = useGroupedElement();
+  const { actorRef, element, layerId, store } = binding ?? {};
 
   useEffect(() => {
-    if (!isHTMLElement(element) || !actorRef || !store || layerId === null || !grouped) {
+    if (!actorRef || !element || !store || layerId === undefined) {
       return undefined;
     }
 
     return bindTarget(element, { actorRef, layerId, store, tabsetId });
-  }, [actorRef, element, grouped, layerId, store, tabsetId]);
+  }, [actorRef, element, layerId, store, tabsetId]);
 
   return setElement;
 };
