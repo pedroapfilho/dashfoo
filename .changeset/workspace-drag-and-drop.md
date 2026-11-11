@@ -11,3 +11,4 @@ Drag and drop catches up with the react-resizable-panels Workspace (4.17 to 4.20
 - The dock indicator is one element for the whole drag, rendered by the drag root, so it can slide between tabsets. Off any target it stays put with `data-idle` and fades out. Inside a float it carries `data-floating`. The default `--dashfoo-dock-transition` adds `opacity 60ms`.
 - Right-to-left layouts: the insertion index and line count from the right, left and right drops land on the screen side you dropped on, and ArrowLeft moves to the next tab. `MeasuredTabset` carries `direction`, and `measureTabset` reads it.
 - Moving the pointer within the same drop target no longer re-renders anything; only a different target updates the indicator and the drop hooks.
+- A tab or tabset turned undraggable while on screen (say `enableDrag` set to `false` after load) no longer still drags from its handle.
