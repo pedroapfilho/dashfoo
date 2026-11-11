@@ -3,7 +3,7 @@
 import type { Dimension, RowNode, SnapConfig, TabsetNode } from "@dashfoo/core";
 import { collectTabsetsInRow, resolveSnapGrid, snapEnabled } from "@dashfoo/core";
 import type { ReactNode } from "react";
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, useState } from "react";
 import type { Orientation } from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
@@ -11,6 +11,7 @@ import { resizePanelId } from "../lib/dom-ids";
 import { TabsetView } from "../tabset/tabset-view";
 
 import { useLayout } from "./layout-store";
+import { GutterContext, useGutter, useGutterRoot } from "./use-gutter";
 import { percentagesOf, useSnapResize } from "./use-snap-resize";
 
 const dimensionToSize = (dimension: Dimension): string => `${dimension.value}${dimension.unit}`;
@@ -20,10 +21,12 @@ const dimensionToPixels = (dimension: Dimension | undefined): number | undefined
 
 type LayoutChild = RowNode["children"][number];
 
+/** `gutter` is what each boundary inside a nested row adds along that row's axis. */
 const descendantMinSize = (
   child: LayoutChild,
   axis: RowNode["orientation"],
   tabsetMinSize: number,
+  gutter: number,
 ): number | undefined => {
   const explicit = dimensionToPixels(child.min);
 
@@ -42,7 +45,7 @@ const descendantMinSize = (
   const childMinimums: Array<number> = [];
 
   for (const grandchild of child.children) {
-    const minimum = descendantMinSize(grandchild, axis, tabsetMinSize);
+    const minimum = descendantMinSize(grandchild, axis, tabsetMinSize, gutter);
 
     if (minimum === undefined) {
       return undefined;
@@ -56,7 +59,7 @@ const descendantMinSize = (
   }
 
   return child.orientation === axis
-    ? childMinimums.reduce((sum, value) => sum + value, 0)
+    ? childMinimums.reduce((sum, value) => sum + value, 0) + gutter * (childMinimums.length - 1)
     : Math.max(...childMinimums);
 };
 
@@ -84,6 +87,8 @@ const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
 
   const snapActive = snapEnabled(snapGrid);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
+  const [groupElement, setGroupElement] = useState<HTMLDivElement | null>(null);
+  const gutter = useGutter(groupElement, orientation === "horizontal", node.children.length);
 
   const panels = useMemo(
     () =>
@@ -112,6 +117,7 @@ const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
       data-dashfoo="row"
       data-dashfoo-snapping={snappedBoundary === null ? undefined : "true"}
       disabled={!resizableSplits}
+      elementRef={setGroupElement}
       groupRef={groupRef}
       key={node.id}
       onLayoutChange={snapActive ? onLayoutChange : undefined}
@@ -122,7 +128,7 @@ const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
         let min = child.min ? dimensionToSize(child.min) : undefined;
 
         if (min === undefined) {
-          const minimum = descendantMinSize(child, node.orientation, tabsetMinSize);
+          const minimum = descendantMinSize(child, node.orientation, tabsetMinSize, gutter);
           min = minimum === undefined ? undefined : `${minimum}px`;
         }
 
@@ -158,6 +164,16 @@ const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
   );
 };
 
+const RowRoot = ({ node, renderTabset }: RowViewProps): ReactNode => {
+  const gutter = useGutterRoot();
+
+  return (
+    <GutterContext.Provider value={gutter}>
+      <RowGroup node={node} renderTabset={renderTabset} />
+    </GutterContext.Provider>
+  );
+};
+
 /**
  * The rows of a layout, or only its maximized tabset while one is maximized, so
  * every layout honors maximize without branching on it.
@@ -174,9 +190,9 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     return renderTabset?.(maximized) ?? <TabsetView node={maximized} />;
   }
 
-  return <RowGroup node={node} renderTabset={renderTabset} />;
+  return <RowRoot node={node} renderTabset={renderTabset} />;
 };
 
-export { RowView };
+export { descendantMinSize, RowView };
 
 export type { RowViewProps };

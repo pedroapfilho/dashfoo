@@ -6,8 +6,14 @@ import { useRef } from "react";
 
 import { startsOnControl } from "../lib/interactive";
 
-import type { ResizeEdges, Size } from "./float-geometry";
-import { clampToBounds, floatGeometryStyle, resizeRect } from "./float-geometry";
+import type { ResizeEdges, Scale, Size } from "./float-geometry";
+import {
+  clampToBounds,
+  floatGeometryStyle,
+  layoutScale,
+  resizeRect,
+  toLayoutRect,
+} from "./float-geometry";
 
 const TAP_SLOP = 4;
 
@@ -26,6 +32,7 @@ const applyGeometry = (panel: HTMLElement, geometry: Geometry): void => {
 /**
  * `moved` and `latest` live here because they only mean anything mid-gesture.
  * `visible` is the size the clamp keeps on screen: the chip's own when minimized.
+ * `scale` converts screen pixels to layout pixels under CSS `zoom` or a scale transform.
  */
 type Gesture = {
   bounds: Size;
@@ -33,6 +40,7 @@ type Gesture = {
   latest: Geometry;
   moved: boolean;
   pointerId: number;
+  scale: Scale;
   start: Geometry;
   startX: number;
   startY: number;
@@ -90,7 +98,13 @@ const useFloatGesture = ({
     }
 
     const parent = panel.offsetParent instanceof HTMLElement ? panel.offsetParent : null;
-    const rect = panel.getBoundingClientRect();
+    const scale = layoutScale(panel);
+
+    const rect = toLayoutRect(
+      panel.getBoundingClientRect(),
+      parent?.getBoundingClientRect(),
+      scale,
+    );
 
     const visibleGeometry = {
       height: minimized ? geometry.height : rect.height,
@@ -105,6 +119,7 @@ const useFloatGesture = ({
       latest: visibleGeometry,
       moved: false,
       pointerId: event.pointerId,
+      scale,
       start: visibleGeometry,
       startX: event.clientX,
       startY: event.clientY,
@@ -162,11 +177,11 @@ const useFloatGesture = ({
       return;
     }
 
-    const dx = event.clientX - gesture.startX;
-    const dy = event.clientY - gesture.startY;
+    const dx = (event.clientX - gesture.startX) / gesture.scale.x;
+    const dy = (event.clientY - gesture.startY) / gesture.scale.y;
 
     if (!gesture.moved) {
-      if (Math.hypot(dx, dy) <= TAP_SLOP) {
+      if (Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY) <= TAP_SLOP) {
         return;
       }
 

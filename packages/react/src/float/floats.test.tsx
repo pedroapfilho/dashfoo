@@ -131,6 +131,29 @@ describe("floating panels", () => {
     expect(panel.style.getPropertyValue("--dashfoo-float-width")).toBe(draggedWidth);
   });
 
+  test("a resize under a 2x scale moves the edge with the pointer, in layout pixels", () => {
+    render(<DashfooLayout components={components} defaultModel={model()} floatable />);
+    fireEvent.click(screen.getByLabelText("Float panel"));
+
+    const panel = floatPanel()!;
+    vi.spyOn(panel, "getBoundingClientRect").mockReturnValue(new DOMRect(80, 80, 400, 320));
+    Object.defineProperty(panel, "offsetWidth", { configurable: true, value: 200 });
+    Object.defineProperty(panel, "offsetHeight", { configurable: true, value: 160 });
+    panel.setPointerCapture = () => {};
+
+    panel.releasePointerCapture = () => {};
+
+    panel.hasPointerCapture = () => true;
+    const se = panel.querySelector<HTMLElement>('[data-dashfoo="float-resize"][data-edge="se"]')!;
+
+    fireEvent.pointerDown(se, { buttons: 1, clientX: 480, clientY: 400, pointerId: 1 });
+    fireEvent.pointerMove(panel, { buttons: 1, clientX: 560, clientY: 460, pointerId: 1 });
+
+    expect(panel.style.getPropertyValue("--dashfoo-float-width")).toBe("240px");
+    expect(panel.style.getPropertyValue("--dashfoo-float-height")).toBe("190px");
+    expect(panel.style.getPropertyValue("--dashfoo-float-left")).toBe("40px");
+  });
+
   test("a cancelled resize (OS took the pointer) reverts to the starting rect", () => {
     render(<DashfooLayout components={components} defaultModel={model()} floatable />);
     fireEvent.click(screen.getByLabelText("Float panel"));

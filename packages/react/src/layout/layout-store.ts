@@ -6,6 +6,8 @@ import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
 import { createStore, useStore } from "zustand";
 
+import type { TablistSpace } from "../tabset/tablist-space";
+
 type LayoutState = {
   canDock: boolean;
   closableTabs: boolean;
@@ -16,7 +18,7 @@ type LayoutState = {
   editable: boolean;
 
   floatable: boolean;
-  keepMounted: boolean;
+  keepMounted: boolean | "activity";
   maximizable: boolean;
   maximizedTabsetId: string | undefined;
   renamableTabs: boolean;
@@ -27,6 +29,7 @@ type LayoutState = {
 
   snap: SnapConfig | null;
   splitDock: boolean;
+  tablistSpace: TablistSpace;
   tabLocation: "bottom" | "top";
   tabsetMinSize: number;
   tabStripEnabled: boolean;

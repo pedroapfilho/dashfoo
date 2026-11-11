@@ -361,6 +361,20 @@ A 16px grab target around a 2px grip keeps resize easy to hit while the visible
 line stays quiet. The hover rule raises contrast on the grip, not the whole
 handle.
 
+### Gaps between tabsets
+
+A CSS `gap` on `[data-dashfoo="row"]` adds space between tabsets on top of the
+splitter. The layout measures both (in layout pixels, so CSS `zoom` and scale
+transforms don't skew it) and counts them toward the minimum size of nested
+rows, so a nested split keeps its tabsets at `tabSetMinSize` however wide your
+gutters are:
+
+```css
+[data-dashfoo="row"] {
+  gap: 4px;
+}
+```
+
 ### Magnetic snapping
 
 When [snapping](/the-model#global-attributes) is on and a drag locks the boundary
@@ -380,6 +394,28 @@ without inline color:
 The transition is scoped to the snapping group only, so free-drag tracking stays
 1:1 with the pointer. The boundary glides onto the line and snaps off it
 instantly.
+
+## Tablist space
+
+Every `[data-dashfoo="tablist"]` carries `--dashfoo-tablist-space`: the layout
+pixels its tabs leave free, negative once they overflow. It is set before
+paint, so a rule can react to a crowded header without a flash. This one fades
+the trailing edge in, up to 24px, as the tabs overflow:
+
+```css
+[data-dashfoo="tablist"] {
+  mask-image: linear-gradient(
+    to right,
+    black calc(100% - clamp(0px, -1 * var(--dashfoo-tablist-space), 24px)),
+    transparent
+  );
+}
+```
+
+A custom property can't drive a selector, so logic such as moving toolbar items
+into a menu reads the same number in JavaScript: `useTabset((state) => state.tablistSpace)` inside a
+tabset, or the handle's `getTablistSpace` and `onTablistSpaceChange` from
+outside the layout. See the [API reference](/api-reference#usetabset--usetab--usedragsubject--usedropintent--usedropindicator).
 
 ## Dock indicators and the `--dashfoo-dock-*` vars
 

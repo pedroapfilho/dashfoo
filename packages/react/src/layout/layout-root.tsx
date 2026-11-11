@@ -9,10 +9,12 @@ import type {
   TabsetNode,
 } from "@dashfoo/core";
 import type { ComponentProps, ReactNode, Ref } from "react";
-import { useId } from "react";
+import { useId, useState } from "react";
 
 import { DashfooDragProvider } from "../drag/drag-root";
 import { useMirroredStore } from "../lib/use-mirrored-store";
+import type { TablistSpace } from "../tabset/tablist-space";
+import { createTablistSpace } from "../tabset/tablist-space";
 
 import type { LayoutState } from "./layout-store";
 import { createLayoutStore, LayoutStoreContext, useLayout } from "./layout-store";
@@ -26,7 +28,8 @@ type LayoutOptions = {
   draggableTabsets?: boolean;
   editable?: boolean;
   floatable?: boolean;
-  keepMounted?: boolean;
+  /** `true` keeps inactive tabs mounted and hidden; `"activity"` keeps them in a hidden React `<Activity>`, which pauses their effects. */
+  keepMounted?: boolean | "activity";
   maximizable?: boolean;
   renamableTabs?: boolean;
   resizableSplits?: boolean;
@@ -48,6 +51,8 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children" | "ref" | "style">
     model: Dashfoo;
     renderers: LayoutRenderers;
     rootRef?: Ref<HTMLDivElement>;
+    /** Where each tabset's measured tablist space is published, for readers outside the layout. */
+    tablistSpace?: TablistSpace;
   };
 
 type ResolvedOptions = Omit<
@@ -58,6 +63,7 @@ type ResolvedOptions = Omit<
   | "renderTab"
   | "renderTabLabel"
   | "renderTabsetToolbar"
+  | "tablistSpace"
 >;
 
 const noneSwitchedOff = (...switches: Array<boolean | undefined>): boolean =>
@@ -78,7 +84,7 @@ const resolveLayoutOptions = (
     draggableTabsets: noneSwitchedOff(structural, options.draggableTabsets),
     editable,
     floatable: structural && options.floatable === true,
-    keepMounted: options.keepMounted === true,
+    keepMounted: options.keepMounted ?? false,
     maximizable: noneSwitchedOff(options.maximizable, global.tabSetEnableMaximize),
     renamableTabs: noneSwitchedOff(editable, options.renamableTabs, global.tabEnableRename),
     resizableSplits: noneSwitchedOff(structural, options.resizableSplits, global.enableSplitResize),
@@ -107,9 +113,11 @@ const LayoutRoot = ({
   restructurable,
   rootRef,
   snap,
+  tablistSpace,
   ...props
 }: LayoutRootProps): ReactNode => {
   const documentId = useId();
+  const [ownTablistSpace] = useState(createTablistSpace);
   const { global } = model;
 
   const store = useMirroredStore(createLayoutStore, {
@@ -132,6 +140,7 @@ const LayoutRoot = ({
     renderTab: renderers.tab,
     renderTabLabel: renderers.tabLabel,
     renderTabsetToolbar: renderers.tabsetToolbar,
+    tablistSpace: tablistSpace ?? ownTablistSpace,
   });
 
   return (

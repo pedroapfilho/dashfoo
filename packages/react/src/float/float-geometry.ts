@@ -8,6 +8,29 @@ const LIFT_OFFSET = 16;
 
 type Size = { height: number; width: number };
 
+type Scale = { x: number; y: number };
+
+const ratio = (screen: number, layout: number): number =>
+  screen > 0 && layout > 0 ? screen / layout : 1;
+
+/** Screen pixels per layout pixel; 1 where the element has no layout box to compare. */
+const layoutScale = (element: HTMLElement): Scale => {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    x: ratio(rect.width, element.offsetWidth),
+    y: ratio(rect.height, element.offsetHeight),
+  };
+};
+
+/** A screen rect as layout pixels relative to `origin`, the positioned ancestor's screen rect. */
+const toLayoutRect = (rect: DOMRect, origin: DOMRect | undefined, scale: Scale): Geometry => ({
+  height: rect.height / scale.y,
+  left: (rect.left - (origin?.left ?? 0)) / scale.x,
+  top: (rect.top - (origin?.top ?? 0)) / scale.y,
+  width: rect.width / scale.x,
+});
+
 const clampToBounds = (rect: Geometry, bounds: Size, size: Size = rect): Geometry => ({
   height: rect.height,
   left: Math.max(0, Math.min(rect.left, Math.max(0, bounds.width - size.width))),
@@ -71,6 +94,14 @@ const floatGeometryStyle = (geometry: Geometry) => ({
   "--dashfoo-float-width": `${geometry.width}px`,
 });
 
-export { clampToBounds, floatGeometryStyle, measureFloatRect, RESIZE_HANDLES, resizeRect };
+export {
+  clampToBounds,
+  floatGeometryStyle,
+  layoutScale,
+  measureFloatRect,
+  RESIZE_HANDLES,
+  resizeRect,
+  toLayoutRect,
+};
 
-export type { ResizeEdges, Size };
+export type { ResizeEdges, Scale, Size };

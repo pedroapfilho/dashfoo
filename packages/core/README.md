@@ -382,12 +382,26 @@ clears the redo `future`. History keeps the most recent `HISTORY_LIMIT` (100) st
 toJSON(model): string;          // JSON.stringify
 fromJSON(json): Dashfoo;        // parse → validate → normalize
 parseModel(value): Dashfoo;     // same, from an already-parsed value
+restoreModel(value, { mapTab? }): Dashfoo | null; // tolerant, for saved layouts
 ```
 
 `fromJSON` and `parseModel` validate an untrusted value against `dashfooSchema`
 and return a normalized model. They throw on an invalid value. The payload's
 `version` field is pinned to `1` by the schema itself, so a payload written in
 any other format fails validation; a future format change bumps the literal.
+
+`restoreModel` is the tolerant counterpart for saved layouts: a value that is
+not a model warns and returns `null` instead of throwing. Its `mapTab` option
+receives every saved tab (floats included) and returns the app's current
+version of it, or `null` to drop it. The selected tab stays selected when tabs
+before it are dropped, and the result is tidied by `normalize` like any parsed
+model (emptied tabsets and rows collapse, selections are clamped).
+
+```ts
+const restored = restoreModel(JSON.parse(saved), {
+  mapTab: (tab) => (tab.component in components ? tab : null),
+});
+```
 
 ## XState machine
 
@@ -460,7 +474,7 @@ types `SnapGrid`, `SnapDecision`.
 `history`: `createHistory`, `dispatchToHistory`, `undoHistory`, `redoHistory`,
 `canUndoHistory`, `canRedoHistory`, `HISTORY_LIMIT`; type `History`.
 
-`serialize`: `toJSON`, `fromJSON`, `parseModel`.
+`serialize`: `toJSON`, `fromJSON`, `parseModel`, `restoreModel`; types `MapTab`, `RestoreOptions`.
 
 `warn`: `warn`, `warnOnce`. Both prefix the message with `[dashfoo]` and write it
 with `console.warn`; `@dashfoo/react` reports its degraded paths through them.

@@ -3,10 +3,11 @@
 import type { Action, Dashfoo, DockLocation, TabNode, TabsetNode } from "@dashfoo/core";
 import { warnOnce } from "@dashfoo/core";
 import type { ComponentType, ReactNode } from "react";
-import { forwardRef, useCallback, useImperativeHandle, useMemo } from "react";
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useState } from "react";
 
 import type { PersistInput } from "../store/persistence";
 import { useDashfooStore } from "../store/store";
+import { createTablistSpace } from "../tabset/tablist-space";
 
 import { Layout } from "./layout";
 import type { LayoutOptions } from "./layout-root";
@@ -29,7 +30,11 @@ type DashfooHandle = {
 
   floatTab: (tabId: string) => void;
   getModel: () => Dashfoo;
+  /** The free space in a tabset's tablist, in layout pixels; negative once its tabs overflow. */
+  getTablistSpace: (tabsetId: string) => number | undefined;
   maximizeTabset: (tabsetId: string | null) => void;
+  /** Calls `listener` before paint whenever a tabset's tablist space changes; returns the unsubscribe. */
+  onTablistSpaceChange: (tabsetId: string, listener: (space: number) => void) => () => void;
   redo: () => void;
   renameTab: (tabId: string, name: string) => void;
 
@@ -73,6 +78,8 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
     ...options
   } = props;
 
+  const [tablistSpace] = useState(createTablistSpace);
+
   const store = useDashfooStore({
     defaultModel,
     model,
@@ -108,9 +115,11 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
         store.dispatch({ tabId, type: "floatTab" });
       },
       getModel: () => store.model,
+      getTablistSpace: tablistSpace.get,
       maximizeTabset: (tabsetId) => {
         store.dispatch({ tabsetId, type: "setMaximizedTabset" });
       },
+      onTablistSpaceChange: tablistSpace.subscribe,
       redo: store.redo,
       renameTab: (tabId, name) => {
         store.dispatch({ name, tabId, type: "renameTab" });
@@ -121,7 +130,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       },
       undo: store.undo,
     }),
-    [store],
+    [store, tablistSpace],
   );
 
   const renderTab = useCallback(
@@ -170,6 +179,7 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       model={view}
       renderers={renderers}
       rootRef={presentation.rootRef}
+      tablistSpace={tablistSpace}
     >
       {tree}
     </Layout.Root>

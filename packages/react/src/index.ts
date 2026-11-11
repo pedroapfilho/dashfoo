@@ -27,6 +27,10 @@ export { useTab, useTabset } from "./tabset/tabset-store";
 
 export type { TabContextValue, TabsetState } from "./tabset/tabset-store";
 
+export { createTablistSpace } from "./tabset/tablist-space";
+
+export type { TablistSpace, TablistSpaceListener } from "./tabset/tablist-space";
+
 export { useLayout } from "./layout/layout-store";
 
 export type { LayoutState } from "./layout/layout-store";

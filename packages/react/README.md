@@ -72,7 +72,7 @@ a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-att
 | `onModelChange`           | `(model: Dashfoo, action?: Action) => void`                             | (none)  | Called after every change with the next model and the action that caused it.                                                                                                                                                                                                                                                                                                                                                                |
 | `components`              | `Record<string, ComponentType<{ node: TabNode }>>`                      | (none)  | Registry mapping `tab.component` keys to components.                                                                                                                                                                                                                                                                                                                                                                                        |
 | `factory`                 | `(tab: TabNode) => ReactNode`                                           | (none)  | Render override. When provided, it resolves every tab and `components` is ignored.                                                                                                                                                                                                                                                                                                                                                          |
-| `persist`                 | `string \| { key; storage?; debounceMs? }`                              | (none)  | Auto-save the model. The props type only accepts it alongside `defaultModel`. A bare string is a localStorage key.                                                                                                                                                                                                                                                                                                                          |
+| `persist`                 | `string \| { key; storage?; debounceMs?; mapTab? }`                     | (none)  | Auto-save the model. The props type only accepts it alongside `defaultModel`. A bare string is a localStorage key.                                                                                                                                                                                                                                                                                                                          |
 | `onAction`                | `(action: Action) => Action \| null`                                    | (none)  | Intercept each action before it commits: return it, a replacement, or `null` to veto.                                                                                                                                                                                                                                                                                                                                                       |
 | `onActiveTabsetChange`    | `(id: string \| undefined) => void`                                     | (none)  | Fires when the active tabset changes.                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `onMaximizedTabsetChange` | `(id: string \| undefined) => void`                                     | (none)  | Fires when a tabset is maximized or restored.                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -87,7 +87,7 @@ a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-att
 | `draggableTabs`           | `boolean`                                                               | `true`  | Allow individual tabs to be dragged between tabsets.                                                                                                                                                                                                                                                                                                                                                                                        |
 | `draggableTabsets`        | `boolean`                                                               | `true`  | Show the grip that drags a whole tabset.                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `resizableSplits`         | `boolean`                                                               | `true`  | Allow dragging the splitters; `false` disables them in place (gutters keep their size).                                                                                                                                                                                                                                                                                                                                                     |
-| `keepMounted`             | `boolean`                                                               | `false` | Keep inactive tab panels mounted (hidden) so their state survives a tab switch.                                                                                                                                                                                                                                                                                                                                                             |
+| `keepMounted`             | `boolean \| "activity"`                                                 | `false` | Keep inactive tab panels mounted (hidden) so their state survives a tab switch. `"activity"` renders them in a hidden React `<Activity>` instead, which keeps state but pauses their effects (React 19.2+; older React keeps them mounted and warns). The selected tab's content always server-renders.                                                                                                                                     |
 | `responsive`              | `{ maxWidth: number; orientation? }`                                    | (none)  | At/below `maxWidth` (the layout's own container width) render a stacked column and lock drag + resize. View-only projection: no remount, state preserved. See below.                                                                                                                                                                                                                                                                        |
 | `snap`                    | `{ step?: number; divisions?: number \| "panels"; threshold?: number }` | (none)  | Magnetic splitter snapping onto a grid: the union of `step` (multiples of a fixed percent) and `divisions` (even splits: `100/d`, or `"panels"` to divide by the row's panel count, so a 3-panel row snaps to thirds). Within `threshold` percent (default `4`) it snaps and commits on release as one undo step. Off when omitted; replaces `global.snap`; a row overrides via its own `snap` (`{}` disables). Locked off in compact mode. |
 
@@ -103,7 +103,8 @@ which takes the same type and resolves every default above in one place. With
 A `ref` exposes a `DashfooHandle` for imperative control:
 `addTab`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `floatTab`,
 `dockFloat`, `dispatch`, `getModel`, `undo` / `redo` / `canUndo` / `canRedo`,
-and `resetLayout()` (reset to the original `defaultModel`, clearing undo history and
+`getTablistSpace(tabsetId)` / `onTablistSpaceChange(tabsetId, listener)` (see
+[Tablist space](#tablist-space)), and `resetLayout()` (reset to the original `defaultModel`, clearing undo history and
 any persisted copy).
 
 ```tsx
@@ -390,7 +391,7 @@ const Layout = () => {
 };
 ```
 
-`persist` accepts a bare localStorage key or `{ key, storage?, debounceMs? }` for
+`persist` accepts a bare localStorage key or `{ key, storage?, debounceMs?, mapTab? }` for
 a custom store (sessionStorage, in-memory, your own). A pending save flushes on
 unmount and on page hide (reload, tab close, navigation, the page going to the
 background), so the last change is never lost, even inside the debounce window.
@@ -404,13 +405,32 @@ validation pipeline, and SSR notes.
 
 ### Options
 
-The full form of `persist` (`{ key, storage?, debounceMs? }`):
+The full form of `persist` (`{ key, storage?, debounceMs?, mapTab? }`):
 
 | Option       | Type             | Default               | Description                                       |
 | ------------ | ---------------- | --------------------- | ------------------------------------------------- |
 | `key`        | `string`         | (required)            | Storage key. A bare `persist="key"` is shorthand. |
 | `storage`    | `StorageAdapter` | `localStorageAdapter` | Where to read and write.                          |
 | `debounceMs` | `number`         | `300`                 | Save debounce window.                             |
+| `mapTab`     | `MapTab`         | (none)                | Upgrade or drop each restored tab; see below.     |
+
+A stored layout goes through `restoreModel` from `@dashfoo/core`: anything that
+is not a dashfoo model is warned about, removed, and `defaultModel` stays.
+`mapTab` receives every saved tab and returns the app's current version of it,
+or `null` to drop it, so a layout saved by an older release of your app still
+restores after a component is renamed or removed:
+
+```tsx
+persist={{
+  key: "dashfoo:my-app",
+  mapTab: (tab) =>
+    tab.component === "legacy-chart"
+      ? { ...tab, component: "chart" }
+      : tab.component in components
+        ? tab
+        : null,
+}}
+```
 
 ### Storage adapters
 
@@ -602,7 +622,7 @@ pattern as `Panel`:
 | `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: arrow/Home/End navigation, select on click, rename on double-click, draggable. Children override the label.                                    |
 | `Tabset.RenameInput`    | `input[data-dashfoo="tab-rename"]`       | Inline rename editor; renders only while its tab is being renamed.                                                                                             |
 | `Tabset.CloseButton`    | `button[data-dashfoo="tab-close"]`       | Closes the tab with focus restore; hides when the tab isn't closable.                                                                                          |
-| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted`. Children render-prop overrides `renderers.tab`.                                                           |
+| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted` (including `"activity"`). Children render-prop overrides `renderers.tab`.                                  |
 | `Tabset.Toolbar`        | `div[data-dashfoo="tabset-toolbar"]`     | Trailing toolbar container.                                                                                                                                    |
 | `Tabset.OverflowMenu`   | menu button                              | Lists clipped tabs; hides when nothing overflows.                                                                                                              |
 | `Tabset.Grip`           | `button[data-dashfoo="tabset-grip"]`     | Drag handle for the whole tabset; hides when tabset dragging is off.                                                                                           |
@@ -721,7 +741,12 @@ type ExternalTabSourceOptions;
 localStorageAdapter;
 memoryStorageAdapter;
 type StorageAdapter;
-type PersistInput; // string | { key, storage?, debounceMs? }
+type PersistInput; // string | { key, storage?, debounceMs?, mapTab? }
+
+// Tablist space (Layout.Root's `tablistSpace` prop)
+createTablistSpace;
+type TablistSpace; // { get, set, subscribe } per tabset id
+type TablistSpaceListener;
 
 // Responsive
 useResponsiveLayout; // compact projection + lock for DashfooLayout and hand-built layouts
@@ -750,5 +775,30 @@ React 18.3 and React 19. Docking itself remains pointer-only.
 The compact projection retains nested row identities so mounted widget state survives ordinary breakpoint changes. Entering compact mode from a maximized view, moving a tab between tabsets, or supplying a different tree can remount content; keep durable application state outside panel components.
 
 `Tabset.Content` forwards its ref to the active panel, including when inactive panels are retained with `keepMounted`.
+
+### Tablist space
+
+Every tablist measures the space its tabs leave free, in layout pixels: positive
+while there is room, negative once the tabs overflow, and still falling when the
+tablist is squeezed to nothing and the rest of the strip overflows too. A
+toolbar can use it to move its own items into a menu as the header runs out of
+room. It is updated before paint whenever the tablist, its strip, a toolbar or
+a tab resizes, and published four ways:
+
+- `useTabset((state) => state.tablistSpace)` inside a tabset (`undefined` until measured, e.g. on the server).
+- `--dashfoo-tablist-space` on the `data-dashfoo="tablist"` element, for CSS.
+- `getTablistSpace(tabsetId)` on the `DashfooHandle`.
+- `onTablistSpaceChange(tabsetId, listener)` on the handle, for UI outside the layout; it returns the unsubscribe.
+
+A hand-built layout gets the same readers by creating one with
+`createTablistSpace()` and passing it to `Layout.Root` as `tablistSpace`.
+
+### Gutters, zoom and scale
+
+The space between siblings in a row (the splitter plus any CSS `gap` on
+`data-dashfoo="row"`) is measured and counted toward the minimum size of nested
+rows, so a nested split never squeezes its tabsets below `tabSetMinSize`. Split
+and float resizing follow the pointer under CSS `zoom` or a scale transform on
+an ancestor: pointer movement is converted to layout pixels first.
 
 Existing floats remain overlays in compact mode. Their displayed bounds fit the viewport without changing saved geometry; float controls remain available to minimize or dock them back.

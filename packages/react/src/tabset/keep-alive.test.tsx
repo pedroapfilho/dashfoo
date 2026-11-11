@@ -1,8 +1,9 @@
 import type { Dashfoo } from "@dashfoo/core";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { useState } from "react";
-import { describe, expect, test } from "vitest";
+import { useEffect, useState } from "react";
+import { renderToString } from "react-dom/server";
+import { describe, expect, test, vi } from "vitest";
 
 import { DashfooLayout } from "../layout/dashfoo-layout";
 
@@ -98,5 +99,49 @@ describe("inactive-tab keep-alive", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Book" }));
 
     expect(screen.getByRole("button", { name: "count 0" })).toBeInTheDocument();
+  });
+
+  test('keepMounted="activity" keeps state but pauses the hidden tab\'s effects', () => {
+    const effects = vi.fn<(event: string) => void>();
+
+    const Watched = (): ReactNode => {
+      useEffect(() => {
+        effects("mount");
+
+        return () => {
+          effects("cleanup");
+        };
+      }, []);
+
+      return <Counter />;
+    };
+
+    render(
+      <DashfooLayout
+        components={{ book: () => <div>BOOK</div>, chart: Watched }}
+        defaultModel={model()}
+        keepMounted="activity"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "count 0" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Book" }));
+
+    expect(effects.mock.calls.at(-1)).toEqual(["cleanup"]);
+    expect(screen.getByText("BOOK")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Chart" }));
+
+    expect(effects.mock.calls.at(-1)).toEqual(["mount"]);
+    expect(screen.getByRole("button", { name: "count 1" })).toBeVisible();
+  });
+
+  test("the server renders the selected tab's content, and no hidden Activity content", () => {
+    const html = renderToString(
+      <DashfooLayout components={components} defaultModel={model()} keepMounted="activity" />,
+    );
+
+    expect(html).toContain("CHART");
+    expect(html).not.toContain("BOOK");
   });
 });

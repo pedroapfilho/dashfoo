@@ -1,7 +1,7 @@
 "use client";
 
-import type { Dashfoo } from "@dashfoo/core";
-import { fromJSON, toJSON, warn } from "@dashfoo/core";
+import type { Dashfoo, MapTab } from "@dashfoo/core";
+import { restoreModel, toJSON, warn } from "@dashfoo/core";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 type StorageAdapter = {
@@ -38,11 +38,14 @@ const localStorageAdapter: StorageAdapter = {
 const DEFAULT_DEBOUNCE_MS = 300;
 
 /** A bare string is a localStorage key. */
-type PersistInput = string | { debounceMs?: number; key: string; storage?: StorageAdapter };
+type PersistInput =
+  | string
+  | { debounceMs?: number; key: string; mapTab?: MapTab; storage?: StorageAdapter };
 
 type PersistTarget = {
   debounceMs: number;
   key: string;
+  mapTab: MapTab | undefined;
   storage: StorageAdapter;
 };
 
@@ -52,12 +55,18 @@ const resolvePersist = (persist: PersistInput | undefined): PersistTarget | null
   }
 
   if (typeof persist === "string") {
-    return { debounceMs: DEFAULT_DEBOUNCE_MS, key: persist, storage: localStorageAdapter };
+    return {
+      debounceMs: DEFAULT_DEBOUNCE_MS,
+      key: persist,
+      mapTab: undefined,
+      storage: localStorageAdapter,
+    };
   }
 
   return {
     debounceMs: persist.debounceMs ?? DEFAULT_DEBOUNCE_MS,
     key: persist.key,
+    mapTab: persist.mapTab,
     storage: persist.storage ?? localStorageAdapter,
   };
 };
@@ -78,14 +87,26 @@ const loadStoredLayout = (target: PersistTarget): Dashfoo | undefined => {
       return undefined;
     }
 
+    let saved: unknown;
+
     try {
-      return fromJSON(raw);
+      saved = JSON.parse(raw);
     } catch (error) {
       warn("discarding unreadable persisted layout", error);
       removeStoredLayout(target);
 
       return undefined;
     }
+
+    const restored = restoreModel(saved, { mapTab: target.mapTab });
+
+    if (restored === null) {
+      removeStoredLayout(target);
+
+      return undefined;
+    }
+
+    return restored;
   } catch (error) {
     warn("failed to load persisted layout", error);
 

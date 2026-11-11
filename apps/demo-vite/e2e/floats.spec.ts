@@ -37,6 +37,36 @@ test("dragging the title bar moves the float", async ({ page }) => {
   expect(after!.y).toBeLessThan(before!.y);
 });
 
+for (const [name, style] of [
+  ["CSS zoom", "zoom: 1.5"],
+  ["a scale transform", "transform: scale(1.5); transform-origin: 0 0"],
+]) {
+  test(`a float follows the pointer under ${name}`, async ({ page }) => {
+    await page.locator('[data-dashfoo="layout"]').evaluate((element, css) => {
+      element.setAttribute("style", `${element.getAttribute("style") ?? ""}; ${css}`);
+    }, style);
+    await page.getByLabel("Float panel").first().click();
+    const float = page.locator('[data-dashfoo="float"]');
+    await expect(float).toBeVisible();
+    await float.evaluate(async (element) => {
+      await Promise.all(element.getAnimations().map(async (animation) => animation.finished));
+    });
+
+    const before = (await float.boundingBox())!;
+    const box = (await float.locator('[data-dashfoo="float-titlebar"]').boundingBox())!;
+
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 90, box.y + box.height / 2 - 60, { steps: 8 });
+    await page.mouse.up();
+
+    const after = (await float.boundingBox())!;
+    // Unscaled pointer math would move it 1.5x as far: 135 by 90.
+    expect(Math.abs(after.x - before.x - 90)).toBeLessThan(2);
+    expect(Math.abs(after.y - before.y + 60)).toBeLessThan(2);
+  });
+}
+
 test("the float is titled by its own name and can be renamed", async ({ page }) => {
   await page.getByLabel("Float panel").first().click();
   const float = page.locator('[data-dashfoo="float"]');

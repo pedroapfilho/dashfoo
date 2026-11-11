@@ -122,6 +122,31 @@ describe("useDashfooStore persist", () => {
     warn.mockRestore();
   });
 
+  test("a stored value that is not a model warns, is removed, and leaves the default", () => {
+    const storage = memoryStorageAdapter();
+    storage.setItem("layout", JSON.stringify({ layout: "nope" }));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const { result } = renderPersisted(target(storage));
+
+    expect(firstTabName(result.current.model)).toBe("Default");
+    expect(storage.getItem("layout")).toBeNull();
+    warn.mockRestore();
+  });
+
+  test("mapTab upgrades the tabs of a restored layout", () => {
+    const storage = memoryStorageAdapter();
+    storage.setItem("layout", toJSON(modelWith("Saved")));
+
+    const { result } = renderPersisted({
+      key: "layout",
+      mapTab: (tab) => ({ ...tab, name: `${tab.name} v2` }),
+      storage,
+    });
+
+    expect(firstTabName(result.current.model)).toBe("Saved v2");
+  });
+
   test("debounce-saves the latest edit and a fresh store restores it", () => {
     const storage = memoryStorageAdapter();
     const first = renderPersisted(target(storage));
