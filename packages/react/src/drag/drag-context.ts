@@ -15,6 +15,8 @@ type DragActor = ActorRefFrom<typeof dragDockMachine>;
  */
 type RegisteredLayer = {
   commit: (action: Action, subject: DragSubject) => void;
+  /** A float's layer: its drop indicator paints above the float layer, a docked one's beneath it. */
+  floating: boolean;
   layerId: string;
   resolveDrop: (
     subject: DragSubject,

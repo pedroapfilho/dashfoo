@@ -110,8 +110,9 @@ describe.each(["sibling", "nested"] as const)("%s documents sharing a manager", 
     expect(other.context.manager).toBe(first.context.manager);
     expect(other.documentId).not.toBe(first.documentId);
     const registrations = [...first.context.manager.registry.draggables];
-    expect(registrations).toHaveLength(10);
-    expect(new Set(registrations.map((source) => source.id)).size).toBe(10);
+    // Per document: three tabs, plus a grip and a header for each of its two tabsets.
+    expect(registrations).toHaveLength(14);
+    expect(new Set(registrations.map((source) => source.id)).size).toBe(14);
 
     for (const kind of ["tab", "tabset"] as const) {
       const source = registrations.find(

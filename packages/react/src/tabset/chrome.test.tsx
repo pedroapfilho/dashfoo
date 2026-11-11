@@ -162,6 +162,25 @@ describe("tab keyboard navigation (WAI-ARIA Tabs)", () => {
     expect(screen.getByRole("tab", { name: "Book" })).toHaveAttribute("tabindex", "-1");
   });
 
+  test("in a right-to-left layout ArrowLeft moves to the next tab and ArrowRight to the previous", () => {
+    const threeTabs = model();
+    const [first] = threeTabs.layout.children;
+    assert(first?.type === "tabset");
+    first.children.push({ component: "trades", id: "t4", name: "Tape", type: "tab" });
+
+    render(
+      <div dir="rtl">
+        <DashfooLayout components={components} defaultModel={threeTabs} />
+      </div>,
+    );
+
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Chart" }), { key: "ArrowLeft" });
+    expect(screen.getByRole("tab", { name: "Book" })).toHaveAttribute("tabindex", "0");
+
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Book" }), { key: "ArrowRight" });
+    expect(screen.getByRole("tab", { name: "Chart" })).toHaveAttribute("tabindex", "0");
+  });
+
   test("ArrowLeft on the first tab wraps to the last", () => {
     renderLayout();
 

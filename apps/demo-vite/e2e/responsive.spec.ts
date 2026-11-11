@@ -86,7 +86,7 @@ test("compact docking rejects widgets over the strip, body, and edge, then works
       box.y + box.height * (region === "edge" ? 0.94 : 0.5),
     );
     await expect(page.locator('[data-dashfoo="drag-preview"]')).toBeVisible();
-    await expect(page.locator('[data-dashfoo="dock-indicator"]')).toHaveCount(0);
+    await expect(page.locator('[data-dashfoo="dock-indicator"]:not([data-idle])')).toHaveCount(0);
     await page.mouse.up();
     expect(await tabsByTabset(page)).toEqual(before);
   }
@@ -143,7 +143,7 @@ test("a widget gesture started on desktop cannot commit after the compact breakp
     steps: 4,
   });
   await expect(page.locator('[data-dashfoo="drag-preview"]')).toBeVisible();
-  await expect(page.locator('[data-dashfoo="dock-indicator"]')).toHaveCount(0);
+  await expect(page.locator('[data-dashfoo="dock-indicator"]:not([data-idle])')).toHaveCount(0);
   await page.mouse.up();
   await page.setViewportSize({ height: 720, width: 1280 });
   await expect.poll(() => columns(page)).toBeGreaterThan(1);

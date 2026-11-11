@@ -1,13 +1,15 @@
 ---
 title: Drag and dock
-description: How dragging a tab or a whole tabset resolves to a stack or a directional split. The landing zones, the pipeline, and the gates. Pointer-only.
+description: How dragging a tab or a whole tabset resolves to a stack, a directional split, or a dock at the layout's edge. The landing zones, the pipeline, and the gates. Pointer-only.
 ---
 
 Two things can be dragged in dashfoo: a single tab, picked up from its button
-in the strip, and a whole tabset, picked up from the grip in its toolbar. Both
-share the same landing zones, and which outcome fires depends entirely on
-where the pointer is when you let go:
+in the strip, and a whole tabset, picked up from the grip in its toolbar or the
+empty space in its header. Both share the same landing zones, and which outcome
+fires depends entirely on where the pointer is when you let go:
 
+- **At the layout's edge.** The drop docks beside everything else, as a
+  sidebar or a bottom panel.
 - **Over a tab strip.** The drop stacks into that tabset. A tab lands at a
   specific insertion index, with a thin insertion line marking the slot; a
   tabset merges all of its tabs onto the end of the target strip.
@@ -61,7 +63,10 @@ const insertionIndex = (tabs: ReadonlyArray<MeasuredTab>, pointerX: number): num
 };
 ```
 
-If the pointer is past every midpoint, the index is the end of the strip.
+If the pointer is past every midpoint, the index is the end of the strip. In a
+right-to-left strip the tabs run from the right, so the comparison flips: the
+index is the first tab whose midpoint sits to the left of the pointer, and the
+insertion line sits on the right edge of that tab.
 
 The dragged tab excludes **itself** from this measurement. Its own slot never
 counts toward the order, so the index is measured against the tabs it will land
@@ -115,7 +120,11 @@ const resolveDockTarget = (pointer: Point, rect: Rect): DockLocation => {
 ```
 
 In a corner, the nearer of the two edges wins. `"center"` stacks at the end of
-the tabset; `split-${edge}` splits toward that edge. The result is already a
+the tabset; `split-${edge}` splits toward that edge. The locations name the
+model's row order (`split-left` means first), so in a right-to-left layout,
+where a row paints its first child on the right, `resolveDropIntent` swaps
+`split-left` and `split-right`: a drop on the screen's left edge still lands on
+the left. The result is already a
 `DockLocation`, the same vocabulary `zoneRect` and `dockZonePolygons` speak, so
 nothing has to convert it.
 
@@ -141,14 +150,20 @@ paints every candidate region during a drag.
 ## Dragging a whole tabset
 
 Each tabset renders a grip button in its toolbar (`data-dashfoo="tabset-grip"`,
-`aria-label="Move tabset"`). Dragging the grip picks up the entire tabset, tabs
-and all, and resolves against the same landing zones. The drag-preview chip is
-labeled with the tabset's active tab name.
+`aria-label="Move tabset"`), and the empty space in its header
+(`data-dashfoo="tabstrip"`, around the tabs and toolbar controls) works as a
+handle too. Dragging either picks up the entire tabset, tabs and all, and
+resolves against the same landing zones. A press on a tab drags that tab, and a
+press on a toolbar control operates the control, so only the empty space drags
+the tabset. The drag-preview chip is labeled with the tabset's active tab name,
+plus how many other tabs come along: `Canvas (+2)`.
 
-The grip is controlled by the `draggableTabsets` prop on `<DashfooLayout>`. It
-defaults to `true`; set it to `false` and the grip is not rendered, so
-whole-tabset dragging is off. The grip is also hidden while the tabset is
-maximized.
+Whole-tabset dragging is controlled by the `draggableTabsets` prop on
+`<DashfooLayout>`. It defaults to `true`; set it to `false` and the grip is not
+rendered and the header does not drag. A tabset can opt out on its own with
+`enableDrag: false` in the model, and a tabset holding a tab with
+`enableDrag: false` can't be dragged whole either, since moving it would move
+that tab. The grip is also hidden while the tabset is maximized.
 
 A grip drop commits a `moveTabset` action (a tab drop commits `moveNode`). The
 reducer treats the two locations differently:
@@ -167,10 +182,42 @@ sees it, and the reducer guards `sourceId === targetId` independently. The
 reducer likewise ignores a `moveNode` that splits a one-tab tabset off its own
 tab, the tab-drag version of the same self-drop.
 
-Internally the grip registers with dnd-kit under an id built from the
-document, the kind and the node id (the JSON of `[documentId, "tabset", tabsetId]`), so it
-never collides with a tab or with another document's nodes; the real tabset id
-rides in the draggable's data and becomes the drag subject's id.
+Internally the grip and the header each register with dnd-kit under an id built
+from the document, the kind, the node id and the handle (the JSON of
+`[documentId, "tabset", tabsetId, "grip" | "header"]`), so they never collide
+with each other, with a tab, or with another document's nodes; the real tabset
+id rides in the draggable's data and becomes the drag subject's id.
+
+## Dropping at the layout's edges
+
+Near the edge of the whole layout (within 12px of its root row), a drop docks
+beside everything else instead of beside one tabset: drop at the left edge for
+a full-height sidebar, at the bottom for a full-width bottom panel. The dock
+indicator previews the quarter of the layout the new panel takes. It works for
+tab drags, tabset drags and outside sources alike.
+
+The intent targets the layout's root row: `{ location: "split-left", targetId: model.layout.id }`.
+The reducer reads a root-row target as an edge dock. When the root already runs
+in that direction, the new tabset is added at its start or end with a quarter
+of the space; otherwise the root's children are wrapped in a new row and the new
+tabset placed beside it. The root keeps its id either way, so the layout stays
+addressable. A `center` drop on the root is ignored. Dispatching the same
+action yourself docks at the edge too:
+
+```ts
+store.dispatch({
+  location: "split-bottom",
+  sourceId: "logs",
+  targetId: model.layout.id,
+  type: "moveNode",
+});
+```
+
+Edge docking is on by default. Turn it off with `edgeDocking={false}` on
+`<DashfooLayout>` (or `Layout.Root`). It also follows `global.enableSplitDock`,
+since an edge drop is a split. Floats have no edges to dock at: a drop over a
+float lands in the float. With a single tabset, docking it (or its only tab) at
+its own edge would change nothing, so no edge intent resolves.
 
 ## Dragging in from outside
 
@@ -221,12 +268,15 @@ For a pointer over a tabset, the drag layer measures the tabset once
 strip) and hands that measurement, the drag subject and the pointer to
 `resolveDropIntent`, which runs the checks in a fixed order:
 
-1. **No-op filter.** A tabset dragged onto itself, or the sole tab of a tabset
+1. **Layout edge.** With `edges` measured and `splitDock` on, a pointer within
+   the edge band of the layout resolves a split against the layout's root row.
+   This runs first so a tabset can reach the edge from over itself.
+2. **No-op filter.** A tabset dragged onto itself, or the sole tab of a tabset
    dropped back onto that same tabset, resolves to no intent at all. The drop
    changes nothing once empties collapse, so the indicator never appears.
-2. **Tab strip.** Inside the strip, return a `center` stack at the insertion
+3. **Tab strip.** Inside the strip, return a `center` stack at the insertion
    index.
-3. **Tabset body.** Otherwise resolve `center` (append) or `split-*` from the
+4. **Tabset body.** Otherwise resolve `center` (append) or `split-*` from the
    tabset rect, or always `center` when `splitDock` is off.
 
 ```ts
@@ -236,18 +286,26 @@ const resolveDropIntent = (
   point: Point,
   options?: DropIntentOptions,
 ): DropIntent | null => {
+  const splitDock = options?.splitDock !== false;
+  const edgeIntent =
+    splitDock && options?.edges ? resolveEdgeIntent(subject, tabset, point, options.edges) : null;
+  if (edgeIntent) {
+    return edgeIntent;
+  }
   if (isSelfDrop(subject, tabset)) {
     return null;
   }
-  const { strip } = tabset;
+  const { direction, strip } = tabset;
   if (strip && pointInRect(point, strip.rect)) {
     return {
-      index: insertionIndex(landingTabs(subject, strip), point.x),
+      index: insertionIndex(landingTabs(subject, strip), point.x, direction),
       location: "center",
       targetId: tabset.id,
     };
   }
-  const location = options?.splitDock === false ? "center" : resolveDockTarget(point, tabset.rect);
+  const location = splitDock
+    ? screenSide(resolveDockTarget(point, tabset.rect), direction)
+    : "center";
   if (location === "center" && strip) {
     return { index: landingTabs(subject, strip).length, location, targetId: tabset.id };
   }
@@ -279,12 +337,13 @@ Two internal hooks in
 wire the layout's DOM to the drag system. Neither is exported from
 `@dashfoo/react`. They are described here to explain the flow, not as API.
 
-- `useNodeDraggable(kind, id, disabled, label)` registers a tab button
-  (`kind: "tab"`) or a tabset grip (`kind: "tabset"`) as a `@dnd-kit/dom`
-  `Draggable`, created imperatively in an effect. Its dnd-kit id is the JSON of
-  `[documentId, kind, id]`, and its data carries the model id, the kind and the
-  owning document. `label` (the tab's name, or the tabset's active tab name)
-  rides along as the drag-preview label.
+- `useNodeDraggable(kind, id, { disabled, handle, label })` registers a tab
+  button (`kind: "tab"`) or a tabset grip or header (`kind: "tabset"`) as a
+  `@dnd-kit/dom` `Draggable`, created imperatively in an effect. Its dnd-kit id
+  is the JSON of `[documentId, kind, id, handle]`, and its data carries the
+  model id, the kind and the owning document. `label` (the tab's name, or the
+  tabset's active tab name and extra tab count) rides along as the drag-preview
+  label.
 - `useTabsetDroppable` registers each tabset as a `@dnd-kit/dom` `Droppable`
   with a custom occlusion-aware collision detector: the winner is the tabset
   containing the topmost element under the pointer (`elementFromPoint`), so a
@@ -323,7 +382,10 @@ Each `Layout.DragLayer` is one such layer: the main tree, plus one per float.
 A layer registers only how its own tabsets turn a pointer into an intent and
 where a committed action goes, keyed by a layer id that also namespaces its
 droppable registrations. It holds no drag state, so a pointer move costs one
-intent resolution rather than one per mounted layer. A `Layout.DragLayer`
+intent resolution rather than one per mounted layer. The root sends the
+machine an `OVER` only when the resolved drop differs from the current one, so
+a pointer move that lands on the same slot re-renders nothing; only the
+indicator, and the hooks that read the drop, update when the target changes. A `Layout.DragLayer`
 needs a `Layout.Root` above it; without one it warns and renders its children
 without drag.
 
@@ -351,7 +413,7 @@ type DragState =
 the last carrying the `TabNode` to insert) and enters `dragging`. Each `OVER`
 assigns the live `DropResolution` (`{ indicator, intent, scope }`, where `scope`
 names the layer that resolved it and `indicator` comes from the same tabset
-measurement as `intent`; the layer's dock indicator renders it as given). A drop target with no
+measurement as `intent`; the root's single dock indicator renders it as given). A drop target with no
 subject is not expressible, so "is this drop valid" and "what does it do" are one
 total function:
 
@@ -416,6 +478,8 @@ layout props.
 | `tabEnableDrag`    | global       | `global.tabEnableDrag`   | on      | Tree-wide default behind `tab.enableDrag`.                       |
 | `enableDrag`       | per tab      | `tab.enableDrag`         | on      | That tab can't be picked up at all.                              |
 | `draggableTabsets` | whole layout | `<DashfooLayout>` prop   | on      | No grip is rendered; tabsets can't be dragged whole.             |
+| `enableDrag`       | per tabset   | `tabset.enableDrag`      | on      | That tabset can't be dragged whole; its tabs still can.          |
+| `edgeDocking`      | whole layout | `<DashfooLayout>` prop   | on      | Drops at the layout's edge split the tabset under the pointer.   |
 
 ### The editable gate
 
@@ -449,12 +513,10 @@ button folds that, and the layout's `draggableTabs`, into the internal
 label:
 
 ```ts
-const { ref } = useNodeDraggable(
-  "tab",
-  tab.id,
-  !draggableTabs || tab.enableDrag === false,
-  tab.name,
-);
+const { ref } = useNodeDraggable("tab", tab.id, {
+  disabled: !draggableTabs || tab.enableDrag === false,
+  label: tab.name,
+});
 ```
 
 The hook returns only a `ref`. Dragging state is not part of its return value:
@@ -469,30 +531,37 @@ never become the source of a `moveNode`.
 ### Tabset grip gate
 
 `draggableTabsets` is a `<DashfooLayout>` prop, default `true`. When `false`,
-the grip button never renders, so `moveTabset` can never originate from a drag.
-The grip also disappears while its tabset is maximized, since a maximized
-tabset has nowhere to dock.
+the grip button never renders and the header does not drag, so `moveTabset`
+can never originate from a drag. The same happens for one tabset with
+`enableDrag: false`, or holding a tab with `enableDrag: false`. The grip also
+disappears while its tabset is maximized, since a maximized tabset has nowhere
+to dock.
 
 ## Styling the indicator
 
-The drop indicator carries `data-dashfoo="dock-indicator"`. Following the
-headless contract, the adapter sets only its geometry, as the custom properties
+The drop indicator carries `data-dashfoo="dock-indicator"`. It is one element
+for the whole drag, rendered by the drag root rather than inside a tabset, so a
+transition slides it from one tabset to the next. Off every target it stays
+where it last was with `data-idle` (and `opacity: 0`), so it fades instead of
+vanishing, and it unmounts when the drag ends. Following the headless contract,
+the adapter sets only its geometry, as the custom properties
 `--dashfoo-dock-left`, `--dashfoo-dock-top`, `--dashfoo-dock-width` and
 `--dashfoo-dock-height` that `@dashfoo/react/styles.css` reads. Its z-index is
-in `styles.css` too: `auto`, and `9999` inside a float. Every visual property is
+in `styles.css` too: `auto`, beneath floats, and `2` with `data-floating` when
+the target is inside a float. Every visual property is
 an overridable CSS custom property with a neutral fallback:
 
-| Variable                      | Default                                        | Applies to                  |
-| ----------------------------- | ---------------------------------------------- | --------------------------- |
-| `--dashfoo-dock-fill`         | `oklch(0.556 0 0 / 0.18)`                      | insertion line + split band |
-| `--dashfoo-dock-border`       | `oklch(0.708 0 0 / 0.75)`                      | insertion line + split band |
-| `--dashfoo-dock-border-width` | `1px`                                          | insertion line + split band |
-| `--dashfoo-dock-radius`       | `6px`                                          | split band                  |
-| `--dashfoo-dock-line-radius`  | `2px`                                          | insertion line              |
-| `--dashfoo-dock-transition`   | `left 60ms, top 60ms, width 60ms, height 60ms` | both forms                  |
+| Variable                      | Default                                                      | Applies to                  |
+| ----------------------------- | ------------------------------------------------------------ | --------------------------- |
+| `--dashfoo-dock-fill`         | `oklch(0.556 0 0 / 0.18)`                                    | insertion line + split band |
+| `--dashfoo-dock-border`       | `oklch(0.708 0 0 / 0.75)`                                    | insertion line + split band |
+| `--dashfoo-dock-border-width` | `1px`                                                        | insertion line + split band |
+| `--dashfoo-dock-radius`       | `6px`                                                        | split band                  |
+| `--dashfoo-dock-line-radius`  | `2px`                                                        | insertion line              |
+| `--dashfoo-dock-transition`   | `left 60ms, top 60ms, width 60ms, height 60ms, opacity 60ms` | every form                  |
 
 `--dashfoo-dock-transition` controls how the indicator glides between
-positions; set it to `none` to disable the movement, for example under
+positions and fades while idle; set it to `none` to disable the movement, for example under
 `prefers-reduced-motion`. Override these variables on your theme's
 `[data-dashfoo="dock-indicator"]` rule to control the look. The
 [theming guide](/theming) has worked recipes.
@@ -512,8 +581,8 @@ a custom highlight to a full drop-zone map. The demo's Docking page renders a
 voronoi-style visualization of every candidate region this way.
 
 To draw exactly what the built-in indicator draws, read it: `useDropIndicator()`
-returns the `{ kind: "insertion" | "zone"; rect }` the drop was resolved with, in
-viewport pixels, or `null`. It comes from the same tabset measurement as the
+returns the `{ kind: "edge" | "insertion" | "zone"; rect }` the drop was resolved
+with, in viewport pixels, or `null`. It comes from the same tabset measurement as the
 intent, so it never disagrees with where the drop lands.
 
 ```tsx

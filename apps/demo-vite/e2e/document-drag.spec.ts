@@ -39,7 +39,9 @@ for (const distinct of [false, true]) {
           targetBox.y + targetBox.height / 2,
         );
         await expect(page.locator('[data-dashfoo="drag-preview"]')).toBeVisible();
-        await expect(page.locator('[data-dashfoo="dock-indicator"]')).toHaveCount(0);
+        await expect(page.locator('[data-dashfoo="dock-indicator"]:not([data-idle])')).toHaveCount(
+          0,
+        );
         await expect(right.locator("[data-dragging], [data-dragging-source]")).toHaveCount(0);
         await page.mouse.up();
         expect(await page.locator("output").allTextContents()).toEqual(before);
@@ -52,7 +54,7 @@ for (const distinct of [false, true]) {
       targetBox.x + targetBox.width / 2,
       targetBox.y + targetBox.height / 2,
     );
-    await expect(right.locator('[data-dashfoo="dock-indicator"]')).toBeVisible();
+    await expect(page.locator('[data-dashfoo="dock-indicator"]:not([data-idle])')).toBeVisible();
     await page.mouse.up();
     await expect(target.locator('xpath=ancestor::*[@data-dashfoo="tabset"]')).toContainText(
       "right Second",

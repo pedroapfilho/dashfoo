@@ -36,7 +36,7 @@ test("dragging the sole tab of a tabset back over itself shows no dock preview",
   await page.mouse.move(tab.x + tab.width / 2 + 8, tab.y + tab.height / 2 + 8);
   await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.6, { steps: 12 });
 
-  await expect(page.locator('[data-dashfoo="dock-indicator"]')).toHaveCount(0);
+  await expect(page.locator('[data-dashfoo="dock-indicator"]:not([data-idle])')).toHaveCount(0);
 
   await page.mouse.up();
 

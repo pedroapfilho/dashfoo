@@ -1,7 +1,7 @@
 import type { SnapConfig } from "@dashfoo/core";
 import type { DashfooHandle } from "@dashfoo/react";
 import { DashfooDragProvider, DashfooLayout, useExternalTabSource } from "@dashfoo/react";
-import { Grid2x2, GripVertical, Plus, RotateCcw } from "lucide-react";
+import { Grid2x2, GripVertical, PanelsLeftBottom, Plus, RotateCcw } from "lucide-react";
 import type { ChangeEvent, ReactNode } from "react";
 import { useMemo, useRef, useState } from "react";
 
@@ -66,6 +66,7 @@ const DockingPage = (): ReactNode => {
   const layout = useRef<DashfooHandle>(null);
   const layoutContainer = useRef<HTMLDivElement>(null);
   const [showDropZones, setShowDropZones] = useState(true);
+  const [edgeDocking, setEdgeDocking] = useState(true);
   const [snapKey, setSnapKey] = useState<string>("25%");
 
   const handleReset = (): void => {
@@ -78,6 +79,10 @@ const DockingPage = (): ReactNode => {
 
   const handleToggleDropZones = (): void => {
     setShowDropZones((show) => !show);
+  };
+
+  const handleToggleEdgeDocking = (): void => {
+    setEdgeDocking((on) => !on);
   };
 
   const handleAddWidget = (widget: WidgetDefinition): void => {
@@ -105,12 +110,15 @@ const DockingPage = (): ReactNode => {
           <Button icon={<Grid2x2 size={14} />} onClick={handleToggleDropZones}>
             {showDropZones ? "Hide drop zones" : "Show drop zones"}
           </Button>
+          <Button icon={<PanelsLeftBottom size={14} />} onClick={handleToggleEdgeDocking}>
+            {edgeDocking ? "Turn off edge docking" : "Turn on edge docking"}
+          </Button>
           <Button icon={<RotateCcw size={14} />} onClick={handleReset}>
             Reset layout
           </Button>
         </>
       }
-      description="Drag a tab onto another strip to stack it, toward a tabset edge to split. Grow the dashboard from the widget list: drag a widget in (or add it with its button) and close its tab to remove it. While dragging, the drop-zone map paints every region and where a drop there would land."
+      description="Drag a tab onto another strip to stack it, toward a tabset edge to split, or to the very edge of the layout to dock it beside everything as a sidebar or bottom panel. Drag a whole tabset by its grip or the empty space in its header. Grow the dashboard from the widget list: drag a widget in (or add it with its button) and close its tab to remove it. While dragging, the drop-zone map paints every region and where a drop there would land."
       title="Docking & Widgets"
     >
       <DashfooDragProvider>
@@ -126,6 +134,7 @@ const DockingPage = (): ReactNode => {
           <div className="min-h-0 min-w-0 flex-1" ref={layoutContainer}>
             <DashfooLayout
               defaultModel={defaultModel}
+              edgeDocking={edgeDocking}
               factory={PlaceholderPanel}
               ref={layout}
               responsive={COMPACT}

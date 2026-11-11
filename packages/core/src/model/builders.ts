@@ -38,6 +38,7 @@ const tab = (component: string, name: string, options: TabOptions = {}): TabNode
 
 type TabsetOptions = {
   enableClose?: boolean;
+  enableDrag?: boolean;
   enableMaximize?: boolean;
   id?: string;
   max?: number | Dimension;

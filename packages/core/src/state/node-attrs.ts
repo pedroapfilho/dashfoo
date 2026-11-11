@@ -16,6 +16,7 @@ const mutableTabAttrsSchema = tabNodeSchema
 const mutableTabsetAttrsSchema = tabsetNodeSchema
   .pick({
     enableClose: true,
+    enableDrag: true,
     enableMaximize: true,
     max: true,
     min: true,

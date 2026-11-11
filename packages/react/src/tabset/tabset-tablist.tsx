@@ -3,19 +3,32 @@
 import type { ComponentProps, ReactNode } from "react";
 import { forwardRef, useCallback, useContext, useMemo } from "react";
 
+import { useNodeDraggable } from "../drag/drag-hooks";
 import { tabDomId } from "../lib/dom-ids";
 import { mergeRefs } from "../lib/merge-refs";
 
 import type { OverflowItem } from "./tabset-store";
 import { TabsetStoreContext, useTabset } from "./tabset-store";
+import { useTabsetDrag } from "./tabset-toolbar";
 import { useTabOverflow } from "./use-tab-overflow";
 
 type TabsetTabStripProps = ComponentProps<"div">;
 
+/** Its empty space, between and around the tabs and toolbar controls, drags the whole tabset. */
 const TabsetTabStrip = forwardRef<HTMLDivElement, TabsetTabStripProps>(
-  ({ style, ...props }, ref): ReactNode => (
-    <div {...props} data-dashfoo="tabstrip" ref={ref} style={style} />
-  ),
+  ({ style, ...props }, userRef): ReactNode => {
+    const { grip, label, node } = useTabsetDrag();
+
+    const { ref } = useNodeDraggable("tabset", node.id, {
+      disabled: !grip,
+      handle: "header",
+      label,
+    });
+
+    const refCallback = useMemo(() => mergeRefs<HTMLDivElement>(ref, userRef), [ref, userRef]);
+
+    return <div {...props} data-dashfoo="tabstrip" ref={refCallback} style={style} />;
+  },
 );
 
 TabsetTabStrip.displayName = "TabsetTabStrip";

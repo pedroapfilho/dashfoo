@@ -85,7 +85,8 @@ a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-att
 | `maximizable`             | `boolean`                                                               | `true`  | Show the tabset maximize/restore control.                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `floatable`               | `boolean`                                                               | `false` | Show a per-tabset control that floats the panel into a movable, resizable overlay, and render any floating panels. See below.                                                                                                                                                                                                                                                                                                               |
 | `draggableTabs`           | `boolean`                                                               | `true`  | Allow individual tabs to be dragged between tabsets.                                                                                                                                                                                                                                                                                                                                                                                        |
-| `draggableTabsets`        | `boolean`                                                               | `true`  | Show the grip that drags a whole tabset.                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `draggableTabsets`        | `boolean`                                                               | `true`  | Let a whole tabset be dragged by its grip or the empty space in its header.                                                                                                                                                                                                                                                                                                                                                                 |
+| `edgeDocking`             | `boolean`                                                               | `true`  | Let tabs and tabsets be dropped at the layout's edges, beside everything else, as a sidebar or bottom panel.                                                                                                                                                                                                                                                                                                                                |
 | `resizableSplits`         | `boolean`                                                               | `true`  | Allow dragging the splitters; `false` disables them in place (gutters keep their size).                                                                                                                                                                                                                                                                                                                                                     |
 | `keepMounted`             | `boolean`                                                               | `false` | Keep inactive tab panels mounted (hidden) so their state survives a tab switch.                                                                                                                                                                                                                                                                                                                                                             |
 | `responsive`              | `{ maxWidth: number; orientation? }`                                    | (none)  | At/below `maxWidth` (the layout's own container width) render a stacked column and lock drag + resize. View-only projection: no remount, state preserved. See below.                                                                                                                                                                                                                                                                        |
@@ -95,7 +96,7 @@ You must pass either `model` or `defaultModel`. Passing neither throws.
 
 The capability props (`editable`, `restructurable`, `closableTabs`,
 `renamableTabs`, `maximizable`, `floatable`, `draggableTabs`,
-`draggableTabsets`, `resizableSplits`, `keepMounted`, `snap`) are the exported
+`draggableTabsets`, `edgeDocking`, `resizableSplits`, `keepMounted`, `snap`) are the exported
 `LayoutOptions` type. `DashfooLayout` passes them through to `Layout.Root`,
 which takes the same type and resolves every default above in one place. With
 `responsive`, the compact locks override `maximizable` and `restructurable`.
@@ -193,8 +194,8 @@ with the right role and ARIA wiring, ready for you to style.
 - **Rename**: double-click a tab to swap its label for a `[data-dashfoo="tab-rename"]` input. Enter commits, Escape cancels, blur commits. A trimmed, changed value dispatches `renameTab`; focus returns to the tab afterward.
 - **Maximize**: a `[data-dashfoo="tabset-maximize"]` toggle in the tabset toolbar. Dispatches `setMaximizedTabset`; one maximized tabset fills the frame and `aria-pressed` reflects state.
 - **Float**: a `[data-dashfoo="tabset-float"]` button in the tabset toolbar, shown when `floatable`. Floats the tabset into a movable, resizable overlay (`floatTabset`); the float's `[data-dashfoo="float-dock"]` control docks it back (`dockFloat`). See "Floating panels" below.
-- **Tabs**: roving-tabindex keyboard model (WAI-ARIA APG): Arrow keys move and select, Home/End jump to the ends, focus follows selection.
-- **Drag-to-dock**: drag a tab to restack it or split a tabset (when split-dock is on). A `[data-dashfoo="dock-indicator"]` previews where it lands.
+- **Tabs**: roving-tabindex keyboard model (WAI-ARIA APG): Arrow keys move and select (flipped in a right-to-left layout, so ArrowLeft moves to the next tab), Home/End jump to the ends, focus follows selection.
+- **Drag-to-dock**: drag a tab, or a whole tabset by its grip or the empty space in its header, to restack it, split a tabset (when split-dock is on), or dock it at the layout's edge as a sidebar or bottom panel (`edgeDocking`). One `[data-dashfoo="dock-indicator"]` previews where it lands for the whole drag, gliding between targets and idling (`data-idle`, faded out) off them. Drops work in right-to-left layouts: a drop on the screen's left lands on the left.
 
 ### Per-node enable flags
 
@@ -209,7 +210,8 @@ ignores `editable`; maximize is view state, not a structural edit).
 | `enableClose`       | tab     | the close control for that tab                   |
 | `enableClose`       | tabset  | closing for every tab in the tabset              |
 | `enableRename`      | tab     | double-click rename for that tab                 |
-| `enableDrag`        | tab     | dragging that tab                                |
+| `enableDrag`        | tab     | dragging that tab, and its tabset as a whole     |
+| `enableDrag`        | tabset  | dragging the tabset as a whole                   |
 | `enableMaximize`    | tabset  | the maximize control for that tabset             |
 | `tabEnableDrag`     | global  | tree-wide default behind `tab.enableDrag`        |
 | `enableSplitDock`   | global  | splitting a tabset on drop (drops stack instead) |
@@ -461,7 +463,7 @@ structure and consumes runtime geometry through CSS custom properties.
 | `tab-overflow`       | `button`        | Overflow menu trigger. `aria-label="More tabs"`.                                                                                               |
 | `tab-overflow-menu`  | `div`           | `role="menu"`, lists the hidden tabs while open.                                                                                               |
 | `tab-overflow-item`  | `button`        | `role="menuitem"`, one hidden tab; selecting it activates the tab.                                                                             |
-| `tabset-grip`        | `button`        | Drags the whole tabset. `aria-label="Move tabset"`; shown when `draggableTabsets` is on and the tabset is not maximized.                       |
+| `tabset-grip`        | `button`        | Drags the whole tabset. `aria-label="Move tabset"`; shown when the tabset can be dragged whole and is not maximized.                           |
 | `tabset-float`       | `button`        | Floats the tabset into a movable overlay. `aria-label="Float panel"`; shown when `floatable` is on and not maximized.                          |
 | `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                                                                                        |
 | `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                              |
@@ -477,7 +479,7 @@ structure and consumes runtime geometry through CSS custom properties.
 | `float-resize`       | `div`           | An edge/corner resize handle (eight in total); `data-edge` is the direction.                                                                   |
 | `float-chip`         | `button`        | A minimized float: a rounded chip you click (or drag) to restore. Clamped on screen by `--dashfoo-chip-width` / `--dashfoo-chip-height`.       |
 | `float-chip-label`   | `span`          | The chip's panel title.                                                                                                                        |
-| `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone pane). `pointer-events: none`.                                                                |
+| `dock-indicator`     | `div`           | The drop preview: insertion line, zone or edge pane. One per drag; `data-idle` off any target. `pointer-events: none`.                         |
 | `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label. `pointer-events: none`.                                            |
 | `icon`               | `svg`           | The built-in close, grip, maximize, float, minimize, dock and overflow icons. `aria-hidden`, `pointer-events: none`.                           |
 
@@ -502,16 +504,17 @@ properties the library sets on it (`--dashfoo-dock-left`, `--dashfoo-dock-top`,
 `--dashfoo-dock-width`, `--dashfoo-dock-height`), and every visual property
 reads from a CSS variable with a neutral fallback. Override the visual ones to
 theme the drag preview without touching layout. `styles.css` gives the
-indicator `z-index: auto`, and `9999` inside a `[data-dashfoo="float"]`.
+indicator `z-index: auto` (beneath floats), `2` with `data-floating` when the
+target is inside a float, and `opacity: 0` with `data-idle`.
 
-| Variable                      | Used for                 | Fallback                                       |
-| ----------------------------- | ------------------------ | ---------------------------------------------- |
-| `--dashfoo-dock-fill`         | indicator fill           | `oklch(0.556 0 0 / 0.18)`                      |
-| `--dashfoo-dock-border`       | indicator border color   | `oklch(0.708 0 0 / 0.75)`                      |
-| `--dashfoo-dock-border-width` | indicator border width   | `1px`                                          |
-| `--dashfoo-dock-radius`       | indicator corner radius  | `6px`                                          |
-| `--dashfoo-dock-line-radius`  | insertion-line radius    | `2px`                                          |
-| `--dashfoo-dock-transition`   | indicator move animation | `left 60ms, top 60ms, width 60ms, height 60ms` |
+| Variable                      | Used for                | Fallback                                                     |
+| ----------------------------- | ----------------------- | ------------------------------------------------------------ |
+| `--dashfoo-dock-fill`         | indicator fill          | `oklch(0.556 0 0 / 0.18)`                                    |
+| `--dashfoo-dock-border`       | indicator border color  | `oklch(0.708 0 0 / 0.75)`                                    |
+| `--dashfoo-dock-border-width` | indicator border width  | `1px`                                                        |
+| `--dashfoo-dock-radius`       | indicator corner radius | `6px`                                                        |
+| `--dashfoo-dock-line-radius`  | insertion-line radius   | `2px`                                                        |
+| `--dashfoo-dock-transition`   | indicator move and fade | `left 60ms, top 60ms, width 60ms, height 60ms, opacity 60ms` |
 
 Set `--dashfoo-dock-transition: none` to disable the indicator animation.
 
@@ -573,12 +576,12 @@ anywhere under the provider (the provider hosts the drag root, so widget lists
 and overlays outside the layout observe the same drag).
 
 `useDropIndicator()` returns what the built-in dock indicator draws
-(`{ kind: "insertion" | "zone"; rect }` in viewport pixels), taken from the same
+(`{ kind: "edge" | "insertion" | "zone"; rect }` in viewport pixels), taken from the same
 measurement as the intent, or `null`. Use it to draw your own indicator.
 
 `measureTabset(id, element)` returns the `MeasuredTabset` the library resolves
-drops against: the tabset's rect, plus its own strip's rect and tab items when it
-has a strip. Pass it to `resolveDropIntent` or `dropIndicator` from
+drops against: the tabset's rect and writing direction, plus its own strip's
+rect and tab items when it has a strip. Pass it to `resolveDropIntent` or `dropIndicator` from
 `@dashfoo/core` to build a zone map for every tabset. Tabset roots carry
 `data-tabset-id`.
 

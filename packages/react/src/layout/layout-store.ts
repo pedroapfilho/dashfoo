@@ -13,6 +13,7 @@ type LayoutState = {
   documentId: string;
   draggableTabs: boolean;
   draggableTabsets: boolean;
+  edgeDocking: boolean;
   editable: boolean;
 
   floatable: boolean;

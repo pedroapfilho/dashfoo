@@ -3,8 +3,15 @@ import { Accessibility, DragDropManager, Feedback, PointerSensor } from "@dnd-ki
 
 import { startsOnControl } from "../lib/interactive";
 
+/** A press on a tab drags that tab or nothing: never the tabset whose header holds it. */
+const startsOnOtherTab = (target: EventTarget | null, source: Draggable): boolean => {
+  const item = target instanceof Element ? target.closest('[data-dashfoo="tab-item"]') : null;
+
+  return item !== null && !(source.element && item.contains(source.element));
+};
+
 const preventActivation = (event: PointerEvent, source: Draggable): boolean =>
-  startsOnControl(event.target, source.element);
+  startsOnControl(event.target, source.element) || startsOnOtherTab(event.target, source);
 
 type DashfooDragManager = DragDropManager;
 

@@ -48,6 +48,7 @@ const tabNodeSchema = z.object({
 const tabsetNodeSchema = z.object({
   children: z.array(tabNodeSchema),
   enableClose: z.boolean().optional(),
+  enableDrag: z.boolean().optional(),
   enableMaximize: z.boolean().optional(),
   id: z.string(),
   max: dimensionSchema.optional(),

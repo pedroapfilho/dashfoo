@@ -24,6 +24,8 @@ type LayoutOptions = {
   closableTabs?: boolean;
   draggableTabs?: boolean;
   draggableTabsets?: boolean;
+  /** When false, tabs and tabsets can't be dropped at the layout's edges, beside everything else. */
+  edgeDocking?: boolean;
   editable?: boolean;
   floatable?: boolean;
   keepMounted?: boolean;
@@ -76,6 +78,7 @@ const resolveLayoutOptions = (
     closableTabs: noneSwitchedOff(editable, options.closableTabs, global.tabEnableClose),
     draggableTabs: noneSwitchedOff(structural, options.draggableTabs, global.tabEnableDrag),
     draggableTabsets: noneSwitchedOff(structural, options.draggableTabsets),
+    edgeDocking: options.edgeDocking !== false,
     editable,
     floatable: structural && options.floatable === true,
     keepMounted: options.keepMounted === true,
@@ -96,6 +99,7 @@ const LayoutRoot = ({
   dispatch,
   draggableTabs,
   draggableTabsets,
+  edgeDocking,
   editable,
   floatable,
   keepMounted,
@@ -117,6 +121,7 @@ const LayoutRoot = ({
       closableTabs,
       draggableTabs,
       draggableTabsets,
+      edgeDocking,
       editable,
       floatable,
       keepMounted,
