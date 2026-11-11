@@ -88,6 +88,9 @@ const useDndEntity = <E extends DndEntity>(create: (() => E) | null): DndEntityB
     entityRef.current = entity;
 
     return () => {
+      // `destroy` leaves the sensor's pointer listener on an element that stays
+      // mounted, so a handle turned off while on screen would still drag.
+      entity.element = undefined;
       entity.destroy();
       entityRef.current = null;
     };

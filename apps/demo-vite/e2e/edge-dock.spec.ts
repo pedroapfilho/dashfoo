@@ -104,3 +104,38 @@ test("the indicator idles in place between targets instead of disappearing", asy
   await page.mouse.up();
   await expect(indicator).toHaveCount(0);
 });
+
+test("a tabset locked with enableDrag: false can't be dragged by its header", async ({ page }) => {
+  const key = "dashfoo:demo:overview";
+  await page.goto("/");
+  const main = page.locator('[data-tabset-id="ts-main"]');
+  await main.getByRole("tab").last().click();
+  await main.getByRole("tab").first().click();
+  await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), key)).not.toBeNull();
+
+  await page.evaluate((k) => {
+    const locked: unknown = JSON.parse(
+      localStorage.getItem(k) ?? "{}",
+      (_key, value: { enableDrag?: boolean; id?: string } | null) =>
+        value?.id === "ts-main" ? { ...value, enableDrag: false } : value,
+    );
+
+    localStorage.setItem(k, JSON.stringify(locked));
+  }, key);
+  await page.reload();
+
+  await expect(main.locator('[data-dashfoo="tabset-grip"]')).toHaveCount(0);
+  const strip = await box(main.locator('[data-dashfoo="tabstrip"]'));
+  const lastTab = await box(main.locator('[data-dashfoo="tab-item"]').last());
+  const fromX = lastTab.x + lastTab.width + 24;
+  const fromY = strip.y + strip.height / 2;
+
+  await page.mouse.move(fromX, fromY);
+  await page.mouse.down();
+  await page.mouse.move(fromX + 40, fromY + 200, { steps: 10 });
+  await expect(page.locator('[data-dashfoo="drag-preview"]')).toHaveCount(0);
+  await page.mouse.up();
+  await page.evaluate((k) => {
+    localStorage.removeItem(k);
+  }, key);
+});
