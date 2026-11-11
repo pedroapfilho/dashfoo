@@ -93,6 +93,9 @@ const resolveLayoutOptions = (
   };
 };
 
+const splitterSize = ({ splitterSize: size }: GlobalAttributes): string | undefined =>
+  size === undefined ? undefined : `${size}px`;
+
 const LayoutRoot = ({
   children,
   closableTabs,
@@ -145,10 +148,7 @@ const LayoutRoot = ({
         {...props}
         data-dashfoo="layout"
         ref={rootRef}
-        style={{
-          "--dashfoo-splitter-size":
-            global.splitterSize === undefined ? undefined : `${global.splitterSize}px`,
-        }}
+        style={{ "--dashfoo-splitter-size": splitterSize(global) }}
       >
         <DashfooDragProvider>{children}</DashfooDragProvider>
       </div>

@@ -192,20 +192,26 @@ const resolveDropIntent = (
 };
 
 /** Where slot `index` starts on screen: the leading edge of the tab now there, else past the last. */
+const leadingEdge = (rect: Rect, direction: Direction | undefined): number =>
+  direction === "rtl" ? rect.x + rect.width : rect.x;
+
+const trailingEdge = (rect: Rect, direction: Direction | undefined): number =>
+  direction === "rtl" ? rect.x : rect.x + rect.width;
+
 const slotEdge = (
   strip: MeasuredStrip,
   tabs: ReadonlyArray<MeasuredTab>,
   index: number,
   direction: Direction | undefined,
 ): number => {
-  const at = tabs.at(index)?.rect;
-  const last = tabs.at(-1)?.rect;
+  const at = tabs.at(index);
+  const last = tabs.at(-1);
 
-  if (direction === "rtl") {
-    return at ? at.x + at.width : (last?.x ?? strip.rect.x + strip.rect.width);
+  if (at) {
+    return leadingEdge(at.rect, direction);
   }
 
-  return at?.x ?? (last ? last.x + last.width : strip.rect.x);
+  return last ? trailingEdge(last.rect, direction) : leadingEdge(strip.rect, direction);
 };
 
 const insertionLineRect = (
