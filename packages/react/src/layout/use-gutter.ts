@@ -39,8 +39,12 @@ const useGutterRoot = (): Gutter => {
   return useMemo(() => ({ report: setSize, size }), [size]);
 };
 
-const useGutter = (group: HTMLElement | null, horizontal: boolean, panelCount: number): number => {
+type RowGutter = { groupRef: (element: HTMLDivElement | null) => void; gutter: number };
+
+/** Measures the row whose element lands in `groupRef`, and returns the layout's gutter. */
+const useGutter = (horizontal: boolean, panelCount: number): RowGutter => {
   const { report, size } = useContext(GutterContext);
+  const [group, setGroup] = useState<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
     if (!group || panelCount < 2) {
@@ -67,7 +71,7 @@ const useGutter = (group: HTMLElement | null, horizontal: boolean, panelCount: n
     };
   }, [group, horizontal, panelCount, report]);
 
-  return size;
+  return { groupRef: setGroup, gutter: size };
 };
 
 export { GutterContext, measureGutter, useGutter, useGutterRoot };

@@ -96,51 +96,70 @@ const resolveLayoutOptions = (
   };
 };
 
-const LayoutRoot = ({
-  children,
+/** A layout without a host-supplied registry still publishes to one of its own. */
+const useTablistSpaceOrOwn = (tablistSpace: TablistSpace | undefined): TablistSpace => {
+  const [own] = useState(createTablistSpace);
+
+  return tablistSpace ?? own;
+};
+
+/** Separates the capability props from the native props forwarded to the root element. */
+const splitLayoutOptions = ({
   closableTabs,
-  dispatch,
   draggableTabs,
   draggableTabsets,
   editable,
   floatable,
   keepMounted,
   maximizable,
-  model,
   renamableTabs,
-  renderers,
   resizableSplits,
   restructurable,
-  rootRef,
   snap,
-  tablistSpace,
   ...props
+}: Omit<
+  LayoutRootProps,
+  "children" | "dispatch" | "model" | "renderers" | "rootRef" | "tablistSpace"
+>) => ({
+  options: {
+    closableTabs,
+    draggableTabs,
+    draggableTabsets,
+    editable,
+    floatable,
+    keepMounted,
+    maximizable,
+    renamableTabs,
+    resizableSplits,
+    restructurable,
+    snap,
+  },
+  props,
+});
+
+const LayoutRoot = ({
+  children,
+  dispatch,
+  model,
+  renderers,
+  rootRef,
+  tablistSpace,
+  ...rest
 }: LayoutRootProps): ReactNode => {
+  const { options, props } = splitLayoutOptions(rest);
   const documentId = useId();
-  const [ownTablistSpace] = useState(createTablistSpace);
+  const space = useTablistSpaceOrOwn(tablistSpace);
   const { global } = model;
 
   const store = useMirroredStore(createLayoutStore, {
-    ...resolveLayoutOptions(global, {
-      closableTabs,
-      draggableTabs,
-      draggableTabsets,
-      editable,
-      floatable,
-      keepMounted,
-      maximizable,
-      renamableTabs,
-      resizableSplits,
-      restructurable,
-      snap,
-    }),
+    ...resolveLayoutOptions(global, options),
     dispatch,
     documentId,
     maximizedTabsetId: model.maximizedTabsetId,
     renderTab: renderers.tab,
     renderTabLabel: renderers.tabLabel,
     renderTabsetToolbar: renderers.tabsetToolbar,
-    tablistSpace: tablistSpace ?? ownTablistSpace,
+    tablistSpace: space,
   });
 
   return (

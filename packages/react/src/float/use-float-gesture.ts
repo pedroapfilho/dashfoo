@@ -69,6 +69,29 @@ type FloatGesture = {
   startResize: (event: ReactPointerEvent, edges: ResizeEdges) => void;
 };
 
+type GestureStart = Pick<Gesture, "bounds" | "latest" | "scale" | "start" | "visible">;
+
+/** Where a gesture starts, in layout pixels relative to the float layer. */
+const measureGestureStart = (
+  panel: HTMLElement,
+  geometry: Geometry,
+  minimized: boolean,
+): GestureStart => {
+  const parent = panel.offsetParent instanceof HTMLElement ? panel.offsetParent : null;
+  const scale = layoutScale(panel);
+  const rect = toLayoutRect(panel.getBoundingClientRect(), parent?.getBoundingClientRect(), scale);
+  const size = minimized ? { height: geometry.height, width: geometry.width } : rect;
+  const start = { height: size.height, left: rect.left, top: rect.top, width: size.width };
+
+  return {
+    bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
+    latest: start,
+    scale,
+    start,
+    visible: minimized ? { height: rect.height, width: rect.width } : undefined,
+  };
+};
+
 // shortcut: a hand-written pointer gesture instead of a dnd-kit draggable, upgrade once dnd-kit#2055 ships and Feedback allows a per-draggable overlay (ADR 0005)
 const useFloatGesture = ({
   editable,
@@ -97,33 +120,13 @@ const useFloatGesture = ({
       releaseCapture(panel, prior.pointerId);
     }
 
-    const parent = panel.offsetParent instanceof HTMLElement ? panel.offsetParent : null;
-    const scale = layoutScale(panel);
-
-    const rect = toLayoutRect(
-      panel.getBoundingClientRect(),
-      parent?.getBoundingClientRect(),
-      scale,
-    );
-
-    const visibleGeometry = {
-      height: minimized ? geometry.height : rect.height,
-      left: rect.left,
-      top: rect.top,
-      width: minimized ? geometry.width : rect.width,
-    };
-
     const gesture: Gesture = {
-      bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
+      ...measureGestureStart(panel, geometry, minimized),
       edges,
-      latest: visibleGeometry,
       moved: false,
       pointerId: event.pointerId,
-      scale,
-      start: visibleGeometry,
       startX: event.clientX,
       startY: event.clientY,
-      visible: minimized ? { height: rect.height, width: rect.width } : undefined,
     };
 
     gestureRef.current = gesture;

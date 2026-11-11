@@ -3,7 +3,7 @@
 import type { Dimension, RowNode, SnapConfig, TabsetNode } from "@dashfoo/core";
 import { collectTabsetsInRow, resolveSnapGrid, snapEnabled } from "@dashfoo/core";
 import type { ReactNode } from "react";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo } from "react";
 import type { Orientation } from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
@@ -63,11 +63,85 @@ const descendantMinSize = (
     : Math.max(...childMinimums);
 };
 
+/** A child's own `min`, else the minimum its tabsets add up to. */
+const panelMinSize = (
+  child: LayoutChild,
+  axis: RowNode["orientation"],
+  tabsetMinSize: number,
+  gutter: number,
+): string | undefined => {
+  if (child.min) {
+    return dimensionToSize(child.min);
+  }
+
+  const minimum = descendantMinSize(child, axis, tabsetMinSize, gutter);
+
+  return minimum === undefined ? undefined : `${minimum}px`;
+};
+
 type RowViewProps = {
   node: RowNode;
 
   renderTabset?: (node: TabsetNode) => ReactNode;
 };
+
+/** `boundary` is the index of the boundary before this panel; the first panel has none. */
+type RowSplitterProps = {
+  boundary: number;
+  disabled: boolean;
+  onBoundaryDrag: ((boundary: number) => void) | undefined;
+  snappedBoundary: number | null;
+};
+
+const RowSplitter = ({
+  boundary,
+  disabled,
+  onBoundaryDrag,
+  snappedBoundary,
+}: RowSplitterProps): ReactNode =>
+  boundary < 0 ? null : (
+    <Separator
+      data-dashfoo="splitter"
+      data-dashfoo-snapped={snappedBoundary === boundary ? "true" : undefined}
+      disabled={disabled}
+      onPointerDown={
+        onBoundaryDrag && !disabled
+          ? () => {
+              onBoundaryDrag(boundary);
+            }
+          : undefined
+      }
+    />
+  );
+
+type RowPanelProps = {
+  axis: RowNode["orientation"];
+  child: LayoutChild;
+  children: ReactNode;
+  gutter: number;
+  id: string;
+  percentage: number | undefined;
+  tabsetMinSize: number;
+};
+
+const RowPanel = ({
+  axis,
+  child,
+  children,
+  gutter,
+  id,
+  percentage,
+  tabsetMinSize,
+}: RowPanelProps): ReactNode => (
+  <Panel
+    defaultSize={`${percentage ?? 0}%`}
+    id={id}
+    maxSize={child.max ? dimensionToSize(child.max) : undefined}
+    minSize={panelMinSize(child, axis, tabsetMinSize, gutter)}
+  >
+    {children}
+  </Panel>
+);
 
 const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
   const dispatch = useLayout((state) => state.dispatch);
@@ -87,8 +161,11 @@ const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
 
   const snapActive = snapEnabled(snapGrid);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
-  const [groupElement, setGroupElement] = useState<HTMLDivElement | null>(null);
-  const gutter = useGutter(groupElement, orientation === "horizontal", node.children.length);
+
+  const { groupRef: gutterRef, gutter } = useGutter(
+    orientation === "horizontal",
+    node.children.length,
+  );
 
   const panels = useMemo(
     () =>
@@ -117,49 +194,37 @@ const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
       data-dashfoo="row"
       data-dashfoo-snapping={snappedBoundary === null ? undefined : "true"}
       disabled={!resizableSplits}
-      elementRef={setGroupElement}
+      elementRef={gutterRef}
       groupRef={groupRef}
       key={node.id}
       onLayoutChange={snapActive ? onLayoutChange : undefined}
       onLayoutChanged={onLayoutChanged}
       orientation={orientation}
     >
-      {panels.map(({ child, id }, index) => {
-        let min = child.min ? dimensionToSize(child.min) : undefined;
-
-        if (min === undefined) {
-          const minimum = descendantMinSize(child, node.orientation, tabsetMinSize, gutter);
-          min = minimum === undefined ? undefined : `${minimum}px`;
-        }
-
-        const max = child.max ? dimensionToSize(child.max) : undefined;
-
-        return (
-          <Fragment key={child.id}>
-            {index > 0 ? (
-              <Separator
-                data-dashfoo="splitter"
-                data-dashfoo-snapped={snappedBoundary === index - 1 ? "true" : undefined}
-                disabled={!resizableSplits}
-                onPointerDown={
-                  snapActive && resizableSplits
-                    ? () => {
-                        beginBoundaryDrag(index - 1);
-                      }
-                    : undefined
-                }
-              />
-            ) : null}
-            <Panel defaultSize={`${percentages[index] ?? 0}%`} id={id} maxSize={max} minSize={min}>
-              {child.type === "row" ? (
-                <RowGroup node={child} renderTabset={renderTabset} />
-              ) : (
-                (renderTabset?.(child) ?? <TabsetView node={child} />)
-              )}
-            </Panel>
-          </Fragment>
-        );
-      })}
+      {panels.map(({ child, id }, index) => (
+        <Fragment key={child.id}>
+          <RowSplitter
+            boundary={index - 1}
+            disabled={!resizableSplits}
+            onBoundaryDrag={snapActive ? beginBoundaryDrag : undefined}
+            snappedBoundary={snappedBoundary}
+          />
+          <RowPanel
+            axis={node.orientation}
+            child={child}
+            gutter={gutter}
+            id={id}
+            percentage={percentages[index]}
+            tabsetMinSize={tabsetMinSize}
+          >
+            {child.type === "row" ? (
+              <RowGroup node={child} renderTabset={renderTabset} />
+            ) : (
+              (renderTabset?.(child) ?? <TabsetView node={child} />)
+            )}
+          </RowPanel>
+        </Fragment>
+      ))}
     </Group>
   );
 };
