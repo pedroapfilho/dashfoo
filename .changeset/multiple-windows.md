@@ -12,4 +12,4 @@ Dashboards can span windows.
 - A float's tabsets keep their grips, so dragging one out docks it anywhere. `DashfooHandle` gains `floatTabset` and `setFloatMinimized`.
 - An empty layout still takes drops: docking actions that target an empty main layout's row id seed a tabset there, and `Layout.Rows` renders a `[data-dashfoo="layout-empty"]` drop target.
 - The theme styles the tear-off chip: a dashed border and a "new window" hint.
-- Layouts rendered into another window read that window: `vh`/`vw`/`em` panel sizes (react-resizable-panels 4.21), float placement, drop hit testing and the overflow menu's outside click.
+- Layouts rendered into another window read that window: `vh`/`vw`/`em` panel sizes, float placement, drop hit testing and the overflow menu's outside click.
