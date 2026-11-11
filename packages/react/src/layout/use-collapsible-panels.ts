@@ -1,18 +1,28 @@
 "use client";
 
-import type { Action, RowNode, TabsetNode } from "@dashfoo/core";
+import type { RowNode, TabsetNode } from "@dashfoo/core";
 import { canCollapseTabset } from "@dashfoo/core";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { GroupImperativeHandle, PanelImperativeHandle } from "react-resizable-panels";
+import type {
+  GroupImperativeHandle,
+  PanelImperativeHandle,
+  PanelProps,
+} from "react-resizable-panels";
 
+import type { FitBudget } from "./collapse-geometry";
 import {
+  addToBudget,
+  collapseUntilFit,
   expandToMinimum,
+  expandWhereRoom,
   keepCollapsedWeights,
   measureHeader,
   sameSet,
   spaceForPanels,
 } from "./collapse-geometry";
+import { useLayout } from "./layout-store";
+import type { TabsetSlot } from "./tabset-slot";
 
 type LayoutChild = RowNode["children"][number];
 
@@ -20,24 +30,25 @@ type LayoutChild = RowNode["children"][number];
 type HeaderSizes = ReadonlyMap<string, number>;
 
 type CollapsiblePanelsOptions = {
-  dispatch: (action: Action) => void;
-  groupElement: HTMLElement | null;
-  groupRef: RefObject<GroupImperativeHandle | null>;
   minPixels: (child: LayoutChild) => number | undefined;
   node: RowNode;
   panelIdOf: (childId: string) => string;
 };
 
+type CollapsePanelProps = Pick<
+  PanelProps,
+  "collapsedSize" | "collapsible" | "elementRef" | "panelRef"
+>;
+
 type CollapsiblePanels = {
   /** Shown collapsed: collapsed in the model, or collapsed to fit. */
   collapsedIds: ReadonlySet<string>;
-  fitIds: ReadonlySet<string>;
-  headerSizes: HeaderSizes;
-  isCollapsible: (child: LayoutChild) => child is TabsetNode;
-  registerElement: (id: string, element: HTMLDivElement | null) => void;
-  registerHandle: (id: string, handle: PanelImperativeHandle | null) => void;
+  groupRef: RefObject<GroupImperativeHandle | null>;
+  panelProps: (child: LayoutChild) => CollapsePanelProps;
+  setGroupElement: (element: HTMLDivElement | null) => void;
   /** Turns a user resize into one action: a collapse or expand when the drag crossed a minimum, else new weights. */
   settle: (sizes: Array<number>) => void;
+  slotFor: (child: TabsetNode, alone: boolean) => TabsetSlot;
 };
 
 const EMPTY: ReadonlySet<string> = new Set();
@@ -47,13 +58,13 @@ const EMPTY: ReadonlySet<string> = new Set();
  * fit a split too small for its minimums without touching the model.
  */
 const useCollapsiblePanels = ({
-  dispatch,
-  groupElement,
-  groupRef,
   minPixels,
   node,
   panelIdOf,
 }: CollapsiblePanelsOptions): CollapsiblePanels => {
+  const dispatch = useLayout((state) => state.dispatch);
+  const [groupElement, setGroupElement] = useState<HTMLDivElement | null>(null);
+  const groupRef = useRef<GroupImperativeHandle | null>(null);
   const handles = useRef(new Map<string, PanelImperativeHandle>());
   const elements = useRef(new Map<string, HTMLDivElement>());
   const wasCollapsed = useRef(new Map<string, boolean>());
@@ -102,63 +113,35 @@ const useCollapsiblePanels = ({
     }
   };
 
-  /**
-   * rrp lets panels shrink below their minimums when the container does, so
-   * this collapses collapsible children, last first, until the minimums fit,
-   * and expands them again, first first, once there is room.
-   */
-  const collapseToFit = (targets: Set<string>): void => {
-    if (!groupElement) {
-      return;
-    }
-
-    const available = spaceForPanels(groupElement, node.orientation);
-    let required = 0;
-    let expandedCount = 0;
-
-    const candidates: Array<{
-      handle: PanelImperativeHandle;
-      id: string;
-      minimum: number;
-      saving: number;
-    }> = [];
+  /** How much the children need against what the split gives them, and who may collapse. */
+  const measureFit = (available: number): FitBudget => {
+    const budget: FitBudget = { available, candidates: [], expandedCount: 0, required: 0 };
 
     for (const child of node.children) {
-      const handle = isCollapsible(child) ? handles.current.get(child.id) : undefined;
-      const header = headerSizes.get(child.id);
-      const minimum = minPixels(child) ?? 0;
+      const collapsible = isCollapsible(child);
 
-      if (handle?.isCollapsed() === true && header !== undefined) {
-        required += header;
-      } else {
-        required += minimum;
-        expandedCount += 1;
-      }
-
-      if (handle && isCollapsible(child) && child.collapsed !== true && header !== undefined) {
-        candidates.push({ handle, id: child.id, minimum, saving: minimum - header });
-      }
+      addToBudget(budget, {
+        eligible: collapsible && child.collapsed !== true,
+        handle: collapsible ? handles.current.get(child.id) : undefined,
+        header: headerSizes.get(child.id),
+        id: child.id,
+        minimum: minPixels(child) ?? 0,
+      });
     }
 
-    for (const { handle, minimum, saving } of candidates) {
-      if (handle.isCollapsed() && required + saving <= available) {
-        expandToMinimum(handle, minimum);
-        required += saving;
-        expandedCount += 1;
-      }
-    }
+    return budget;
+  };
 
-    for (const { handle, id, saving } of candidates.toReversed()) {
-      if (required <= available || expandedCount <= 1) {
-        break;
-      }
-
-      if (!handle.isCollapsed()) {
-        targets.add(id);
-        handle.collapse();
-        required -= saving;
-        expandedCount -= 1;
-      }
+  /**
+   * rrp lets panels shrink below their minimums when the container does, so
+   * collapsible children collapse, last first, until the minimums fit, and
+   * expand again, first first, once there is room.
+   */
+  const collapseToFit = (targets: Set<string>): void => {
+    if (groupElement) {
+      const budget = measureFit(spaceForPanels(groupElement, node.orientation));
+      expandWhereRoom(budget);
+      collapseUntilFit(budget, targets);
     }
   };
 
@@ -274,10 +257,16 @@ const useCollapsiblePanels = ({
       return undefined;
     }
 
-    let frame = 0;
+    let frame: number | undefined;
+
+    const cancelFrame = (): void => {
+      if (frame !== undefined) {
+        cancelAnimationFrame(frame);
+      }
+    };
 
     const observer = new ResizeObserver(() => {
-      cancelAnimationFrame(frame);
+      cancelFrame();
       frame = requestAnimationFrame(() => {
         reconcileRef.current();
       });
@@ -286,7 +275,7 @@ const useCollapsiblePanels = ({
     observer.observe(groupElement);
 
     return () => {
-      cancelAnimationFrame(frame);
+      cancelFrame();
       observer.disconnect();
     };
   }, [groupElement]);
@@ -314,27 +303,39 @@ const useCollapsiblePanels = ({
     });
   };
 
-  return {
-    collapsedIds,
-    fitIds,
-    headerSizes,
-    isCollapsible,
-    registerElement: (id, element) => {
-      if (element) {
-        elements.current.set(id, element);
-      } else {
-        elements.current.delete(id);
-      }
-    },
-    registerHandle: (id, handle) => {
-      if (handle) {
-        handles.current.set(id, handle);
-      } else {
-        handles.current.delete(id);
-      }
-    },
-    settle,
+  const panelProps = (child: LayoutChild): CollapsePanelProps => {
+    const collapsible = isCollapsible(child);
+    const headerSize = headerSizes.get(child.id);
+
+    return {
+      collapsedSize: collapsible && headerSize !== undefined ? `${headerSize}px` : undefined,
+      collapsible,
+      elementRef: (element) => {
+        if (element) {
+          elements.current.set(child.id, element);
+        } else {
+          elements.current.delete(child.id);
+        }
+      },
+      panelRef: (handle) => {
+        if (handle) {
+          handles.current.set(child.id, handle);
+        } else {
+          handles.current.delete(child.id);
+        }
+      },
+    };
   };
+
+  const slotFor = (child: TabsetNode, alone: boolean): TabsetSlot => ({
+    alone,
+    canCollapse: isCollapsible(child) && !collapsedIds.has(child.id),
+    collapsed: collapsedIds.has(child.id),
+    collapsedToFit: fitIds.has(child.id),
+    orientation: node.orientation,
+  });
+
+  return { collapsedIds, groupRef, panelProps, setGroupElement, settle, slotFor };
 };
 
 export { useCollapsiblePanels };

@@ -34,6 +34,65 @@ const expandToMinimum = (handle: PanelImperativeHandle, minimum: number | undefi
   }
 };
 
+type FitCandidate = { handle: PanelImperativeHandle; id: string; minimum: number; saving: number };
+
+/** Pixels the children need and have; `saving` is what collapsing one candidate frees. */
+type FitBudget = {
+  available: number;
+  candidates: Array<FitCandidate>;
+  expandedCount: number;
+  required: number;
+};
+
+type FitEntry = {
+  /** Collapsible and expanded in the model, so it may collapse to fit. */
+  eligible: boolean;
+  handle: PanelImperativeHandle | undefined;
+  header: number | undefined;
+  id: string;
+  minimum: number;
+};
+
+/** A shown-collapsed child needs its strip; any other needs its minimum. */
+const addToBudget = (
+  budget: FitBudget,
+  { eligible, handle, header, id, minimum }: FitEntry,
+): void => {
+  const strip = handle?.isCollapsed() === true ? header : undefined;
+
+  budget.required += strip ?? minimum;
+  budget.expandedCount += strip === undefined ? 1 : 0;
+
+  if (eligible && handle && header !== undefined) {
+    budget.candidates.push({ handle, id, minimum, saving: minimum - header });
+  }
+};
+
+const expandWhereRoom = (budget: FitBudget): void => {
+  for (const { handle, minimum, saving } of budget.candidates) {
+    if (handle.isCollapsed() && budget.required + saving <= budget.available) {
+      expandToMinimum(handle, minimum);
+      budget.required += saving;
+      budget.expandedCount += 1;
+    }
+  }
+};
+
+const collapseUntilFit = (budget: FitBudget, targets: Set<string>): void => {
+  for (const { handle, id, saving } of budget.candidates.toReversed()) {
+    if (budget.required <= budget.available || budget.expandedCount <= 1) {
+      return;
+    }
+
+    if (!handle.isCollapsed()) {
+      targets.add(id);
+      handle.collapse();
+      budget.required -= saving;
+      budget.expandedCount -= 1;
+    }
+  }
+};
+
 /** Read from the DOM, not from rrp, whose sizes lag a container resize. */
 const spaceForPanels = (group: HTMLElement, orientation: RowNode["orientation"]): number => {
   const sizeOf = (element: Element): number => {
@@ -81,4 +140,15 @@ const keepCollapsedWeights = (
   );
 };
 
-export { expandToMinimum, keepCollapsedWeights, measureHeader, sameSet, spaceForPanels };
+export {
+  addToBudget,
+  collapseUntilFit,
+  expandToMinimum,
+  expandWhereRoom,
+  keepCollapsedWeights,
+  measureHeader,
+  sameSet,
+  spaceForPanels,
+};
+
+export type { FitBudget };
