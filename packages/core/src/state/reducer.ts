@@ -14,7 +14,8 @@ import {
 
 import type { Action } from "./actions";
 import { canCollapseTabset } from "./collapse";
-import { dock, removeNode, removeTab, removeTabset } from "./docking";
+import { removeNode, removeTab, removeTabset } from "./detach";
+import { dock } from "./docking";
 import { uniqueFloatName } from "./floats";
 import { jsonEqual } from "./json-equal";
 import type { MutableNodeAttrs } from "./node-attrs";
