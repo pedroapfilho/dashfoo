@@ -8,6 +8,29 @@ const LIFT_OFFSET = 16;
 
 type Size = { height: number; width: number };
 
+type Scale = { x: number; y: number };
+
+const ratio = (screen: number, layout: number): number =>
+  screen > 0 && layout > 0 ? screen / layout : 1;
+
+/** Screen pixels per layout pixel; 1 where the element has no layout box to compare. */
+const layoutScale = (element: HTMLElement): Scale => {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    x: ratio(rect.width, element.offsetWidth),
+    y: ratio(rect.height, element.offsetHeight),
+  };
+};
+
+/** A screen rect as layout pixels relative to `origin`, the positioned ancestor's screen rect. */
+const toLayoutRect = (rect: DOMRect, origin: DOMRect | undefined, scale: Scale): Geometry => ({
+  height: rect.height / scale.y,
+  left: (rect.left - (origin?.left ?? 0)) / scale.x,
+  top: (rect.top - (origin?.top ?? 0)) / scale.y,
+  width: rect.width / scale.x,
+});
+
 const clampToBounds = (rect: Geometry, bounds: Size, size: Size = rect): Geometry => ({
   height: rect.height,
   left: Math.max(0, Math.min(rect.left, Math.max(0, bounds.width - size.width))),
@@ -15,9 +38,34 @@ const clampToBounds = (rect: Geometry, bounds: Size, size: Size = rect): Geometr
   width: rect.width,
 });
 
+/** The float overlay of the layout `element` sits in, not of a layout nested inside it. */
+const ownFloatOverlay = (element: Element): HTMLElement | undefined => {
+  const layout = element.closest('[data-dashfoo="layout"]');
+
+  return [...(layout?.querySelectorAll<HTMLElement>('[data-dashfoo="float-overlay"]') ?? [])].find(
+    (overlay) => overlay.closest('[data-dashfoo="layout"]') === layout,
+  );
+};
+
+/** Where a lifted tabset opens: over its old spot, in the overlay's layout pixels, kept inside it. */
 const measureFloatRect = (element: Element): Geometry => {
   const tabsetElement = element.closest('[data-dashfoo="tabset"]') ?? element;
-  const rect = tabsetElement.getBoundingClientRect();
+  const overlay = ownFloatOverlay(element);
+  const scale = overlay ? layoutScale(overlay) : { x: 1, y: 1 };
+
+  const rect = toLayoutRect(
+    tabsetElement.getBoundingClientRect(),
+    overlay?.getBoundingClientRect(),
+    scale,
+  );
+
+  const view = element.ownerDocument.defaultView;
+
+  // An unstyled overlay has no box; the viewport is the best bound left.
+  const bounds =
+    overlay && overlay.clientWidth > 0
+      ? { height: overlay.clientHeight, width: overlay.clientWidth }
+      : view && { height: view.innerHeight, width: view.innerWidth };
 
   const seeded: Geometry = {
     height: Math.max(MIN_HEIGHT, Math.min(Math.round(rect.height), DEFAULT_FLOAT_GEOMETRY.height)),
@@ -26,11 +74,7 @@ const measureFloatRect = (element: Element): Geometry => {
     width: Math.max(MIN_WIDTH, Math.min(Math.round(rect.width), DEFAULT_FLOAT_GEOMETRY.width)),
   };
 
-  const view = element.ownerDocument.defaultView;
-
-  return view
-    ? clampToBounds(seeded, { height: view.innerHeight, width: view.innerWidth })
-    : seeded;
+  return bounds ? clampToBounds(seeded, bounds) : seeded;
 };
 
 type ResizeEdges = { x: -1 | 0 | 1; y: -1 | 0 | 1 };
@@ -75,6 +119,14 @@ const floatGeometryStyle = (geometry: Geometry) => ({
   "--dashfoo-float-width": `${geometry.width}px`,
 });
 
-export { clampToBounds, floatGeometryStyle, measureFloatRect, RESIZE_HANDLES, resizeRect };
+export {
+  clampToBounds,
+  floatGeometryStyle,
+  layoutScale,
+  measureFloatRect,
+  RESIZE_HANDLES,
+  resizeRect,
+  toLayoutRect,
+};
 
-export type { ResizeEdges, Size };
+export type { ResizeEdges, Scale, Size };

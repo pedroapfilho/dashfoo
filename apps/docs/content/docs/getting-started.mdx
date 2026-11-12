@@ -99,7 +99,10 @@ const components = { welcome: Welcome, notes: Notes, help: Help };
 
 Use either `components` or `factory`; `factory` wins when both are supplied.
 Unknown registry keys render an empty panel and warn. By default inactive panels
-unmount. Set `keepMounted` to retain local state across tab switches. This does
+unmount. Set `keepMounted` to retain local state across tab switches, or
+`keepMounted="activity"` (React 19.2+) to keep that state in a hidden React
+`<Activity>`, which also pauses the hidden tabs' effects. The selected tab's
+content is part of the server render either way. This does
 not save widget content or guarantee state survives moving a panel to another
 tabset; application state that must outlive remounts belongs outside the panel.
 

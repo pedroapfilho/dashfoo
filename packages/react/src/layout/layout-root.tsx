@@ -9,13 +9,15 @@ import type {
   TabsetNode,
 } from "@dashfoo/core";
 import type { ComponentProps, ReactNode, Ref } from "react";
-import { useId } from "react";
+import { useId, useState } from "react";
 
 import type { DragGroupScope } from "../drag/drag-group";
 import { DashfooDragProvider } from "../drag/drag-root";
 import type { TearOffHandler } from "../drag/tear-off";
 import { useGroupDocument } from "../drag/use-group-document";
 import { useMirroredStore } from "../lib/use-mirrored-store";
+import type { TablistSpace } from "../tabset/tablist-space";
+import { createTablistSpace } from "../tabset/tablist-space";
 
 import type { LayoutState } from "./layout-store";
 import { createLayoutStore, LayoutStoreContext, useLayout } from "./layout-store";
@@ -32,7 +34,8 @@ type LayoutOptions = {
   dragGroupScope?: DragGroupScope;
   editable?: boolean;
   floatable?: boolean;
-  keepMounted?: boolean;
+  /** `true` keeps inactive tabs mounted and hidden; `"activity"` keeps them in a hidden React `<Activity>`, which pauses their effects. */
+  keepMounted?: boolean | "activity";
   maximizable?: boolean;
   /** Called when a tab or tabset is released outside the window; return `true` to remove it. */
   onTearOff?: TearOffHandler;
@@ -56,6 +59,8 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children" | "ref" | "style">
     model: Dashfoo;
     renderers: LayoutRenderers;
     rootRef?: Ref<HTMLDivElement>;
+    /** Where each tabset's measured tablist space is published, for readers outside the layout. */
+    tablistSpace?: TablistSpace;
   };
 
 type ResolvedOptions = Omit<
@@ -66,6 +71,7 @@ type ResolvedOptions = Omit<
   | "renderTab"
   | "renderTabLabel"
   | "renderTabsetToolbar"
+  | "tablistSpace"
 >;
 
 const noneSwitchedOff = (...switches: Array<boolean | undefined>): boolean =>
@@ -96,7 +102,7 @@ const resolveLayoutOptions = (
     ...resolveDragGroup(structural, options),
     editable,
     floatable: structural && options.floatable === true,
-    keepMounted: options.keepMounted === true,
+    keepMounted: options.keepMounted ?? false,
     maximizable: noneSwitchedOff(options.maximizable, global.tabSetEnableMaximize),
     onTearOff: options.onTearOff,
     renamableTabs: noneSwitchedOff(editable, options.renamableTabs, global.tabEnableRename),
@@ -109,7 +115,14 @@ const resolveLayoutOptions = (
   };
 };
 
-type OwnRootProps = "children" | "dispatch" | "model" | "renderers" | "rootRef";
+/** A layout without a host-supplied registry still publishes to one of its own. */
+const useTablistSpaceOrOwn = (tablistSpace: TablistSpace | undefined): TablistSpace => {
+  const [own] = useState(createTablistSpace);
+
+  return tablistSpace ?? own;
+};
+
+type OwnRootProps = "children" | "dispatch" | "model" | "renderers" | "rootRef" | "tablistSpace";
 
 /** Separates the capability props from the ones forwarded to the root `div`. */
 const splitLayoutOptions = ({
@@ -154,11 +167,13 @@ const LayoutRoot = ({
   model,
   renderers,
   rootRef,
+  tablistSpace,
   ...rest
 }: LayoutRootProps): ReactNode => {
-  const documentId = useId();
-  const { global } = model;
   const { options, props } = splitLayoutOptions(rest);
+  const documentId = useId();
+  const space = useTablistSpaceOrOwn(tablistSpace);
+  const { global } = model;
 
   const store = useMirroredStore(createLayoutStore, {
     ...resolveLayoutOptions(global, options),
@@ -168,6 +183,7 @@ const LayoutRoot = ({
     renderTab: renderers.tab,
     renderTabLabel: renderers.tabLabel,
     renderTabsetToolbar: renderers.tabsetToolbar,
+    tablistSpace: space,
   });
 
   useGroupDocument({

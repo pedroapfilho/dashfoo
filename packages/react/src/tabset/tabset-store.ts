@@ -31,6 +31,8 @@ type TabsetState = {
   startEditing: (tabId: string) => void;
   stopEditing: () => void;
   tablistElement: HTMLDivElement | null;
+  /** Layout pixels the tabs leave free in the strip, negative once they overflow; `undefined` until measured. */
+  tablistSpace: number | undefined;
   tabsClosable: boolean;
   tabsRenamable: boolean;
   toggleMaximize: () => void;
@@ -146,6 +148,7 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
       set({ editingTabId: null });
     },
     tablistElement: null,
+    tablistSpace: undefined,
     toggleMaximize: () => {
       const { dispatch, isMaximized, node } = get();
       dispatch({ tabsetId: isMaximized ? null : node.id, type: "setMaximizedTabset" });

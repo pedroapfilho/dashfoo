@@ -1,4 +1,5 @@
-import type { DashfooHandle } from "@dashfoo/react";
+import type { TabNode } from "@dashfoo/core";
+import type { DashfooHandle, PersistInput } from "@dashfoo/react";
 import { DashfooLayout } from "@dashfoo/react";
 import { Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -7,6 +8,12 @@ import { useMemo, useRef } from "react";
 import { Button, DemoStage } from "../components/demo-stage";
 import { OverviewPanel } from "../components/overview-panel";
 import { COMPACT, overviewModel } from "../models";
+
+/** Layouts saved before the notes widget became `detail` still restore. */
+const upgradeTab = (tab: TabNode): TabNode =>
+  tab.component === "notes" ? { ...tab, component: "detail" } : tab;
+
+const PERSIST: PersistInput = { key: "dashfoo:demo:overview", mapTab: upgradeTab };
 
 const OverviewPage = (): ReactNode => {
   const defaultModel = useMemo(() => overviewModel(), []);
@@ -38,8 +45,8 @@ const OverviewPage = (): ReactNode => {
         defaultModel={defaultModel}
         factory={OverviewPanel}
         floatable
-        keepMounted
-        persist="dashfoo:demo:overview"
+        keepMounted="activity"
+        persist={PERSIST}
         ref={layout}
         responsive={COMPACT}
       />

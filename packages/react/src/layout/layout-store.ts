@@ -8,6 +8,7 @@ import { createStore, useStore } from "zustand";
 
 import type { DragGroupScope } from "../drag/drag-group";
 import type { TearOffHandler } from "../drag/tear-off";
+import type { TablistSpace } from "../tabset/tablist-space";
 
 type LayoutState = {
   canDock: boolean;
@@ -21,7 +22,7 @@ type LayoutState = {
   editable: boolean;
 
   floatable: boolean;
-  keepMounted: boolean;
+  keepMounted: boolean | "activity";
   maximizable: boolean;
   maximizedTabsetId: string | undefined;
   onTearOff: TearOffHandler | undefined;
@@ -33,6 +34,7 @@ type LayoutState = {
 
   snap: SnapConfig | null;
   splitDock: boolean;
+  tablistSpace: TablistSpace;
   tabLocation: "bottom" | "top";
   tabsetMinSize: number;
   tabStripEnabled: boolean;
