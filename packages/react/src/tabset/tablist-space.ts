@@ -4,6 +4,7 @@ import type { TabNode } from "@dashfoo/core";
 import { useLayoutEffect, useRef } from "react";
 
 import { cssPixels } from "../lib/css-pixels";
+import { isHTMLElement } from "../lib/dom";
 
 type TablistSpaceListener = (space: number) => void;
 
@@ -77,7 +78,7 @@ const measureTablistSpace = (tablist: HTMLElement): number => {
     return tablist.clientWidth - tablistNeed(tablist);
   }
 
-  const parts = [...strip.children].filter((part) => part instanceof HTMLElement);
+  const parts = [...strip.children].filter(isHTMLElement);
   const gap = cssPixels(getComputedStyle(strip).columnGap) * Math.max(0, parts.length - 1);
 
   // A part's auto margin absorbs the free space, so only border boxes count.
