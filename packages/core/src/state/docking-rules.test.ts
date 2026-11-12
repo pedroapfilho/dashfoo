@@ -4,7 +4,7 @@ import type { Dashfoo, TabNode, TabsetNode } from "../model/schema";
 import { findDuplicateIds, findTab, findTabset } from "../model/tree";
 
 import type { Action } from "./actions";
-import { fallbackSelectedIndex } from "./docking";
+import { fallbackSelectedIndex } from "./detach";
 import { createHistory, dispatchToHistory, undoHistory } from "./history";
 import { reducer } from "./reducer";
 

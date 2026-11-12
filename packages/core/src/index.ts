@@ -32,7 +32,7 @@ export * from "./state/actions";
 
 export { canCollapseTabset } from "./state/collapse";
 
-export { fallbackSelectedIndex } from "./state/docking";
+export { fallbackSelectedIndex } from "./state/detach";
 
 export * from "./state/history";
 
