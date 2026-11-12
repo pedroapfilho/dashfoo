@@ -36,6 +36,8 @@ type TabsetState = {
   startEditing: (tabId: string) => void;
   stopEditing: () => void;
   tablistElement: HTMLDivElement | null;
+  /** Layout pixels the tabs leave free in the strip, negative once they overflow; `undefined` until measured. */
+  tablistSpace: number | undefined;
   tabsClosable: boolean;
   tabsRenamable: boolean;
   toggleCollapsed: () => void;
@@ -155,6 +157,7 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
       set({ editingTabId: null });
     },
     tablistElement: null,
+    tablistSpace: undefined,
     toggleCollapsed: () => {
       const { dispatch, isCollapsed, node } = get();
       dispatch({ collapsed: !isCollapsed, tabsetId: node.id, type: "setTabsetCollapsed" });

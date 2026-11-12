@@ -7,13 +7,16 @@ import { Fragment, useMemo } from "react";
 import type { Orientation, PanelProps } from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
+import { useTabsetDroppable } from "../drag/drag-hooks";
 import { resizePanelId } from "../lib/dom-ids";
+import { mergeRefs } from "../lib/merge-refs";
 import { TabsetView } from "../tabset/tabset-view";
 
 import { useLayout } from "./layout-store";
 import { TabsetSlotContext } from "./tabset-slot";
 import type { CollapsiblePanels } from "./use-collapsible-panels";
 import { useCollapsiblePanels } from "./use-collapsible-panels";
+import { GutterContext, useGutter, useGutterRoot } from "./use-gutter";
 import { percentagesOf, useSnapResize } from "./use-snap-resize";
 
 const dimensionToSize = (dimension: Dimension): string => `${dimension.value}${dimension.unit}`;
@@ -23,10 +26,12 @@ const dimensionToPixels = (dimension: Dimension | undefined): number | undefined
 
 type LayoutChild = RowNode["children"][number];
 
+/** `gutter` is what each boundary inside a nested row adds along that row's axis. */
 const descendantMinSize = (
   child: LayoutChild,
   axis: RowNode["orientation"],
   tabsetMinSize: number,
+  gutter: number,
 ): number | undefined => {
   const explicit = dimensionToPixels(child.min);
 
@@ -45,7 +50,7 @@ const descendantMinSize = (
   const childMinimums: Array<number> = [];
 
   for (const grandchild of child.children) {
-    const minimum = descendantMinSize(grandchild, axis, tabsetMinSize);
+    const minimum = descendantMinSize(grandchild, axis, tabsetMinSize, gutter);
 
     if (minimum === undefined) {
       return undefined;
@@ -59,7 +64,7 @@ const descendantMinSize = (
   }
 
   return child.orientation === axis
-    ? childMinimums.reduce((sum, value) => sum + value, 0)
+    ? childMinimums.reduce((sum, value) => sum + value, 0) + gutter * (childMinimums.length - 1)
     : Math.max(...childMinimums);
 };
 
@@ -68,17 +73,19 @@ const minPixelsOf = (
   child: LayoutChild,
   axis: RowNode["orientation"],
   tabsetMinSize: number,
+  gutter: number,
 ): number | undefined =>
   child.min === undefined
-    ? descendantMinSize(child, axis, tabsetMinSize)
+    ? descendantMinSize(child, axis, tabsetMinSize, gutter)
     : dimensionToPixels(child.min);
 
 const sizeConstraints = (
   child: LayoutChild,
   axis: RowNode["orientation"],
   tabsetMinSize: number,
+  gutter: number,
 ): Pick<PanelProps, "maxSize" | "minSize"> => {
-  const derived = child.min ? undefined : descendantMinSize(child, axis, tabsetMinSize);
+  const derived = child.min ? undefined : descendantMinSize(child, axis, tabsetMinSize, gutter);
   const fallback = derived === undefined ? undefined : `${derived}px`;
 
   return {
@@ -163,8 +170,13 @@ const RowGroup = ({ isRoot = false, node, renderTabset }: RowGroupProps): ReactN
   const snapActive = snapEnabled(snapGrid);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
 
+  const { groupRef: gutterRef, gutter } = useGutter(
+    orientation === "horizontal",
+    node.children.length,
+  );
+
   const minPixels = (child: LayoutChild): number | undefined =>
-    minPixelsOf(child, node.orientation, tabsetMinSize);
+    minPixelsOf(child, node.orientation, tabsetMinSize, gutter);
 
   const collapse = useCollapsiblePanels({
     minPixels,
@@ -172,7 +184,12 @@ const RowGroup = ({ isRoot = false, node, renderTabset }: RowGroupProps): ReactN
     panelIdOf: (childId) => resizePanelId(documentId, childId),
   });
 
-  const { collapsedIds, groupRef } = collapse;
+  const { collapsedIds, groupRef, setGroupElement } = collapse;
+
+  const elementRef = useMemo(
+    () => mergeRefs<HTMLDivElement>(gutterRef, setGroupElement),
+    [gutterRef, setGroupElement],
+  );
 
   const panels = useMemo(
     () =>
@@ -203,7 +220,7 @@ const RowGroup = ({ isRoot = false, node, renderTabset }: RowGroupProps): ReactN
       data-dashfoo="row"
       data-dashfoo-snapping={snappedBoundary === null ? undefined : "true"}
       disabled={!resizableSplits}
-      elementRef={collapse.setGroupElement}
+      elementRef={elementRef}
       groupRef={groupRef}
       key={node.id}
       onLayoutChange={snapActive ? onLayoutChange : undefined}
@@ -222,7 +239,7 @@ const RowGroup = ({ isRoot = false, node, renderTabset }: RowGroupProps): ReactN
           ) : null}
           <Panel
             {...collapse.panelProps(child)}
-            {...sizeConstraints(child, node.orientation, tabsetMinSize)}
+            {...sizeConstraints(child, node.orientation, tabsetMinSize, gutter)}
             defaultSize={`${percentages[index] ?? 0}%`}
             id={id}
           >
@@ -237,6 +254,23 @@ const RowGroup = ({ isRoot = false, node, renderTabset }: RowGroupProps): ReactN
       ))}
     </Group>
   );
+};
+
+const RowRoot = ({ node, renderTabset }: RowViewProps): ReactNode => {
+  const gutter = useGutterRoot();
+
+  return (
+    <GutterContext.Provider value={gutter}>
+      <RowGroup isRoot node={node} renderTabset={renderTabset} />
+    </GutterContext.Provider>
+  );
+};
+
+/** A layout whose last tabset left still takes drops: its row id seeds the next tabset. */
+const EmptyLayout = ({ rowId }: { rowId: string }): ReactNode => {
+  const { ref } = useTabsetDroppable(rowId);
+
+  return <div data-dashfoo="layout-empty" ref={ref} />;
 };
 
 /**
@@ -255,9 +289,13 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     return renderTabset?.(maximized) ?? <TabsetView node={maximized} />;
   }
 
-  return <RowGroup isRoot node={node} renderTabset={renderTabset} />;
+  if (node.children.length === 0) {
+    return <EmptyLayout rowId={node.id} />;
+  }
+
+  return <RowRoot node={node} renderTabset={renderTabset} />;
 };
 
-export { RowView };
+export { descendantMinSize, RowView };
 
 export type { RowViewProps };

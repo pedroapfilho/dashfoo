@@ -3,6 +3,7 @@ import { warn } from "../lib/warn";
 import { floatNode, row, tabset } from "../model/builders";
 import type { DockLocation, SplitLocation } from "../model/dock-location";
 import { SPLIT_PLACEMENT } from "../model/dock-location";
+import { createNodeId } from "../model/ids";
 import type { Dashfoo, Geometry, SelectOnRemove, TabNode, TabsetNode } from "../model/schema";
 import { DEFAULT_FLOAT_GEOMETRY, DEFAULT_FLOAT_NAME } from "../model/schema";
 import type { TabsetSlot } from "../model/tree";
@@ -15,11 +16,21 @@ import {
 } from "../model/tree";
 
 import type { Action } from "./actions";
+import { locateDropTarget } from "./drop-target";
 import { uniqueFloatName } from "./floats";
 
 type DockingAction = Extract<
   Action,
-  { type: "addNode" | "dockFloat" | "floatTab" | "floatTabset" | "moveNode" | "moveTabset" }
+  {
+    type:
+      | "addNode"
+      | "dockFloat"
+      | "floatTab"
+      | "floatTabset"
+      | "moveNode"
+      | "moveTabset"
+      | "transferIn";
+  }
 >;
 
 /**
@@ -89,6 +100,15 @@ const removeTabset = (draft: Dashfoo, tabsetId: string): void => {
 
   if (slot) {
     detachTabset(slot);
+  }
+};
+
+/** A tab or a whole tabset, wherever it lives. */
+const removeNode = (draft: Dashfoo, nodeId: string): void => {
+  if (findTab(draft, nodeId)) {
+    removeTab(draft, nodeId);
+  } else {
+    removeTabset(draft, nodeId);
   }
 };
 
@@ -188,7 +208,7 @@ const addTab = (
     return undefined;
   }
 
-  const target = findTabsetParent(draft, targetId);
+  const target = locateDropTarget(draft, targetId);
 
   return target && attachTab(target, tab, location, index);
 };
@@ -197,7 +217,7 @@ const moveTab = (
   draft: Dashfoo,
   { index, location, sourceId, targetId }: Extract<DockingAction, { type: "moveNode" }>,
 ): TabsetNode | undefined => {
-  const target = findTabsetParent(draft, targetId);
+  const target = locateDropTarget(draft, targetId);
   const source = findTab(draft, sourceId);
 
   if (!target || !source) {
@@ -222,7 +242,7 @@ const moveTabset = (
   draft: Dashfoo,
   { location, sourceId, targetId }: Extract<DockingAction, { type: "moveTabset" }>,
 ): TabsetNode | undefined => {
-  const target = findTabsetParent(draft, targetId);
+  const target = locateDropTarget(draft, targetId);
   const source = sourceId === targetId ? undefined : findTabsetParent(draft, sourceId);
 
   if (!target || !source) {
@@ -303,6 +323,42 @@ const dockFloat = (
   return placeBeside(target, placed, location ?? "split-right");
 };
 
+/**
+ * Tab ids travel with the node, so one already in this layout rejects the whole
+ * drop. A tabset id only names its slot, so a taken one is replaced.
+ */
+const transferIn = (
+  draft: Dashfoo,
+  { index, location, node, targetId }: Extract<DockingAction, { type: "transferIn" }>,
+): TabsetNode | undefined => {
+  const tabs = node.type === "tab" ? [node] : node.children;
+  const taken = tabs.find((candidate) => isIdInUse(draft, candidate.id));
+
+  if (taken) {
+    warn(`transferIn ignored: tab id "${taken.id}" is already in the layout`);
+
+    return undefined;
+  }
+
+  const target = locateDropTarget(draft, targetId);
+
+  if (!target) {
+    return undefined;
+  }
+
+  if (node.type === "tab") {
+    return attachTab(target, node, location, index);
+  }
+
+  if (location === "center") {
+    return mergeTabs(target.tabset, node.children, node.selected);
+  }
+
+  const placed = isIdInUse(draft, node.id) ? { ...node, id: createNodeId("tabset") } : node;
+
+  return placeBeside(target, placed, location);
+};
+
 const transact = (draft: Dashfoo, action: DockingAction): TabsetNode | undefined => {
   switch (action.type) {
     case "addNode": {
@@ -329,6 +385,10 @@ const transact = (draft: Dashfoo, action: DockingAction): TabsetNode | undefined
       return moveTabset(draft, action);
     }
 
+    case "transferIn": {
+      return transferIn(draft, action);
+    }
+
     default: {
       return assertNever(action);
     }
@@ -348,4 +408,4 @@ const dock = (draft: Dashfoo, action: DockingAction): void => {
   }
 };
 
-export { dock, fallbackSelectedIndex, removeTab, removeTabset };
+export { dock, fallbackSelectedIndex, removeNode, removeTab, removeTabset };

@@ -524,3 +524,13 @@
     min-height: 2.75rem;
   }
 }
+
+[data-tear-off] {
+  border-color: var(--dashfoo-ring);
+  border-style: dashed;
+}
+
+[data-tear-off]::after {
+  content: "new window";
+  color: var(--dashfoo-muted-foreground);
+}

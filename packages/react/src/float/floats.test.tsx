@@ -86,6 +86,14 @@ describe("floating panels", () => {
     expect(float.getByLabelText("Dock panel back into the main layout")).toBeInTheDocument();
   });
 
+  test("a float's tabset keeps its grip, so it can be dragged out to dock", () => {
+    render(<DashfooLayout components={components} defaultModel={model()} floatable />);
+
+    fireEvent.click(screen.getByLabelText("Float panel"));
+
+    expect(within(floatPanel()!).getByLabelText("Move tabset")).toBeInTheDocument();
+  });
+
   test("dragging the title bar moves the float and commits one update", () => {
     render(<DashfooLayout components={components} defaultModel={model()} floatable />);
     fireEvent.click(screen.getByLabelText("Float panel"));
@@ -129,6 +137,29 @@ describe("floating panels", () => {
     fireEvent.pointerMove(panel, { buttons: 0, clientX: 420, clientY: 380, pointerId: 1 });
 
     expect(panel.style.getPropertyValue("--dashfoo-float-width")).toBe(draggedWidth);
+  });
+
+  test("a resize under a 2x scale moves the edge with the pointer, in layout pixels", () => {
+    render(<DashfooLayout components={components} defaultModel={model()} floatable />);
+    fireEvent.click(screen.getByLabelText("Float panel"));
+
+    const panel = floatPanel()!;
+    vi.spyOn(panel, "getBoundingClientRect").mockReturnValue(new DOMRect(80, 80, 400, 320));
+    Object.defineProperty(panel, "offsetWidth", { configurable: true, value: 200 });
+    Object.defineProperty(panel, "offsetHeight", { configurable: true, value: 160 });
+    panel.setPointerCapture = () => {};
+
+    panel.releasePointerCapture = () => {};
+
+    panel.hasPointerCapture = () => true;
+    const se = panel.querySelector<HTMLElement>('[data-dashfoo="float-resize"][data-edge="se"]')!;
+
+    fireEvent.pointerDown(se, { buttons: 1, clientX: 480, clientY: 400, pointerId: 1 });
+    fireEvent.pointerMove(panel, { buttons: 1, clientX: 560, clientY: 460, pointerId: 1 });
+
+    expect(panel.style.getPropertyValue("--dashfoo-float-width")).toBe("240px");
+    expect(panel.style.getPropertyValue("--dashfoo-float-height")).toBe("190px");
+    expect(panel.style.getPropertyValue("--dashfoo-float-left")).toBe("40px");
   });
 
   test("a cancelled resize (OS took the pointer) reverts to the starting rect", () => {

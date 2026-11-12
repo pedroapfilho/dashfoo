@@ -38,6 +38,9 @@ and debounce:
 persist={{ key: "dashfoo:my-app", storage: sessionStorage, debounceMs: 500 }}
 ```
 
+The full target also takes `mapTab`, which upgrades or drops tabs from layouts
+an older version of your app saved. See [Evolving persisted layouts](#evolving-persisted-layouts).
+
 It is part of the **uncontrolled** half of the props union (you pass `defaultModel`), so passing it with `model` does not compile. In controlled mode,
 where you pass `model` + `onModelChange` and already own the state, skip `persist`
 and save the model yourself in `onModelChange`.
@@ -104,76 +107,84 @@ empty store and nothing persists.
 
 ## Validation on load
 
-Persistence never trusts what comes out of storage. Loading runs the raw string
-through `fromJSON` from `@dashfoo/core`, the untrusted-input pipeline in
-`serialize.ts`. Condensed:
+Persistence never trusts what comes out of storage. Loading parses the raw
+string with `JSON.parse`, then hands the value to `restoreModel` from
+`@dashfoo/core`, the tolerant form of the untrusted-input pipeline in
+`serialize.ts`:
 
 ```ts
-const fromJSON = (json: string): Dashfoo => parseModel(JSON.parse(json));
-
-const parseModel = (value: unknown): Dashfoo => normalize(dashfooSchema.parse(value));
+restoreModel(value: unknown, options?: { mapTab?: MapTab }): Dashfoo | null;
 ```
 
-Two things happen in order:
+Three things happen in order:
 
-1. **`dashfooSchema.parse`** validates against the zod schema. A hand-edited,
-   truncated, or corrupt payload fails here and throws. The schema pins the
-   payload's `version` to `1`, so a payload in any other format is rejected
-   rather than loaded lossily.
-2. **`normalize`** returns a canonical model (the same normalization the
-   engine applies internally), so a valid-but-noncanonical payload loads as
-   the engine would store it.
+1. **`dashfooSchema.safeParse`** validates against the zod schema. A
+   hand-edited, truncated, or corrupt payload fails here, warns, and
+   `restoreModel` returns `null`. The schema pins the payload's `version` to
+   `1`, so a payload in any other format is rejected rather than loaded
+   lossily.
+2. **`mapTab`**, when given, receives every saved tab (floats included) and
+   returns the app's current version of it, or `null` to drop it. The selected
+   tab stays selected when tabs before it are dropped.
+3. **`parseModel`** validates the mapped model again and runs **`normalize`**,
+   so emptied tabsets and rows collapse, selections are clamped, and a
+   valid-but-noncanonical payload loads as the engine would store it. It also
+   warns (without throwing) on duplicate node ids, since duplicates corrupt
+   React keys.
 
-`parseModel` also checks the loaded model for duplicate node ids and warns
-(without throwing) when it finds any, since duplicates corrupt React keys.
+Unreadable JSON or a `null` from `restoreModel` falls back to `defaultModel`,
+and the corrupt entry is pruned with `storage.removeItem(key)` so it does not
+sit there failing on every load. A user with a broken saved layout gets the
+default and a clean slate, not a crash.
 
-A `fromJSON` that throws is caught and the model falls back to `defaultModel`. A
-corrupt entry is also pruned: the mount effect reads the stored value once, and if it
-fails to parse, calls `storage.removeItem(key)` so the bad payload does not sit
-there failing on every load. A user with a broken saved layout gets the default
-and a clean slate, not a crash.
+`fromJSON` and `parseModel` stay the strict forms: they throw instead of
+returning `null`, for callers that want the error.
 
 ## Evolving persisted layouts
 
-The pinned `version` has a consequence worth planning for: there is no
-migration machinery. When a future release bumps the format, every stored
-payload in the old format fails validation, and `fromJSON` / `parseModel`
-throw on the mismatch. Invalidating old payloads is the design.
+The pinned `version` has a consequence worth planning for: when a future
+release bumps the format, every stored payload in the old format fails
+validation and loads the default instead. Invalidating old payloads on a format
+bump is the design.
 
-The recommended pattern is the one persistence already implements: wrap the
-load in `try/catch` and fall back to `defaultModel`. The `persist` prop does
-this automatically (a payload that fails to parse loads the default and the
-stored entry is removed), so a format bump costs existing users their saved
-arrangement but never crashes.
+Your own app evolves faster than the format: components get renamed, widgets
+get removed. That is what `mapTab` is for. Pass it in `persist` and every
+restored tab goes through it:
 
-App-level migration means owning that load yourself: read the raw JSON,
-transform it as plain data (rename a `component` key that changed between
-releases, drop a tab you removed), then validate the result with
-`parseModel`, which takes `unknown`:
+```tsx
+persist={{
+  key: "dashfoo:my-app",
+  mapTab: (tab) => {
+    if (tab.component === "legacy-chart") {
+      return { ...tab, component: "chart" };
+    }
+
+    return tab.component in components ? tab : null;
+  },
+}}
+```
+
+Hosts that read storage outside the `persist` prop call `restoreModel`
+directly and pass the result as `defaultModel`:
 
 ```ts
 import type { Dashfoo } from "@dashfoo/core";
-import { parseModel } from "@dashfoo/core";
-
-// Plain JSON surgery on the stored payload, before validation.
-const migrate = (value: unknown): unknown => value;
+import { restoreModel } from "@dashfoo/core";
 
 const loadLayout = (key: string, fallback: Dashfoo): Dashfoo => {
   const raw = localStorage.getItem(key);
+
   if (raw === null) {
     return fallback;
   }
+
   try {
-    return parseModel(migrate(JSON.parse(raw)));
+    return restoreModel(JSON.parse(raw), { mapTab }) ?? fallback;
   } catch {
     return fallback;
   }
 };
 ```
-
-Pass the result as `defaultModel`. The `persist` prop then saves changes under
-the same key as usual. The same shape without the `migrate` call is the plain
-validated load, for hosts that read storage outside the `persist` prop.
 
 ## Debounced save and flush
 

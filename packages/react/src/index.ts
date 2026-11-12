@@ -32,6 +32,10 @@ export { useTab, useTabset } from "./tabset/tabset-store";
 
 export type { TabContextValue, TabsetState } from "./tabset/tabset-store";
 
+export { createTablistSpace } from "./tabset/tablist-space";
+
+export type { TablistSpace, TablistSpaceListener } from "./tabset/tablist-space";
+
 export { useLayout } from "./layout/layout-store";
 
 export type { LayoutState } from "./layout/layout-store";
@@ -54,6 +58,10 @@ export {
 export type { ExternalTabSourceOptions } from "./drag/drag-hooks";
 
 export { DashfooDragProvider } from "./drag/drag-root";
+
+export type { DragGroupScope } from "./drag/drag-group";
+
+export type { TearOffHandler, TearOffRequest } from "./drag/tear-off";
 
 export { measureTabset } from "./tabset/measure-tabset";
 

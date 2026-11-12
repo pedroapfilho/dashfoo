@@ -65,37 +65,41 @@ a sized parent and add your CSS (see the [attribute reference](#data-dashfoo-att
 
 ## `DashfooLayout` props
 
-| Prop                      | Type                                                                    | Default | Description                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ------------------------- | ----------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `model`                   | `Dashfoo`                                                               | (none)  | Controlled document. When set, the prop is the source of truth.                                                                                                                                                                                                                                                                                                                                                                             |
-| `defaultModel`            | `Dashfoo`                                                               | (none)  | Uncontrolled initial document. The component owns it from there.                                                                                                                                                                                                                                                                                                                                                                            |
-| `onModelChange`           | `(model: Dashfoo, action?: Action) => void`                             | (none)  | Called after every change with the next model and the action that caused it.                                                                                                                                                                                                                                                                                                                                                                |
-| `components`              | `Record<string, ComponentType<{ node: TabNode }>>`                      | (none)  | Registry mapping `tab.component` keys to components.                                                                                                                                                                                                                                                                                                                                                                                        |
-| `factory`                 | `(tab: TabNode) => ReactNode`                                           | (none)  | Render override. When provided, it resolves every tab and `components` is ignored.                                                                                                                                                                                                                                                                                                                                                          |
-| `persist`                 | `string \| { key; storage?; debounceMs? }`                              | (none)  | Auto-save the model. The props type only accepts it alongside `defaultModel`. A bare string is a localStorage key.                                                                                                                                                                                                                                                                                                                          |
-| `onAction`                | `(action: Action) => Action \| null`                                    | (none)  | Intercept each action before it commits: return it, a replacement, or `null` to veto.                                                                                                                                                                                                                                                                                                                                                       |
-| `onActiveTabsetChange`    | `(id: string \| undefined) => void`                                     | (none)  | Fires when the active tabset changes.                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `onMaximizedTabsetChange` | `(id: string \| undefined) => void`                                     | (none)  | Fires when a tabset is maximized or restored.                                                                                                                                                                                                                                                                                                                                                                                               |
-| `renderTabLabel`          | `(tab: TabNode) => ReactNode`                                           | (none)  | Override the tab label (the accessible name stays `tab.name`).                                                                                                                                                                                                                                                                                                                                                                              |
-| `renderTabsetToolbar`     | `(tabset: TabsetNode) => ReactNode`                                     | (none)  | Inject custom controls into a tabset's toolbar.                                                                                                                                                                                                                                                                                                                                                                                             |
-| `editable`                | `boolean`                                                               | `true`  | `false` renders a static layout: no drag, close, rename, or splitter resize. Tab selection, maximize, and the ref API keep working.                                                                                                                                                                                                                                                                                                         |
-| `restructurable`          | `boolean`                                                               | `true`  | `false` freezes the tree: no tab or tabset drag, split resizing or floating. Tabs stay closable and renamable. Compact `responsive` mode forces it off.                                                                                                                                                                                                                                                                                     |
-| `closableTabs`            | `boolean`                                                               | `true`  | Show the per-tab close control.                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `renamableTabs`           | `boolean`                                                               | `true`  | Allow double-click inline rename.                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `maximizable`             | `boolean`                                                               | `true`  | Show the tabset maximize/restore control.                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `floatable`               | `boolean`                                                               | `false` | Show a per-tabset control that floats the panel into a movable, resizable overlay, and render any floating panels. See below.                                                                                                                                                                                                                                                                                                               |
-| `draggableTabs`           | `boolean`                                                               | `true`  | Allow individual tabs to be dragged between tabsets.                                                                                                                                                                                                                                                                                                                                                                                        |
-| `draggableTabsets`        | `boolean`                                                               | `true`  | Show the grip that drags a whole tabset.                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `resizableSplits`         | `boolean`                                                               | `true`  | Allow dragging the splitters; `false` disables them in place (gutters keep their size).                                                                                                                                                                                                                                                                                                                                                     |
-| `keepMounted`             | `boolean`                                                               | `false` | Keep inactive tab panels mounted (hidden) so their state survives a tab switch.                                                                                                                                                                                                                                                                                                                                                             |
-| `responsive`              | `{ maxWidth: number; orientation? }`                                    | (none)  | At/below `maxWidth` (the layout's own container width) render a stacked column and lock drag + resize. View-only projection: no remount, state preserved. See below.                                                                                                                                                                                                                                                                        |
-| `snap`                    | `{ step?: number; divisions?: number \| "panels"; threshold?: number }` | (none)  | Magnetic splitter snapping onto a grid: the union of `step` (multiples of a fixed percent) and `divisions` (even splits: `100/d`, or `"panels"` to divide by the row's panel count, so a 3-panel row snaps to thirds). Within `threshold` percent (default `4`) it snaps and commits on release as one undo step. Off when omitted; replaces `global.snap`; a row overrides via its own `snap` (`{}` disables). Locked off in compact mode. |
+| Prop                      | Type                                                                    | Default    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------- | ----------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model`                   | `Dashfoo`                                                               | (none)     | Controlled document. When set, the prop is the source of truth.                                                                                                                                                                                                                                                                                                                                                                             |
+| `defaultModel`            | `Dashfoo`                                                               | (none)     | Uncontrolled initial document. The component owns it from there.                                                                                                                                                                                                                                                                                                                                                                            |
+| `onModelChange`           | `(model: Dashfoo, action?: Action) => void`                             | (none)     | Called after every change with the next model and the action that caused it.                                                                                                                                                                                                                                                                                                                                                                |
+| `components`              | `Record<string, ComponentType<{ node: TabNode }>>`                      | (none)     | Registry mapping `tab.component` keys to components.                                                                                                                                                                                                                                                                                                                                                                                        |
+| `factory`                 | `(tab: TabNode) => ReactNode`                                           | (none)     | Render override. When provided, it resolves every tab and `components` is ignored.                                                                                                                                                                                                                                                                                                                                                          |
+| `persist`                 | `string \| { key; storage?; debounceMs?; mapTab? }`                     | (none)     | Auto-save the model. The props type only accepts it alongside `defaultModel`. A bare string is a localStorage key.                                                                                                                                                                                                                                                                                                                          |
+| `onAction`                | `(action: Action) => Action \| null`                                    | (none)     | Intercept each action before it commits: return it, a replacement, or `null` to veto.                                                                                                                                                                                                                                                                                                                                                       |
+| `onActiveTabsetChange`    | `(id: string \| undefined) => void`                                     | (none)     | Fires when the active tabset changes.                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `onMaximizedTabsetChange` | `(id: string \| undefined) => void`                                     | (none)     | Fires when a tabset is maximized or restored.                                                                                                                                                                                                                                                                                                                                                                                               |
+| `renderTabLabel`          | `(tab: TabNode) => ReactNode`                                           | (none)     | Override the tab label (the accessible name stays `tab.name`).                                                                                                                                                                                                                                                                                                                                                                              |
+| `renderTabsetToolbar`     | `(tabset: TabsetNode) => ReactNode`                                     | (none)     | Inject custom controls into a tabset's toolbar.                                                                                                                                                                                                                                                                                                                                                                                             |
+| `editable`                | `boolean`                                                               | `true`     | `false` renders a static layout: no drag, close, rename, or splitter resize. Tab selection, maximize, and the ref API keep working.                                                                                                                                                                                                                                                                                                         |
+| `restructurable`          | `boolean`                                                               | `true`     | `false` freezes the tree: no tab or tabset drag, split resizing or floating. Tabs stay closable and renamable. Compact `responsive` mode forces it off.                                                                                                                                                                                                                                                                                     |
+| `closableTabs`            | `boolean`                                                               | `true`     | Show the per-tab close control.                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `renamableTabs`           | `boolean`                                                               | `true`     | Allow double-click inline rename.                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `maximizable`             | `boolean`                                                               | `true`     | Show the tabset maximize/restore control.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `floatable`               | `boolean`                                                               | `false`    | Show a per-tabset control that floats the panel into a movable, resizable overlay, and render any floating panels. See below.                                                                                                                                                                                                                                                                                                               |
+| `draggableTabs`           | `boolean`                                                               | `true`     | Allow individual tabs to be dragged between tabsets.                                                                                                                                                                                                                                                                                                                                                                                        |
+| `draggableTabsets`        | `boolean`                                                               | `true`     | Show the grip that drags a whole tabset.                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `dragGroup`               | `string`                                                                | none       | Layouts with the same group exchange tabs and tabsets by drag, across popups and browser tabs of one origin. See [Multiple windows](#multiple-windows).                                                                                                                                                                                                                                                                                     |
+| `dragGroupScope`          | `"origin" \| "app"`                                                     | `"origin"` | `"app"` keeps this layout's drags within this copy of the app.                                                                                                                                                                                                                                                                                                                                                                              |
+| `onTearOff`               | `(request: TearOffRequest) => boolean`                                  | none       | Called when a tab or tabset is released outside the window; return `true` to remove it (`tearOff`).                                                                                                                                                                                                                                                                                                                                         |
+| `resizableSplits`         | `boolean`                                                               | `true`     | Allow dragging the splitters; `false` disables them in place (gutters keep their size).                                                                                                                                                                                                                                                                                                                                                     |
+| `keepMounted`             | `boolean \| "activity"`                                                 | `false`    | Keep inactive tab panels mounted (hidden) so their state survives a tab switch. `"activity"` renders them in a hidden React `<Activity>` instead, which keeps state but pauses their effects (React 19.2+; older React keeps them mounted and warns). The selected tab's content always server-renders.                                                                                                                                     |
+| `responsive`              | `{ maxWidth: number; orientation? }`                                    | (none)     | At/below `maxWidth` (the layout's own container width) render a stacked column and lock drag + resize. View-only projection: no remount, state preserved. See below.                                                                                                                                                                                                                                                                        |
+| `snap`                    | `{ step?: number; divisions?: number \| "panels"; threshold?: number }` | (none)     | Magnetic splitter snapping onto a grid: the union of `step` (multiples of a fixed percent) and `divisions` (even splits: `100/d`, or `"panels"` to divide by the row's panel count, so a 3-panel row snaps to thirds). Within `threshold` percent (default `4`) it snaps and commits on release as one undo step. Off when omitted; replaces `global.snap`; a row overrides via its own `snap` (`{}` disables). Locked off in compact mode. |
 
 You must pass either `model` or `defaultModel`. Passing neither throws.
 
 The capability props (`editable`, `restructurable`, `closableTabs`,
 `renamableTabs`, `maximizable`, `floatable`, `draggableTabs`,
-`draggableTabsets`, `resizableSplits`, `keepMounted`, `snap`) are the exported
+`draggableTabsets`, `dragGroup`, `dragGroupScope`, `onTearOff`, `resizableSplits`,
+`keepMounted`, `snap`) are the exported
 `LayoutOptions` type. `DashfooLayout` passes them through to `Layout.Root`,
 which takes the same type and resolves every default above in one place. With
 `responsive`, the compact locks override `maximizable` and `restructurable`.
@@ -103,8 +107,9 @@ which takes the same type and resolves every default above in one place. With
 A `ref` exposes a `DashfooHandle` for imperative control:
 `addTab`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `collapseTabset`,
 `expandTabset`, `floatTab`,
-`dockFloat`, `dispatch`, `getModel`, `undo` / `redo` / `canUndo` / `canRedo`,
-and `resetLayout()` (reset to the original `defaultModel`, clearing undo history and
+`floatTabset`, `dockFloat`, `setFloatMinimized`, `dispatch`, `getModel`, `undo` / `redo` / `canUndo` / `canRedo`,
+`getTablistSpace(tabsetId)` / `onTablistSpaceChange(tabsetId, listener)` (see
+[Tablist space](#tablist-space)), and `resetLayout()` (reset to the original `defaultModel`, clearing undo history and
 any persisted copy).
 
 ```tsx
@@ -356,6 +361,9 @@ How it works:
   (`setFloatMinimized`); tapping the chip restores it to its saved rect.
 - **Dock back as a panel.** "Dock back" returns the float as its own panel (all its
   tabs, grouped) instead of flattening them into another tabset.
+- **Dock by dragging.** A float's tabsets keep their grips: drag one onto any
+  tabset (the main layout, another float, or a layout in the same `dragGroup`)
+  to dock it there.
 - **Bring to front.** Clicking anywhere in a float (body, a tab, or chrome)
   raises it above the others.
 - **Honors `editable`.** Under `editable={false}` a float is static: its content
@@ -366,6 +374,31 @@ How it works:
 Hand-built layouts opt in by wrapping the tree's content with `Layout.FloatLayer`
 (passing `floats`) and adding `Tabset.FloatButton`. `Tabset.FloatButton`
 hides itself (and warns) if no `Layout.FloatLayer` is present.
+
+## Multiple windows
+
+```tsx
+<DashfooLayout dragGroup="desk" defaultModel={main} factory={renderPanel} onTearOff={openPopup} />
+```
+
+- **Tear-off.** Releasing a tab or tabset outside the window calls `onTearOff`
+  with `{ kind, nodeId, model, point, size }`: `model` holds just that node
+  (built with `standaloneModel` from `@dashfoo/core`), `point` is the release
+  point in screen pixels and `size` the source tabset's size. Return `true` to
+  remove it with a `tearOff` action. The drag preview carries `data-tear-off`
+  while a release would tear off.
+- **Drag groups.** Layouts sharing a `dragGroup` exchange tabs and tabsets: the
+  receiver records `transferIn`, the source `transferOut`. Tab ids must be unique
+  within the group; a target that already has one refuses the drop. Layouts
+  portaled into popup windows join as they are; layouts in other browser tabs of
+  the same origin join over the browser's drag and drop, confirmed through a
+  `BroadcastChannel`. `dragGroupScope="app"` keeps a layout's drags in its copy
+  of the app. Mouse drags in a grouped layout use the browser's drag and drop;
+  touch and pen keep the pointer drag.
+- **Empty layouts.** A layout whose last tabset left renders a
+  `[data-dashfoo="layout-empty"]` drop target, so it can take tabs back.
+- **Own window.** Panel sizes in `vh`/`vw`/`em`, float placement, drop hit
+  testing and the overflow menu all read the window the layout renders in.
 
 ## Persistence
 
@@ -393,7 +426,7 @@ const Layout = () => {
 };
 ```
 
-`persist` accepts a bare localStorage key or `{ key, storage?, debounceMs? }` for
+`persist` accepts a bare localStorage key or `{ key, storage?, debounceMs?, mapTab? }` for
 a custom store (sessionStorage, in-memory, your own). A pending save flushes on
 unmount and on page hide (reload, tab close, navigation, the page going to the
 background), so the last change is never lost, even inside the debounce window.
@@ -407,13 +440,32 @@ validation pipeline, and SSR notes.
 
 ### Options
 
-The full form of `persist` (`{ key, storage?, debounceMs? }`):
+The full form of `persist` (`{ key, storage?, debounceMs?, mapTab? }`):
 
 | Option       | Type             | Default               | Description                                       |
 | ------------ | ---------------- | --------------------- | ------------------------------------------------- |
 | `key`        | `string`         | (required)            | Storage key. A bare `persist="key"` is shorthand. |
 | `storage`    | `StorageAdapter` | `localStorageAdapter` | Where to read and write.                          |
 | `debounceMs` | `number`         | `300`                 | Save debounce window.                             |
+| `mapTab`     | `MapTab`         | (none)                | Upgrade or drop each restored tab; see below.     |
+
+A stored layout goes through `restoreModel` from `@dashfoo/core`: anything that
+is not a dashfoo model is warned about, removed, and `defaultModel` stays.
+`mapTab` receives every saved tab and returns the app's current version of it,
+or `null` to drop it, so a layout saved by an older release of your app still
+restores after a component is renamed or removed:
+
+```tsx
+persist={{
+  key: "dashfoo:my-app",
+  mapTab: (tab) =>
+    tab.component === "legacy-chart"
+      ? { ...tab, component: "chart" }
+      : tab.component in components
+        ? tab
+        : null,
+}}
+```
 
 ### Storage adapters
 
@@ -451,6 +503,7 @@ structure and consumes runtime geometry through CSS custom properties.
 | -------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `layout`             | root `div`      | The outer container. `display: flex` over the full parent.                                                                                     |
 | `row`                | rrp `Group`     | A resizable row/column. `orientation` comes from the node.                                                                                     |
+| `layout-empty`       | `div`           | Fills a layout with no tabsets left and takes the drop that seeds its first one.                                                               |
 | `splitter`           | rrp `Separator` | Resize handle between siblings (also matches `[data-separator]`, see below).                                                                   |
 | `tabset`             | `div`           | A tabbed region. Carries `data-tabset-id`, `data-dragging-source`, `data-tab-location`, `data-collapsed` and `data-collapsed-to-fit`.          |
 | `tabstrip`           | `div`           | The strip row: tablist plus a trailing toolbar slot.                                                                                           |
@@ -468,7 +521,7 @@ structure and consumes runtime geometry through CSS custom properties.
 | `tabset-float`       | `button`        | Floats the tabset into a movable overlay. `aria-label="Float panel"`; shown when `floatable` is on and not maximized.                          |
 | `tabset-maximize`    | `button`        | Maximize/restore toggle. `aria-pressed` reflects state.                                                                                        |
 | `tabcontent`         | `div`           | `role="tabpanel"`, the active tab's content (or empty when none).                                                                              |
-| `float-overlay`      | `div`           | The `pointer-events: none` overlay covering the layout; holds the floats.                                                                      |
+| `float-overlay`      | `div`           | The `pointer-events: none` overlay covering the layout; holds the floats. Always rendered, so a new float opens in its coordinates.            |
 | `float`              | `div`           | A floating panel's elevated frame. `display: flex; flex-direction: column`, positioned absolutely.                                             |
 | `float-titlebar`     | `div`           | The float's drag handle / title bar (grip + title + dock control). `data-editable` while the layout is editable; `cursor: default` without it. |
 | `float-grip`         | `span`          | Drag-affordance dots in the title bar (decorative, `aria-hidden`).                                                                             |
@@ -481,7 +534,7 @@ structure and consumes runtime geometry through CSS custom properties.
 | `float-chip`         | `button`        | A minimized float: a rounded chip you click (or drag) to restore. Clamped on screen by `--dashfoo-chip-width` / `--dashfoo-chip-height`.       |
 | `float-chip-label`   | `span`          | The chip's panel title.                                                                                                                        |
 | `dock-indicator`     | `div`           | The drag preview overlay (insertion line or zone pane). `pointer-events: none`.                                                                |
-| `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label. `pointer-events: none`.                                            |
+| `drag-preview`       | `div`           | The chip that follows the pointer during a drag, showing the dragged label. `pointer-events: none`; `data-tear-off` outside the window.        |
 | `icon`               | `svg`           | The built-in close, grip, maximize, float, minimize, dock and overflow icons. `aria-hidden`, `pointer-events: none`.                           |
 
 The `splitter` handle is dashfoo's name; react-resizable-panels also stamps the
@@ -605,7 +658,7 @@ pattern as `Panel`:
 | `Tabset.Trigger`        | `button[data-dashfoo="tab"]`             | The tab button: arrow/Home/End navigation, select on click, rename on double-click, draggable. Children override the label.                                    |
 | `Tabset.RenameInput`    | `input[data-dashfoo="tab-rename"]`       | Inline rename editor; renders only while its tab is being renamed.                                                                                             |
 | `Tabset.CloseButton`    | `button[data-dashfoo="tab-close"]`       | Closes the tab with focus restore; hides when the tab isn't closable.                                                                                          |
-| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted`. Children render-prop overrides `renderers.tab`.                                                           |
+| `Tabset.Content`        | `div[data-dashfoo="tabcontent"]`         | The `role="tabpanel"` pane(s); honors `keepMounted` (including `"activity"`). Children render-prop overrides `renderers.tab`.                                  |
 | `Tabset.Toolbar`        | `div[data-dashfoo="tabset-toolbar"]`     | Trailing toolbar container.                                                                                                                                    |
 | `Tabset.OverflowMenu`   | menu button                              | Lists clipped tabs; hides when nothing overflows.                                                                                                              |
 | `Tabset.Grip`           | `button[data-dashfoo="tabset-grip"]`     | Drag handle for the whole tabset; hides when tabset dragging is off.                                                                                           |
@@ -716,6 +769,11 @@ useDropIntent; // where the drag would land if dropped right now, or null
 useDropIndicator; // the insertion line or split zone the built-in indicator draws, or null
 measureTabset; // the MeasuredTabset drops are resolved against
 
+// Multiple windows
+type TearOffRequest; // { kind, nodeId, model, point, size }
+type TearOffHandler; // (request) => boolean
+type DragGroupScope; // "origin" | "app"
+
 // External drag sources
 DashfooDragProvider; // a drag root shared by layouts and outside sources (Layout.Root mounts one otherwise)
 useExternalTabSource;
@@ -725,7 +783,12 @@ type ExternalTabSourceOptions;
 localStorageAdapter;
 memoryStorageAdapter;
 type StorageAdapter;
-type PersistInput; // string | { key, storage?, debounceMs? }
+type PersistInput; // string | { key, storage?, debounceMs?, mapTab? }
+
+// Tablist space (Layout.Root's `tablistSpace` prop)
+createTablistSpace;
+type TablistSpace; // { get, set, subscribe } per tabset id
+type TablistSpaceListener;
 
 // Responsive
 useResponsiveLayout; // compact projection + lock for DashfooLayout and hand-built layouts
@@ -754,5 +817,31 @@ React 18.3 and React 19. Docking itself remains pointer-only.
 The compact projection retains nested row identities so mounted widget state survives ordinary breakpoint changes. Entering compact mode from a maximized view, moving a tab between tabsets, or supplying a different tree can remount content; keep durable application state outside panel components.
 
 `Tabset.Content` forwards its ref to the active panel, including when inactive panels are retained with `keepMounted`.
+
+### Tablist space
+
+Every tabset measures the space its tabs leave free in the tab strip, after the
+toolbar and any other strip parts take theirs, in layout pixels: positive while
+there is room, negative once the tabs overflow, and still falling when the
+tablist is squeezed to nothing and the rest of the strip overflows too. A
+toolbar can use it to move its own items into a menu as the header runs out of
+room. It is updated before paint whenever the tablist, its strip, a toolbar or
+a tab resizes, and published four ways:
+
+- `useTabset((state) => state.tablistSpace)` inside a tabset (`undefined` until measured, e.g. on the server).
+- `--dashfoo-tablist-space` on the `data-dashfoo="tablist"` element, for CSS.
+- `getTablistSpace(tabsetId)` on the `DashfooHandle`.
+- `onTablistSpaceChange(tabsetId, listener)` on the handle, for UI outside the layout; it returns the unsubscribe.
+
+A hand-built layout gets the same readers by creating one with
+`createTablistSpace()` and passing it to `Layout.Root` as `tablistSpace`.
+
+### Gutters, zoom and scale
+
+The space between siblings in a row (the splitter plus any CSS `gap` on
+`data-dashfoo="row"`) is measured and counted toward the minimum size of nested
+rows, so a nested split never squeezes its tabsets below `tabSetMinSize`. Split
+and float resizing follow the pointer under CSS `zoom` or a scale transform on
+an ancestor: pointer movement is converted to layout pixels first.
 
 Existing floats remain overlays in compact mode. Their displayed bounds fit the viewport without changing saved geometry; float controls remain available to minimize or dock them back.

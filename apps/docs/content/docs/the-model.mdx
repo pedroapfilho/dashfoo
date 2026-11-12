@@ -448,6 +448,27 @@ structure is canonical and every `selected` is in range). Skip normalize and you
 row that adds a nesting level without splitting anything, or an id reference
 pointing at a tabset that is no longer there.
 
+### Restoring saved layouts: `restoreModel`
+
+`fromJSON` and `parseModel` throw, which is right for a payload you produced a
+moment ago. A layout saved weeks ago by an older version of your app is a
+different case: it may be corrupt, or reference a component you have since
+renamed or removed. `restoreModel` takes the parsed value and returns `null`
+(with a warning) instead of throwing, and its `mapTab` option upgrades or drops
+each saved tab before the model is normalized:
+
+```ts
+import { restoreModel } from "@dashfoo/core";
+
+const restored = restoreModel(JSON.parse(saved), {
+  mapTab: (tab) => (tab.component in components ? tab : null),
+});
+```
+
+Dropping every tab of a tabset removes the tabset, and the selected tab stays
+selected when tabs before it are dropped. The `persist` prop uses it to load,
+with the same `mapTab` option.
+
 ## See also
 
 - [`packages/core/src/model/schema.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/schema.ts):
@@ -455,7 +476,7 @@ pointing at a tabset that is no longer there.
 - [`packages/core/src/model/invariants.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/invariants.ts):
   the full `normalize()` implementation.
 - [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts):
-  `toJSON`, `fromJSON`, `parseModel`.
+  `toJSON`, `fromJSON`, `parseModel`, `restoreModel`.
 - [`apps/demo-vite/src/models.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/models.ts):
   the five demo models (`overviewModel`, `dockingModel`, `chromeModel`,
   `playgroundModel`, `sizingModel`), all written with the builders, that you can

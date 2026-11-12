@@ -3,6 +3,7 @@
 import type { FocusEvent, KeyboardEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 
+import { isNode } from "../lib/dom";
 import { OverflowIcon } from "../ui/icons";
 
 import type { OverflowItem } from "./tabset-store";
@@ -28,15 +29,16 @@ const TabOverflowMenu = ({
     }
 
     const handlePointerDown = (event: PointerEvent): void => {
-      if (event.target instanceof Node && rootRef.current?.contains(event.target) !== true) {
+      if (isNode(event.target) && rootRef.current?.contains(event.target) !== true) {
         setOpen(false);
       }
     };
 
-    document.addEventListener("pointerdown", handlePointerDown);
+    const ownerDocument = rootRef.current?.ownerDocument ?? document;
+    ownerDocument.addEventListener("pointerdown", handlePointerDown);
 
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
+      ownerDocument.removeEventListener("pointerdown", handlePointerDown);
     };
   }, [open]);
 
@@ -107,10 +109,7 @@ const TabOverflowMenu = ({
   };
 
   const handleFocusOut = (event: FocusEvent<HTMLDivElement>): void => {
-    if (
-      event.relatedTarget instanceof Node &&
-      rootRef.current?.contains(event.relatedTarget) === true
-    ) {
+    if (isNode(event.relatedTarget) && rootRef.current?.contains(event.relatedTarget) === true) {
       return;
     }
 

@@ -81,6 +81,19 @@ const playgroundModel = (): Dashfoo =>
   );
 
 /** Every demo page stacks at the same width. */
+/** Two layouts in one drag group: their tab ids (the component keys) must not overlap. */
+const windowsModels = () => ({
+  main: model(
+    row([tabset([tab("canvas", "Canvas"), tab("detail", "Detail"), tab("notes", "Notes")])]),
+  ),
+  side: model(
+    row([
+      tabset([tab("activity", "Activity"), tab("tasks", "Tasks")]),
+      tabset([tab("metrics", "Metrics")]),
+    ]),
+  ),
+});
+
 const COMPACT: ResponsiveOptions = { maxWidth: 720 };
 
-export { COMPACT, dockingModel, overviewModel, playgroundModel, rawModel };
+export { COMPACT, dockingModel, overviewModel, playgroundModel, rawModel, windowsModels };

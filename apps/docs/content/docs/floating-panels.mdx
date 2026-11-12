@@ -66,6 +66,9 @@ floated.floats;
 reducer(floated, { type: "dockFloat", floatId: floated.floats[0].id });
 ```
 
+The `DashfooHandle` exposes `floatTab`, `floatTabset`, `dockFloat` and
+`setFloatMinimized` for the same moves from code.
+
 The reducer actions are `floatTab`, `floatTabset`, `dockFloat`, `moveFloat` (persists
 a float's rect as you drag or resize it, one undo step per gesture),
 `setFloatMinimized`, and `renameFloat`. `geometry` is in viewport CSS pixels (the
@@ -112,6 +115,10 @@ geometry visible at that time.
   (see [theming](/theming#the-minimized-chip)).
 - **Dock back as a panel.** The "Dock back" control returns the float as its own
   panel (all its tabs, grouped) rather than flattening them into another tabset.
+- **Dock by dragging.** Each tabset in a float keeps its grip, so dragging it onto
+  a tabset docks it there (or merges its tabs), in the main layout, another
+  float, or another layout of the same [drag group](/multiple-windows). The
+  float closes once its last tabset leaves.
 - **Bring to front.** Clicking anywhere in a float (its body, a tab, or its
   chrome) raises it above the others.
 - **Honors `editable`.** Under `editable={false}` a float is static: its content

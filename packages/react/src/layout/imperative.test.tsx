@@ -66,6 +66,19 @@ describe("imperative handle", () => {
     expect(ref.current?.canRedo()).toBe(false);
   });
 
+  test("floatTabset floats a whole tabset and setFloatMinimized collapses it", () => {
+    const ref = createRef<DashfooHandle>();
+    render(<DashfooLayout components={components} defaultModel={model()} ref={ref} />);
+
+    act(() => ref.current?.floatTabset("ts2"));
+    const [float] = ref.current?.getModel().floats ?? [];
+    assert(float);
+    expect(float.layout.children.map(({ id }) => id)).toEqual(["ts2"]);
+
+    act(() => ref.current?.setFloatMinimized(float.id, true));
+    expect(ref.current?.getModel().floats[0]?.minimized).toBe(true);
+  });
+
   test("closeTab removes a tab via the handle", () => {
     const ref = createRef<DashfooHandle>();
     render(<DashfooLayout components={components} defaultModel={model()} ref={ref} />);

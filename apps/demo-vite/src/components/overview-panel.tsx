@@ -19,8 +19,8 @@ const Notes = (): ReactNode => {
         value={notes}
       />
       <span className="text-foreground-subtle dark:text-foreground-pale text-xs">
-        keepMounted preserves local state when switching tabs. Widget content is not saved in the
-        layout.
+        Inactive tabs stay in a hidden React Activity, so local state survives tab switches. Widget
+        content is not saved in the layout.
       </span>
     </label>
   );

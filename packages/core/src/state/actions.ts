@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 import { dockLocationSchema } from "../model/dock-location";
-import { geometrySchema, globalAttributesSchema, tabNodeSchema } from "../model/schema";
+import {
+  geometrySchema,
+  globalAttributesSchema,
+  tabNodeSchema,
+  tabsetNodeSchema,
+} from "../model/schema";
 
 import { mutableNodeAttrsSchema } from "./node-attrs";
 
@@ -86,6 +91,18 @@ const actionSchema = z.discriminatedUnion("type", [
     floatId: z.string(),
     name: z.string(),
     type: z.literal("renameFloat"),
+  }),
+
+  z.object({ nodeId: z.string(), type: z.literal("tearOff") }),
+
+  z.object({ nodeId: z.string(), type: z.literal("transferOut") }),
+
+  z.object({
+    index: z.number().int().optional(),
+    location: dockLocationSchema,
+    node: z.union([tabNodeSchema, tabsetNodeSchema]),
+    targetId: z.string(),
+    type: z.literal("transferIn"),
   }),
 ]);
 

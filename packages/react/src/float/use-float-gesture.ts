@@ -4,10 +4,17 @@ import type { Geometry } from "@dashfoo/core";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useRef } from "react";
 
+import { isHTMLElement } from "../lib/dom";
 import { startsOnControl } from "../lib/interactive";
 
-import type { ResizeEdges, Size } from "./float-geometry";
-import { clampToBounds, floatGeometryStyle, resizeRect } from "./float-geometry";
+import type { ResizeEdges, Scale, Size } from "./float-geometry";
+import {
+  clampToBounds,
+  floatGeometryStyle,
+  layoutScale,
+  resizeRect,
+  toLayoutRect,
+} from "./float-geometry";
 
 const TAP_SLOP = 4;
 
@@ -26,6 +33,7 @@ const applyGeometry = (panel: HTMLElement, geometry: Geometry): void => {
 /**
  * `moved` and `latest` live here because they only mean anything mid-gesture.
  * `visible` is the size the clamp keeps on screen: the chip's own when minimized.
+ * `scale` converts screen pixels to layout pixels under CSS `zoom` or a scale transform.
  */
 type Gesture = {
   bounds: Size;
@@ -33,6 +41,7 @@ type Gesture = {
   latest: Geometry;
   moved: boolean;
   pointerId: number;
+  scale: Scale;
   start: Geometry;
   startX: number;
   startY: number;
@@ -59,6 +68,29 @@ type FloatGesture = {
   handlers: FloatGestureHandlers;
   ref: (element: HTMLElement | null) => void;
   startResize: (event: ReactPointerEvent, edges: ResizeEdges) => void;
+};
+
+type GestureStart = Pick<Gesture, "bounds" | "latest" | "scale" | "start" | "visible">;
+
+/** Where a gesture starts, in layout pixels relative to the float layer. */
+const measureGestureStart = (
+  panel: HTMLElement,
+  geometry: Geometry,
+  minimized: boolean,
+): GestureStart => {
+  const parent = isHTMLElement(panel.offsetParent) ? panel.offsetParent : null;
+  const scale = layoutScale(panel);
+  const rect = toLayoutRect(panel.getBoundingClientRect(), parent?.getBoundingClientRect(), scale);
+  const size = minimized ? { height: geometry.height, width: geometry.width } : rect;
+  const start = { height: size.height, left: rect.left, top: rect.top, width: size.width };
+
+  return {
+    bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
+    latest: start,
+    scale,
+    start,
+    visible: minimized ? { height: rect.height, width: rect.width } : undefined,
+  };
 };
 
 // shortcut: a hand-written pointer gesture instead of a dnd-kit draggable, upgrade once dnd-kit#2055 ships and Feedback allows a per-draggable overlay (ADR 0005)
@@ -89,26 +121,13 @@ const useFloatGesture = ({
       releaseCapture(panel, prior.pointerId);
     }
 
-    const parent = panel.offsetParent instanceof HTMLElement ? panel.offsetParent : null;
-    const rect = panel.getBoundingClientRect();
-
-    const visibleGeometry = {
-      height: minimized ? geometry.height : rect.height,
-      left: rect.left,
-      top: rect.top,
-      width: minimized ? geometry.width : rect.width,
-    };
-
     const gesture: Gesture = {
-      bounds: { height: parent?.clientHeight ?? 0, width: parent?.clientWidth ?? 0 },
+      ...measureGestureStart(panel, geometry, minimized),
       edges,
-      latest: visibleGeometry,
       moved: false,
       pointerId: event.pointerId,
-      start: visibleGeometry,
       startX: event.clientX,
       startY: event.clientY,
-      visible: minimized ? { height: rect.height, width: rect.width } : undefined,
     };
 
     gestureRef.current = gesture;
@@ -162,11 +181,11 @@ const useFloatGesture = ({
       return;
     }
 
-    const dx = event.clientX - gesture.startX;
-    const dy = event.clientY - gesture.startY;
+    const dx = (event.clientX - gesture.startX) / gesture.scale.x;
+    const dy = (event.clientY - gesture.startY) / gesture.scale.y;
 
     if (!gesture.moved) {
-      if (Math.hypot(dx, dy) <= TAP_SLOP) {
+      if (Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY) <= TAP_SLOP) {
         return;
       }
 
