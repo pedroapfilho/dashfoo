@@ -48,9 +48,6 @@ const tabsetDragLabel = (node: TabsetNode, activeTabName: string): string =>
  * whether to render a toolbar at all, so the two cannot disagree.
  */
 const useTabsetChrome = (): TabsetChrome => {
-  const canCollapse = useTabset((state) => state.canCollapse);
-  const isCollapsed = useTabset((state) => state.isCollapsed);
-  const isCollapsedToFit = useTabset((state) => state.isCollapsedToFit);
   const draggableTabsets = useLayout((state) => state.draggableTabsets);
   const floatable = useLayout((state) => state.floatable);
   const isMaximized = useTabset((state) => state.isMaximized);
@@ -58,6 +55,10 @@ const useTabsetChrome = (): TabsetChrome => {
   const overflowCount = useTabset((state) => state.overflowItems.length);
   const showMaximize = useTabset((state) => state.showMaximize);
   const hasFloatLayer = useHasFloatLayer();
+
+  const collapse = useTabset(
+    (state) => state.canCollapse || (state.isCollapsed && !state.isCollapsedToFit),
+  );
 
   if (floatable && !isMaximized && !hasFloatLayer) {
     warnOnce(
@@ -67,7 +68,7 @@ const useTabsetChrome = (): TabsetChrome => {
   }
 
   return {
-    collapse: canCollapse || (isCollapsed && !isCollapsedToFit),
+    collapse,
     float: floatable && !isMaximized && hasFloatLayer,
     grip: draggableTabsets && !isMaximized && draggable,
     maximize: showMaximize,
