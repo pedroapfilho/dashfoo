@@ -125,7 +125,7 @@ const ViewOptionsPopover = ({
   const pathname = usePathname();
 
   const items = useMemo(() => {
-    const q = `Read ${new URL(pathname, "https://dashfoo.com")}, I want to ask questions about it.`;
+    const q = `Read ${new URL(pathname, "https://docs.dashfoo.com")}, I want to ask questions about it.`;
 
     return [
       ...(githubUrl !== undefined && githubUrl !== ""
