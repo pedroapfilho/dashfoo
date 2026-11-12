@@ -152,6 +152,44 @@ const RowPanelContent = ({
     </TabsetSlotContext.Provider>
   );
 
+type RowSizingOptions = {
+  horizontal: boolean;
+  node: RowNode;
+  panelIdOf: (childId: string) => string;
+  tabsetMinSize: number;
+};
+
+type RowSizing = {
+  collapse: CollapsiblePanels;
+  elementRef: (element: HTMLDivElement | null) => void;
+  gutter: number;
+};
+
+/** The row element feeds both the gutter measure and the collapse handles. */
+const useRowSizing = ({
+  horizontal,
+  node,
+  panelIdOf,
+  tabsetMinSize,
+}: RowSizingOptions): RowSizing => {
+  const { groupRef: gutterRef, gutter } = useGutter(horizontal, node.children.length);
+
+  const collapse = useCollapsiblePanels({
+    minPixels: (child) => minPixelsOf(child, node.orientation, tabsetMinSize, gutter),
+    node,
+    panelIdOf,
+  });
+
+  const { setGroupElement } = collapse;
+
+  const elementRef = useMemo(
+    () => mergeRefs<HTMLDivElement>(gutterRef, setGroupElement),
+    [gutterRef, setGroupElement],
+  );
+
+  return { collapse, elementRef, gutter };
+};
+
 const RowGroup = ({ isRoot = false, node, renderTabset }: RowGroupProps): ReactNode => {
   const documentId = useLayout((state) => state.documentId);
   const resizableSplits = useLayout((state) => state.resizableSplits);
@@ -170,26 +208,14 @@ const RowGroup = ({ isRoot = false, node, renderTabset }: RowGroupProps): ReactN
   const snapActive = snapEnabled(snapGrid);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
 
-  const { groupRef: gutterRef, gutter } = useGutter(
-    orientation === "horizontal",
-    node.children.length,
-  );
-
-  const minPixels = (child: LayoutChild): number | undefined =>
-    minPixelsOf(child, node.orientation, tabsetMinSize, gutter);
-
-  const collapse = useCollapsiblePanels({
-    minPixels,
+  const { collapse, elementRef, gutter } = useRowSizing({
+    horizontal: orientation === "horizontal",
     node,
     panelIdOf: (childId) => resizePanelId(documentId, childId),
+    tabsetMinSize,
   });
 
-  const { collapsedIds, groupRef, setGroupElement } = collapse;
-
-  const elementRef = useMemo(
-    () => mergeRefs<HTMLDivElement>(gutterRef, setGroupElement),
-    [gutterRef, setGroupElement],
-  );
+  const { collapsedIds, groupRef } = collapse;
 
   const panels = useMemo(
     () =>
