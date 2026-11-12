@@ -86,6 +86,20 @@ const resolveDragGroup = (
   dragGroupScope,
 });
 
+/** What the model's `global` decides with no host prop to weigh against it. */
+const resolveGlobalOptions = (
+  global: GlobalAttributes,
+): Pick<
+  ResolvedOptions,
+  "selectOnRemove" | "splitDock" | "tabLocation" | "tabsetMinSize" | "tabStripEnabled"
+> => ({
+  selectOnRemove: global.tabSetSelectOnRemove ?? "neighbor",
+  splitDock: global.enableSplitDock !== false,
+  tabLocation: global.tabLocation ?? "top",
+  tabsetMinSize: global.tabSetMinSize ?? DEFAULT_TABSET_MIN_SIZE,
+  tabStripEnabled: global.tabSetEnableTabStrip !== false,
+});
+
 /** The host's options and the model's `global` attributes, combined: either side can switch a capability off. */
 const resolveLayoutOptions = (
   global: GlobalAttributes,
@@ -108,10 +122,7 @@ const resolveLayoutOptions = (
     renamableTabs: noneSwitchedOff(editable, options.renamableTabs, global.tabEnableRename),
     resizableSplits: noneSwitchedOff(structural, options.resizableSplits, global.enableSplitResize),
     snap: options.snap ?? global.snap ?? null,
-    splitDock: global.enableSplitDock !== false,
-    tabLocation: global.tabLocation ?? "top",
-    tabsetMinSize: global.tabSetMinSize ?? DEFAULT_TABSET_MIN_SIZE,
-    tabStripEnabled: global.tabSetEnableTabStrip !== false,
+    ...resolveGlobalOptions(global),
   };
 };
 

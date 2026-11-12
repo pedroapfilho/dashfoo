@@ -231,17 +231,20 @@ State does not arrive as extra `data-dashfoo` values. It rides on the native
 ARIA and `data-*` attributes the elements already set, so your selectors compose
 the structural attribute with the state attribute.
 
-| State                  | Lives on                           | Set when                                                        |
-| ---------------------- | ---------------------------------- | --------------------------------------------------------------- |
-| `aria-selected="true"` | `[data-dashfoo="tab"]`             | The tab is the active one in its tabset                         |
-| `aria-pressed="true"`  | `[data-dashfoo="tabset-maximize"]` | The tabset is maximized                                         |
-| `data-dragging`        | `[data-dashfoo="tab-item"]`        | This tab is being lifted into the drag preview (dim the source) |
-| `data-dragging-source` | `[data-dashfoo="tabset"]`          | This whole tabset is being dragged by its grip                  |
-| `data-tab-location`    | `[data-dashfoo="tabset"]`          | `"top"` (default) or `"bottom"` strip placement                 |
-| `data-editable`        | `[data-dashfoo="float-titlebar"]`  | Movable float; without it `styles.css` sets `cursor: default`   |
-| `tabIndex={0 / -1}`    | `[data-dashfoo="tab"]`             | Roving tabindex: the selected tab is the one tab stop           |
+| State                   | Lives on                           | Set when                                                                                                                       |
+| ----------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `aria-selected="true"`  | `[data-dashfoo="tab"]`             | The tab is the active one in its tabset                                                                                        |
+| `aria-pressed="true"`   | `[data-dashfoo="tabset-maximize"]` | The tabset is maximized                                                                                                        |
+| `aria-expanded="false"` | `[data-dashfoo="tabset-collapse"]` | The tabset is collapsed                                                                                                        |
+| `data-collapsed`        | `[data-dashfoo="tabset"]`          | Shown collapsed to its strip: `"column"` in a stacked split, `"row"` side by side, where `styles.css` turns the strip vertical |
+| `data-collapsed-to-fit` | `[data-dashfoo="tabset"]`          | Collapsed only because the split is too small for its minimums; the model still has it expanded                                |
+| `data-dragging`         | `[data-dashfoo="tab-item"]`        | This tab is being lifted into the drag preview (dim the source)                                                                |
+| `data-dragging-source`  | `[data-dashfoo="tabset"]`          | This whole tabset is being dragged by its grip                                                                                 |
+| `data-tab-location`     | `[data-dashfoo="tabset"]`          | `"top"` (default) or `"bottom"` strip placement                                                                                |
+| `data-editable`         | `[data-dashfoo="float-titlebar"]`  | Movable float; without it `styles.css` sets `cursor: default`                                                                  |
+| `tabIndex={0 / -1}`     | `[data-dashfoo="tab"]`             | Roving tabindex: the selected tab is the one tab stop                                                                          |
 
-The boolean `data-*` attributes (`data-dragging`, `data-dragging-source`, `data-editable`) are
+The boolean `data-*` attributes (`data-dragging`, `data-dragging-source`, `data-collapsed-to-fit`, `data-editable`) are
 only present when true. They are set to `undefined` otherwise, so the attribute
 is absent rather than `="false"`. Select on presence:
 

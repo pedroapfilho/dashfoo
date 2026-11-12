@@ -127,6 +127,8 @@ row out of an inherited snap default.
 ```ts
 type TabsetNode = {
   children: TabNode[];
+  collapsed?: boolean;
+  collapsible?: boolean;
   enableClose?: boolean;
   enableMaximize?: boolean;
   id: string;
@@ -134,6 +136,7 @@ type TabsetNode = {
   min?: Dimension;
   name?: string;
   selected: number;
+  selectionHistory?: string[];
   type: "tabset";
   weight: number;
 };
@@ -155,6 +158,19 @@ Omitting `enableMaximize` falls back to `global.tabSetEnableMaximize`. There is
 no tabset-level close global: an omitted `enableClose` defers to
 `global.tabEnableClose` and each tab's own `enableClose` (a tab is closable only
 when every level allows it).
+
+`collapsible: true` lets the tabset collapse to its tab strip, like an IDE's
+bottom panel or a sidebar that shrinks to a vertical strip of tabs. `collapsed`
+records that it is collapsed, and `weight` keeps the share it expands back to.
+Dispatch `setTabsetCollapsed` to collapse or expand it; selecting one of its tabs
+expands it too. `normalize` keeps `collapsed` honest: it is dropped when
+`collapsible` is not `true`, and a row whose children are all collapsed expands
+them, since a split needs one expanded child to take the space. For the same
+reason `setTabsetCollapsed` will not collapse the last expanded child of a row.
+
+`selectionHistory` lists tab ids, most recently selected first. It exists only
+under `global.tabSetSelectOnRemove: "recent"`, and `normalize` maintains it, so
+treat it as read-only.
 
 ### `TabNode`: a leaf
 
@@ -226,6 +242,7 @@ type GlobalAttributes = {
   tabSetEnableMaximize?: boolean;
   tabSetEnableTabStrip?: boolean;
   tabSetMinSize?: number;
+  tabSetSelectOnRemove?: "neighbor" | "recent";
 };
 ```
 
@@ -242,6 +259,10 @@ their themed size, so nothing reflows).
 `splitterSize` sets the resize-handle gutter in pixels, and `tabSetMinSize`
 sets the default tabset minimum size in pixels. The React adapter uses `320`
 when `tabSetMinSize` is omitted.
+`tabSetSelectOnRemove` picks the tab that takes over when the selected tab is
+closed or dragged out of its tabset: its right neighbour, else its left one
+(`"neighbor"`, the default), or the tab selected before it (`"recent"`, like an
+IDE's editor groups), which keeps each tabset's `selectionHistory` in the model.
 `snap` turns on magnetic snapping for splitter drags: the dragged boundary pulls
 onto a grid while within `threshold` percent (default `4`), then commits on
 release as one undo step. The grid is the union of two optional sources: `step`

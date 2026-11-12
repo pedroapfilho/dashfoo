@@ -9,10 +9,13 @@ import {
   findRow,
   findTab,
   findTabset,
+  findTabsetParent,
 } from "../model/tree";
 
 import type { Action } from "./actions";
-import { dock, removeNode, removeTab, removeTabset } from "./docking";
+import { canCollapseTabset } from "./collapse";
+import { removeNode, removeTab, removeTabset } from "./detach";
+import { dock } from "./docking";
 import { uniqueFloatName } from "./floats";
 import { jsonEqual } from "./json-equal";
 import type { MutableNodeAttrs } from "./node-attrs";
@@ -123,6 +126,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
 
       if (tabset) {
         tabset.selected = action.index;
+        tabset.collapsed = undefined;
       }
 
       return;
@@ -153,6 +157,20 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
         collectTabsetsInRow(draft.layout).some((tabset) => tabset.id === action.tabsetId)
       ) {
         draft.maximizedTabsetId = action.tabsetId;
+      }
+
+      return;
+    }
+
+    case "setTabsetCollapsed": {
+      const slot = findTabsetParent(draft, action.tabsetId);
+
+      if (!action.collapsed) {
+        if (slot) {
+          slot.tabset.collapsed = undefined;
+        }
+      } else if (slot && canCollapseTabset(slot.parent, slot.tabset)) {
+        slot.tabset.collapsed = true;
       }
 
       return;

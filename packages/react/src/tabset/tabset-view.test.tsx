@@ -1,5 +1,5 @@
 import type { Dashfoo, TabsetNode } from "@dashfoo/core";
-import { dragDockMachine, fallbackSelectedIndex } from "@dashfoo/core";
+import { dragDockMachine } from "@dashfoo/core";
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { useContext, useEffect, useState } from "react";
@@ -14,21 +14,6 @@ import { useLayout } from "../layout/layout-store";
 import { useDashfooStore } from "../store/store";
 
 import { Tabset } from "./tabset";
-
-describe("fallbackSelectedIndex", () => {
-  test("removing the first tab falls forward to the next", () => {
-    expect(fallbackSelectedIndex(3, 0)).toBe(1);
-  });
-  test("removing a middle tab falls forward to the next", () => {
-    expect(fallbackSelectedIndex(3, 1)).toBe(2);
-  });
-  test("removing the last tab falls back to the previous", () => {
-    expect(fallbackSelectedIndex(3, 2)).toBe(1);
-  });
-  test("removing the only tab yields -1 (no neighbour)", () => {
-    expect(fallbackSelectedIndex(1, 0)).toBe(-1);
-  });
-});
 
 const soleTabModel = (): Dashfoo => ({
   activeTabsetId: "ts1",

@@ -30,7 +30,9 @@ export type { SnapDecision, SnapGrid } from "./snap/snap";
 
 export * from "./state/actions";
 
-export { fallbackSelectedIndex } from "./state/docking";
+export { canCollapseTabset } from "./state/collapse";
+
+export { fallbackSelectedIndex } from "./state/detach";
 
 export * from "./state/history";
 

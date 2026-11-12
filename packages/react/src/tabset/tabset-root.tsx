@@ -7,6 +7,7 @@ import { forwardRef, useEffect, useMemo, useRef } from "react";
 
 import { useDraggedNodeId, useTabsetDroppable } from "../drag/drag-hooks";
 import { useLayout } from "../layout/layout-store";
+import { useTabsetSlot } from "../layout/tabset-slot";
 import { findTabButton } from "../lib/dom-ids";
 import { mergeRefs } from "../lib/merge-refs";
 import { useMirroredStore } from "../lib/use-mirrored-store";
@@ -32,6 +33,8 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
     const maximizable = useLayout((state) => state.maximizable);
     const maximizedTabsetId = useLayout((state) => state.maximizedTabsetId);
     const renamableTabs = useLayout((state) => state.renamableTabs);
+    const selectOnRemove = useLayout((state) => state.selectOnRemove);
+    const slot = useTabsetSlot();
     const tabLocation = useLayout((state) => state.tabLocation);
 
     const { ref } = useTabsetDroppable(node.id);
@@ -41,22 +44,28 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
     const tabsetRef = useRef<HTMLDivElement | null>(null);
 
     const isMaximized = maximizedTabsetId === node.id;
-    const showMaximize = maximizable && node.enableMaximize !== false;
+
+    const showMaximize =
+      maximizable && node.enableMaximize !== false && (isMaximized || !slot.alone);
+
     const tabsClosable = closableTabs && node.enableClose !== false;
 
     const draggingTabIndex = node.children.findIndex((tab) => tab.id === draggedTabId);
 
     const visualSelected =
       draggingTabIndex !== -1 && draggingTabIndex === node.selected
-        ? fallbackSelectedIndex(node.children.length, draggingTabIndex)
+        ? fallbackSelectedIndex(node, draggingTabIndex, selectOnRemove)
         : node.selected;
 
     const activeTab = node.children[visualSelected];
 
     const snapshot: TabsetSnapshot = {
       activeTab,
+      canCollapse: slot.canCollapse,
       dispatch,
       documentId,
+      isCollapsed: slot.collapsed,
+      isCollapsedToFit: slot.collapsedToFit,
       isMaximized,
       node,
       showMaximize,
@@ -100,6 +109,8 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
       <TabsetStoreContext.Provider value={store}>
         <div
           {...props}
+          data-collapsed={slot.collapsed ? slot.orientation : undefined}
+          data-collapsed-to-fit={slot.collapsedToFit || undefined}
           data-dashfoo="tabset"
           data-dragging-source={isDragSource || undefined}
           data-tab-location={tabLocation}

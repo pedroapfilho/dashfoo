@@ -4,7 +4,7 @@ import type { Dashfoo, TabNode, TabsetNode } from "../model/schema";
 import { findDuplicateIds, findTab, findTabset } from "../model/tree";
 
 import type { Action } from "./actions";
-import { fallbackSelectedIndex } from "./docking";
+import { fallbackSelectedIndex } from "./detach";
 import { createHistory, dispatchToHistory, undoHistory } from "./history";
 import { reducer } from "./reducer";
 
@@ -166,9 +166,9 @@ describe("selection after a tab leaves its strip", () => {
   });
 
   test("fallbackSelectedIndex names that neighbour in the strip as it stands", () => {
-    expect(fallbackSelectedIndex(3, 1)).toBe(2);
-    expect(fallbackSelectedIndex(3, 2)).toBe(1);
-    expect(fallbackSelectedIndex(1, 0)).toBe(-1);
+    expect(fallbackSelectedIndex(strip("s", ["a", "b", "c"]), 1)).toBe(2);
+    expect(fallbackSelectedIndex(strip("s", ["a", "b", "c"]), 2)).toBe(1);
+    expect(fallbackSelectedIndex(strip("s", ["a"]), 0)).toBe(-1);
   });
 });
 

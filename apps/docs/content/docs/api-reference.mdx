@@ -81,7 +81,7 @@ mode" toggle without a remount.
 
 ### `DashfooHandle`
 
-A `ref` on `DashfooLayout` exposes 18 imperative methods.
+A `ref` on `DashfooLayout` exposes 20 imperative methods.
 
 | Method                 | Signature                                                                                       | Effect                                                                                                                          |
 | ---------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -90,11 +90,13 @@ A `ref` on `DashfooLayout` exposes 18 imperative methods.
 | `selectTab`            | `(tabsetId: string, index: number) => void`                                                     | Dispatches `selectTab`.                                                                                                         |
 | `renameTab`            | `(tabId: string, name: string) => void`                                                         | Dispatches `renameTab`.                                                                                                         |
 | `maximizeTabset`       | `(tabsetId: string \| null) => void`                                                            | Dispatches `setMaximizedTabset`; `null` restores.                                                                               |
+| `collapseTabset`       | `(tabsetId: string) => void`                                                                    | Dispatches `setTabsetCollapsed` with `collapsed: true`.                                                                         |
+| `expandTabset`         | `(tabsetId: string) => void`                                                                    | Dispatches `setTabsetCollapsed` with `collapsed: false`.                                                                        |
 | `floatTab`             | `(tabId: string) => void`                                                                       | Floats a tab into a movable, resizable panel.                                                                                   |
 | `floatTabset`          | `(tabsetId: string) => void`                                                                    | Floats a whole tabset into a movable, resizable panel.                                                                          |
 | `dockFloat`            | `(floatId: string) => void`                                                                     | Docks a floating panel back into the main layout.                                                                               |
 | `setFloatMinimized`    | `(floatId: string, minimized: boolean) => void`                                                 | Collapses a float to its chip, or restores it.                                                                                  |
-| `dispatch`             | `(action: Action) => void`                                                                      | Raw escape hatch for any of the 21 actions.                                                                                     |
+| `dispatch`             | `(action: Action) => void`                                                                      | Raw escape hatch for any of the 22 actions.                                                                                     |
 | `getModel`             | `() => Dashfoo`                                                                                 | The current model.                                                                                                              |
 | `getTablistSpace`      | `(tabsetId: string) => number \| undefined`                                                     | Free space in a tabset's tablist, in layout pixels; negative once its tabs overflow.                                            |
 | `onTablistSpaceChange` | `(tabsetId: string, listener: (space: number) => void) => () => void`                           | Calls `listener` before paint whenever that space changes. Returns the unsubscribe.                                             |
@@ -175,8 +177,12 @@ tablist space from outside the layout), and `LayoutOptions`, the same capability
 props as `DashfooLayout`.
 Plus the full tabset decomposition under `Tabset.*`: `Root`, `TabStrip`, `Tablist`,
 `Tab`, `Trigger`, `RenameInput`, `CloseButton`, `Content`, `Toolbar`, `OverflowMenu`,
-`Grip`, `MaximizeButton`, and `FloatButton`. Each part spreads native props and is
-unstyled beyond minimal structural flex. See
+`Grip`, `CollapseButton`, `MaximizeButton`, and `FloatButton`. Each part spreads native props and is
+unstyled beyond minimal structural flex. On `CloseButton`, `Grip`, `CollapseButton`
+and `MaximizeButton`, `children`, `className`, `style` and `title` may also be
+functions of the part's state: `{ tab, isSelected }`, `{ isDragging }`,
+`{ isCollapsed }` and `{ isMaximized }` respectively, e.g.
+`{({ isCollapsed }) => (isCollapsed ? "▸" : "▾")}`. See
 [Build your own layout](/docs/build-your-own-layout) for the part table and a
 complete example.
 
@@ -342,7 +348,7 @@ Source: [`packages/core/src`](https://github.com/pedroapfilho/dashfoo/tree/main/
 
 ### Actions
 
-Every document mutation is one of 21 immutable, discriminated actions. The
+Every document mutation is one of 22 immutable, discriminated actions. The
 reducer is exhaustive over the union; validate untrusted payloads with
 `actionSchema` before dispatch.
 
@@ -354,6 +360,7 @@ reducer is exhaustive over the union; validate untrusted payloads with
 | `selectTab`              | `{ tabsetId, index }`                      | Set a tabset's `selected` index.                                                                                                                |
 | `setActiveTabset`        | `{ tabsetId }`                             | Mark the focused tabset.                                                                                                                        |
 | `setMaximizedTabset`     | `{ tabsetId: string \| null }`             | Maximize one tabset, or restore with `null`.                                                                                                    |
+| `setTabsetCollapsed`     | `{ tabsetId, collapsed }`                  | Collapse a `collapsible` tabset to its strip, or expand it. Never collapses the last expanded child of a row.                                   |
 | `renameTab`              | `{ tabId, name }`                          | Change a tab's `name`.                                                                                                                          |
 | `deleteTab`              | `{ tabId }`                                | Remove a tab.                                                                                                                                   |
 | `deleteTabset`           | `{ tabsetId }`                             | Remove a whole tabset.                                                                                                                          |
@@ -383,12 +390,14 @@ take the main layout's row id as `targetId` while that layout is empty: it seeds
 a tabset there, so an emptied layout still takes drops. A `moveNode` that splits a one-tab tabset off its own tab is
 a no-op, as is a `setMaximizedTabset` naming a tabset in a float. When a tab leaves a strip, the selection
 stays on the selected tab; if that tab is the one leaving, it passes to the right
-neighbour, else the left.
+neighbour, else the left, or under `global.tabSetSelectOnRemove: "recent"` to the
+tab selected before it.
 
 Related exports: `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`,
-`fallbackSelectedIndex` (`(count, removedIndex) => number`: the index of the tab
+`fallbackSelectedIndex` (`(tabset, removedIndex, policy?) => number`: the index of the tab
 that inherits the selection when the selected tab at `removedIndex` leaves, `-1`
-when none remains), and the types `Action`, `MutableNodeAttrs`,
+when none remains), `canCollapseTabset` (`(parent: RowNode, tabset) => boolean`:
+whether `setTabsetCollapsed` would collapse it), and the types `Action`, `MutableNodeAttrs`,
 `DockLocation` (`"center" | "split-top" | "split-bottom" | "split-left" | "split-right"`),
 and `DropIntent` (`{ targetId: string; location: DockLocation; index?: number }`).
 See [drag & dock](/drag-and-dock) for how drops become actions.
@@ -407,7 +416,7 @@ Constructors that fill the mechanical fields (`type`, `version`, `selected`,
 | `floatNode` | `(layout: RowNode, geometry: Geometry, options?: FloatOptions) => FloatNode` | A floating panel wrapping a layout subtree at an in-app rect.                                                            |
 
 Option types: `TabOptions` (`config`, `enableClose`, `enableDrag`,
-`enableRename`, `id`), `TabsetOptions` (`enableClose`, `enableMaximize`, `id`,
+`enableRename`, `id`), `TabsetOptions` (`collapsed`, `collapsible`, `enableClose`, `enableMaximize`, `id`,
 `max`, `min`, `name`, `selected`, `weight`), `RowOptions` (`id`, `max`, `min`,
 `orientation`, `weight`), `ModelOptions` (`activeTabsetId`, `floats`, `global`,
 `maximizedTabsetId`), `FloatOptions` (`id`, `name`). `min`/`max`

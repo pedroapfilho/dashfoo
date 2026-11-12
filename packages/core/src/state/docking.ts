@@ -16,6 +16,7 @@ import {
 } from "../model/tree";
 
 import type { Action } from "./actions";
+import { detachTab, detachTabset, removeTab } from "./detach";
 import { locateDropTarget } from "./drop-target";
 import { uniqueFloatName } from "./floats";
 
@@ -33,14 +34,6 @@ type DockingAction = Extract<
   }
 >;
 
-/**
- * The index, in the strip as it stands, of the tab that inherits the selection
- * when the selected tab at `removedIndex` leaves: its right neighbour, else its
- * left one. `-1` when the strip empties.
- */
-const fallbackSelectedIndex = (count: number, removedIndex: number): number =>
-  removedIndex + 1 < count ? removedIndex + 1 : removedIndex - 1;
-
 /** An explicit target must exist; without one, the active main tabset, else the first. */
 const locateMainTarget = (
   draft: Dashfoo,
@@ -54,47 +47,6 @@ const locateMainTarget = (
       : mainTabsets.find((candidate) => candidate.id === targetId);
 
   return target && findTabsetParent(draft, target.id);
-};
-
-const detachTab = (container: TabsetNode, index: number): TabNode | undefined => {
-  const heir =
-    index === container.selected
-      ? fallbackSelectedIndex(container.children.length, index)
-      : container.selected;
-
-  const removed = container.children.splice(index, 1).at(0);
-  container.selected = heir > index ? heir - 1 : heir;
-
-  return removed;
-};
-
-const removeTab = (draft: Dashfoo, tabId: string): TabNode | undefined => {
-  const location = findTab(draft, tabId);
-
-  return location && detachTab(location.container, location.index);
-};
-
-const detachTabset = ({ parent, tabset: detached }: TabsetSlot): TabsetNode => {
-  parent.children.splice(parent.children.indexOf(detached), 1);
-
-  return detached;
-};
-
-const removeTabset = (draft: Dashfoo, tabsetId: string): void => {
-  const slot = findTabsetParent(draft, tabsetId);
-
-  if (slot) {
-    detachTabset(slot);
-  }
-};
-
-/** A tab or a whole tabset, wherever it lives. */
-const removeNode = (draft: Dashfoo, nodeId: string): void => {
-  if (findTab(draft, nodeId)) {
-    removeTab(draft, nodeId);
-  } else {
-    removeTabset(draft, nodeId);
-  }
 };
 
 /** Located at attach time, not resolve time: detaching a sibling shifts the target's index. */
@@ -218,7 +170,7 @@ const moveTab = (
     return undefined;
   }
 
-  const tab = detachTab(source.container, source.index);
+  const tab = detachTab(draft, source.container, source.index);
 
   return tab && attachTab(target, tab, location, index);
 };
@@ -393,4 +345,4 @@ const dock = (draft: Dashfoo, action: DockingAction): void => {
   }
 };
 
-export { dock, fallbackSelectedIndex, removeNode, removeTab, removeTabset };
+export { dock };

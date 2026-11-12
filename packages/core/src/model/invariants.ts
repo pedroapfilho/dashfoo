@@ -1,4 +1,6 @@
-import type { Dashfoo, FloatNode, RowNode, TabsetNode } from "./schema";
+import { isCollapsed } from "../state/collapse";
+
+import type { Dashfoo, FloatNode, RowNode, SelectOnRemove, TabsetNode } from "./schema";
 
 type RowChild = RowNode["children"][number];
 
@@ -20,11 +22,44 @@ const clampSelected = (length: number, selected: number): number => {
   return base;
 };
 
-const clampTabset = (tabset: TabsetNode): TabsetNode => {
-  const selected = clampSelected(tabset.children.length, tabset.selected);
+/** The selected tab always heads the history, so every selection change records itself. */
+const recordSelection = (tabset: TabsetNode, selected: number): Array<string> => {
+  const head = tabset.children[selected]?.id;
+  const ids = new Set(tabset.children.map((tab) => tab.id));
+  const rest = (tabset.selectionHistory ?? []).filter((id) => id !== head && ids.has(id));
 
-  return selected === tabset.selected ? tabset : { ...tabset, selected };
+  return head === undefined ? rest : [head, ...rest];
 };
+
+const sameIds = (a: Array<string> | undefined, b: Array<string> | undefined): boolean => {
+  if (a === undefined || b === undefined) {
+    return a === b;
+  }
+
+  return a.length === b.length && a.every((id, index) => id === b[index]);
+};
+
+/** Returns `tabset` itself when it is already tidy, so untouched tabsets keep their identity. */
+const tidyTabset = (tabset: TabsetNode, policy: SelectOnRemove | undefined): TabsetNode => {
+  const selected = clampSelected(tabset.children.length, tabset.selected);
+  const collapsed = tabset.collapsible === true && tabset.collapsed === true ? true : undefined;
+  const selectionHistory = policy === "recent" ? recordSelection(tabset, selected) : undefined;
+
+  const tidy =
+    selected === tabset.selected &&
+    collapsed === tabset.collapsed &&
+    sameIds(selectionHistory, tabset.selectionHistory);
+
+  return tidy ? tabset : { ...tabset, collapsed, selected, selectionHistory };
+};
+
+/** Collapsed children give their space to an expanded sibling, so a row of only collapsed ones expands them all. */
+const expandIfAllCollapsed = (children: RowNode["children"]): RowNode["children"] =>
+  children.length > 0 && children.every(isCollapsed)
+    ? children.map((child) =>
+        child.type === "tabset" ? { ...child, collapsed: undefined } : child,
+      )
+    : children;
 
 /**
  * The survivor takes over the collapsed row's slot, so it has to take the slot's
@@ -56,13 +91,14 @@ const inheritSlot = (row: RowNode, survivor: RowChild): RowChild => {
 const normalizeRowChildren = (
   children: RowNode["children"],
   keptTabsetIds: Array<string>,
+  policy: SelectOnRemove | undefined,
 ): RowNode["children"] => {
   const out: RowNode["children"] = [];
 
   for (const child of children) {
     if (child.type === "tabset") {
       if (child.children.length > 0) {
-        out.push(clampTabset(child));
+        out.push(tidyTabset(child, policy));
         keptTabsetIds.push(child.id);
       }
 
@@ -71,7 +107,7 @@ const normalizeRowChildren = (
 
     // A recorded id implies a survivor, which keeps its ancestor rows alive, so
     // a dropped row never leaves ids behind.
-    const grandchildren = normalizeRowChildren(child.children, keptTabsetIds);
+    const grandchildren = normalizeRowChildren(child.children, keptTabsetIds, policy);
     const [onlyGrandchild, ...otherGrandchildren] = grandchildren;
 
     if (!onlyGrandchild) {
@@ -86,11 +122,15 @@ const normalizeRowChildren = (
     out.push({ ...child, children: grandchildren });
   }
 
-  return out;
+  return expandIfAllCollapsed(out);
 };
 
-const normalizeLayout = (root: RowNode, keptTabsetIds: Array<string>): RowNode => {
-  let children = normalizeRowChildren(root.children, keptTabsetIds);
+const normalizeLayout = (
+  root: RowNode,
+  keptTabsetIds: Array<string>,
+  policy: SelectOnRemove | undefined,
+): RowNode => {
+  let children = normalizeRowChildren(root.children, keptTabsetIds, policy);
   let orientation = root.orientation;
 
   let inner = children[0];
@@ -106,14 +146,15 @@ const normalizeLayout = (root: RowNode, keptTabsetIds: Array<string>): RowNode =
 
 const normalize = (model: Dashfoo): Dashfoo => {
   const mainTabsetIds: Array<string> = [];
-  const layout = normalizeLayout(model.layout, mainTabsetIds);
+  const policy = model.global.tabSetSelectOnRemove;
+  const layout = normalizeLayout(model.layout, mainTabsetIds, policy);
 
   const floats: Array<FloatNode> = [];
   const floatTabsetIds: Array<string> = [];
 
   for (const float of model.floats) {
     const ownTabsetIds: Array<string> = [];
-    const floatLayout = normalizeLayout(float.layout, ownTabsetIds);
+    const floatLayout = normalizeLayout(float.layout, ownTabsetIds, policy);
 
     if (floatLayout.children.length > 0) {
       floats.push({ ...float, layout: floatLayout });

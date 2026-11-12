@@ -69,6 +69,10 @@ const MinimizeIcon = (): ReactNode => (
   </Icon>
 );
 
+const CollapseIcon = ({ collapsed }: { collapsed: boolean }): ReactNode => (
+  <Icon>{collapsed ? <path d="m6 15 6-6 6 6" /> : <path d="m6 9 6 6 6-6" />}</Icon>
+);
+
 const DockIcon = (): ReactNode => (
   <Icon>
     <path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2" />
@@ -85,4 +89,13 @@ const OverflowIcon = (): ReactNode => (
   </Icon>
 );
 
-export { CloseIcon, DockIcon, FloatIcon, GripIcon, MaximizeIcon, MinimizeIcon, OverflowIcon };
+export {
+  CloseIcon,
+  CollapseIcon,
+  DockIcon,
+  FloatIcon,
+  GripIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  OverflowIcon,
+};

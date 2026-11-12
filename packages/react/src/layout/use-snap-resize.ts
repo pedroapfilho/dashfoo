@@ -8,7 +8,7 @@ import type { GroupImperativeHandle, Layout, LayoutChangedMeta } from "react-res
 
 const WEIGHT_EPSILON = 0.01;
 
-type ResizePanels = ReadonlyArray<{ id: string; weight: number }>;
+type ResizePanels = ReadonlyArray<{ collapsed?: boolean; id: string; weight: number }>;
 
 /** `syncing` covers this hook's own writes: the group echoes an imperative
  * `setLayout` back synchronously, and that echo is not user input. */
@@ -118,7 +118,28 @@ const percentagesOf = (panels: ResizePanels): Array<number> => {
   return panels.map((child) => (child.weight / total) * 100);
 };
 
+/** A collapsed panel keeps the size it has; the expanded ones share the rest by weight. */
+const targetSizes = (current: Array<number>, panels: ResizePanels): Array<number> => {
+  let collapsedTotal = 0;
+  let weightTotal = 0;
+
+  for (const [index, child] of panels.entries()) {
+    if (child.collapsed === true) {
+      collapsedTotal += current[index] ?? 0;
+    } else {
+      weightTotal += child.weight;
+    }
+  }
+
+  return panels.map((child, index) =>
+    child.collapsed === true
+      ? (current[index] ?? 0)
+      : ((100 - collapsedTotal) * child.weight) / weightTotal,
+  );
+};
+
 type SnapResizeOptions = {
+  groupRef: RefObject<GroupImperativeHandle | null>;
   onWeightsSettled: (weights: Array<number>) => void;
   panels: ResizePanels;
   resizableSplits: boolean;
@@ -127,19 +148,18 @@ type SnapResizeOptions = {
 
 type SnapResize = {
   beginBoundaryDrag: (boundary: number) => void;
-  groupRef: RefObject<GroupImperativeHandle | null>;
   onLayoutChange: (layout: Layout) => void;
   onLayoutChanged: (layout: Layout, meta: LayoutChangedMeta) => void;
   snappedBoundary: number | null;
 };
 
 const useSnapResize = ({
+  groupRef,
   onWeightsSettled,
   panels,
   resizableSplits,
   snap,
 }: SnapResizeOptions): SnapResize => {
-  const groupRef = useRef<GroupImperativeHandle | null>(null);
   const state = useRef<ResizeState>(IDLE);
   const [snappedBoundary, setSnappedBoundary] = useState<number | null>(null);
 
@@ -156,12 +176,13 @@ const useSnapResize = ({
     }
 
     const current = group.getLayout();
-    const desired = percentagesOf(panels);
+    const currentSizes = sizesFromLayout(current, panels);
+    const desired = targetSizes(currentSizes, panels);
 
     const samePanelSet =
       Object.keys(current).length === panels.length && panels.every((child) => child.id in current);
 
-    if (!samePanelSet || sizesMatch(sizesFromLayout(current, panels), desired)) {
+    if (!samePanelSet || sizesMatch(currentSizes, desired)) {
       return undefined;
     }
 
@@ -176,7 +197,7 @@ const useSnapResize = ({
       cancelAnimationFrame(frame);
       commit(IDLE);
     };
-  }, [panels, commit]);
+  }, [commit, groupRef, panels]);
 
   const handle = (event: ResizeEvent): void => {
     const { effect, state: next } = stepResize(state.current, event, {
@@ -210,7 +231,6 @@ const useSnapResize = ({
     beginBoundaryDrag: (boundary) => {
       handle({ boundary, type: "boundaryDown" });
     },
-    groupRef,
     onLayoutChange: (layout) => {
       handle({ sizes: sizesFromLayout(layout, panels), type: "layoutChange" });
     },

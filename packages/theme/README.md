@@ -189,6 +189,7 @@ emitted by `@dashfoo/react` with zero imposed styling.
 | `[data-dashfoo="tab-rename"]`        | Inline rename input                                                     |
 | `[data-dashfoo="tabset-toolbar"]`    | Trailing toolbar in the strip                                           |
 | `[data-dashfoo="tabset-grip"]`       | Drag grip that moves the whole tabset                                   |
+| `[data-dashfoo="tabset-collapse"]`   | Collapse/expand toggle                                                  |
 | `[data-dashfoo="tabset-maximize"]`   | Maximize/restore toggle                                                 |
 | `[data-dashfoo="tabcontent"]`        | Active tab's content region                                             |
 | `[data-dashfoo="tab-overflow"]`      | "More tabs" overflow button                                             |
@@ -211,6 +212,9 @@ Read state off standard ARIA and data attributes:
 
 - `[data-dashfoo="tab"][aria-selected="true"]`: the active tab
 - `[data-dashfoo="tabset-maximize"][aria-pressed="true"]`: a maximized tabset's toggle
+- `[data-dashfoo="tabset-collapse"][aria-expanded="false"]`: a collapsed tabset's toggle
+- `[data-dashfoo="tabset"][data-collapsed]`: a tabset collapsed to its strip (`="row"` when the strip runs vertically)
+- `[data-dashfoo="tabset"][data-collapsed-to-fit]`: a tabset collapsed only because its split is too small
 - `[data-dashfoo="tab-item"][data-dragging]`: a tab being lifted into the drag preview (the source, dimmed)
 - `[data-dashfoo="tabset"][data-dragging-source]`: a tabset being dragged by its grip
 - `[data-dashfoo="tabset"][data-tab-location="bottom"]`: a tabset with its strip on the bottom

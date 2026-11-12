@@ -99,6 +99,16 @@
     overflow: auto;
   }
 
+  [data-dashfoo="tabset"][data-collapsed] [data-dashfoo="tabcontent"] {
+    display: none;
+  }
+
+  [data-dashfoo="tabset"][data-collapsed="row"] [data-dashfoo="tabstrip"] {
+    align-self: flex-start;
+    flex: 1;
+    writing-mode: vertical-rl;
+  }
+
   [data-dashfoo="tab-overflow-root"] {
     position: relative;
   }

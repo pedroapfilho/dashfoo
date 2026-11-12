@@ -1,5 +1,5 @@
 import type { Dashfoo } from "@dashfoo/core";
-import { model, row, tab, tabset } from "@dashfoo/core";
+import { findTabset, model, row, tab, tabset } from "@dashfoo/core";
 import type { ResponsiveOptions } from "@dashfoo/react";
 
 const overviewModel = (): Dashfoo =>
@@ -18,7 +18,7 @@ const overviewModel = (): Dashfoo =>
             }),
             tabset(
               [tab("metrics", "Metrics"), tab("history", "History"), tab("reports", "Reports")],
-              { id: "ts-side-bottom", weight: 1 },
+              { collapsible: true, id: "ts-side-bottom", weight: 1 },
             ),
           ],
           { id: "right", orientation: "column", weight: 1 },
@@ -47,6 +47,20 @@ const dockingModel = (): Dashfoo =>
     ),
     { activeTabsetId: "a" },
   );
+
+/** The docking layout with a collapsible right sidebar and IDE-style "recent" tab selection. */
+const rawModel = (): Dashfoo => {
+  const raw = dockingModel();
+  const sidebar = findTabset(raw, "b");
+
+  if (sidebar) {
+    sidebar.collapsible = true;
+  }
+
+  raw.global.tabSetSelectOnRemove = "recent";
+
+  return raw;
+};
 
 const playgroundModel = (): Dashfoo =>
   model(
@@ -82,4 +96,4 @@ const windowsModels = () => ({
 
 const COMPACT: ResponsiveOptions = { maxWidth: 720 };
 
-export { COMPACT, dockingModel, overviewModel, playgroundModel, windowsModels };
+export { COMPACT, dockingModel, overviewModel, playgroundModel, rawModel, windowsModels };

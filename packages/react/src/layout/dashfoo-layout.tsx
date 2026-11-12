@@ -24,9 +24,11 @@ type DashfooHandle = {
   canRedo: () => boolean;
   canUndo: () => boolean;
   closeTab: (tabId: string) => void;
+  collapseTabset: (tabsetId: string) => void;
   dispatch: (action: Action) => void;
 
   dockFloat: (floatId: string) => void;
+  expandTabset: (tabsetId: string) => void;
 
   floatTab: (tabId: string) => void;
   floatTabset: (tabsetId: string) => void;
@@ -109,9 +111,15 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       closeTab: (tabId) => {
         store.dispatch({ tabId, type: "deleteTab" });
       },
+      collapseTabset: (tabsetId) => {
+        store.dispatch({ collapsed: true, tabsetId, type: "setTabsetCollapsed" });
+      },
       dispatch: store.dispatch,
       dockFloat: (floatId) => {
         store.dispatch({ floatId, type: "dockFloat" });
+      },
+      expandTabset: (tabsetId) => {
+        store.dispatch({ collapsed: false, tabsetId, type: "setTabsetCollapsed" });
       },
       floatTab: (tabId) => {
         store.dispatch({ tabId, type: "floatTab" });

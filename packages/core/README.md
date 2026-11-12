@@ -104,6 +104,7 @@ untrusted payloads against `actionSchema` before dispatch.
 | `selectTab`              | Set a tabset's `selected` index                                    |
 | `setActiveTabset`        | Mark the focused tabset                                            |
 | `setMaximizedTabset`     | Maximize one tabset (or clear with `null`)                         |
+| `setTabsetCollapsed`     | Collapse a `collapsible` tabset to its strip, or expand it         |
 | `renameTab`              | Change a tab's `name`                                              |
 | `deleteTab`              | Remove a tab                                                       |
 | `deleteTabset`           | Remove a whole tabset                                              |
@@ -148,9 +149,19 @@ no-op, and so is a `setMaximizedTabset` naming a tabset that lives in a float.
 
 When a tab leaves its strip (closed, moved, floated), the selection stays on the
 tab that was selected. If that tab is the one leaving, its right neighbour
-inherits the selection, else its left one. `fallbackSelectedIndex(count, removedIndex)`
-returns that neighbour's index in the strip as it stands, which is how a renderer
-previews a drag before the drop.
+inherits the selection, else its left one. With
+`global.tabSetSelectOnRemove: "recent"` the tab selected before it inherits
+instead, read from the tabset's `selectionHistory`, which `normalize` keeps.
+`fallbackSelectedIndex(tabset, removedIndex, policy?)` returns the heir's index
+in the strip as it stands, which is how a renderer previews a drag before the
+drop.
+
+A tabset with `collapsible: true` can be collapsed to its strip with
+`setTabsetCollapsed`; `collapsed` is saved on the tabset and its `weight` stays
+the share it expands back to. Selecting one of its tabs expands it. A row
+always keeps one expanded child: `setTabsetCollapsed` refuses to collapse the
+last one (`canCollapseTabset(parent, tabset)` answers the same question), and
+`normalize` expands a row left with only collapsed children.
 
 ### Use the reducer directly
 

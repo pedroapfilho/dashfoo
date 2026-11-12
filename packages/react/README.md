@@ -105,7 +105,8 @@ which takes the same type and resolves every default above in one place. With
 `responsive`, the compact locks override `maximizable` and `restructurable`.
 
 A `ref` exposes a `DashfooHandle` for imperative control:
-`addTab`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `floatTab`,
+`addTab`, `closeTab`, `selectTab`, `renameTab`, `maximizeTabset`, `collapseTabset`,
+`expandTabset`, `floatTab`,
 `floatTabset`, `dockFloat`, `setFloatMinimized`, `dispatch`, `getModel`, `undo` / `redo` / `canUndo` / `canRedo`,
 `getTablistSpace(tabsetId)` / `onTablistSpaceChange(tabsetId, listener)` (see
 [Tablist space](#tablist-space)), and `resetLayout()` (reset to the original `defaultModel`, clearing undo history and
@@ -196,7 +197,8 @@ with the right role and ARIA wiring, ready for you to style.
 
 - **Close**: a `[data-dashfoo="tab-close"]` button next to each tab label, shown when closing is enabled. Dispatches `deleteTab`.
 - **Rename**: double-click a tab to swap its label for a `[data-dashfoo="tab-rename"]` input. Enter commits, Escape cancels, blur commits. A trimmed, changed value dispatches `renameTab`; focus returns to the tab afterward.
-- **Maximize**: a `[data-dashfoo="tabset-maximize"]` toggle in the tabset toolbar. Dispatches `setMaximizedTabset`; one maximized tabset fills the frame and `aria-pressed` reflects state.
+- **Maximize**: a `[data-dashfoo="tabset-maximize"]` toggle in the tabset toolbar. Dispatches `setMaximizedTabset`; one maximized tabset fills the frame and `aria-pressed` reflects state. Hidden for the only tabset in the layout.
+- **Collapse**: a `[data-dashfoo="tabset-collapse"]` toggle on `collapsible` tabsets. Dispatches `setTabsetCollapsed`; the tabset shrinks to its strip, `aria-expanded` reflects state and `aria-controls` names its tab panel. Dragging a splitter past the tabset's minimum collapses it too, and clicking one of its tabs expands it. A collapsed tabset carries `data-collapsed`, set to the split's orientation (`"row"` or `"column"`). When a split is too small for its minimums, collapsible tabsets are collapsed to fit (`data-collapsed-to-fit`) without touching the model, and expand again once there is room.
 - **Float**: a `[data-dashfoo="tabset-float"]` button in the tabset toolbar, shown when `floatable`. Floats the tabset into a movable, resizable overlay (`floatTabset`); the float's `[data-dashfoo="float-dock"]` control docks it back (`dockFloat`). See "Floating panels" below.
 - **Tabs**: roving-tabindex keyboard model (WAI-ARIA APG): Arrow keys move and select, Home/End jump to the ends, focus follows selection.
 - **Drag-to-dock**: drag a tab to restack it or split a tabset (when split-dock is on). A `[data-dashfoo="dock-indicator"]` previews where it lands.
@@ -209,16 +211,17 @@ explicitly `false`). A control shows only when the `editable` umbrella, the
 chrome prop, the model global, and the node's flag all allow it (`maximizable`
 ignores `editable`; maximize is view state, not a structural edit).
 
-| Field               | On node | Disables                                         |
-| ------------------- | ------- | ------------------------------------------------ |
-| `enableClose`       | tab     | the close control for that tab                   |
-| `enableClose`       | tabset  | closing for every tab in the tabset              |
-| `enableRename`      | tab     | double-click rename for that tab                 |
-| `enableDrag`        | tab     | dragging that tab                                |
-| `enableMaximize`    | tabset  | the maximize control for that tabset             |
-| `tabEnableDrag`     | global  | tree-wide default behind `tab.enableDrag`        |
-| `enableSplitDock`   | global  | splitting a tabset on drop (drops stack instead) |
-| `enableSplitResize` | global  | dragging the splitters (gutters keep their size) |
+| Field               | On node | Disables                                            |
+| ------------------- | ------- | --------------------------------------------------- |
+| `enableClose`       | tab     | the close control for that tab                      |
+| `enableClose`       | tabset  | closing for every tab in the tabset                 |
+| `enableRename`      | tab     | double-click rename for that tab                    |
+| `enableDrag`        | tab     | dragging that tab                                   |
+| `enableMaximize`    | tabset  | the maximize control for that tabset                |
+| `collapsible`       | tabset  | opt-in (`true`): collapsing the tabset to its strip |
+| `tabEnableDrag`     | global  | tree-wide default behind `tab.enableDrag`           |
+| `enableSplitDock`   | global  | splitting a tabset on drop (drops stack instead)    |
+| `enableSplitResize` | global  | dragging the splitters (gutters keep their size)    |
 
 ```ts
 { id: "logs", type: "tab", name: "Logs", component: "logs", enableClose: false }
@@ -502,7 +505,7 @@ structure and consumes runtime geometry through CSS custom properties.
 | `row`                | rrp `Group`     | A resizable row/column. `orientation` comes from the node.                                                                                     |
 | `layout-empty`       | `div`           | Fills a layout with no tabsets left and takes the drop that seeds its first one.                                                               |
 | `splitter`           | rrp `Separator` | Resize handle between siblings (also matches `[data-separator]`, see below).                                                                   |
-| `tabset`             | `div`           | A tabbed region. Carries `data-tabset-id`, `data-dragging-source` while dragged by its grip, and `data-tab-location`.                          |
+| `tabset`             | `div`           | A tabbed region. Carries `data-tabset-id`, `data-dragging-source`, `data-tab-location`, `data-collapsed` and `data-collapsed-to-fit`.          |
 | `tabstrip`           | `div`           | The strip row: tablist plus a trailing toolbar slot.                                                                                           |
 | `tablist`            | `div`           | The scrolling viewport around the tabs. An inner `span` carries `role="tablist"` and owns the tabs through `aria-owns`.                        |
 | `tab-item`           | `span`          | Wraps one tab's button and its close button. `data-dragging` while dragged.                                                                    |
@@ -659,7 +662,8 @@ pattern as `Panel`:
 | `Tabset.Toolbar`        | `div[data-dashfoo="tabset-toolbar"]`     | Trailing toolbar container.                                                                                                                                    |
 | `Tabset.OverflowMenu`   | menu button                              | Lists clipped tabs; hides when nothing overflows.                                                                                                              |
 | `Tabset.Grip`           | `button[data-dashfoo="tabset-grip"]`     | Drag handle for the whole tabset; hides when tabset dragging is off.                                                                                           |
-| `Tabset.MaximizeButton` | `button[data-dashfoo="tabset-maximize"]` | Maximize/restore toggle; hides when maximize is off.                                                                                                           |
+| `Tabset.CollapseButton` | `button[data-dashfoo="tabset-collapse"]` | Collapse/expand toggle with `aria-expanded` and `aria-controls`; hides unless the tabset is `collapsible` and the action is available.                         |
+| `Tabset.MaximizeButton` | `button[data-dashfoo="tabset-maximize"]` | Maximize/restore toggle; hides when maximize is off or the tabset is the only one.                                                                             |
 | `Tabset.FloatButton`    | `button[data-dashfoo="tabset-float"]`    | Floats the tabset into a movable overlay; hides when `floatable` is off or the tabset is maximized.                                                            |
 
 Parts forward native props such as `className` and handlers. `Layout.Root`
@@ -747,7 +751,7 @@ type LayoutRowsProps;
 type LayoutTabsetProps;
 
 // Tabset primitives
-Tabset; // Tabset.Root / .TabStrip / .Tablist / .Tab / .Trigger / .RenameInput / .CloseButton / .Content / .Toolbar / .OverflowMenu / .Grip / .MaximizeButton / .FloatButton
+Tabset; // Tabset.Root / .TabStrip / .Tablist / .Tab / .Trigger / .RenameInput / .CloseButton / .Content / .Toolbar / .OverflowMenu / .Grip / .CollapseButton / .MaximizeButton / .FloatButton
 type TabsetRootProps; // …and a Props type per part
 
 // Store + selector hooks
