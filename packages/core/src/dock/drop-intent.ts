@@ -18,7 +18,8 @@ type MeasuredStrip = { rect: Rect; tabs: ReadonlyArray<MeasuredTab> };
 /** A tabset without a strip has no tab order to measure, so a stack drop onto it carries no index. */
 type MeasuredTabset = { id: string; rect: Rect; strip: MeasuredStrip | null };
 
-type DropIntentOptions = { splitDock?: boolean };
+/** `foreign`: the subject comes from another document, so matching ids are not the same node. */
+type DropIntentOptions = { foreign?: boolean; splitDock?: boolean };
 
 type DropIndicator = { kind: "insertion" | "zone"; rect: Rect };
 
@@ -57,7 +58,7 @@ const resolveDropIntent = (
   point: Point,
   options?: DropIntentOptions,
 ): DropIntent | null => {
-  if (isSelfDrop(subject, tabset)) {
+  if (options?.foreign !== true && isSelfDrop(subject, tabset)) {
     return null;
   }
 

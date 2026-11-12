@@ -47,6 +47,7 @@
     "@xstate/react": "^6.1.0",
     "react-resizable-panels": "^4.21.0",
     "xstate": "^5.33.2",
+    "zod": "^4.6.7",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

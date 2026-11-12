@@ -59,11 +59,13 @@ const measureFloatRect = (element: Element): Geometry => {
     scale,
   );
 
+  const view = element.ownerDocument.defaultView;
+
   // An unstyled overlay has no box; the viewport is the best bound left.
   const bounds =
     overlay && overlay.clientWidth > 0
       ? { height: overlay.clientHeight, width: overlay.clientWidth }
-      : { height: window.innerHeight, width: window.innerWidth };
+      : view && { height: view.innerHeight, width: view.innerWidth };
 
   const seeded: Geometry = {
     height: Math.max(MIN_HEIGHT, Math.min(Math.round(rect.height), DEFAULT_FLOAT_GEOMETRY.height)),
@@ -72,7 +74,7 @@ const measureFloatRect = (element: Element): Geometry => {
     width: Math.max(MIN_WIDTH, Math.min(Math.round(rect.width), DEFAULT_FLOAT_GEOMETRY.width)),
   };
 
-  return clampToBounds(seeded, bounds);
+  return bounds ? clampToBounds(seeded, bounds) : seeded;
 };
 
 type ResizeEdges = { x: -1 | 0 | 1; y: -1 | 0 | 1 };

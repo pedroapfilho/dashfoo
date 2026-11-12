@@ -6,6 +6,8 @@ import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
 import { createStore, useStore } from "zustand";
 
+import type { DragGroupScope } from "../drag/drag-group";
+import type { TearOffHandler } from "../drag/tear-off";
 import type { TablistSpace } from "../tabset/tablist-space";
 
 type LayoutState = {
@@ -15,12 +17,15 @@ type LayoutState = {
   documentId: string;
   draggableTabs: boolean;
   draggableTabsets: boolean;
+  dragGroup: string | undefined;
+  dragGroupScope: DragGroupScope;
   editable: boolean;
 
   floatable: boolean;
   keepMounted: boolean | "activity";
   maximizable: boolean;
   maximizedTabsetId: string | undefined;
+  onTearOff: TearOffHandler | undefined;
   renamableTabs: boolean;
   renderTab: (tab: TabNode) => ReactNode;
   renderTabLabel: ((tab: TabNode) => ReactNode) | undefined;

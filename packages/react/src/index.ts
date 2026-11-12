@@ -54,4 +54,8 @@ export type { ExternalTabSourceOptions } from "./drag/drag-hooks";
 
 export { DashfooDragProvider } from "./drag/drag-root";
 
+export type { DragGroupScope } from "./drag/drag-group";
+
+export type { TearOffHandler, TearOffRequest } from "./drag/tear-off";
+
 export { measureTabset } from "./tabset/measure-tabset";

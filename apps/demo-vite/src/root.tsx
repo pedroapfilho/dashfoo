@@ -1,5 +1,6 @@
 import { Link, Outlet } from "@tanstack/react-router";
 import {
+  AppWindow,
   Blocks,
   BookOpen,
   History,
@@ -25,6 +26,7 @@ const NAV = [
   },
   { exact: false, icon: Blocks, label: "Raw primitives", to: "/raw" },
   { exact: false, icon: Lock, label: "Static layout", to: "/static" },
+  { exact: false, icon: AppWindow, label: "Multiple windows", to: "/windows" },
 ] as const;
 
 const EXTERNAL = [

@@ -29,6 +29,7 @@ type DashfooHandle = {
   dockFloat: (floatId: string) => void;
 
   floatTab: (tabId: string) => void;
+  floatTabset: (tabsetId: string) => void;
   getModel: () => Dashfoo;
   /** The free space in a tabset's tablist, in layout pixels; negative once its tabs overflow. */
   getTablistSpace: (tabsetId: string) => number | undefined;
@@ -40,6 +41,7 @@ type DashfooHandle = {
 
   resetLayout: () => void;
   selectTab: (tabsetId: string, index: number) => void;
+  setFloatMinimized: (floatId: string, minimized: boolean) => void;
   undo: () => void;
 };
 
@@ -114,6 +116,9 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       floatTab: (tabId) => {
         store.dispatch({ tabId, type: "floatTab" });
       },
+      floatTabset: (tabsetId) => {
+        store.dispatch({ tabsetId, type: "floatTabset" });
+      },
       getModel: () => store.model,
       getTablistSpace: tablistSpace.get,
       maximizeTabset: (tabsetId) => {
@@ -127,6 +132,9 @@ const DashfooLayout = forwardRef<DashfooHandle, DashfooLayoutProps>((props, ref)
       resetLayout: store.reset,
       selectTab: (tabsetId, index) => {
         store.dispatch({ index, tabsetId, type: "selectTab" });
+      },
+      setFloatMinimized: (floatId, minimized) => {
+        store.dispatch({ floatId, minimized, type: "setFloatMinimized" });
       },
       undo: store.undo,
     }),

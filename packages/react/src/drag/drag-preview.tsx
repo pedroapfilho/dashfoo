@@ -2,7 +2,7 @@
 
 import type { Point } from "@dashfoo/core";
 import { Feedback } from "@dnd-kit/dom";
-import type { DragStartEvent } from "@dnd-kit/dom";
+import type { DragMoveEvent, DragStartEvent } from "@dnd-kit/dom";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -21,8 +21,14 @@ const labelOf = (source: DragSource | null): string => {
 
 type ChipState = { label: string; x: number; y: number };
 
-const DragPreviewOverlay = ({ manager }: { manager: DashfooDragManager }): ReactNode => {
+type DragPreviewOverlayProps = {
+  isTearOff: (point: Point) => boolean;
+  manager: DashfooDragManager;
+};
+
+const DragPreviewOverlay = ({ isTearOff, manager }: DragPreviewOverlayProps): ReactNode => {
   const [chip, setChip] = useState<ChipState | null>(null);
+  const [tearOff, setTearOff] = useState(false);
 
   useEffect(() => {
     const handleStart = (event: DragStartEvent): void => {
@@ -41,18 +47,27 @@ const DragPreviewOverlay = ({ manager }: { manager: DashfooDragManager }): React
       });
     };
 
+    // dnd-kit commits `position.current` in a microtask after `dragmove`, so
+    // only the event's own `to` is the point the pointer moved to.
+    const handleMove = (event: DragMoveEvent): void => {
+      setTearOff(isTearOff(event.to ?? manager.dragOperation.position.current));
+    };
+
     const handleEnd = (): void => {
       setChip(null);
+      setTearOff(false);
     };
 
     manager.monitor.addEventListener("dragstart", handleStart);
+    manager.monitor.addEventListener("dragmove", handleMove);
     manager.monitor.addEventListener("dragend", handleEnd);
 
     return () => {
       manager.monitor.removeEventListener("dragstart", handleStart);
+      manager.monitor.removeEventListener("dragmove", handleMove);
       manager.monitor.removeEventListener("dragend", handleEnd);
     };
-  }, [manager]);
+  }, [isTearOff, manager]);
 
   const attachOverlay = useCallback(
     (element: HTMLDivElement | null): void => {
@@ -70,6 +85,7 @@ const DragPreviewOverlay = ({ manager }: { manager: DashfooDragManager }): React
       {chip === null ? null : (
         <div
           data-dashfoo="drag-preview"
+          data-tear-off={tearOff || undefined}
           style={{
             "--dashfoo-preview-x": `${chip.x}px`,
             "--dashfoo-preview-y": `${chip.y}px`,

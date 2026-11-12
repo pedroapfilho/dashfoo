@@ -11,7 +11,10 @@ import type {
 import type { ComponentProps, ReactNode, Ref } from "react";
 import { useId, useState } from "react";
 
+import type { DragGroupScope } from "../drag/drag-group";
 import { DashfooDragProvider } from "../drag/drag-root";
+import type { TearOffHandler } from "../drag/tear-off";
+import { useGroupDocument } from "../drag/use-group-document";
 import { useMirroredStore } from "../lib/use-mirrored-store";
 import type { TablistSpace } from "../tabset/tablist-space";
 import { createTablistSpace } from "../tabset/tablist-space";
@@ -26,11 +29,16 @@ type LayoutOptions = {
   closableTabs?: boolean;
   draggableTabs?: boolean;
   draggableTabsets?: boolean;
+  /** Layouts sharing a group exchange tabs and tabsets by drag, across windows and browser tabs of one origin. */
+  dragGroup?: string;
+  dragGroupScope?: DragGroupScope;
   editable?: boolean;
   floatable?: boolean;
   /** `true` keeps inactive tabs mounted and hidden; `"activity"` keeps them in a hidden React `<Activity>`, which pauses their effects. */
   keepMounted?: boolean | "activity";
   maximizable?: boolean;
+  /** Called when a tab or tabset is released outside the window; return `true` to remove it. */
+  onTearOff?: TearOffHandler;
   renamableTabs?: boolean;
   resizableSplits?: boolean;
   /** When false, the tree itself is frozen: no dragging, splitting or floating. Tabs stay closable and renamable. */
@@ -69,6 +77,15 @@ type ResolvedOptions = Omit<
 const noneSwitchedOff = (...switches: Array<boolean | undefined>): boolean =>
   switches.every((value) => value !== false);
 
+/** A layout that cannot dock joins no group, so drags never land in or leave it. */
+const resolveDragGroup = (
+  structural: boolean,
+  { dragGroup, dragGroupScope = "origin" }: LayoutOptions,
+): Pick<ResolvedOptions, "dragGroup" | "dragGroupScope"> => ({
+  dragGroup: structural ? dragGroup : undefined,
+  dragGroupScope,
+});
+
 /** The host's options and the model's `global` attributes, combined: either side can switch a capability off. */
 const resolveLayoutOptions = (
   global: GlobalAttributes,
@@ -82,10 +99,12 @@ const resolveLayoutOptions = (
     closableTabs: noneSwitchedOff(editable, options.closableTabs, global.tabEnableClose),
     draggableTabs: noneSwitchedOff(structural, options.draggableTabs, global.tabEnableDrag),
     draggableTabsets: noneSwitchedOff(structural, options.draggableTabsets),
+    ...resolveDragGroup(structural, options),
     editable,
     floatable: structural && options.floatable === true,
     keepMounted: options.keepMounted ?? false,
     maximizable: noneSwitchedOff(options.maximizable, global.tabSetEnableMaximize),
+    onTearOff: options.onTearOff,
     renamableTabs: noneSwitchedOff(editable, options.renamableTabs, global.tabEnableRename),
     resizableSplits: noneSwitchedOff(structural, options.resizableSplits, global.enableSplitResize),
     snap: options.snap ?? global.snap ?? null,
@@ -103,37 +122,42 @@ const useTablistSpaceOrOwn = (tablistSpace: TablistSpace | undefined): TablistSp
   return tablistSpace ?? own;
 };
 
-/** Separates the capability props from the native props forwarded to the root element. */
+type OwnRootProps = "children" | "dispatch" | "model" | "renderers" | "rootRef" | "tablistSpace";
+
+/** Separates the capability props from the ones forwarded to the root `div`. */
 const splitLayoutOptions = ({
   closableTabs,
   draggableTabs,
   draggableTabsets,
+  dragGroup,
+  dragGroupScope,
   editable,
   floatable,
   keepMounted,
   maximizable,
+  onTearOff,
   renamableTabs,
   resizableSplits,
   restructurable,
   snap,
   ...props
-}: Omit<
-  LayoutRootProps,
-  "children" | "dispatch" | "model" | "renderers" | "rootRef" | "tablistSpace"
->) => ({
+}: Omit<LayoutRootProps, OwnRootProps>) => ({
   options: {
     closableTabs,
     draggableTabs,
     draggableTabsets,
+    dragGroup,
+    dragGroupScope,
     editable,
     floatable,
     keepMounted,
     maximizable,
+    onTearOff,
     renamableTabs,
     resizableSplits,
     restructurable,
     snap,
-  },
+  } satisfies LayoutOptions,
   props,
 });
 
@@ -160,6 +184,14 @@ const LayoutRoot = ({
     renderTabLabel: renderers.tabLabel,
     renderTabsetToolbar: renderers.tabsetToolbar,
     tablistSpace: space,
+  });
+
+  useGroupDocument({
+    dispatch,
+    documentId,
+    dragGroup: options.dragGroup,
+    dragGroupScope: options.dragGroupScope,
+    model,
   });
 
   return (

@@ -4,6 +4,7 @@ import type { Geometry } from "@dashfoo/core";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useRef } from "react";
 
+import { isHTMLElement } from "../lib/dom";
 import { startsOnControl } from "../lib/interactive";
 
 import type { ResizeEdges, Scale, Size } from "./float-geometry";
@@ -77,7 +78,7 @@ const measureGestureStart = (
   geometry: Geometry,
   minimized: boolean,
 ): GestureStart => {
-  const parent = panel.offsetParent instanceof HTMLElement ? panel.offsetParent : null;
+  const parent = isHTMLElement(panel.offsetParent) ? panel.offsetParent : null;
   const scale = layoutScale(panel);
   const rect = toLayoutRect(panel.getBoundingClientRect(), parent?.getBoundingClientRect(), scale);
   const size = minimized ? { height: geometry.height, width: geometry.width } : rect;
