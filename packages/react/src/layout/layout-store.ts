@@ -1,10 +1,14 @@
 "use client";
 
-import type { Action, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
+import type { Action, SelectOnRemove, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
 import { createStore, useStore } from "zustand";
+
+import type { DragGroupScope } from "../drag/drag-group";
+import type { TearOffHandler } from "../drag/tear-off";
+import type { TablistSpace } from "../tabset/tablist-space";
 
 type LayoutState = {
   canDock: boolean;
@@ -13,21 +17,26 @@ type LayoutState = {
   documentId: string;
   draggableTabs: boolean;
   draggableTabsets: boolean;
+  dragGroup: string | undefined;
+  dragGroupScope: DragGroupScope;
   edgeDocking: boolean;
   editable: boolean;
 
   floatable: boolean;
-  keepMounted: boolean;
+  keepMounted: boolean | "activity";
   maximizable: boolean;
   maximizedTabsetId: string | undefined;
+  onTearOff: TearOffHandler | undefined;
   renamableTabs: boolean;
   renderTab: (tab: TabNode) => ReactNode;
   renderTabLabel: ((tab: TabNode) => ReactNode) | undefined;
   renderTabsetToolbar: ((tabset: TabsetNode) => ReactNode) | undefined;
   resizableSplits: boolean;
+  selectOnRemove: SelectOnRemove;
 
   snap: SnapConfig | null;
   splitDock: boolean;
+  tablistSpace: TablistSpace;
   tabLocation: "bottom" | "top";
   tabsetMinSize: number;
   tabStripEnabled: boolean;

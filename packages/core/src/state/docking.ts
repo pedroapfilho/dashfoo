@@ -3,7 +3,15 @@ import { warn } from "../lib/warn";
 import { floatNode, row, tabset } from "../model/builders";
 import type { DockLocation, SplitLocation } from "../model/dock-location";
 import { SPLIT_PLACEMENT } from "../model/dock-location";
-import type { Dashfoo, Geometry, RowNode, TabNode, TabsetNode } from "../model/schema";
+import { createNodeId } from "../model/ids";
+import type {
+  Dashfoo,
+  Geometry,
+  RowNode,
+  SelectOnRemove,
+  TabNode,
+  TabsetNode,
+} from "../model/schema";
 import { DEFAULT_FLOAT_GEOMETRY, DEFAULT_FLOAT_NAME } from "../model/schema";
 import type { TabsetSlot } from "../model/tree";
 import {
@@ -15,21 +23,46 @@ import {
 } from "../model/tree";
 
 import type { Action } from "./actions";
+import { locateDropTarget } from "./drop-target";
 import { placeAtEdge } from "./edge-docking";
 import { uniqueFloatName } from "./floats";
 
 type DockingAction = Extract<
   Action,
-  { type: "addNode" | "dockFloat" | "floatTab" | "floatTabset" | "moveNode" | "moveTabset" }
+  {
+    type:
+      | "addNode"
+      | "dockFloat"
+      | "floatTab"
+      | "floatTabset"
+      | "moveNode"
+      | "moveTabset"
+      | "transferIn";
+  }
 >;
 
 /**
- * The index, in the strip as it stands, of the tab that inherits the selection
- * when the selected tab at `removedIndex` leaves: its right neighbour, else its
- * left one. `-1` when the strip empties.
+ * The index of the tab that inherits the selection when the selected tab at
+ * `removedIndex` leaves: under `"recent"` the last other tab selected, else
+ * (or with no history) its right neighbour, else its left. `-1` when none is left.
  */
-const fallbackSelectedIndex = (count: number, removedIndex: number): number =>
-  removedIndex + 1 < count ? removedIndex + 1 : removedIndex - 1;
+const fallbackSelectedIndex = (
+  strip: TabsetNode,
+  removedIndex: number,
+  policy: SelectOnRemove = "neighbor",
+): number => {
+  const indexById = new Map(strip.children.map((tab, index) => [tab.id, index]));
+  indexById.delete(strip.children[removedIndex]?.id ?? "");
+
+  const recent =
+    policy === "recent" ? strip.selectionHistory?.find((id) => indexById.has(id)) : undefined;
+
+  if (recent !== undefined) {
+    return indexById.get(recent) ?? -1;
+  }
+
+  return removedIndex + 1 < strip.children.length ? removedIndex + 1 : removedIndex - 1;
+};
 
 /** An explicit target must exist; without one, the active main tabset, else the first. */
 const locateMainTarget = (
@@ -46,10 +79,10 @@ const locateMainTarget = (
   return target && findTabsetParent(draft, target.id);
 };
 
-const detachTab = (container: TabsetNode, index: number): TabNode | undefined => {
+const detachTab = (draft: Dashfoo, container: TabsetNode, index: number): TabNode | undefined => {
   const heir =
     index === container.selected
-      ? fallbackSelectedIndex(container.children.length, index)
+      ? fallbackSelectedIndex(container, index, draft.global.tabSetSelectOnRemove)
       : container.selected;
 
   const removed = container.children.splice(index, 1).at(0);
@@ -61,7 +94,7 @@ const detachTab = (container: TabsetNode, index: number): TabNode | undefined =>
 const removeTab = (draft: Dashfoo, tabId: string): TabNode | undefined => {
   const location = findTab(draft, tabId);
 
-  return location && detachTab(location.container, location.index);
+  return location && detachTab(draft, location.container, location.index);
 };
 
 const detachTabset = ({ parent, tabset: detached }: TabsetSlot): TabsetNode => {
@@ -75,6 +108,15 @@ const removeTabset = (draft: Dashfoo, tabsetId: string): void => {
 
   if (slot) {
     detachTabset(slot);
+  }
+};
+
+/** A tab or a whole tabset, wherever it lives. */
+const removeNode = (draft: Dashfoo, nodeId: string): void => {
+  if (findTab(draft, nodeId)) {
+    removeTab(draft, nodeId);
+  } else {
+    removeTabset(draft, nodeId);
   }
 };
 
@@ -108,7 +150,10 @@ const placeBeside = (
   return placed;
 };
 
-/** The main layout's root row id targets its edges: a split there docks beside everything. */
+/**
+ * The main layout's root row id targets its edges: a split there docks beside
+ * everything. While the layout is empty it seeds a tabset instead.
+ */
 type DockTarget = { kind: "edge"; root: RowNode } | { kind: "tabset"; slot: TabsetSlot };
 
 const locateDockTarget = (
@@ -116,11 +161,11 @@ const locateDockTarget = (
   targetId: string,
   location: DockLocation,
 ): DockTarget | undefined => {
-  if (targetId === draft.layout.id) {
+  if (targetId === draft.layout.id && draft.layout.children.length > 0) {
     return location === "center" ? undefined : { kind: "edge", root: draft.layout };
   }
 
-  const slot = findTabsetParent(draft, targetId);
+  const slot = locateDropTarget(draft, targetId);
 
   return slot && { kind: "tabset", slot };
 };
@@ -227,7 +272,7 @@ const moveTab = (
     return undefined;
   }
 
-  const tab = detachTab(source.container, source.index);
+  const tab = detachTab(draft, source.container, source.index);
 
   return tab && attachTab(target, tab, location, index);
 };
@@ -321,6 +366,44 @@ const dockFloat = (
   return placeBeside(target, placed, location ?? "split-right");
 };
 
+/**
+ * Tab ids travel with the node, so one already in this layout rejects the whole
+ * drop. A tabset id only names its slot, so a taken one is replaced.
+ */
+const transferIn = (
+  draft: Dashfoo,
+  { index, location, node, targetId }: Extract<DockingAction, { type: "transferIn" }>,
+): TabsetNode | undefined => {
+  const tabs = node.type === "tab" ? [node] : node.children;
+  const taken = tabs.find((candidate) => isIdInUse(draft, candidate.id));
+
+  if (taken) {
+    warn(`transferIn ignored: tab id "${taken.id}" is already in the layout`);
+
+    return undefined;
+  }
+
+  const target = locateDockTarget(draft, targetId, location);
+
+  if (!target) {
+    return undefined;
+  }
+
+  if (node.type === "tab") {
+    return attachTab(target, node, location, index);
+  }
+
+  if (location === "center") {
+    return target.kind === "tabset"
+      ? mergeTabs(target.slot.tabset, node.children, node.selected)
+      : undefined;
+  }
+
+  const placed = isIdInUse(draft, node.id) ? { ...node, id: createNodeId("tabset") } : node;
+
+  return placeAt(target, placed, location);
+};
+
 const transact = (draft: Dashfoo, action: DockingAction): TabsetNode | undefined => {
   switch (action.type) {
     case "addNode": {
@@ -347,6 +430,10 @@ const transact = (draft: Dashfoo, action: DockingAction): TabsetNode | undefined
       return moveTabset(draft, action);
     }
 
+    case "transferIn": {
+      return transferIn(draft, action);
+    }
+
     default: {
       return assertNever(action);
     }
@@ -366,4 +453,4 @@ const dock = (draft: Dashfoo, action: DockingAction): void => {
   }
 };
 
-export { dock, fallbackSelectedIndex, removeTab, removeTabset };
+export { dock, fallbackSelectedIndex, removeNode, removeTab, removeTabset };

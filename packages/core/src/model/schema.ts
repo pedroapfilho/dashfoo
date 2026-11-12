@@ -22,6 +22,9 @@ const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
 const unitSchema = z.enum(["px", "%", "em", "rem", "vh", "vw"]);
 const orientationSchema = z.enum(["row", "column"]);
 
+/** Which tab takes over when the selected one leaves its tabset. */
+const selectOnRemoveSchema = z.enum(["neighbor", "recent"]);
+
 const dimensionSchema = z.object({
   unit: unitSchema,
   value: z.number(),
@@ -47,6 +50,9 @@ const tabNodeSchema = z.object({
 /** Shape only: `normalize` clamps `selected` into the strip, as it owns every cross-field invariant. */
 const tabsetNodeSchema = z.object({
   children: z.array(tabNodeSchema),
+  /** Shrunk to its tab strip; `weight` keeps the share it expands back to. */
+  collapsed: z.boolean().optional(),
+  collapsible: z.boolean().optional(),
   enableClose: z.boolean().optional(),
   enableDrag: z.boolean().optional(),
   enableMaximize: z.boolean().optional(),
@@ -55,6 +61,8 @@ const tabsetNodeSchema = z.object({
   min: dimensionSchema.optional(),
   name: z.string().optional(),
   selected: z.number().int(),
+  /** Tab ids, most recently selected first. Kept only under `tabSetSelectOnRemove: "recent"`. */
+  selectionHistory: z.array(z.string()).optional(),
   type: z.literal("tabset"),
   weight: z.number().default(DEFAULT_WEIGHT),
 });
@@ -111,6 +119,7 @@ const globalAttributesSchema = z.object({
   tabSetEnableMaximize: z.boolean().optional(),
   tabSetEnableTabStrip: z.boolean().optional(),
   tabSetMinSize: z.number().optional(),
+  tabSetSelectOnRemove: selectOnRemoveSchema.optional(),
 });
 
 const dashfooSchema = z.object({
@@ -129,6 +138,8 @@ type Unit = z.infer<typeof unitSchema>;
 type Orientation = z.infer<typeof orientationSchema>;
 
 type Dimension = z.infer<typeof dimensionSchema>;
+
+type SelectOnRemove = z.infer<typeof selectOnRemoveSchema>;
 
 type SnapConfig = z.infer<typeof snapSchema>;
 
@@ -159,6 +170,7 @@ export {
   jsonValueSchema,
   orientationSchema,
   rowNodeSchema,
+  selectOnRemoveSchema,
   snapSchema,
   tabNodeSchema,
   tabsetNodeSchema,
@@ -177,6 +189,7 @@ export type {
   Orientation,
   RowNode,
   RowNodeInput,
+  SelectOnRemove,
   SnapConfig,
   TabNode,
   TabsetNode,

@@ -1,5 +1,5 @@
 import type { Dashfoo } from "@dashfoo/core";
-import { model, row, tab, tabset } from "@dashfoo/core";
+import { findTabset, model, row, tab, tabset } from "@dashfoo/core";
 import type { ResponsiveOptions } from "@dashfoo/react";
 
 const overviewModel = (): Dashfoo =>
@@ -18,7 +18,7 @@ const overviewModel = (): Dashfoo =>
             }),
             tabset(
               [tab("metrics", "Metrics"), tab("history", "History"), tab("reports", "Reports")],
-              { id: "ts-side-bottom", weight: 1 },
+              { collapsible: true, id: "ts-side-bottom", weight: 1 },
             ),
           ],
           { id: "right", orientation: "column", weight: 1 },
@@ -48,6 +48,20 @@ const dockingModel = (): Dashfoo =>
     { activeTabsetId: "a" },
   );
 
+/** The docking layout with a collapsible right sidebar and IDE-style "recent" tab selection. */
+const rawModel = (): Dashfoo => {
+  const raw = dockingModel();
+  const sidebar = findTabset(raw, "b");
+
+  if (sidebar) {
+    sidebar.collapsible = true;
+  }
+
+  raw.global.tabSetSelectOnRemove = "recent";
+
+  return raw;
+};
+
 const playgroundModel = (): Dashfoo =>
   model(
     row(
@@ -67,6 +81,19 @@ const playgroundModel = (): Dashfoo =>
   );
 
 /** Every demo page stacks at the same width. */
+/** Two layouts in one drag group: their tab ids (the component keys) must not overlap. */
+const windowsModels = () => ({
+  main: model(
+    row([tabset([tab("canvas", "Canvas"), tab("detail", "Detail"), tab("notes", "Notes")])]),
+  ),
+  side: model(
+    row([
+      tabset([tab("activity", "Activity"), tab("tasks", "Tasks")]),
+      tabset([tab("metrics", "Metrics")]),
+    ]),
+  ),
+});
+
 const COMPACT: ResponsiveOptions = { maxWidth: 720 };
 
-export { COMPACT, dockingModel, overviewModel, playgroundModel };
+export { COMPACT, dockingModel, overviewModel, playgroundModel, rawModel, windowsModels };

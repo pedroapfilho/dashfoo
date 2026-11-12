@@ -1,11 +1,14 @@
 "use client";
 
-import { dragDockMachine } from "@dashfoo/core";
+import type { DragSubject, Point } from "@dashfoo/core";
+import { dragDockMachine, dropAction } from "@dashfoo/core";
 import type { Data } from "@dnd-kit/abstract";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/dom";
 import { useActorRef } from "@xstate/react";
 import type { ReactNode } from "react";
 import { useCallback, useContext, useEffect, useInsertionEffect, useMemo, useState } from "react";
+
+import { isHTMLElement } from "../lib/dom";
 
 import { DockIndicator } from "./dock-indicator";
 import type { DragActor, DragContextValue, RegisteredLayer } from "./drag-context";
@@ -15,6 +18,7 @@ import type { DashfooDragManager } from "./drag-manager";
 import { createDragManager } from "./drag-manager";
 import { DragPreviewOverlay } from "./drag-preview";
 import { subjectFor } from "./drag-subject";
+import { isOutsideWindow, toScreenPoint, viewOf } from "./tear-off";
 
 type LayerTarget = { element: HTMLElement; layer: RegisteredLayer; tabsetId: string };
 
@@ -22,6 +26,30 @@ type LayerTargetData = Data & { layerId: string; tabsetId: string };
 
 const isLayerTargetData = (data: Data): data is LayerTargetData =>
   typeof data.layerId === "string" && typeof data.tabsetId === "string";
+
+/** The tear-off a release at `point` would perform, or `null`: inside the window, or the layout takes none. */
+const pendingTearOff = (
+  layers: Map<string, RegisteredLayer>,
+  subject: DragSubject,
+  source: Element | null | undefined,
+  point: Point,
+): (() => void) | null => {
+  const view = viewOf(source);
+
+  if (subject.kind === "external" || !view || !isOutsideWindow(point, view)) {
+    return null;
+  }
+
+  const documentId = subject.documentId;
+  const layer = [...layers.values()].find((candidate) => candidate.documentId() === documentId);
+  const tearOff = layer?.tearOff();
+
+  return tearOff
+    ? () => {
+        tearOff(subject, source ?? null, toScreenPoint(point, view));
+      }
+    : null;
+};
 
 // One listener set and one actor for the whole tree: per layer, a float that
 // did not own the target resolved a null intent and swallowed the drop.
@@ -36,7 +64,7 @@ const useDragMonitor = (
       const data = target?.data;
       const element = target?.element;
 
-      if (!data || !isLayerTargetData(data) || !(element instanceof HTMLElement)) {
+      if (!data || !isLayerTargetData(data) || !isHTMLElement(element)) {
         return null;
       }
 
@@ -125,7 +153,20 @@ const useDragMonitor = (
       }
 
       syncIntent();
+      const { drag } = actorRef.getSnapshot().context;
+
+      const tearOff =
+        drag.kind === "dragging" && dropAction(drag) === null
+          ? pendingTearOff(
+              layers,
+              drag.subject,
+              event.operation.source?.element,
+              event.operation.position.current,
+            )
+          : null;
+
       actorRef.send({ type: "DROP" });
+      tearOff?.();
     };
 
     const commitSubscription = actorRef.on("COMMIT", (emitted) => {
@@ -181,6 +222,18 @@ const OwnedDragRoot = ({ children }: { children: ReactNode }): ReactNode => {
     [layers],
   );
 
+  const isTearOff = useCallback(
+    (point: Point): boolean => {
+      const { drag } = actorRef.getSnapshot().context;
+
+      return (
+        drag.kind === "dragging" &&
+        pendingTearOff(layers, drag.subject, manager.dragOperation.source?.element, point) !== null
+      );
+    },
+    [actorRef, layers, manager],
+  );
+
   const value = useMemo<DragContextValue>(
     () => ({ actorRef, layerId: null, manager, registerLayer }),
     [actorRef, manager, registerLayer],
@@ -190,7 +243,7 @@ const OwnedDragRoot = ({ children }: { children: ReactNode }): ReactNode => {
     <DragContext.Provider value={value}>
       {children}
       <DockIndicator actorRef={actorRef} isFloating={isFloating} />
-      <DragPreviewOverlay manager={manager} />
+      <DragPreviewOverlay isTearOff={isTearOff} manager={manager} />
     </DragContext.Provider>
   );
 };

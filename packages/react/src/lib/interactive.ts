@@ -1,3 +1,5 @@
+import { isElement } from "./dom";
+
 const INTERACTIVE_SELECTOR = `
   input:not([disabled]),
   select:not([disabled]),
@@ -12,7 +14,7 @@ const startsOnControl = (
   target: EventTarget | null,
   handle: Element | null | undefined,
 ): boolean => {
-  if (!(target instanceof Element)) {
+  if (!isElement(target)) {
     return false;
   }
 

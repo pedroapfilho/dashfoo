@@ -8,6 +8,7 @@ import { useMemo, useRef, useState } from "react";
 import { Button, DemoStage } from "../components/demo-stage";
 import { DropZoneOverlay } from "../components/drop-zone-overlay";
 import { PlaceholderPanel } from "../components/placeholder-panel";
+import { TablistSpaceBadge } from "../components/tablist-space-badge";
 import { COMPACT, dockingModel } from "../models";
 import type { WidgetDefinition } from "../widgets";
 import { addWidget, createWidgetTab, WIDGETS } from "../widgets";
@@ -60,6 +61,8 @@ const SNAP_OPTIONS = new Map<string, SnapConfig | undefined>([
   ["25%", { step: 25 }],
   ["50%", { step: 50 }],
 ]);
+
+const renderSpaceBadge = (): ReactNode => <TablistSpaceBadge />;
 
 const DockingPage = (): ReactNode => {
   const defaultModel = useMemo(() => dockingModel(), []);
@@ -137,6 +140,7 @@ const DockingPage = (): ReactNode => {
               edgeDocking={edgeDocking}
               factory={PlaceholderPanel}
               ref={layout}
+              renderTabsetToolbar={renderSpaceBadge}
               responsive={COMPACT}
               snap={SNAP_OPTIONS.get(snapKey)}
             />

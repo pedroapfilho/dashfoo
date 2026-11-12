@@ -9,10 +9,12 @@ import {
   findRow,
   findTab,
   findTabset,
+  findTabsetParent,
 } from "../model/tree";
 
 import type { Action } from "./actions";
-import { dock, removeTab, removeTabset } from "./docking";
+import { canCollapseTabset } from "./collapse";
+import { dock, removeNode, removeTab, removeTabset } from "./docking";
 import { uniqueFloatName } from "./floats";
 import { jsonEqual } from "./json-equal";
 import type { MutableNodeAttrs } from "./node-attrs";
@@ -50,7 +52,8 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
     case "floatTab":
     case "floatTabset":
     case "moveNode":
-    case "moveTabset": {
+    case "moveTabset":
+    case "transferIn": {
       dock(draft, action);
 
       return;
@@ -122,6 +125,7 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
 
       if (tabset) {
         tabset.selected = action.index;
+        tabset.collapsed = undefined;
       }
 
       return;
@@ -153,6 +157,27 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       ) {
         draft.maximizedTabsetId = action.tabsetId;
       }
+
+      return;
+    }
+
+    case "setTabsetCollapsed": {
+      const slot = findTabsetParent(draft, action.tabsetId);
+
+      if (!action.collapsed) {
+        if (slot) {
+          slot.tabset.collapsed = undefined;
+        }
+      } else if (slot && canCollapseTabset(slot.parent, slot.tabset)) {
+        slot.tabset.collapsed = true;
+      }
+
+      return;
+    }
+
+    case "tearOff":
+    case "transferOut": {
+      removeNode(draft, action.nodeId);
 
       return;
     }

@@ -231,17 +231,20 @@ State does not arrive as extra `data-dashfoo` values. It rides on the native
 ARIA and `data-*` attributes the elements already set, so your selectors compose
 the structural attribute with the state attribute.
 
-| State                  | Lives on                           | Set when                                                        |
-| ---------------------- | ---------------------------------- | --------------------------------------------------------------- |
-| `aria-selected="true"` | `[data-dashfoo="tab"]`             | The tab is the active one in its tabset                         |
-| `aria-pressed="true"`  | `[data-dashfoo="tabset-maximize"]` | The tabset is maximized                                         |
-| `data-dragging`        | `[data-dashfoo="tab-item"]`        | This tab is being lifted into the drag preview (dim the source) |
-| `data-dragging-source` | `[data-dashfoo="tabset"]`          | This whole tabset is being dragged by its grip                  |
-| `data-tab-location`    | `[data-dashfoo="tabset"]`          | `"top"` (default) or `"bottom"` strip placement                 |
-| `data-editable`        | `[data-dashfoo="float-titlebar"]`  | Movable float; without it `styles.css` sets `cursor: default`   |
-| `tabIndex={0 / -1}`    | `[data-dashfoo="tab"]`             | Roving tabindex: the selected tab is the one tab stop           |
+| State                   | Lives on                           | Set when                                                                                                                       |
+| ----------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `aria-selected="true"`  | `[data-dashfoo="tab"]`             | The tab is the active one in its tabset                                                                                        |
+| `aria-pressed="true"`   | `[data-dashfoo="tabset-maximize"]` | The tabset is maximized                                                                                                        |
+| `aria-expanded="false"` | `[data-dashfoo="tabset-collapse"]` | The tabset is collapsed                                                                                                        |
+| `data-collapsed`        | `[data-dashfoo="tabset"]`          | Shown collapsed to its strip: `"column"` in a stacked split, `"row"` side by side, where `styles.css` turns the strip vertical |
+| `data-collapsed-to-fit` | `[data-dashfoo="tabset"]`          | Collapsed only because the split is too small for its minimums; the model still has it expanded                                |
+| `data-dragging`         | `[data-dashfoo="tab-item"]`        | This tab is being lifted into the drag preview (dim the source)                                                                |
+| `data-dragging-source`  | `[data-dashfoo="tabset"]`          | This whole tabset is being dragged by its grip                                                                                 |
+| `data-tab-location`     | `[data-dashfoo="tabset"]`          | `"top"` (default) or `"bottom"` strip placement                                                                                |
+| `data-editable`         | `[data-dashfoo="float-titlebar"]`  | Movable float; without it `styles.css` sets `cursor: default`                                                                  |
+| `tabIndex={0 / -1}`     | `[data-dashfoo="tab"]`             | Roving tabindex: the selected tab is the one tab stop                                                                          |
 
-The boolean `data-*` attributes (`data-dragging`, `data-dragging-source`, `data-editable`) are
+The boolean `data-*` attributes (`data-dragging`, `data-dragging-source`, `data-collapsed-to-fit`, `data-editable`) are
 only present when true. They are set to `undefined` otherwise, so the attribute
 is absent rather than `="false"`. Select on presence:
 
@@ -361,6 +364,20 @@ A 16px grab target around a 2px grip keeps resize easy to hit while the visible
 line stays quiet. The hover rule raises contrast on the grip, not the whole
 handle.
 
+### Gaps between tabsets
+
+A CSS `gap` on `[data-dashfoo="row"]` adds space between tabsets on top of the
+splitter. The layout measures both (in layout pixels, so CSS `zoom` and scale
+transforms don't skew it) and counts them toward the minimum size of nested
+rows, so a nested split keeps its tabsets at `tabSetMinSize` however wide your
+gutters are:
+
+```css
+[data-dashfoo="row"] {
+  gap: 4px;
+}
+```
+
 ### Magnetic snapping
 
 When [snapping](/the-model#global-attributes) is on and a drag locks the boundary
@@ -380,6 +397,29 @@ without inline color:
 The transition is scoped to the snapping group only, so free-drag tracking stays
 1:1 with the pointer. The boundary glides onto the line and snaps off it
 instantly.
+
+## Tablist space
+
+Every `[data-dashfoo="tablist"]` carries `--dashfoo-tablist-space`: the layout
+pixels its tabs leave free in the strip once the toolbar takes its share,
+negative once they overflow. It is set before
+paint, so a rule can react to a crowded header without a flash. This one fades
+the trailing edge in, up to 24px, as the tabs overflow:
+
+```css
+[data-dashfoo="tablist"] {
+  mask-image: linear-gradient(
+    to right,
+    black calc(100% - clamp(0px, -1 * var(--dashfoo-tablist-space), 24px)),
+    transparent
+  );
+}
+```
+
+A custom property can't drive a selector, so logic such as moving toolbar items
+into a menu reads the same number in JavaScript: `useTabset((state) => state.tablistSpace)` inside a
+tabset, or the handle's `getTablistSpace` and `onTablistSpaceChange` from
+outside the layout. See the [API reference](/api-reference#usetabset--usetab--usedragsubject--usedropintent--usedropindicator).
 
 ## Dock indicators and the `--dashfoo-dock-*` vars
 

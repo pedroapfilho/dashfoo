@@ -66,10 +66,13 @@ const renderTabEditor = (): Harness => {
 
   const store = createTabsetStore({
     activeTab: tab,
+    canCollapse: false,
     dispatch: (action) => {
       dispatched.push(action);
     },
     documentId: "doc",
+    isCollapsed: false,
+    isCollapsedToFit: false,
     isMaximized: false,
     node,
     showMaximize: false,

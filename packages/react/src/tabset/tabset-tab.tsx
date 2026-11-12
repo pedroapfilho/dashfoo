@@ -9,6 +9,8 @@ import { useDraggedNodeId, useNodeDraggable } from "../drag/drag-hooks";
 import { useLayout } from "../layout/layout-store";
 import { panelDomId, tabDomId } from "../lib/dom-ids";
 import { mergeRefs } from "../lib/merge-refs";
+import type { StatefulButtonProps } from "../lib/state-props";
+import { resolveStateProps } from "../lib/state-props";
 import { CloseIcon } from "../ui/icons";
 
 import {
@@ -186,10 +188,12 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
 
 TabsetTrigger.displayName = "TabsetTrigger";
 
-type TabsetCloseButtonProps = ComponentProps<"button">;
+type TabsetCloseButtonState = { isSelected: boolean; tab: TabNode };
+
+type TabsetCloseButtonProps = StatefulButtonProps<TabsetCloseButtonState>;
 
 const TabsetCloseButton = forwardRef<HTMLButtonElement, TabsetCloseButtonProps>(
-  ({ children, onClick, ...props }, ref): ReactNode => {
+  ({ onClick, ...props }, ref): ReactNode => {
     const { closable, index, tab } = useTab();
     const closeTab = useTabset((state) => state.closeTab);
     const editing = useTabset((state) => state.editingTabId === tab.id);
@@ -206,15 +210,18 @@ const TabsetCloseButton = forwardRef<HTMLButtonElement, TabsetCloseButtonProps>(
       closeTab(tab.id);
     };
 
+    const isSelected = index === visualSelected;
+    const { buttonProps, children } = resolveStateProps(props, { isSelected, tab });
+
     return (
       <button
         aria-label={`Close ${tab.name}`}
         title={`Close ${tab.name}`}
-        {...props}
+        {...buttonProps}
         data-dashfoo="tab-close"
         onClick={handleClick}
         ref={ref}
-        tabIndex={index === visualSelected ? 0 : -1}
+        tabIndex={isSelected ? 0 : -1}
         type="button"
       >
         {children ?? <CloseIcon />}
@@ -227,4 +234,4 @@ TabsetCloseButton.displayName = "TabsetCloseButton";
 
 export { TabsetCloseButton, TabsetTab, TabsetTrigger };
 
-export type { TabsetCloseButtonProps, TabsetTabProps, TabsetTriggerProps };
+export type { TabsetCloseButtonProps, TabsetCloseButtonState, TabsetTabProps, TabsetTriggerProps };

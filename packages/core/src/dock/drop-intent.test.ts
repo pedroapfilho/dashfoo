@@ -80,6 +80,16 @@ describe("resolveDropIntent: self-drops", () => {
   });
 });
 
+describe("resolveDropIntent: foreign subjects", () => {
+  test("a tabset from another document sharing the target's id still lands", () => {
+    const target = tabset(["a", "b"]);
+
+    expect(
+      resolveDropIntent(tabsetSubject("ts1"), target, BODY_LEFT_EDGE, { foreign: true }),
+    ).toEqual({ location: "split-left", targetId: "ts1" });
+  });
+});
+
 describe("resolveDropIntent: strip vs body", () => {
   test("over the strip, the drop stacks at the insertion index even near an edge", () => {
     expect(resolveDropIntent(tab("x"), tabset(["a", "b"]), { x: 2, y: 2 })).toEqual({

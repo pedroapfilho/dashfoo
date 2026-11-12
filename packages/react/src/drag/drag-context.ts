@@ -4,6 +4,7 @@ import type { Action, dragDockMachine, DragSubject, DropResolution, Point } from
 import { createContext } from "react";
 import type { ActorRefFrom } from "xstate";
 
+import type { InternalSubject } from "./drag-group";
 import type { DashfooDragManager } from "./drag-manager";
 
 type DragActor = ActorRefFrom<typeof dragDockMachine>;
@@ -15,6 +16,7 @@ type DragActor = ActorRefFrom<typeof dragDockMachine>;
  */
 type RegisteredLayer = {
   commit: (action: Action, subject: DragSubject) => void;
+  documentId: () => string;
   /** A float's layer: its drop indicator paints above the float layer, a docked one's beneath it. */
   floating: boolean;
   layerId: string;
@@ -24,6 +26,8 @@ type RegisteredLayer = {
     element: HTMLElement,
     point: Point,
   ) => Omit<DropResolution, "scope"> | null;
+  /** `null` when the layout takes no tear-offs, so a drag can show whether releasing would tear off. */
+  tearOff: () => ((subject: InternalSubject, source: Element | null, screen: Point) => void) | null;
 };
 
 /** The root's value with `layerId: null`; each `Layout.DragLayer` republishes it with its own id. */

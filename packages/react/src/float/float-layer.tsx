@@ -7,12 +7,9 @@ import { useState } from "react";
 import { FloatLayerContext } from "./float-context";
 import { FloatPanel } from "./float-panel";
 
+/** Rendered even while empty: a new float is placed in the overlay's own coordinates, which an ancestor transform can scale. */
 const FloatOverlay = ({ floats }: { floats: Array<FloatNode> }): ReactNode => {
   const [topId, setTopId] = useState<string | null>(null);
-
-  if (floats.length === 0) {
-    return null;
-  }
 
   return (
     <div data-dashfoo="float-overlay">

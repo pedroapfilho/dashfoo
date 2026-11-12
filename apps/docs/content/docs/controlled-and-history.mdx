@@ -116,7 +116,9 @@ type DashfooHandle = {
   canRedo: () => boolean;
   canUndo: () => boolean;
   closeTab: (tabId: string) => void;
+  collapseTabset: (tabsetId: string) => void;
   dispatch: (action: Action) => void;
+  expandTabset: (tabsetId: string) => void;
   getModel: () => Dashfoo;
   maximizeTabset: (tabsetId: string | null) => void;
   redo: () => void;
@@ -127,18 +129,19 @@ type DashfooHandle = {
 };
 ```
 
-| Method              | What it does                                                                                                                                                                                        |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `addTab`            | Inserts a tab at `targetId` (an existing tabset id). `location` defaults to `"center"` (into the tabset, selected); `"split-*"` creates a new tabset beside it. `index` positions within the strip. |
-| `canUndo`/`canRedo` | Read the live history flags.                                                                                                                                                                        |
-| `closeTab`          | Dispatches `deleteTab` for the given tab id.                                                                                                                                                        |
-| `dispatch`          | Escape hatch: send any raw `Action`.                                                                                                                                                                |
-| `getModel`          | Returns the current model.                                                                                                                                                                          |
-| `maximizeTabset`    | Maximizes the tabset, or restores with `null`.                                                                                                                                                      |
-| `undo`/`redo`       | Step through the built-in history.                                                                                                                                                                  |
-| `renameTab`         | Dispatches `renameTab` with the new name.                                                                                                                                                           |
-| `resetLayout`       | Restores `defaultModel`, clearing undo history and any persisted copy.                                                                                                                              |
-| `selectTab`         | Selects the tab at `index` in the given tabset.                                                                                                                                                     |
+| Method                          | What it does                                                                                                                                                                                        |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `addTab`                        | Inserts a tab at `targetId` (an existing tabset id). `location` defaults to `"center"` (into the tabset, selected); `"split-*"` creates a new tabset beside it. `index` positions within the strip. |
+| `canUndo`/`canRedo`             | Read the live history flags.                                                                                                                                                                        |
+| `closeTab`                      | Dispatches `deleteTab` for the given tab id.                                                                                                                                                        |
+| `collapseTabset`/`expandTabset` | Dispatch `setTabsetCollapsed` for a `collapsible` tabset.                                                                                                                                           |
+| `dispatch`                      | Escape hatch: send any raw `Action`.                                                                                                                                                                |
+| `getModel`                      | Returns the current model.                                                                                                                                                                          |
+| `maximizeTabset`                | Maximizes the tabset, or restores with `null`.                                                                                                                                                      |
+| `undo`/`redo`                   | Step through the built-in history.                                                                                                                                                                  |
+| `renameTab`                     | Dispatches `renameTab` with the new name.                                                                                                                                                           |
+| `resetLayout`                   | Restores `defaultModel`, clearing undo history and any persisted copy.                                                                                                                              |
+| `selectTab`                     | Selects the tab at `index` in the given tabset.                                                                                                                                                     |
 
 The action-dispatching methods work in both modes. In controlled mode the
 resulting model arrives through `onModelChange` like any other edit, computed

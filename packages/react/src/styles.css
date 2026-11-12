@@ -47,7 +47,8 @@
     z-index: 1;
   }
 
-  [data-dashfoo="row"] {
+  [data-dashfoo="row"],
+  [data-dashfoo="layout-empty"] {
     display: flex;
     flex: 1;
     min-height: 0;
@@ -96,6 +97,16 @@
     flex: 1;
     min-height: 0;
     overflow: auto;
+  }
+
+  [data-dashfoo="tabset"][data-collapsed] [data-dashfoo="tabcontent"] {
+    display: none;
+  }
+
+  [data-dashfoo="tabset"][data-collapsed="row"] [data-dashfoo="tabstrip"] {
+    align-self: flex-start;
+    flex: 1;
+    writing-mode: vertical-rl;
   }
 
   [data-dashfoo="tab-overflow-root"] {

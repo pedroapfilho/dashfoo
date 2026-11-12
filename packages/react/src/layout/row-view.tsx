@@ -4,13 +4,19 @@ import type { Dimension, RowNode, SnapConfig, TabsetNode } from "@dashfoo/core";
 import { collectTabsetsInRow, resolveSnapGrid, snapEnabled } from "@dashfoo/core";
 import type { ReactNode } from "react";
 import { Fragment, useMemo } from "react";
-import type { Orientation } from "react-resizable-panels";
+import type { Orientation, PanelProps } from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
+import { useTabsetDroppable } from "../drag/drag-hooks";
 import { resizePanelId } from "../lib/dom-ids";
+import { mergeRefs } from "../lib/merge-refs";
 import { TabsetView } from "../tabset/tabset-view";
 
 import { useLayout } from "./layout-store";
+import { TabsetSlotContext } from "./tabset-slot";
+import type { CollapsiblePanels } from "./use-collapsible-panels";
+import { useCollapsiblePanels } from "./use-collapsible-panels";
+import { GutterContext, useGutter, useGutterRoot } from "./use-gutter";
 import { percentagesOf, useSnapResize } from "./use-snap-resize";
 
 const dimensionToSize = (dimension: Dimension): string => `${dimension.value}${dimension.unit}`;
@@ -20,10 +26,12 @@ const dimensionToPixels = (dimension: Dimension | undefined): number | undefined
 
 type LayoutChild = RowNode["children"][number];
 
+/** `gutter` is what each boundary inside a nested row adds along that row's axis. */
 const descendantMinSize = (
   child: LayoutChild,
   axis: RowNode["orientation"],
   tabsetMinSize: number,
+  gutter: number,
 ): number | undefined => {
   const explicit = dimensionToPixels(child.min);
 
@@ -42,7 +50,7 @@ const descendantMinSize = (
   const childMinimums: Array<number> = [];
 
   for (const grandchild of child.children) {
-    const minimum = descendantMinSize(grandchild, axis, tabsetMinSize);
+    const minimum = descendantMinSize(grandchild, axis, tabsetMinSize, gutter);
 
     if (minimum === undefined) {
       return undefined;
@@ -56,8 +64,34 @@ const descendantMinSize = (
   }
 
   return child.orientation === axis
-    ? childMinimums.reduce((sum, value) => sum + value, 0)
+    ? childMinimums.reduce((sum, value) => sum + value, 0) + gutter * (childMinimums.length - 1)
     : Math.max(...childMinimums);
+};
+
+/** A minimum in pixels, or `undefined` when it is set in a relative unit. */
+const minPixelsOf = (
+  child: LayoutChild,
+  axis: RowNode["orientation"],
+  tabsetMinSize: number,
+  gutter: number,
+): number | undefined =>
+  child.min === undefined
+    ? descendantMinSize(child, axis, tabsetMinSize, gutter)
+    : dimensionToPixels(child.min);
+
+const sizeConstraints = (
+  child: LayoutChild,
+  axis: RowNode["orientation"],
+  tabsetMinSize: number,
+  gutter: number,
+): Pick<PanelProps, "maxSize" | "minSize"> => {
+  const derived = child.min ? undefined : descendantMinSize(child, axis, tabsetMinSize, gutter);
+  const fallback = derived === undefined ? undefined : `${derived}px`;
+
+  return {
+    maxSize: child.max ? dimensionToSize(child.max) : undefined,
+    minSize: child.min ? dimensionToSize(child.min) : fallback,
+  };
 };
 
 type RowViewProps = {
@@ -66,8 +100,97 @@ type RowViewProps = {
   renderTabset?: (node: TabsetNode) => ReactNode;
 };
 
-const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
-  const dispatch = useLayout((state) => state.dispatch);
+type RowGroupProps = RowViewProps & { isRoot?: boolean };
+
+type RowSeparatorProps = {
+  boundary: number;
+  disabled: boolean;
+  /** Set only while snapping is active, so the press listener exists only then. */
+  onBoundaryDown: ((boundary: number) => void) | undefined;
+  snapped: boolean;
+};
+
+const RowSeparator = ({
+  boundary,
+  disabled,
+  onBoundaryDown,
+  snapped,
+}: RowSeparatorProps): ReactNode => (
+  <Separator
+    data-dashfoo="splitter"
+    data-dashfoo-snapped={snapped ? "true" : undefined}
+    disabled={disabled}
+    onPointerDown={
+      onBoundaryDown
+        ? () => {
+            onBoundaryDown(boundary);
+          }
+        : undefined
+    }
+  />
+);
+
+type RowPanelContentProps = Pick<RowViewProps, "renderTabset"> & {
+  alone: boolean;
+  child: LayoutChild;
+  collapse: CollapsiblePanels;
+};
+
+/** A nested row, or a tabset told what its split allows it. */
+const RowPanelContent = ({
+  alone,
+  child,
+  collapse,
+  renderTabset,
+}: RowPanelContentProps): ReactNode =>
+  child.type === "row" ? (
+    // oxlint-disable-next-line no-use-before-define -- RowGroup and its panels recurse into each other
+    <RowGroup node={child} renderTabset={renderTabset} />
+  ) : (
+    <TabsetSlotContext.Provider value={collapse.slotFor(child, alone)}>
+      {renderTabset?.(child) ?? <TabsetView node={child} />}
+    </TabsetSlotContext.Provider>
+  );
+
+type RowSizingOptions = {
+  horizontal: boolean;
+  node: RowNode;
+  panelIdOf: (childId: string) => string;
+  tabsetMinSize: number;
+};
+
+type RowSizing = {
+  collapse: CollapsiblePanels;
+  elementRef: (element: HTMLDivElement | null) => void;
+  gutter: number;
+};
+
+/** The row element feeds both the gutter measure and the collapse handles. */
+const useRowSizing = ({
+  horizontal,
+  node,
+  panelIdOf,
+  tabsetMinSize,
+}: RowSizingOptions): RowSizing => {
+  const { groupRef: gutterRef, gutter } = useGutter(horizontal, node.children.length);
+
+  const collapse = useCollapsiblePanels({
+    minPixels: (child) => minPixelsOf(child, node.orientation, tabsetMinSize, gutter),
+    node,
+    panelIdOf,
+  });
+
+  const { setGroupElement } = collapse;
+
+  const elementRef = useMemo(
+    () => mergeRefs<HTMLDivElement>(gutterRef, setGroupElement),
+    [gutterRef, setGroupElement],
+  );
+
+  return { collapse, elementRef, gutter };
+};
+
+const RowGroup = ({ isRoot = false, node, renderTabset }: RowGroupProps): ReactNode => {
   const documentId = useLayout((state) => state.documentId);
   const resizableSplits = useLayout((state) => state.resizableSplits);
   const tabsetMinSize = useLayout((state) => state.tabsetMinSize);
@@ -85,27 +208,38 @@ const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
   const snapActive = snapEnabled(snapGrid);
   const orientation: Orientation = node.orientation === "row" ? "horizontal" : "vertical";
 
+  const { collapse, elementRef, gutter } = useRowSizing({
+    horizontal: orientation === "horizontal",
+    node,
+    panelIdOf: (childId) => resizePanelId(documentId, childId),
+    tabsetMinSize,
+  });
+
+  const { collapsedIds, groupRef } = collapse;
+
   const panels = useMemo(
     () =>
       node.children.map((child) => ({
         child,
+        collapsed: collapsedIds.has(child.id),
         id: resizePanelId(documentId, child.id),
         weight: child.weight,
       })),
-    [documentId, node.children],
+    [collapsedIds, documentId, node.children],
   );
 
   const percentages = percentagesOf(panels);
 
-  const { beginBoundaryDrag, groupRef, onLayoutChange, onLayoutChanged, snappedBoundary } =
-    useSnapResize({
-      onWeightsSettled: (weights) => {
-        dispatch({ rowId: node.id, type: "adjustSplit", weights });
-      },
-      panels,
-      resizableSplits,
-      snap: snapGrid,
-    });
+  const { beginBoundaryDrag, onLayoutChange, onLayoutChanged, snappedBoundary } = useSnapResize({
+    groupRef,
+    onWeightsSettled: collapse.settle,
+    panels,
+    resizableSplits,
+    snap: snapGrid,
+  });
+
+  const alone = isRoot && node.children.length === 1;
+  const handleBoundaryDown = snapActive && resizableSplits ? beginBoundaryDrag : undefined;
 
   return (
     <Group
@@ -113,50 +247,57 @@ const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
       data-dashfoo-snapping={snappedBoundary === null ? undefined : "true"}
       data-row-id={node.id}
       disabled={!resizableSplits}
+      elementRef={elementRef}
       groupRef={groupRef}
       key={node.id}
       onLayoutChange={snapActive ? onLayoutChange : undefined}
       onLayoutChanged={onLayoutChanged}
       orientation={orientation}
     >
-      {panels.map(({ child, id }, index) => {
-        let min = child.min ? dimensionToSize(child.min) : undefined;
-
-        if (min === undefined) {
-          const minimum = descendantMinSize(child, node.orientation, tabsetMinSize);
-          min = minimum === undefined ? undefined : `${minimum}px`;
-        }
-
-        const max = child.max ? dimensionToSize(child.max) : undefined;
-
-        return (
-          <Fragment key={child.id}>
-            {index > 0 ? (
-              <Separator
-                data-dashfoo="splitter"
-                data-dashfoo-snapped={snappedBoundary === index - 1 ? "true" : undefined}
-                disabled={!resizableSplits}
-                onPointerDown={
-                  snapActive && resizableSplits
-                    ? () => {
-                        beginBoundaryDrag(index - 1);
-                      }
-                    : undefined
-                }
-              />
-            ) : null}
-            <Panel defaultSize={`${percentages[index] ?? 0}%`} id={id} maxSize={max} minSize={min}>
-              {child.type === "row" ? (
-                <RowGroup node={child} renderTabset={renderTabset} />
-              ) : (
-                (renderTabset?.(child) ?? <TabsetView node={child} />)
-              )}
-            </Panel>
-          </Fragment>
-        );
-      })}
+      {panels.map(({ child, id }, index) => (
+        <Fragment key={child.id}>
+          {index > 0 ? (
+            <RowSeparator
+              boundary={index - 1}
+              disabled={!resizableSplits}
+              onBoundaryDown={handleBoundaryDown}
+              snapped={snappedBoundary === index - 1}
+            />
+          ) : null}
+          <Panel
+            {...collapse.panelProps(child)}
+            {...sizeConstraints(child, node.orientation, tabsetMinSize, gutter)}
+            defaultSize={`${percentages[index] ?? 0}%`}
+            id={id}
+          >
+            <RowPanelContent
+              alone={alone}
+              child={child}
+              collapse={collapse}
+              renderTabset={renderTabset}
+            />
+          </Panel>
+        </Fragment>
+      ))}
     </Group>
   );
+};
+
+const RowRoot = ({ node, renderTabset }: RowViewProps): ReactNode => {
+  const gutter = useGutterRoot();
+
+  return (
+    <GutterContext.Provider value={gutter}>
+      <RowGroup isRoot node={node} renderTabset={renderTabset} />
+    </GutterContext.Provider>
+  );
+};
+
+/** A layout whose last tabset left still takes drops: its row id seeds the next tabset. */
+const EmptyLayout = ({ rowId }: { rowId: string }): ReactNode => {
+  const { ref } = useTabsetDroppable(rowId);
+
+  return <div data-dashfoo="layout-empty" ref={ref} />;
 };
 
 /**
@@ -175,9 +316,13 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
     return renderTabset?.(maximized) ?? <TabsetView node={maximized} />;
   }
 
-  return <RowGroup node={node} renderTabset={renderTabset} />;
+  if (node.children.length === 0) {
+    return <EmptyLayout rowId={node.id} />;
+  }
+
+  return <RowRoot node={node} renderTabset={renderTabset} />;
 };
 
-export { RowView };
+export { descendantMinSize, RowView };
 
 export type { RowViewProps };

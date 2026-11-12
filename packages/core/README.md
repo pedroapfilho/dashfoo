@@ -96,26 +96,30 @@ Every mutation is one immutable, discriminated `Action`. The reducer is exhausti
 over the union; an unhandled case throws at runtime via `assertNever`. Validate
 untrusted payloads against `actionSchema` before dispatch.
 
-| `action.type`            | Effect                                                           |
-| ------------------------ | ---------------------------------------------------------------- |
-| `addNode`                | Insert a tab at a `DockLocation` (center / split-\*)             |
-| `moveNode`               | Remove a tab by `sourceId`, re-insert it at a dock target        |
-| `moveTabset`             | Remove a tabset by `sourceId`, re-dock it whole at a dock target |
-| `selectTab`              | Set a tabset's `selected` index                                  |
-| `setActiveTabset`        | Mark the focused tabset                                          |
-| `setMaximizedTabset`     | Maximize one tabset (or clear with `null`)                       |
-| `renameTab`              | Change a tab's `name`                                            |
-| `deleteTab`              | Remove a tab                                                     |
-| `deleteTabset`           | Remove a whole tabset                                            |
-| `adjustSplit`            | Set the `weights` of a row's children (splitter drag)            |
-| `floatTab`               | Float a tab out into a new floating panel                        |
-| `floatTabset`            | Float a whole tabset (with its tabs) into a new floating panel   |
-| `dockFloat`              | Dock a float back as its own panel (or `center`-merge its tabs)  |
-| `moveFloat`              | Update a floating panel's stored rect (drag/resize)              |
-| `setFloatMinimized`      | Collapse a float to a chip, or restore it                        |
-| `renameFloat`            | Rename a floating panel's window title                           |
-| `updateNodeAttributes`   | Patch mutable attrs on a tab / tabset / row                      |
-| `updateGlobalAttributes` | Patch the `global` block                                         |
+| `action.type`            | Effect                                                             |
+| ------------------------ | ------------------------------------------------------------------ |
+| `addNode`                | Insert a tab at a `DockLocation` (center / split-\*)               |
+| `moveNode`               | Remove a tab by `sourceId`, re-insert it at a dock target          |
+| `moveTabset`             | Remove a tabset by `sourceId`, re-dock it whole at a dock target   |
+| `selectTab`              | Set a tabset's `selected` index                                    |
+| `setActiveTabset`        | Mark the focused tabset                                            |
+| `setMaximizedTabset`     | Maximize one tabset (or clear with `null`)                         |
+| `setTabsetCollapsed`     | Collapse a `collapsible` tabset to its strip, or expand it         |
+| `renameTab`              | Change a tab's `name`                                              |
+| `deleteTab`              | Remove a tab                                                       |
+| `deleteTabset`           | Remove a whole tabset                                              |
+| `adjustSplit`            | Set the `weights` of a row's children (splitter drag)              |
+| `floatTab`               | Float a tab out into a new floating panel                          |
+| `floatTabset`            | Float a whole tabset (with its tabs) into a new floating panel     |
+| `dockFloat`              | Dock a float back as its own panel (or `center`-merge its tabs)    |
+| `moveFloat`              | Update a floating panel's stored rect (drag/resize)                |
+| `setFloatMinimized`      | Collapse a float to a chip, or restore it                          |
+| `renameFloat`            | Rename a floating panel's window title                             |
+| `tearOff`                | Remove a tab or tabset released outside the window                 |
+| `transferOut`            | Remove a tab or tabset dropped into another layout of a drag group |
+| `transferIn`             | Insert a tab or tabset dragged in from another layout              |
+| `updateNodeAttributes`   | Patch mutable attrs on a tab / tabset / row                        |
+| `updateGlobalAttributes` | Patch the `global` block                                           |
 
 The `DockLocation` union is `center` and
 `split-top`/`split-bottom`/`split-left`/`split-right`. A `center` drop
@@ -123,15 +127,15 @@ stacks the tab into the target tabset. A `split-*` drop creates a new tabset bes
 the target, reusing the parent row when its orientation already matches, otherwise
 wrapping both in a fresh row.
 
-`addNode`, `moveNode` and `moveTabset` also take the main layout's root row id
-(`model.layout.id`) as their `targetId`, with a `split-*` location: the tab or
-tabset docks at that edge of the whole layout, beside everything else, taking a
-quarter of it (a sidebar or a bottom panel). The root keeps its id, wrapping its
-children in a new row when it runs the other way. A `center` drop on the root is
-a no-op.
+`addNode`, `moveNode`, `moveTabset` and `transferIn` also take the main layout's
+root row id (`model.layout.id`) as their `targetId`, with a `split-*` location:
+the tab or tabset docks at that edge of the whole layout, beside everything else,
+taking a quarter of it (a sidebar or a bottom panel). The root keeps its id,
+wrapping its children in a new row when it runs the other way. A `center` drop on
+the root is a no-op while the layout has tabsets.
 
-The six docking actions (`addNode`, `moveNode`, `moveTabset`, `floatTab`,
-`floatTabset`, `dockFloat`) share two rules. Each resolves its target before it
+The seven docking actions (`addNode`, `moveNode`, `moveTabset`, `floatTab`,
+`floatTabset`, `dockFloat`, `transferIn`) share two rules. Each resolves its target before it
 detaches anything, so a drop that cannot land changes nothing. And the tabset
 that receives the moved content becomes `activeTabsetId`: the target on a
 `center` drop, the newly placed tabset on a split, the floated tabset when
@@ -139,6 +143,10 @@ floating. `addNode` ignores a tab whose id is already in the layout and warns.
 `floatTab` and `floatTabset` likewise reject a supplied `floatId` used by any
 node or float, including their source. Rejection warns and leaves the model
 and undo/redo history unchanged; omitting the ID generates a fresh one.
+`transferIn` rejects a node whose tab ids are already in the layout, with a
+warning, and gives a tabset whose id is taken a fresh one. While the main
+layout is empty, `addNode`, `moveNode`, `moveTabset` and `transferIn` take its
+row id as `targetId` and seed a tabset there.
 
 `dockFloat` with a `targetId` needs a tabset in the main layout; any other id
 is a no-op. Without one it targets the active main tabset, else the first main
@@ -148,9 +156,19 @@ no-op, and so is a `setMaximizedTabset` naming a tabset that lives in a float.
 
 When a tab leaves its strip (closed, moved, floated), the selection stays on the
 tab that was selected. If that tab is the one leaving, its right neighbour
-inherits the selection, else its left one. `fallbackSelectedIndex(count, removedIndex)`
-returns that neighbour's index in the strip as it stands, which is how a renderer
-previews a drag before the drop.
+inherits the selection, else its left one. With
+`global.tabSetSelectOnRemove: "recent"` the tab selected before it inherits
+instead, read from the tabset's `selectionHistory`, which `normalize` keeps.
+`fallbackSelectedIndex(tabset, removedIndex, policy?)` returns the heir's index
+in the strip as it stands, which is how a renderer previews a drag before the
+drop.
+
+A tabset with `collapsible: true` can be collapsed to its strip with
+`setTabsetCollapsed`; `collapsed` is saved on the tabset and its `weight` stays
+the share it expands back to. Selecting one of its tabs expands it. A row
+always keeps one expanded child: `setTabsetCollapsed` refuses to collapse the
+last one (`canCollapseTabset(parent, tabset)` answers the same question), and
+`normalize` expands a row left with only collapsed children.
 
 ### Use the reducer directly
 
@@ -220,6 +238,7 @@ findRow(model, rowId): RowNode | undefined;
 findAttributedNode(model, id): AttributedNode | undefined; // row, tabset, or tab
 findTabsetParent(model, tabsetId): TabsetSlot | undefined;
 findDuplicateIds(model): Array<string>;         // ids used more than once
+standaloneModel(model, nodeId): Dashfoo | undefined; // just that tab (in its own tabset) or tabset
 ```
 
 `findTab` returns `{ container, index, tab }` so a caller knows where the tab
@@ -291,7 +310,7 @@ move and passes the same measurement to both functions, so the insertion index
 and the insertion line always mark the same slot.
 
 ```ts
-resolveDropIntent(subject, tabset, point, { edges, splitDock }?): DropIntent | null;
+resolveDropIntent(subject, tabset, point, { edges, foreign, splitDock }?): DropIntent | null;
 dropIndicator(subject, tabset, intent, { edges }?): DropIndicator;
 ```
 
@@ -307,7 +326,8 @@ itself, or the sole tab of a tabset back onto it. Over the strip it stacks at
 the insertion index (the first tab whose midpoint is right of the pointer, the
 dragged tab's own slot excluded). Over the body it defers to `resolveDockTarget`,
 appending a `center` stack past the remaining tabs; `splitDock: false` turns
-every body drop into that stack. A stripless tabset has no tab order, so its
+every body drop into that stack, and `foreign: true` (a subject from another
+document) skips the self-drop check, since a shared id is not the same node. A stripless tabset has no tab order, so its
 stack drops carry no index.
 
 With `edges` (a `MeasuredLayout`: `{ id, rect, tabsetCount }` for the main
@@ -403,12 +423,26 @@ clears the redo `future`. History keeps the most recent `HISTORY_LIMIT` (100) st
 toJSON(model): string;          // JSON.stringify
 fromJSON(json): Dashfoo;        // parse → validate → normalize
 parseModel(value): Dashfoo;     // same, from an already-parsed value
+restoreModel(value, { mapTab? }): Dashfoo | null; // tolerant, for saved layouts
 ```
 
 `fromJSON` and `parseModel` validate an untrusted value against `dashfooSchema`
 and return a normalized model. They throw on an invalid value. The payload's
 `version` field is pinned to `1` by the schema itself, so a payload written in
 any other format fails validation; a future format change bumps the literal.
+
+`restoreModel` is the tolerant counterpart for saved layouts: a value that is
+not a model warns and returns `null` instead of throwing. Its `mapTab` option
+receives every saved tab (floats included) and returns the app's current
+version of it, or `null` to drop it. The selected tab stays selected when tabs
+before it are dropped, and the result is tidied by `normalize` like any parsed
+model (emptied tabsets and rows collapse, selections are clamped).
+
+```ts
+const restored = restoreModel(JSON.parse(saved), {
+  mapTab: (tab) => (tab.component in components ? tab : null),
+});
+```
 
 ## XState machine
 
@@ -465,7 +499,7 @@ types `Dashfoo`, `DashfooInput`, `RowNodeInput`, `RowNode`, `TabsetNode`, `TabNo
 
 `tree`: `collectRoots`, `collectTabsets`, `collectTabsetsInRow`, `getFirstTabset`,
 `findTabset`, `findTab`, `findFloat`, `findRow`, `findAttributedNode`,
-`findTabsetParent`, `findDuplicateIds`;
+`findTabsetParent`, `findDuplicateIds`; `standaloneModel`;
 types `AttributedNode`, `TabLocation`, `TabsetSlot`.
 
 `dock`: `dockLocationSchema`; `resolveDockTarget`, `dockZonePolygons`,
@@ -481,7 +515,7 @@ types `SnapGrid`, `SnapDecision`.
 `history`: `createHistory`, `dispatchToHistory`, `undoHistory`, `redoHistory`,
 `canUndoHistory`, `canRedoHistory`, `HISTORY_LIMIT`; type `History`.
 
-`serialize`: `toJSON`, `fromJSON`, `parseModel`.
+`serialize`: `toJSON`, `fromJSON`, `parseModel`, `restoreModel`; types `MapTab`, `RestoreOptions`.
 
 `warn`: `warn`, `warnOnce`. Both prefix the message with `[dashfoo]` and write it
 with `console.warn`; `@dashfoo/react` reports its degraded paths through them.

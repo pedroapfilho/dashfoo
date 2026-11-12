@@ -32,8 +32,11 @@ type MeasuredTabset = {
 /** The main layout's root row, whose id an edge drop targets. */
 type MeasuredLayout = { id: string; rect: Rect; tabsetCount: number };
 
-/** `edges` turns on drops at the layout's edges; leave it out to turn them off. */
-type DropIntentOptions = { edges?: MeasuredLayout; splitDock?: boolean };
+/**
+ * `edges` turns on drops at the layout's edges; leave it out to turn them off.
+ * `foreign`: the subject comes from another document, so matching ids are not the same node.
+ */
+type DropIntentOptions = { edges?: MeasuredLayout; foreign?: boolean; splitDock?: boolean };
 
 type DropIndicator = { kind: "edge" | "insertion" | "zone"; rect: Rect };
 
@@ -137,14 +140,14 @@ const nearEdge = (point: Point, rect: Rect): SplitLocation | null => {
 
 /** With one tabset, the edge is that tabset's own edge, so docking it there changes nothing. */
 const resolveEdgeIntent = (
-  subject: DragSubject,
+  selfDrop: boolean,
   tabset: MeasuredTabset,
   point: Point,
   layout: MeasuredLayout,
 ): DropIntent | null => {
   const edge = nearEdge(point, layout.rect);
 
-  if (edge === null || (layout.tabsetCount <= 1 && isSelfDrop(subject, tabset))) {
+  if (edge === null || (layout.tabsetCount <= 1 && selfDrop)) {
     return null;
   }
 
@@ -158,15 +161,16 @@ const resolveDropIntent = (
   options?: DropIntentOptions,
 ): DropIntent | null => {
   const splitDock = options?.splitDock !== false;
+  const selfDrop = options?.foreign !== true && isSelfDrop(subject, tabset);
 
   const edgeIntent =
-    splitDock && options?.edges ? resolveEdgeIntent(subject, tabset, point, options.edges) : null;
+    splitDock && options?.edges ? resolveEdgeIntent(selfDrop, tabset, point, options.edges) : null;
 
   if (edgeIntent) {
     return edgeIntent;
   }
 
-  if (isSelfDrop(subject, tabset)) {
+  if (selfDrop) {
     return null;
   }
 

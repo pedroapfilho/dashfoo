@@ -4,9 +4,11 @@ import type { ComponentProps, ReactNode } from "react";
 import { forwardRef, useCallback, useContext, useMemo } from "react";
 
 import { useNodeDraggable } from "../drag/drag-hooks";
+import { useLayout } from "../layout/layout-store";
 import { tabDomId } from "../lib/dom-ids";
 import { mergeRefs } from "../lib/merge-refs";
 
+import { useTablistSpace } from "./tablist-space";
 import type { OverflowItem } from "./tabset-store";
 import { TabsetStoreContext, useTabset } from "./tabset-store";
 import { useTabsetDrag } from "./tabset-toolbar";
@@ -52,6 +54,18 @@ const TabsetTablist = forwardRef<HTMLDivElement, TabsetTablistProps>(
     );
 
     useTabOverflow(tablistElement, node.children, reportOverflow);
+
+    const tablistSpaces = useLayout((state) => state.tablistSpace);
+
+    const reportSpace = useCallback(
+      (tablistSpace: number | undefined): void => {
+        store?.setState({ tablistSpace });
+        tablistSpaces.set(node.id, tablistSpace);
+      },
+      [node.id, store, tablistSpaces],
+    );
+
+    useTablistSpace(tablistElement, node.children, reportSpace);
 
     const refCallback = useMemo(
       () => mergeRefs<HTMLDivElement>(registerTablist, userRef),

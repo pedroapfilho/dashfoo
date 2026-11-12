@@ -127,6 +127,8 @@ row out of an inherited snap default.
 ```ts
 type TabsetNode = {
   children: TabNode[];
+  collapsed?: boolean;
+  collapsible?: boolean;
   enableClose?: boolean;
   enableDrag?: boolean;
   enableMaximize?: boolean;
@@ -135,6 +137,7 @@ type TabsetNode = {
   min?: Dimension;
   name?: string;
   selected: number;
+  selectionHistory?: string[];
   type: "tabset";
   weight: number;
 };
@@ -157,6 +160,19 @@ Omitting `enableMaximize` falls back to `global.tabSetEnableMaximize`. There is
 no tabset-level close global: an omitted `enableClose` defers to
 `global.tabEnableClose` and each tab's own `enableClose` (a tab is closable only
 when every level allows it).
+
+`collapsible: true` lets the tabset collapse to its tab strip, like an IDE's
+bottom panel or a sidebar that shrinks to a vertical strip of tabs. `collapsed`
+records that it is collapsed, and `weight` keeps the share it expands back to.
+Dispatch `setTabsetCollapsed` to collapse or expand it; selecting one of its tabs
+expands it too. `normalize` keeps `collapsed` honest: it is dropped when
+`collapsible` is not `true`, and a row whose children are all collapsed expands
+them, since a split needs one expanded child to take the space. For the same
+reason `setTabsetCollapsed` will not collapse the last expanded child of a row.
+
+`selectionHistory` lists tab ids, most recently selected first. It exists only
+under `global.tabSetSelectOnRemove: "recent"`, and `normalize` maintains it, so
+treat it as read-only.
 
 ### `TabNode`: a leaf
 
@@ -228,6 +244,7 @@ type GlobalAttributes = {
   tabSetEnableMaximize?: boolean;
   tabSetEnableTabStrip?: boolean;
   tabSetMinSize?: number;
+  tabSetSelectOnRemove?: "neighbor" | "recent";
 };
 ```
 
@@ -244,6 +261,10 @@ their themed size, so nothing reflows).
 `splitterSize` sets the resize-handle gutter in pixels, and `tabSetMinSize`
 sets the default tabset minimum size in pixels. The React adapter uses `320`
 when `tabSetMinSize` is omitted.
+`tabSetSelectOnRemove` picks the tab that takes over when the selected tab is
+closed or dragged out of its tabset: its right neighbour, else its left one
+(`"neighbor"`, the default), or the tab selected before it (`"recent"`, like an
+IDE's editor groups), which keeps each tabset's `selectionHistory` in the model.
 `snap` turns on magnetic snapping for splitter drags: the dragged boundary pulls
 onto a grid while within `threshold` percent (default `4`), then commits on
 release as one undo step. The grid is the union of two optional sources: `step`
@@ -429,6 +450,27 @@ structure is canonical and every `selected` is in range). Skip normalize and you
 row that adds a nesting level without splitting anything, or an id reference
 pointing at a tabset that is no longer there.
 
+### Restoring saved layouts: `restoreModel`
+
+`fromJSON` and `parseModel` throw, which is right for a payload you produced a
+moment ago. A layout saved weeks ago by an older version of your app is a
+different case: it may be corrupt, or reference a component you have since
+renamed or removed. `restoreModel` takes the parsed value and returns `null`
+(with a warning) instead of throwing, and its `mapTab` option upgrades or drops
+each saved tab before the model is normalized:
+
+```ts
+import { restoreModel } from "@dashfoo/core";
+
+const restored = restoreModel(JSON.parse(saved), {
+  mapTab: (tab) => (tab.component in components ? tab : null),
+});
+```
+
+Dropping every tab of a tabset removes the tabset, and the selected tab stays
+selected when tabs before it are dropped. The `persist` prop uses it to load,
+with the same `mapTab` option.
+
 ## See also
 
 - [`packages/core/src/model/schema.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/schema.ts):
@@ -436,7 +478,7 @@ pointing at a tabset that is no longer there.
 - [`packages/core/src/model/invariants.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/invariants.ts):
   the full `normalize()` implementation.
 - [`packages/core/src/model/serialize.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/packages/core/src/model/serialize.ts):
-  `toJSON`, `fromJSON`, `parseModel`.
+  `toJSON`, `fromJSON`, `parseModel`, `restoreModel`.
 - [`apps/demo-vite/src/models.ts`](https://github.com/pedroapfilho/dashfoo/blob/main/apps/demo-vite/src/models.ts):
   the five demo models (`overviewModel`, `dockingModel`, `chromeModel`,
   `playgroundModel`, `sizingModel`), all written with the builders, that you can

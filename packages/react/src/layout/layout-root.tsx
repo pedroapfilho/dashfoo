@@ -9,10 +9,15 @@ import type {
   TabsetNode,
 } from "@dashfoo/core";
 import type { ComponentProps, ReactNode, Ref } from "react";
-import { useId } from "react";
+import { useId, useState } from "react";
 
+import type { DragGroupScope } from "../drag/drag-group";
 import { DashfooDragProvider } from "../drag/drag-root";
+import type { TearOffHandler } from "../drag/tear-off";
+import { useGroupDocument } from "../drag/use-group-document";
 import { useMirroredStore } from "../lib/use-mirrored-store";
+import type { TablistSpace } from "../tabset/tablist-space";
+import { createTablistSpace } from "../tabset/tablist-space";
 
 import type { LayoutState } from "./layout-store";
 import { createLayoutStore, LayoutStoreContext, useLayout } from "./layout-store";
@@ -24,12 +29,18 @@ type LayoutOptions = {
   closableTabs?: boolean;
   draggableTabs?: boolean;
   draggableTabsets?: boolean;
+  /** Layouts sharing a group exchange tabs and tabsets by drag, across windows and browser tabs of one origin. */
+  dragGroup?: string;
+  dragGroupScope?: DragGroupScope;
   /** When false, tabs and tabsets can't be dropped at the layout's edges, beside everything else. */
   edgeDocking?: boolean;
   editable?: boolean;
   floatable?: boolean;
-  keepMounted?: boolean;
+  /** `true` keeps inactive tabs mounted and hidden; `"activity"` keeps them in a hidden React `<Activity>`, which pauses their effects. */
+  keepMounted?: boolean | "activity";
   maximizable?: boolean;
+  /** Called when a tab or tabset is released outside the window; return `true` to remove it. */
+  onTearOff?: TearOffHandler;
   renamableTabs?: boolean;
   resizableSplits?: boolean;
   /** When false, the tree itself is frozen: no dragging, splitting or floating. Tabs stay closable and renamable. */
@@ -50,6 +61,8 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children" | "ref" | "style">
     model: Dashfoo;
     renderers: LayoutRenderers;
     rootRef?: Ref<HTMLDivElement>;
+    /** Where each tabset's measured tablist space is published, for readers outside the layout. */
+    tablistSpace?: TablistSpace;
   };
 
 type ResolvedOptions = Omit<
@@ -60,10 +73,34 @@ type ResolvedOptions = Omit<
   | "renderTab"
   | "renderTabLabel"
   | "renderTabsetToolbar"
+  | "tablistSpace"
 >;
 
 const noneSwitchedOff = (...switches: Array<boolean | undefined>): boolean =>
   switches.every((value) => value !== false);
+
+/** A layout that cannot dock joins no group, so drags never land in or leave it. */
+const resolveDragGroup = (
+  structural: boolean,
+  { dragGroup, dragGroupScope = "origin" }: LayoutOptions,
+): Pick<ResolvedOptions, "dragGroup" | "dragGroupScope"> => ({
+  dragGroup: structural ? dragGroup : undefined,
+  dragGroupScope,
+});
+
+/** What the model's `global` decides with no host prop to weigh against it. */
+const resolveGlobalOptions = (
+  global: GlobalAttributes,
+): Pick<
+  ResolvedOptions,
+  "selectOnRemove" | "splitDock" | "tabLocation" | "tabsetMinSize" | "tabStripEnabled"
+> => ({
+  selectOnRemove: global.tabSetSelectOnRemove ?? "neighbor",
+  splitDock: global.enableSplitDock !== false,
+  tabLocation: global.tabLocation ?? "top",
+  tabsetMinSize: global.tabSetMinSize ?? DEFAULT_TABSET_MIN_SIZE,
+  tabStripEnabled: global.tabSetEnableTabStrip !== false,
+});
 
 /** The host's options and the model's `global` attributes, combined: either side can switch a capability off. */
 const resolveLayoutOptions = (
@@ -78,68 +115,102 @@ const resolveLayoutOptions = (
     closableTabs: noneSwitchedOff(editable, options.closableTabs, global.tabEnableClose),
     draggableTabs: noneSwitchedOff(structural, options.draggableTabs, global.tabEnableDrag),
     draggableTabsets: noneSwitchedOff(structural, options.draggableTabsets),
+    ...resolveDragGroup(structural, options),
     edgeDocking: options.edgeDocking !== false,
     editable,
     floatable: structural && options.floatable === true,
-    keepMounted: options.keepMounted === true,
+    keepMounted: options.keepMounted ?? false,
     maximizable: noneSwitchedOff(options.maximizable, global.tabSetEnableMaximize),
+    onTearOff: options.onTearOff,
     renamableTabs: noneSwitchedOff(editable, options.renamableTabs, global.tabEnableRename),
     resizableSplits: noneSwitchedOff(structural, options.resizableSplits, global.enableSplitResize),
     snap: options.snap ?? global.snap ?? null,
-    splitDock: global.enableSplitDock !== false,
-    tabLocation: global.tabLocation ?? "top",
-    tabsetMinSize: global.tabSetMinSize ?? DEFAULT_TABSET_MIN_SIZE,
-    tabStripEnabled: global.tabSetEnableTabStrip !== false,
+    ...resolveGlobalOptions(global),
   };
 };
 
 const splitterSize = ({ splitterSize: size }: GlobalAttributes): string | undefined =>
   size === undefined ? undefined : `${size}px`;
 
-const LayoutRoot = ({
-  children,
+/** A layout without a host-supplied registry still publishes to one of its own. */
+const useTablistSpaceOrOwn = (tablistSpace: TablistSpace | undefined): TablistSpace => {
+  const [own] = useState(createTablistSpace);
+
+  return tablistSpace ?? own;
+};
+
+type OwnRootProps = "children" | "dispatch" | "model" | "renderers" | "rootRef" | "tablistSpace";
+
+/** Separates the capability props from the ones forwarded to the root `div`. */
+const splitLayoutOptions = ({
   closableTabs,
-  dispatch,
   draggableTabs,
   draggableTabsets,
+  dragGroup,
+  dragGroupScope,
   edgeDocking,
   editable,
   floatable,
   keepMounted,
   maximizable,
-  model,
+  onTearOff,
   renamableTabs,
-  renderers,
   resizableSplits,
   restructurable,
-  rootRef,
   snap,
   ...props
+}: Omit<LayoutRootProps, OwnRootProps>) => ({
+  options: {
+    closableTabs,
+    draggableTabs,
+    draggableTabsets,
+    dragGroup,
+    dragGroupScope,
+    edgeDocking,
+    editable,
+    floatable,
+    keepMounted,
+    maximizable,
+    onTearOff,
+    renamableTabs,
+    resizableSplits,
+    restructurable,
+    snap,
+  } satisfies LayoutOptions,
+  props,
+});
+
+const LayoutRoot = ({
+  children,
+  dispatch,
+  model,
+  renderers,
+  rootRef,
+  tablistSpace,
+  ...rest
 }: LayoutRootProps): ReactNode => {
+  const { options, props } = splitLayoutOptions(rest);
   const documentId = useId();
+  const space = useTablistSpaceOrOwn(tablistSpace);
   const { global } = model;
 
   const store = useMirroredStore(createLayoutStore, {
-    ...resolveLayoutOptions(global, {
-      closableTabs,
-      draggableTabs,
-      draggableTabsets,
-      edgeDocking,
-      editable,
-      floatable,
-      keepMounted,
-      maximizable,
-      renamableTabs,
-      resizableSplits,
-      restructurable,
-      snap,
-    }),
+    ...resolveLayoutOptions(global, options),
     dispatch,
     documentId,
     maximizedTabsetId: model.maximizedTabsetId,
     renderTab: renderers.tab,
     renderTabLabel: renderers.tabLabel,
     renderTabsetToolbar: renderers.tabsetToolbar,
+    tablistSpace: space,
+  });
+
+  useGroupDocument({
+    dispatch,
+    documentId,
+    dragGroup: options.dragGroup,
+    dragGroupScope: options.dragGroupScope,
+    model,
   });
 
   return (

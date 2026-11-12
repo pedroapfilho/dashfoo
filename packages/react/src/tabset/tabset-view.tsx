@@ -13,6 +13,7 @@ import { useTabset } from "./tabset-store";
 import { TabsetCloseButton, TabsetTab, TabsetTrigger } from "./tabset-tab";
 import { TabsetTablist, TabsetTabStrip } from "./tabset-tablist";
 import {
+  TabsetCollapseButton,
   TabsetFloatButton,
   TabsetGrip,
   TabsetMaximizeButton,
@@ -48,6 +49,7 @@ const DefaultTabsetLayout = (): ReactNode => {
           <TabsetGrip />
           {renderTabsetToolbar?.(node)}
           <TabsetFloatButton />
+          <TabsetCollapseButton />
           <TabsetMaximizeButton />
         </TabsetToolbar>
       ) : null}

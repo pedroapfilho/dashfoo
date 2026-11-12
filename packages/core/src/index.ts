@@ -20,6 +20,8 @@ export * from "./model/schema";
 
 export * from "./model/serialize";
 
+export { standaloneModel } from "./model/standalone";
+
 export * from "./model/tree";
 
 export { decideSnap, resolveSnapGrid, settleSnap, snapEnabled } from "./snap/snap";
@@ -27,6 +29,8 @@ export { decideSnap, resolveSnapGrid, settleSnap, snapEnabled } from "./snap/sna
 export type { SnapDecision, SnapGrid } from "./snap/snap";
 
 export * from "./state/actions";
+
+export { canCollapseTabset } from "./state/collapse";
 
 export { fallbackSelectedIndex } from "./state/docking";
 
