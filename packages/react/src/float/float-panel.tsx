@@ -103,6 +103,7 @@ type FloatPanelProps = {
 const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
   const dispatch = useLayout((state) => state.dispatch);
   const editable = useLayout((state) => state.editable);
+  const canDock = useLayout((state) => state.canDock);
 
   const minimized = node.minimized === true;
 
@@ -181,30 +182,30 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
         </span>
         <FloatTitle dispatch={dispatch} node={node} renamable={editable} />
         {editable && (
-          <>
-            <button
-              aria-label="Minimize panel"
-              data-dashfoo="float-minimize"
-              onClick={() => {
-                dispatch({ floatId: node.id, minimized: true, type: "setFloatMinimized" });
-              }}
-              title="Minimize panel"
-              type="button"
-            >
-              <MinimizeIcon />
-            </button>
-            <button
-              aria-label="Dock panel back into the main layout"
-              data-dashfoo="float-dock"
-              onClick={() => {
-                dispatch({ floatId: node.id, type: "dockFloat" });
-              }}
-              title="Dock panel back"
-              type="button"
-            >
-              <DockIcon />
-            </button>
-          </>
+          <button
+            aria-label="Minimize panel"
+            data-dashfoo="float-minimize"
+            onClick={() => {
+              dispatch({ floatId: node.id, minimized: true, type: "setFloatMinimized" });
+            }}
+            title="Minimize panel"
+            type="button"
+          >
+            <MinimizeIcon />
+          </button>
+        )}
+        {canDock && (
+          <button
+            aria-label="Dock panel back into the main layout"
+            data-dashfoo="float-dock"
+            onClick={() => {
+              dispatch({ floatId: node.id, type: "dockFloat" });
+            }}
+            title="Dock panel back"
+            type="button"
+          >
+            <DockIcon />
+          </button>
         )}
       </div>
       <div data-dashfoo="float-body">
