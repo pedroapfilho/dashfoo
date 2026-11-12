@@ -20,6 +20,8 @@ export * from "./model/schema";
 
 export * from "./model/serialize";
 
+export { standaloneModel } from "./model/standalone";
+
 export * from "./model/tree";
 
 export { decideSnap, resolveSnapGrid, settleSnap, snapEnabled } from "./snap/snap";

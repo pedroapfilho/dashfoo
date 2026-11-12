@@ -4,6 +4,7 @@ import type { Geometry } from "@dashfoo/core";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useRef } from "react";
 
+import { isHTMLElement } from "../lib/dom";
 import { startsOnControl } from "../lib/interactive";
 
 import type { ResizeEdges, Size } from "./float-geometry";
@@ -89,7 +90,7 @@ const useFloatGesture = ({
       releaseCapture(panel, prior.pointerId);
     }
 
-    const parent = panel.offsetParent instanceof HTMLElement ? panel.offsetParent : null;
+    const parent = isHTMLElement(panel.offsetParent) ? panel.offsetParent : null;
     const rect = panel.getBoundingClientRect();
 
     const visibleGeometry = {

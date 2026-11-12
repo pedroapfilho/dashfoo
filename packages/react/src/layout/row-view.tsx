@@ -7,6 +7,7 @@ import { Fragment, useMemo } from "react";
 import type { Orientation } from "react-resizable-panels";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
+import { useTabsetDroppable } from "../drag/drag-hooks";
 import { resizePanelId } from "../lib/dom-ids";
 import { TabsetView } from "../tabset/tabset-view";
 
@@ -158,6 +159,13 @@ const RowGroup = ({ node, renderTabset }: RowViewProps): ReactNode => {
   );
 };
 
+/** A layout whose last tabset left still takes drops: its row id seeds the next tabset. */
+const EmptyLayout = ({ rowId }: { rowId: string }): ReactNode => {
+  const { ref } = useTabsetDroppable(rowId);
+
+  return <div data-dashfoo="layout-empty" ref={ref} />;
+};
+
 /**
  * The rows of a layout, or only its maximized tabset while one is maximized, so
  * every layout honors maximize without branching on it.
@@ -172,6 +180,10 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
 
   if (maximized) {
     return renderTabset?.(maximized) ?? <TabsetView node={maximized} />;
+  }
+
+  if (node.children.length === 0) {
+    return <EmptyLayout rowId={node.id} />;
   }
 
   return <RowGroup node={node} renderTabset={renderTabset} />;

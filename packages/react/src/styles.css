@@ -47,7 +47,8 @@
     z-index: 1;
   }
 
-  [data-dashfoo="row"] {
+  [data-dashfoo="row"],
+  [data-dashfoo="layout-empty"] {
     display: flex;
     flex: 1;
     min-height: 0;

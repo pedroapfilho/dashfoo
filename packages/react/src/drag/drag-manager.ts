@@ -3,8 +3,10 @@ import { Accessibility, DragDropManager, Feedback, PointerSensor } from "@dnd-ki
 
 import { startsOnControl } from "../lib/interactive";
 
+/** A mouse press on a node in a drag group is the browser's drag and drop to run, not dnd-kit's. */
 const preventActivation = (event: PointerEvent, source: Draggable): boolean =>
-  startsOnControl(event.target, source.element);
+  startsOnControl(event.target, source.element) ||
+  (event.pointerType === "mouse" && source.element?.getAttribute("draggable") === "true");
 
 type DashfooDragManager = DragDropManager;
 

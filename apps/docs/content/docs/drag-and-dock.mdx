@@ -408,14 +408,15 @@ off-by-one correction is needed when a tab moves within its own strip.
 These flags decide what a drag can do. Some are global, some per tab, some are
 layout props.
 
-| Gate               | Scope        | Where it lives           | Default | Effect when off                                                  |
-| ------------------ | ------------ | ------------------------ | ------- | ---------------------------------------------------------------- |
-| `editable`         | whole layout | `<DashfooLayout>` prop   | on      | No drags start, and the layout is not a drop target (see below). |
-| `enableSplitDock`  | global       | `global.enableSplitDock` | on      | A drop over a tabset body stacks instead of splitting.           |
-| `draggableTabs`    | whole layout | `<DashfooLayout>` prop   | on      | No tab can be picked up; `tab.enableDrag` becomes moot.          |
-| `tabEnableDrag`    | global       | `global.tabEnableDrag`   | on      | Tree-wide default behind `tab.enableDrag`.                       |
-| `enableDrag`       | per tab      | `tab.enableDrag`         | on      | That tab can't be picked up at all.                              |
-| `draggableTabsets` | whole layout | `<DashfooLayout>` prop   | on      | No grip is rendered; tabsets can't be dragged whole.             |
+| Gate               | Scope        | Where it lives           | Default | Effect when off                                                                  |
+| ------------------ | ------------ | ------------------------ | ------- | -------------------------------------------------------------------------------- |
+| `editable`         | whole layout | `<DashfooLayout>` prop   | on      | No drags start, and the layout is not a drop target (see below).                 |
+| `enableSplitDock`  | global       | `global.enableSplitDock` | on      | A drop over a tabset body stacks instead of splitting.                           |
+| `draggableTabs`    | whole layout | `<DashfooLayout>` prop   | on      | No tab can be picked up; `tab.enableDrag` becomes moot.                          |
+| `tabEnableDrag`    | global       | `global.tabEnableDrag`   | on      | Tree-wide default behind `tab.enableDrag`.                                       |
+| `enableDrag`       | per tab      | `tab.enableDrag`         | on      | That tab can't be picked up at all.                                              |
+| `draggableTabsets` | whole layout | `<DashfooLayout>` prop   | on      | No grip is rendered; tabsets can't be dragged whole.                             |
+| `dragGroup`        | whole layout | `<DashfooLayout>` prop   | off     | Drops from other layouts are refused. See [multiple windows](/multiple-windows). |
 
 ### The editable gate
 

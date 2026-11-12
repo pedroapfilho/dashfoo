@@ -12,7 +12,7 @@ import {
 } from "../model/tree";
 
 import type { Action } from "./actions";
-import { dock, removeTab, removeTabset } from "./docking";
+import { dock, removeNode, removeTab, removeTabset } from "./docking";
 import { uniqueFloatName } from "./floats";
 import { jsonEqual } from "./json-equal";
 import type { MutableNodeAttrs } from "./node-attrs";
@@ -50,7 +50,8 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
     case "floatTab":
     case "floatTabset":
     case "moveNode":
-    case "moveTabset": {
+    case "moveTabset":
+    case "transferIn": {
       dock(draft, action);
 
       return;
@@ -153,6 +154,13 @@ const applyAction = (draft: Dashfoo, action: Action): void => {
       ) {
         draft.maximizedTabsetId = action.tabsetId;
       }
+
+      return;
+    }
+
+    case "tearOff":
+    case "transferOut": {
+      removeNode(draft, action.nodeId);
 
       return;
     }

@@ -39,12 +39,19 @@ const staticRoute = createRoute({
   path: "/static",
 });
 
+const windowsRoute = createRoute({
+  component: lazyRouteComponent(() => import("./pages/windows"), "WindowsPage"),
+  getParentRoute: () => rootRoute,
+  path: "/windows",
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dockingRoute,
   controlledRoute,
   rawRoute,
   staticRoute,
+  windowsRoute,
 ]);
 
 const router = createRouter({ defaultPreload: "intent", routeTree });
