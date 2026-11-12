@@ -1,6 +1,12 @@
 "use client";
 
-import type { DragSubject, DropIndicator, DropIntent, TabNode } from "@dashfoo/core";
+import type {
+  DragSubject,
+  DropIndicator,
+  DropIntent,
+  DropResolution,
+  TabNode,
+} from "@dashfoo/core";
 import { warnOnce } from "@dashfoo/core";
 import { Draggable, Droppable } from "@dnd-kit/dom";
 import { useSelector } from "@xstate/react";
@@ -25,6 +31,24 @@ const sameDropIntent = (a: DropIntent | null, b: DropIntent | null): boolean =>
     a.index === b.index &&
     a.location === b.location &&
     a.targetId === b.targetId);
+
+const sameDropIndicator = (a: DropIndicator | null, b: DropIndicator | null): boolean =>
+  a === b ||
+  (a !== null &&
+    b !== null &&
+    a.kind === b.kind &&
+    a.rect.x === b.rect.x &&
+    a.rect.y === b.rect.y &&
+    a.rect.width === b.rect.width &&
+    a.rect.height === b.rect.height);
+
+const sameDropResolution = (a: DropResolution | null, b: DropResolution | null): boolean =>
+  a === b ||
+  (a !== null &&
+    b !== null &&
+    a.scope === b.scope &&
+    sameDropIntent(a.intent, b.intent) &&
+    sameDropIndicator(a.indicator, b.indicator));
 
 /** Tabs and grips drag only inside a `Layout.DragLayer`: without one there is nowhere to drop. */
 const useLayerManager = (): DashfooDragManager | undefined => {
@@ -66,6 +90,9 @@ const useDndEntity = <E extends DndEntity>(create: (() => E) | null): DndEntityB
     entityRef.current = entity;
 
     return () => {
+      // `destroy` leaves the sensor's pointer listener on an element that stays
+      // mounted, so a handle turned off while on screen would still drag.
+      entity.element = undefined;
       entity.destroy();
       entityRef.current = null;
     };
@@ -105,11 +132,13 @@ const useDraggableEntity = (
   return useMemo(() => ({ ref }), [ref]);
 };
 
+/** `handle` tells apart two elements that drag the same node, like a tabset's grip and its header. */
+type NodeDraggableOptions = { disabled: boolean; handle?: string; label: string };
+
 const useNodeDraggable = (
   kind: "tab" | "tabset",
   id: string,
-  disabled: boolean,
-  label: string,
+  { disabled, handle = "", label }: NodeDraggableOptions,
 ): { ref: (element: Element | null) => void } => {
   const manager = useLayerManager();
   const documentId = useLayout((state) => state.documentId);
@@ -121,7 +150,7 @@ const useNodeDraggable = (
 
   const { ref } = useDraggableEntity(
     manager,
-    { data, id: JSON.stringify([documentId, kind, id]) },
+    { data, id: JSON.stringify([documentId, kind, id, handle]) },
     disabled,
     label,
   );
@@ -248,17 +277,22 @@ const useDropIntent = (): DropIntent | null => {
 const useDropIndicator = (): DropIndicator | null => {
   const actorRef = useContext(DragContext)?.actorRef;
 
-  return useSelector(actorRef, (snapshot) => {
-    const drag = snapshot?.context.drag;
+  return useSelector(
+    actorRef,
+    (snapshot) => {
+      const drag = snapshot?.context.drag;
 
-    return drag?.kind === "dragging" ? (drag.drop?.indicator ?? null) : null;
-  });
+      return drag?.kind === "dragging" ? (drag.drop?.indicator ?? null) : null;
+    },
+    sameDropIndicator,
+  );
 };
 
 export type { ExternalTabSourceOptions };
 
 export {
   sameDropIntent,
+  sameDropResolution,
   useDraggedNodeId,
   useDragSubject,
   useDropIndicator,

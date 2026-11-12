@@ -423,28 +423,33 @@ outside the layout. See the [API reference](/api-reference#usetabset--usetab--us
 
 ## Dock indicators and the `--dashfoo-dock-*` vars
 
-While a tab is dragged, a single `data-dashfoo="dock-indicator"` element is
-positioned over the frame. The library computes its position and size from
-geometry and sets them on the element as the custom properties
-`--dashfoo-dock-left`, `--dashfoo-dock-top`, `--dashfoo-dock-width` and
-`--dashfoo-dock-height`, which `@dashfoo/react/styles.css` reads. The same
-stylesheet sets its z-index (`auto`, and `9999` inside a float) and reads every
-visual property from a CSS custom property with a neutral fallback. Set the
+While a tab or tabset is dragged, a single `data-dashfoo="dock-indicator"`
+element is positioned over the frame. It is the same element for the whole
+drag, so it glides from one tabset to the next. The library computes its
+position and size from geometry and sets them on the element as the custom
+properties `--dashfoo-dock-left`, `--dashfoo-dock-top`, `--dashfoo-dock-width`
+and `--dashfoo-dock-height`, which `@dashfoo/react/styles.css` reads. When the
+pointer leaves every target, the element stays where it was with `data-idle`
+and `opacity: 0`, so it fades rather than vanishing; it unmounts when the drag
+ends. The same stylesheet sets its z-index (`auto`, beneath floats, and `2`
+with `data-floating` when the target is inside a float) and reads every visual
+property from a CSS custom property with a neutral fallback. Set the
 variables to own the look without touching the element's selector.
 
-| Variable                      | Default fallback                               | Controls                                                    |
-| ----------------------------- | ---------------------------------------------- | ----------------------------------------------------------- |
-| `--dashfoo-dock-fill`         | `oklch(0.556 0 0 / 0.18)`                      | Indicator background.                                       |
-| `--dashfoo-dock-border`       | `oklch(0.708 0 0 / 0.75)`                      | Indicator border color.                                     |
-| `--dashfoo-dock-border-width` | `1px`                                          | Indicator border width.                                     |
-| `--dashfoo-dock-radius`       | `6px`                                          | Indicator corner radius.                                    |
-| `--dashfoo-dock-line-radius`  | `2px`                                          | Insertion-line corner radius.                               |
-| `--dashfoo-dock-transition`   | `left 60ms, top 60ms, width 60ms, height 60ms` | Position glide; the theme sets `none` under reduced motion. |
+| Variable                      | Default fallback                                             | Controls                                                                  |
+| ----------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| `--dashfoo-dock-fill`         | `oklch(0.556 0 0 / 0.18)`                                    | Indicator background.                                                     |
+| `--dashfoo-dock-border`       | `oklch(0.708 0 0 / 0.75)`                                    | Indicator border color.                                                   |
+| `--dashfoo-dock-border-width` | `1px`                                                        | Indicator border width.                                                   |
+| `--dashfoo-dock-radius`       | `6px`                                                        | Indicator corner radius.                                                  |
+| `--dashfoo-dock-line-radius`  | `2px`                                                        | Insertion-line corner radius.                                             |
+| `--dashfoo-dock-transition`   | `left 60ms, top 60ms, width 60ms, height 60ms, opacity 60ms` | Position glide and idle fade; the theme sets `none` under reduced motion. |
 
 The indicator takes two visual forms from the same element. Dropping onto a tab
 strip paints a thin insertion line at the slot boundary, with
 `--dashfoo-dock-line-radius` for its ends; dropping onto the tabset body to
-split paints a filled pane covering the zone. Both share the same fill and
+split paints a filled pane covering the zone, and dropping at the layout's edge
+paints the quarter of the layout the docked panel will take. All share the same fill and
 border vars, so setting them covers both forms.
 
 The shipped theme derives the two color vars from its semantic tokens, so the

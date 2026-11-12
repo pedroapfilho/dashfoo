@@ -10,8 +10,10 @@ import { useCallback, useContext, useEffect, useInsertionEffect, useMemo, useSta
 
 import { isHTMLElement } from "../lib/dom";
 
+import { DockIndicator } from "./dock-indicator";
 import type { DragActor, DragContextValue, RegisteredLayer } from "./drag-context";
 import { DragContext } from "./drag-context";
+import { sameDropResolution } from "./drag-hooks";
 import type { DashfooDragManager } from "./drag-manager";
 import { createDragManager } from "./drag-manager";
 import { DragPreviewOverlay } from "./drag-preview";
@@ -90,11 +92,14 @@ const useDragMonitor = (
               manager.dragOperation.position.current,
             );
 
-      actorRef.send({
-        drop:
-          resolved === null || found === null ? null : { ...resolved, scope: found.layer.layerId },
-        type: "OVER",
-      });
+      const drop =
+        resolved === null || found === null ? null : { ...resolved, scope: found.layer.layerId };
+
+      // Every pointer move resolves a fresh object; an unchanged drop must not
+      // wake every subscriber, so only a different one reaches the actor.
+      if (!sameDropResolution(drag.drop, drop)) {
+        actorRef.send({ drop, type: "OVER" });
+      }
     };
 
     const handleStart = (event: DragStartEvent): void => {
@@ -212,6 +217,11 @@ const OwnedDragRoot = ({ children }: { children: ReactNode }): ReactNode => {
 
   useDragMonitor(manager, actorRef, layers);
 
+  const isFloating = useCallback(
+    (scope: string): boolean => layers.get(scope)?.floating === true,
+    [layers],
+  );
+
   const isTearOff = useCallback(
     (point: Point): boolean => {
       const { drag } = actorRef.getSnapshot().context;
@@ -232,6 +242,7 @@ const OwnedDragRoot = ({ children }: { children: ReactNode }): ReactNode => {
   return (
     <DragContext.Provider value={value}>
       {children}
+      <DockIndicator actorRef={actorRef} isFloating={isFloating} />
       <DragPreviewOverlay isTearOff={isTearOff} manager={manager} />
     </DragContext.Provider>
   );

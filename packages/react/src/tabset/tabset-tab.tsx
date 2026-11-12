@@ -109,7 +109,7 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
     const visualSelected = useTabset((state) => state.visualSelected);
     const renderTabLabel = useLayout((state) => state.renderTabLabel);
 
-    const { ref } = useNodeDraggable("tab", tab.id, !draggable, tab.name);
+    const { ref } = useNodeDraggable("tab", tab.id, { disabled: !draggable, label: tab.name });
 
     const refCallback = useMemo(() => mergeRefs<HTMLButtonElement>(ref, userRef), [ref, userRef]);
 
@@ -142,22 +142,25 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
 
       // The visual index, not the model's: focus (`tabindex="0"`) sits at that one.
       const from = Math.max(visualSelected, 0);
+      const previous = (from - 1 + count) % count;
+      const next = (from + 1) % count;
+      const rtl = getComputedStyle(event.currentTarget).direction === "rtl";
 
       const targets = new Map([
-        ["ArrowLeft", (from - 1 + count) % count],
-        ["ArrowRight", (from + 1) % count],
+        ["ArrowLeft", rtl ? next : previous],
+        ["ArrowRight", rtl ? previous : next],
         ["End", count - 1],
         ["Home", 0],
       ]);
 
-      const next = targets.get(event.key);
+      const target = targets.get(event.key);
 
-      if (next === undefined) {
+      if (target === undefined) {
         return;
       }
 
       event.preventDefault();
-      selectTab(next, { focus: true });
+      selectTab(target, { focus: true });
     };
 
     return (

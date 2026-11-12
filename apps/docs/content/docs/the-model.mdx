@@ -130,6 +130,7 @@ type TabsetNode = {
   collapsed?: boolean;
   collapsible?: boolean;
   enableClose?: boolean;
+  enableDrag?: boolean;
   enableMaximize?: boolean;
   id: string;
   max?: Dimension;
@@ -147,11 +148,12 @@ index of the visible one (zero-based). `weight` works as it does on rows. `min`
 and `max` are optional `Dimension` constraints (see [Dimensions](#dimensions)
 below). `name` labels the tabset for assistive technology: the React renderer
 uses it as the tab strip's `aria-label`, falling back to `"Tabs"` when omitted.
-The two flags gate this tabset's chrome:
+The flags gate this tabset's chrome:
 
 | Flag             | Effect when `false`                                                                 |
 | ---------------- | ----------------------------------------------------------------------------------- |
 | `enableClose`    | Tabs in this tabset show no close buttons (turns off per-tab closing for the pane). |
+| `enableDrag`     | The tabset can't be dragged whole. Its tabs can still be dragged one at a time.     |
 | `enableMaximize` | The tabset has no maximize affordance.                                              |
 
 Omitting `enableMaximize` falls back to `global.tabSetEnableMaximize`. There is

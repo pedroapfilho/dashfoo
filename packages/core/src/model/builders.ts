@@ -40,6 +40,7 @@ type TabsetOptions = {
   collapsed?: boolean;
   collapsible?: boolean;
   enableClose?: boolean;
+  enableDrag?: boolean;
   enableMaximize?: boolean;
   id?: string;
   max?: number | Dimension;

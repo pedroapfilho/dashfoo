@@ -45,9 +45,10 @@ overrides.
 | `maximizable`             | `boolean`                                                                                   | `true`     | Show the tabset maximize/restore control.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `floatable`               | `boolean`                                                                                   | `false`    | Show a per-tabset control that floats the panel into a movable, resizable overlay, and render any floating panels (`Dashfoo.floats`). Opt-in. See [floating panels](/floating-panels).                                                                                                                                                                                                                                                                                                                                   |
 | `draggableTabs`           | `boolean`                                                                                   | `true`     | Allow individual tabs to be dragged between tabsets.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `draggableTabsets`        | `boolean`                                                                                   | `true`     | Show the grip that drags a whole tabset.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `draggableTabsets`        | `boolean`                                                                                   | `true`     | Let a whole tabset be dragged by its grip or the empty space in its header.                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `dragGroup`               | `string`                                                                                    | none       | Layouts with the same group exchange tabs and tabsets by drag, across popup windows and other browser tabs of the same origin. Mouse drags use the browser's drag and drop while it is set. See [multiple windows](/multiple-windows).                                                                                                                                                                                                                                                                                   |
 | `dragGroupScope`          | `"origin" \| "app"`                                                                         | `"origin"` | `"app"` keeps this layout's drags within this copy of the app: it neither sends to nor accepts from other windows' copies.                                                                                                                                                                                                                                                                                                                                                                                               |
+| `edgeDocking`             | `boolean`                                                                                   | `true`     | Let tabs and tabsets be dropped at the layout's edges, beside everything else, as a sidebar or bottom panel. Needs split docking (`global.enableSplitDock`).                                                                                                                                                                                                                                                                                                                                                             |
 | `onTearOff`               | `(request: TearOffRequest) => boolean`                                                      | none       | Called when a tab or tabset is released outside the window. Return `true` to remove it (a `tearOff` action). The drag preview carries `data-tear-off` while a release would tear off.                                                                                                                                                                                                                                                                                                                                    |
 | `resizableSplits`         | `boolean`                                                                                   | `true`     | Allow dragging the splitters between panels. `false` disables them but keeps them mounted, so the gutters hold their size.                                                                                                                                                                                                                                                                                                                                                                                               |
 | `keepMounted`             | `boolean \| "activity"`                                                                     | `false`    | Keep inactive tab panels mounted (hidden) so their state survives a tab switch. By default inactive panels unmount. `"activity"` renders them in a hidden React `<Activity>` (state kept, effects paused; React 19.2+).                                                                                                                                                                                                                                                                                                  |
@@ -278,15 +279,15 @@ under a `DashfooDragProvider` they work anywhere under the provider. Pair with
 for custom drop indicators and drop-zone visualizations.
 
 `useDropIndicator(): DropIndicator | null` returns what the built-in dock
-indicator draws (`{ kind: "insertion" | "zone"; rect }` in viewport pixels),
-taken from the same measurement as the intent.
+indicator draws (`{ kind: "edge" | "insertion" | "zone"; rect }` in viewport
+pixels), taken from the same measurement as the intent.
 
 ### `measureTabset`
 
 `measureTabset(id: string, element: HTMLElement): MeasuredTabset` is the DOM
-read behind the library's drop intent and dock indicator: the tabset's rect,
-plus its own strip's rect and tab items when it has a strip (strips of a layout
-nested in its content are skipped). Pass the result to `resolveDropIntent` or
+read behind the library's drop intent and dock indicator: the tabset's rect and
+writing direction, plus its own strip's rect and tab items when it has a strip
+(strips of a layout nested in its content are skipped). Pass the result to `resolveDropIntent` or
 `dropIndicator` to build a zone map that matches the library. Tabset roots
 render `data-tabset-id="<node id>"`. To draw only the current target, read
 `useDropIndicator()` instead.
@@ -416,7 +417,7 @@ Constructors that fill the mechanical fields (`type`, `version`, `selected`,
 | `floatNode` | `(layout: RowNode, geometry: Geometry, options?: FloatOptions) => FloatNode` | A floating panel wrapping a layout subtree at an in-app rect.                                                            |
 
 Option types: `TabOptions` (`config`, `enableClose`, `enableDrag`,
-`enableRename`, `id`), `TabsetOptions` (`collapsed`, `collapsible`, `enableClose`, `enableMaximize`, `id`,
+`enableRename`, `id`), `TabsetOptions` (`collapsed`, `collapsible`, `enableClose`, `enableDrag`, `enableMaximize`, `id`,
 `max`, `min`, `name`, `selected`, `weight`), `RowOptions` (`id`, `max`, `min`,
 `orientation`, `weight`), `ModelOptions` (`activeTabsetId`, `floats`, `global`,
 `maximizedTabsetId`), `FloatOptions` (`id`, `name`). `min`/`max`
@@ -519,19 +520,22 @@ The React drag layer passes one measurement to both functions, so the insertion
 index and the insertion line always agree. See
 [drag &amp; dock](/drag-and-dock#how-resolution-layers).
 
-| Export              | Signature                                                                                                      | Description                                                                                                                                                                         |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `resolveDropIntent` | `(subject: DragSubject, tabset: MeasuredTabset, point: Point, opts?: DropIntentOptions) => DropIntent \| null` | `null` for a self-drop (a tabset onto itself, a sole tab onto its own tabset); a `center` stack at the insertion index over the strip; otherwise `resolveDockTarget` over the body. |
-| `dropIndicator`     | `(subject: DragSubject, tabset: MeasuredTabset, intent: DropIntent) => DropIndicator`                          | The insertion line for a `center` drop onto a strip, otherwise the `zoneRect` of the intent.                                                                                        |
+| Export              | Signature                                                                                                       | Description                                                                                                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resolveDropIntent` | `(subject: DragSubject, tabset: MeasuredTabset, point: Point, opts?: DropIntentOptions) => DropIntent \| null`  | `null` for a self-drop (a tabset onto itself, a sole tab onto its own tabset); a `center` stack at the insertion index over the strip; otherwise `resolveDockTarget` over the body. |
+| `dropIndicator`     | `(subject: DragSubject, tabset: MeasuredTabset, intent: DropIntent, opts?: DropIntentOptions) => DropIndicator` | The edge zone for a drop at the layout's edge, the insertion line for a `center` drop onto a strip, otherwise the `zoneRect` of the intent.                                         |
 
 Types: `DragSubject` (`{ kind: "tab" | "tabset"; id: string; documentId: string }`
 for a node in a layout, `{ kind: "external"; id: string; tab: TabNode }` for an
 outside source), `DropIntent` (`{ targetId: string; location: DockLocation; index?: number }`),
-`MeasuredTabset` (`{ id: string; rect: Rect; strip: MeasuredStrip | null }`),
+`MeasuredTabset` (`{ direction?: "ltr" | "rtl"; id: string; rect: Rect; strip: MeasuredStrip | null }`),
 `MeasuredStrip` (`{ rect: Rect; tabs: ReadonlyArray<MeasuredTab> }`, tabs in
 strip order), `MeasuredTab` (`{ id: string; rect: Rect }`, spanning the whole tab
-item), `DropIntentOptions` (`{ splitDock?: boolean; foreign?: boolean }`, `splitDock: false` turns every body
-drop into a stack, `foreign: true` marks a subject from another document so a shared tabset id is not a self-drop), `DropIndicator` (`{ kind: "insertion" | "zone"; rect: Rect }`).
+item), `DropIntentOptions` (`{ edges?: MeasuredLayout; foreign?: boolean; splitDock?: boolean }`:
+`splitDock: false` turns every body drop into a stack, `edges` turns on
+drops at the layout's edges, and `foreign: true` marks a subject from another
+document so a shared tabset id is not a self-drop), `MeasuredLayout` (`{ id: string; rect: Rect; tabsetCount: number }`,
+the main layout's root row), `DropIndicator` (`{ kind: "edge" | "insertion" | "zone"; rect: Rect }`).
 
 ### History
 

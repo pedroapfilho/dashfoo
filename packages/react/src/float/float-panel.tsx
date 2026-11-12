@@ -13,6 +13,7 @@ import { RowView } from "../layout/row-view";
 import { useInlineRename } from "../lib/use-inline-rename";
 import { DockIcon, FloatIcon, GripIcon, MinimizeIcon } from "../ui/icons";
 
+import { InsideFloatContext } from "./float-context";
 import { RESIZE_HANDLES } from "./float-geometry";
 import { useFloatGesture } from "./use-float-gesture";
 
@@ -20,6 +21,7 @@ const floatTitle = (node: FloatNode): string => node.name ?? DEFAULT_FLOAT_NAME;
 
 /** `maximizedTabsetId` is cleared here, not only by `normalize`: the parent store syncs after render. */
 const FLOAT_OVERRIDES: Partial<LayoutState> = {
+  edgeDocking: false,
   floatable: false,
   maximizable: false,
   maximizedTabsetId: undefined,
@@ -207,9 +209,11 @@ const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
       </div>
       <div data-dashfoo="float-body">
         <LayoutOverrides overrides={FLOAT_OVERRIDES}>
-          <DragLayer>
-            <RowView node={node.layout} />
-          </DragLayer>
+          <InsideFloatContext.Provider value>
+            <DragLayer>
+              <RowView node={node.layout} />
+            </DragLayer>
+          </InsideFloatContext.Provider>
         </LayoutOverrides>
       </div>
       {editable &&

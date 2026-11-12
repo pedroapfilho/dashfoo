@@ -104,6 +104,9 @@ const tabsetElement = (container: HTMLElement, tabsetId: string): HTMLElement =>
   return element;
 };
 
+/** jsdom lays nothing out, so every drop point sits on the layout's edge. */
+const CENTER_DROP: Partial<DashfooLayoutCommonProps> = { dragGroup: "desk", edgeDocking: false };
+
 afterEach(() => {
   document.body.innerHTML = "";
   vi.useRealTimers();
@@ -112,7 +115,7 @@ afterEach(() => {
 describe("drag groups", () => {
   test("a tab dropped into another layout of the group moves there", async () => {
     const left = mount("left", layoutWith("a", ["a1", "a2"]), { dragGroup: "desk" });
-    const right = mount("right", layoutWith("b", ["b1"]), { dragGroup: "desk" });
+    const right = mount("right", layoutWith("b", ["b1"]), CENTER_DROP);
     await act(async () => {});
 
     const transfer = fakeTransfer();
@@ -176,7 +179,7 @@ describe("drag groups", () => {
   });
 
   test("a drop from another copy of the app lands and confirms over the channel", async () => {
-    const right = mount("right", layoutWith("b", ["b1"]), { dragGroup: "desk" });
+    const right = mount("right", layoutWith("b", ["b1"]), CENTER_DROP);
     await act(async () => {});
 
     const marker = {

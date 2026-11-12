@@ -19,6 +19,7 @@ type LayoutState = {
   draggableTabsets: boolean;
   dragGroup: string | undefined;
   dragGroupScope: DragGroupScope;
+  edgeDocking: boolean;
   editable: boolean;
 
   floatable: boolean;

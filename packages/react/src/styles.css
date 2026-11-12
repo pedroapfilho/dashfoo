@@ -209,7 +209,14 @@
     box-sizing: border-box;
     pointer-events: none;
     position: fixed;
-    transition: var(--dashfoo-dock-transition, left 60ms, top 60ms, width 60ms, height 60ms);
+    transition: var(
+      --dashfoo-dock-transition,
+      left 60ms,
+      top 60ms,
+      width 60ms,
+      height 60ms,
+      opacity 60ms
+    );
     z-index: auto;
     background: var(--dashfoo-dock-fill, oklch(0.556 0 0 / 0.18));
     border: var(--dashfoo-dock-border-width, 1px) solid
@@ -220,8 +227,11 @@
     top: var(--dashfoo-dock-top);
     width: var(--dashfoo-dock-width);
   }
-  [data-dashfoo="float"] [data-dashfoo="dock-indicator"] {
-    z-index: 9999;
+  [data-dashfoo="dock-indicator"][data-floating] {
+    z-index: 2;
+  }
+  [data-dashfoo="dock-indicator"][data-idle] {
+    opacity: 0;
   }
   [data-dashfoo="dock-indicator"][data-insertion] {
     border-radius: var(--dashfoo-dock-line-radius, 2px);

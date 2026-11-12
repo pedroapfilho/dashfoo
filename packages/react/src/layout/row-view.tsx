@@ -245,6 +245,7 @@ const RowGroup = ({ isRoot = false, node, renderTabset }: RowGroupProps): ReactN
     <Group
       data-dashfoo="row"
       data-dashfoo-snapping={snappedBoundary === null ? undefined : "true"}
+      data-row-id={node.id}
       disabled={!resizableSplits}
       elementRef={elementRef}
       groupRef={groupRef}

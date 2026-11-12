@@ -127,6 +127,13 @@ stacks the tab into the target tabset. A `split-*` drop creates a new tabset bes
 the target, reusing the parent row when its orientation already matches, otherwise
 wrapping both in a fresh row.
 
+`addNode`, `moveNode`, `moveTabset` and `transferIn` also take the main layout's
+root row id (`model.layout.id`) as their `targetId`, with a `split-*` location:
+the tab or tabset docks at that edge of the whole layout, beside everything else,
+taking a quarter of it (a sidebar or a bottom panel). The root keeps its id,
+wrapping its children in a new row when it runs the other way. A `center` drop on
+the root is a no-op while the layout has tabsets.
+
 The seven docking actions (`addNode`, `moveNode`, `moveTabset`, `floatTab`,
 `floatTabset`, `dockFloat`, `transferIn`) share two rules. Each resolves its target before it
 detaches anything, so a drop that cannot land changes nothing. And the tabset
@@ -303,15 +310,16 @@ move and passes the same measurement to both functions, so the insertion index
 and the insertion line always mark the same slot.
 
 ```ts
-resolveDropIntent(subject, tabset, point, { splitDock, foreign }?): DropIntent | null;
-dropIndicator(subject, tabset, intent): DropIndicator;
+resolveDropIntent(subject, tabset, point, { edges, foreign, splitDock }?): DropIntent | null;
+dropIndicator(subject, tabset, intent, { edges }?): DropIndicator;
 ```
 
 `subject` is a `DragSubject`: what is being dragged (see the drag machine
 below). `tabset` is a `MeasuredTabset`:
-`{ id, rect, strip }`, where `strip` is `{ rect, tabs }` with `tabs` in strip
-order (`MeasuredTab`: `{ id, rect }`, each rect spanning the whole tab item), or
-`null` for a tabset without a strip.
+`{ direction?, id, rect, strip }`, where `strip` is `{ rect, tabs }` with `tabs`
+in strip order (`MeasuredTab`: `{ id, rect }`, each rect spanning the whole tab
+item), or `null` for a tabset without a strip. `direction` is `"ltr"` (the
+default) or `"rtl"`.
 
 `resolveDropIntent` returns `null` for a drop that changes nothing: a tabset onto
 itself, or the sole tab of a tabset back onto it. Over the strip it stacks at
@@ -322,16 +330,29 @@ every body drop into that stack, and `foreign: true` (a subject from another
 document) skips the self-drop check, since a shared id is not the same node. A stripless tabset has no tab order, so its
 stack drops carry no index.
 
-`dropIndicator` returns `{ kind: "insertion", rect }` (a 4px line at the slot,
-clamped inside the strip) for a `center` intent onto a strip, and
-`{ kind: "zone", rect }` (`zoneRect`) otherwise.
+With `edges` (a `MeasuredLayout`: `{ id, rect, tabsetCount }` for the main
+layout's root row), a pointer within 12px of the layout's edge resolves a
+`split-*` against the root row instead, checked before everything else so a
+tabset can reach the edge from over itself. It is skipped when `splitDock` is
+off, and when the layout's only tabset (or its only tab) would dock at its own
+edge.
+
+In a right-to-left tabset the insertion index counts from the right, and
+`split-left` and `split-right` swap: locations name the model's row order, and
+a right-to-left row paints its first child on the right, so a drop on the
+screen's left still lands on the left.
+
+`dropIndicator` returns `{ kind: "edge", rect }` (the quarter of the layout the
+docked panel takes) for an edge intent, `{ kind: "insertion", rect }` (a 4px
+line at the slot, clamped inside the strip) for a `center` intent onto a strip,
+and `{ kind: "zone", rect }` (`zoneRect`) otherwise.
 
 `@dashfoo/react` exports the DOM read behind its drag layer as `measureTabset`,
 so a custom drop overlay can build the same `MeasuredTabset` and match the
 library's indicator.
 
-Exports: `resolveDropIntent`, `dropIndicator`; types `DragSubject`,
-`DropIntent`, `MeasuredTabset`, `MeasuredStrip`, `MeasuredTab`,
+Exports: `resolveDropIntent`, `dropIndicator`; types `Direction`, `DragSubject`,
+`DropIntent`, `MeasuredLayout`, `MeasuredTabset`, `MeasuredStrip`, `MeasuredTab`,
 `DropIntentOptions`, `DropIndicator`.
 
 ## Snapping
@@ -484,8 +505,8 @@ types `AttributedNode`, `TabLocation`, `TabsetSlot`.
 `dock`: `dockLocationSchema`; `resolveDockTarget`, `dockZonePolygons`,
 `zoneRect`; `resolveDropIntent`, `dropIndicator`; `dragDockMachine`,
 `dropAction`; types `DockLocation`, `DockZone`, `Point`, `Rect`,
-`DragSubject`, `DropIntent`, `DropIntentOptions`, `DropIndicator`,
-`MeasuredTabset`, `MeasuredStrip`, `MeasuredTab`, `DragState`,
+`Direction`, `DragSubject`, `DropIntent`, `DropIntentOptions`, `DropIndicator`,
+`MeasuredLayout`, `MeasuredTabset`, `MeasuredStrip`, `MeasuredTab`, `DragState`,
 `DropResolution`.
 
 `snap`: `resolveSnapGrid`, `decideSnap`, `settleSnap`, `snapEnabled`;

@@ -32,6 +32,8 @@ type LayoutOptions = {
   /** Layouts sharing a group exchange tabs and tabsets by drag, across windows and browser tabs of one origin. */
   dragGroup?: string;
   dragGroupScope?: DragGroupScope;
+  /** When false, tabs and tabsets can't be dropped at the layout's edges, beside everything else. */
+  edgeDocking?: boolean;
   editable?: boolean;
   floatable?: boolean;
   /** `true` keeps inactive tabs mounted and hidden; `"activity"` keeps them in a hidden React `<Activity>`, which pauses their effects. */
@@ -114,6 +116,7 @@ const resolveLayoutOptions = (
     draggableTabs: noneSwitchedOff(structural, options.draggableTabs, global.tabEnableDrag),
     draggableTabsets: noneSwitchedOff(structural, options.draggableTabsets),
     ...resolveDragGroup(structural, options),
+    edgeDocking: options.edgeDocking !== false,
     editable,
     floatable: structural && options.floatable === true,
     keepMounted: options.keepMounted ?? false,
@@ -125,6 +128,9 @@ const resolveLayoutOptions = (
     ...resolveGlobalOptions(global),
   };
 };
+
+const splitterSize = ({ splitterSize: size }: GlobalAttributes): string | undefined =>
+  size === undefined ? undefined : `${size}px`;
 
 /** A layout without a host-supplied registry still publishes to one of its own. */
 const useTablistSpaceOrOwn = (tablistSpace: TablistSpace | undefined): TablistSpace => {
@@ -142,6 +148,7 @@ const splitLayoutOptions = ({
   draggableTabsets,
   dragGroup,
   dragGroupScope,
+  edgeDocking,
   editable,
   floatable,
   keepMounted,
@@ -159,6 +166,7 @@ const splitLayoutOptions = ({
     draggableTabsets,
     dragGroup,
     dragGroupScope,
+    edgeDocking,
     editable,
     floatable,
     keepMounted,
@@ -211,10 +219,7 @@ const LayoutRoot = ({
         {...props}
         data-dashfoo="layout"
         ref={rootRef}
-        style={{
-          "--dashfoo-splitter-size":
-            global.splitterSize === undefined ? undefined : `${global.splitterSize}px`,
-        }}
+        style={{ "--dashfoo-splitter-size": splitterSize(global) }}
       >
         <DashfooDragProvider>{children}</DashfooDragProvider>
       </div>

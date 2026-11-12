@@ -1,5 +1,6 @@
 "use client";
 
+import type { TabsetNode } from "@dashfoo/core";
 import { warnOnce } from "@dashfoo/core";
 import type { ComponentProps, MouseEvent, ReactNode } from "react";
 import { forwardRef, useMemo } from "react";
@@ -34,20 +35,30 @@ type TabsetChrome = {
   overflow: boolean;
 };
 
+/** Moving a tabset moves every tab in it, so one tab that can't be dragged pins the whole tabset. */
+const canDragTabset = (node: TabsetNode): boolean =>
+  node.enableDrag !== false && node.children.every((tab) => tab.enableDrag !== false);
+
+/** The active tab's name, plus how many more tabs come along: "One (+2)". */
+const tabsetDragLabel = (node: TabsetNode, activeTabName: string): string =>
+  node.children.length > 1 ? `${activeTabName} (+${node.children.length - 1})` : activeTabName;
+
 /**
  * One answer per control, shared by the controls and by the layout deciding
  * whether to render a toolbar at all, so the two cannot disagree.
  */
 const useTabsetChrome = (): TabsetChrome => {
-  const canCollapse = useTabset((state) => state.canCollapse);
-  const isCollapsed = useTabset((state) => state.isCollapsed);
-  const isCollapsedToFit = useTabset((state) => state.isCollapsedToFit);
   const draggableTabsets = useLayout((state) => state.draggableTabsets);
   const floatable = useLayout((state) => state.floatable);
   const isMaximized = useTabset((state) => state.isMaximized);
+  const draggable = useTabset((state) => canDragTabset(state.node));
   const overflowCount = useTabset((state) => state.overflowItems.length);
   const showMaximize = useTabset((state) => state.showMaximize);
   const hasFloatLayer = useHasFloatLayer();
+
+  const collapse = useTabset(
+    (state) => state.canCollapse || (state.isCollapsed && !state.isCollapsedToFit),
+  );
 
   if (floatable && !isMaximized && !hasFloatLayer) {
     warnOnce(
@@ -57,12 +68,22 @@ const useTabsetChrome = (): TabsetChrome => {
   }
 
   return {
-    collapse: canCollapse || (isCollapsed && !isCollapsedToFit),
+    collapse,
     float: floatable && !isMaximized && hasFloatLayer,
-    grip: draggableTabsets && !isMaximized,
+    grip: draggableTabsets && !isMaximized && draggable,
     maximize: showMaximize,
     overflow: overflowCount > 0,
   };
+};
+
+type TabsetDrag = { grip: boolean; label: string; node: TabsetNode };
+
+const useTabsetDrag = (): TabsetDrag => {
+  const activeTabName = useTabset((state) => state.activeTab?.name ?? "");
+  const node = useTabset((state) => state.node);
+  const { grip } = useTabsetChrome();
+
+  return { grip, label: tabsetDragLabel(node, activeTabName), node };
 };
 
 type TabsetGripState = { isDragging: boolean };
@@ -70,11 +91,9 @@ type TabsetGripState = { isDragging: boolean };
 type TabsetGripProps = StatefulButtonProps<TabsetGripState>;
 
 const TabsetGrip = forwardRef<HTMLButtonElement, TabsetGripProps>((props, userRef): ReactNode => {
-  const activeTabName = useTabset((state) => state.activeTab?.name ?? "");
-  const node = useTabset((state) => state.node);
+  const { grip, label, node } = useTabsetDrag();
   const isDragging = useDraggedNodeId("tabset") === node.id;
-  const { grip } = useTabsetChrome();
-  const { ref } = useNodeDraggable("tabset", node.id, !grip, activeTabName);
+  const { ref } = useNodeDraggable("tabset", node.id, { disabled: !grip, handle: "grip", label });
   const refCallback = useMemo(() => mergeRefs<HTMLButtonElement>(ref, userRef), [ref, userRef]);
 
   if (!grip) {
@@ -225,6 +244,7 @@ export {
   TabsetMaximizeButton,
   TabsetToolbar,
   useTabsetChrome,
+  useTabsetDrag,
 };
 
 export type {
