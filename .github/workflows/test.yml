@@ -1,9 +1,10 @@
+# Written by `standy sync` from the library template and `.github/ci/policy.json`. Change those, never this file.
 name: Test
 on:
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: 2 4 * * 1
+    - cron: 15 4 * * 1
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -33,7 +34,8 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-${{ runner.arch }}-node24-test-${{ github.event.pull_request.number || github.ref_name }}-
             turbo-${{ runner.os }}-${{ runner.arch }}-node24-test-main-
-      - run: node .github/ci/ci.mjs run test -- pnpm test
+      - name: Unit tests
+        run: node .github/ci/ci.mjs run test -- pnpm test
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         name: Upload CI evidence
         if: ${{ !cancelled() }}

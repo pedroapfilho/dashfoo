@@ -2,4 +2,12 @@
 .github/ci/ci.mjs
 .github/ci/plan.mjs
 .github/ci/report.mjs
+.github/workflows/build.yml
+.github/workflows/friction-log.yml
+.github/workflows/lint.yml
+.github/workflows/publish-checks.yml
+.github/workflows/react-doctor.yml
+.github/workflows/release.yml
+.github/workflows/test.yml
+.github/workflows/typecheck.yml
 packages/config-typescript/base.json

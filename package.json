@@ -11,6 +11,7 @@
     "typecheck": "turbo run typecheck",
     "verify": "turbo run lint typecheck test build && pnpm lint:launch",
     "build": "turbo run build",
+    "build:packages": "turbo run build --filter=\"./packages/*\"",
     "clean": "turbo run clean && rm -rf node_modules",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
