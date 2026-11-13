@@ -17,7 +17,6 @@ import {
 
 import type { Action } from "./actions";
 import { detachTab, detachTabset, removeTab } from "./detach";
-import { locateDropTarget } from "./drop-target";
 import { placeAtEdge } from "./edge-docking";
 import { uniqueFloatName } from "./floats";
 
@@ -81,29 +80,50 @@ const placeBeside = (
 };
 
 /**
- * The main layout's root row id targets its edges: a split there docks beside
- * everything. While the layout is empty it seeds a tabset instead.
+ * The main layout's root row id names two targets: its edges, where a split
+ * docks beside everything, and the layout itself while it is empty.
  */
-type DockTarget = { kind: "edge"; root: RowNode } | { kind: "tabset"; slot: TabsetSlot };
+type DockTarget =
+  | { kind: "edge"; root: RowNode }
+  | { kind: "empty"; root: RowNode }
+  | { kind: "tabset"; slot: TabsetSlot };
 
 const locateDockTarget = (
   draft: Dashfoo,
   targetId: string,
   location: DockLocation,
 ): DockTarget | undefined => {
-  if (targetId === draft.layout.id && draft.layout.children.length > 0) {
-    return location === "center" ? undefined : { kind: "edge", root: draft.layout };
+  const root = draft.layout;
+
+  if (targetId === root.id && root.children.length > 0) {
+    return location === "center" ? undefined : { kind: "edge", root };
   }
 
-  const slot = locateDropTarget(draft, targetId);
+  const slot = findTabsetParent(draft, targetId);
 
-  return slot && { kind: "tabset", slot };
+  if (slot) {
+    return { kind: "tabset", slot };
+  }
+
+  return targetId === root.id ? { kind: "empty", root } : undefined;
+};
+
+/** An empty layout gets its first tabset here, at attach time, so a drop that cannot land leaves nothing behind. */
+const tabsetSlot = (target: Exclude<DockTarget, { kind: "edge" }>): TabsetSlot => {
+  if (target.kind === "tabset") {
+    return target.slot;
+  }
+
+  const first = tabset([]);
+  target.root.children.push(first);
+
+  return { index: 0, parent: target.root, tabset: first };
 };
 
 const placeAt = (target: DockTarget, placed: TabsetNode, location: SplitLocation): TabsetNode =>
   target.kind === "edge"
     ? placeAtEdge(target.root, placed, location)
-    : placeBeside(target.slot, placed, location);
+    : placeBeside(tabsetSlot(target), placed, location);
 
 const mergeTabs = (target: TabsetNode, tabs: Array<TabNode>, selected: number): TabsetNode => {
   target.selected = target.children.length + selected;
@@ -126,7 +146,7 @@ const attachTab = (
     return undefined;
   }
 
-  const receiver = target.slot.tabset;
+  const receiver = tabsetSlot(target).tabset;
   const strip = receiver.children;
   const at = Math.min(Math.max(index ?? strip.length, 0), strip.length);
   strip.splice(at, 0, tab);
@@ -224,9 +244,9 @@ const moveTabset = (
     return placeAt(target, moved, location);
   }
 
-  return target.kind === "tabset"
-    ? mergeTabs(target.slot.tabset, moved.children, moved.selected)
-    : undefined;
+  return target.kind === "edge"
+    ? undefined
+    : mergeTabs(tabsetSlot(target).tabset, moved.children, moved.selected);
 };
 
 const floatTab = (
@@ -324,9 +344,9 @@ const transferIn = (
   }
 
   if (location === "center") {
-    return target.kind === "tabset"
-      ? mergeTabs(target.slot.tabset, node.children, node.selected)
-      : undefined;
+    return target.kind === "edge"
+      ? undefined
+      : mergeTabs(tabsetSlot(target).tabset, node.children, node.selected);
   }
 
   const placed = isIdInUse(draft, node.id) ? { ...node, id: createNodeId("tabset") } : node;

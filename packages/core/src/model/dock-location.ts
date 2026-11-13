@@ -29,6 +29,9 @@ const SPLIT_PLACEMENT = {
   "split-top": { before: true, orientation: "column" },
 } as const satisfies Record<SplitLocation, SplitPlacement>;
 
-export { dockLocationSchema, SPLIT_PLACEMENT };
+/** The share of the layout a tab or tabset docked at its edge takes, like a sidebar or a bottom panel. */
+const EDGE_DOCK_SHARE = 0.25;
+
+export { dockLocationSchema, EDGE_DOCK_SHARE, SPLIT_PLACEMENT };
 
 export type { DockLocation, SplitLocation };
