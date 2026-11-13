@@ -1,3 +1,4 @@
+# Written by `standy sync` from the library template and `.github/ci/policy.json`. Change those, never this file.
 name: Release
 
 on:

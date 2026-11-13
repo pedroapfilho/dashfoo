@@ -1,9 +1,10 @@
+# Written by `standy sync` from the library template. Change the template, never this file.
 name: Typecheck
 on:
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: 20 4 * * 1
+    - cron: 15 4 * * 1
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}

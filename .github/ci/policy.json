@@ -1,5 +1,20 @@
 {
   "version": 1,
   "profile": "library",
-  "mode": "affected"
+  "mode": "affected",
+  "packaging": {
+    "steps": [
+      {
+        "name": "Require a changeset outside the version pull request",
+        "run": "[ \"$GITHUB_REF_NAME\" = changeset-release/main ] || [ \"$GITHUB_HEAD_REF\" = changeset-release/main ] || pnpm exec changeset status --since=origin/main"
+      },
+      {
+        "run": "pnpm exec playwright install --with-deps chromium"
+      },
+      {
+        "name": "Standalone consumers (React 18 and 19, npm and pnpm)",
+        "run": "pnpm test:consumers"
+      }
+    ]
+  }
 }

@@ -1,0 +1,3 @@
+{
+  "excludeEntrypoints": ["./dashfoo.css", "./tailwind.css", "./tokens.css"]
+}
