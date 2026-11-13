@@ -1,4 +1,5 @@
 import { assertNever } from "../lib/assert-never";
+import { canCollapseTabset } from "../model/collapse";
 import { normalize } from "../model/invariants";
 import type { Dashfoo } from "../model/schema";
 import type { AttributedNode } from "../model/tree";
@@ -13,7 +14,6 @@ import {
 } from "../model/tree";
 
 import type { Action } from "./actions";
-import { canCollapseTabset } from "./collapse";
 import { removeNode, removeTab, removeTabset } from "./detach";
 import { dock } from "./docking";
 import { uniqueFloatName } from "./floats";

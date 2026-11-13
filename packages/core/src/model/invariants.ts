@@ -1,5 +1,4 @@
-import { isCollapsed } from "../state/collapse";
-
+import { isCollapsed } from "./collapse";
 import type { Dashfoo, FloatNode, RowNode, SelectOnRemove, TabsetNode } from "./schema";
 
 type RowChild = RowNode["children"][number];

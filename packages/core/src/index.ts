@@ -30,7 +30,7 @@ export type { SnapDecision, SnapGrid } from "./snap/snap";
 
 export * from "./state/actions";
 
-export { canCollapseTabset } from "./state/collapse";
+export { canCollapseTabset } from "./model/collapse";
 
 export { fallbackSelectedIndex } from "./state/detach";
 
