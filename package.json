@@ -17,7 +17,7 @@
     "test:coverage": "turbo run test:coverage",
     "changeset": "changeset",
     "version-packages": "changeset version && node scripts/sync-example-versions.mjs",
-    "release": "turbo run build && changeset publish",
+    "release": "pnpm build:packages && changeset publish",
     "fallow": "fallow",
     "fallow:dead": "fallow dead-code",
     "fallow:dupes": "fallow dupes",
