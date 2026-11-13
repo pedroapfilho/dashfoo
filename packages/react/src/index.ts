@@ -1,10 +1,36 @@
 "use client";
 
-export * from "./layout/dashfoo-layout";
+export { DashfooLayout } from "./layout/dashfoo-layout";
 
-export * from "./layout/layout";
+export type {
+  DashfooHandle,
+  DashfooLayoutCommonProps,
+  DashfooLayoutProps,
+  TabComponent,
+} from "./layout/dashfoo-layout";
 
-export * from "./ui/panel";
+export { Layout } from "./layout/layout";
+
+export type {
+  LayoutDragLayerProps,
+  LayoutFloatLayerProps,
+  LayoutOptions,
+  LayoutRenderers,
+  LayoutRootProps,
+  LayoutRowsProps,
+  LayoutTabsetProps,
+} from "./layout/layout";
+
+export { Panel } from "./ui/panel";
+
+export type {
+  PanelBadgeProps,
+  PanelBodyProps,
+  PanelHeaderProps,
+  PanelIconProps,
+  PanelRootProps,
+  PanelTitleProps,
+} from "./ui/panel";
 
 export { Tabset } from "./tabset/tabset";
 
@@ -44,9 +70,13 @@ export { localStorageAdapter, memoryStorageAdapter } from "./store/persistence";
 
 export type { PersistInput, StorageAdapter } from "./store/persistence";
 
-export * from "./layout/responsive";
+export { useResponsiveLayout } from "./layout/responsive";
 
-export * from "./store/store";
+export type { ResponsiveLayout, ResponsiveOptions } from "./layout/responsive";
+
+export { useDashfooStore } from "./store/store";
+
+export type { DashfooStore, UseDashfooStoreOptions } from "./store/store";
 
 export {
   useDragSubject,

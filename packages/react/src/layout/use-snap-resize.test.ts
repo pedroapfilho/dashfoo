@@ -1,4 +1,4 @@
-import { resolveSnapGrid } from "@dashfoo/core";
+import { resolveSnapGrid } from "@dashfoo/core/internal";
 import { describe, expect, test } from "vitest";
 
 import type { ResizeContext, ResizeEffect, ResizeEvent, ResizeState } from "./use-snap-resize";

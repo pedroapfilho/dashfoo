@@ -1,7 +1,8 @@
 "use client";
 
 import type { Dimension, RowNode, SnapConfig, TabsetNode } from "@dashfoo/core";
-import { collectTabsetsInRow, resolveSnapGrid, snapEnabled } from "@dashfoo/core";
+import { collectTabsetsInRow } from "@dashfoo/core";
+import { resolveSnapGrid, snapEnabled } from "@dashfoo/core/internal";
 import type { ReactNode } from "react";
 import { Fragment, useMemo } from "react";
 import type { Orientation, PanelProps } from "react-resizable-panels";

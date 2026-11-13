@@ -1,43 +1,117 @@
-export * from "./dock/drag-dock-machine";
+export { dropIndicator, resolveDropIntent } from "./dock/drop-intent";
 
-export * from "./dock/drop-intent";
+export type {
+  Direction,
+  DragSubject,
+  DropIndicator,
+  DropIntent,
+  DropIntentOptions,
+  MeasuredLayout,
+  MeasuredStrip,
+  MeasuredTab,
+  MeasuredTabset,
+} from "./dock/drop-intent";
 
-export * from "./dock/geometry";
+export { dockZonePolygons, resolveDockTarget, zoneRect } from "./dock/geometry";
 
-export { warn, warnOnce } from "./lib/warn";
+export type { DockZone, Point, Rect } from "./dock/geometry";
 
-export * from "./model/builders";
+export { floatNode, model, row, tab, tabset } from "./model/builders";
+
+export type {
+  FloatOptions,
+  ModelOptions,
+  RowOptions,
+  TabOptions,
+  TabsetOptions,
+} from "./model/builders";
 
 export { dockLocationSchema } from "./model/dock-location";
 
 export type { DockLocation } from "./model/dock-location";
 
-export * from "./model/ids";
+export { createNodeId, createTabId } from "./model/ids";
 
 export { normalize } from "./model/invariants";
 
-export * from "./model/schema";
+export {
+  dashfooSchema,
+  DEFAULT_FLOAT_GEOMETRY,
+  DEFAULT_FLOAT_NAME,
+  DEFAULT_WEIGHT,
+  dimensionSchema,
+  floatNodeSchema,
+  geometrySchema,
+  globalAttributesSchema,
+  jsonValueSchema,
+  orientationSchema,
+  rowNodeSchema,
+  selectOnRemoveSchema,
+  snapSchema,
+  tabNodeSchema,
+  tabsetNodeSchema,
+  unitSchema,
+} from "./model/schema";
 
-export * from "./model/serialize";
+export type {
+  Dashfoo,
+  DashfooInput,
+  Dimension,
+  FloatNode,
+  Geometry,
+  GlobalAttributes,
+  Json,
+  Node,
+  Orientation,
+  RowNode,
+  RowNodeInput,
+  SelectOnRemove,
+  SnapConfig,
+  TabNode,
+  TabsetNode,
+  Unit,
+} from "./model/schema";
+
+export { fromJSON, parseModel, restoreModel, toJSON } from "./model/serialize";
+
+export type { MapTab, RestoreOptions } from "./model/serialize";
 
 export { standaloneModel } from "./model/standalone";
 
-export * from "./model/tree";
+export {
+  collectRoots,
+  collectTabsets,
+  collectTabsetsInRow,
+  findAttributedNode,
+  findDuplicateIds,
+  findFloat,
+  findRow,
+  findTab,
+  findTabset,
+  findTabsetParent,
+  getFirstTabset,
+} from "./model/tree";
 
-export { decideSnap, resolveSnapGrid, settleSnap, snapEnabled } from "./snap/snap";
+export type { AttributedNode, TabLocation, TabsetSlot } from "./model/tree";
 
-export type { SnapDecision, SnapGrid } from "./snap/snap";
+export { actionSchema } from "./state/actions";
 
-export * from "./state/actions";
+export type { Action } from "./state/actions";
 
-export { canCollapseTabset } from "./model/collapse";
+export {
+  canRedoHistory,
+  canUndoHistory,
+  createHistory,
+  dispatchToHistory,
+  HISTORY_LIMIT,
+  redoHistory,
+  undoHistory,
+} from "./state/history";
 
-export { fallbackSelectedIndex } from "./state/detach";
-
-export * from "./state/history";
+export type { History } from "./state/history";
 
 export { mutableNodeAttrsSchema } from "./state/node-attrs";
 
 export type { MutableNodeAttrs } from "./state/node-attrs";
 
-export * from "./state/reducer";
+export { reducer } from "./state/reducer";

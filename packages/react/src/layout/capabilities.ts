@@ -39,7 +39,6 @@ type ResolvedOptions = Omit<
   | "renderTab"
   | "renderTabLabel"
   | "renderTabsetToolbar"
-  | "tablistSpace"
 >;
 
 const noneSwitchedOff = (...switches: Array<boolean | undefined>): boolean =>

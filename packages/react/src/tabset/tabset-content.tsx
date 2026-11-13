@@ -1,7 +1,7 @@
 "use client";
 
 import type { TabNode } from "@dashfoo/core";
-import { warnOnce } from "@dashfoo/core";
+import { warnOnce } from "@dashfoo/core/internal";
 import type { ComponentProps, ReactNode } from "react";
 import * as React from "react";
 import { forwardRef } from "react";

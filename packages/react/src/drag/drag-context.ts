@@ -1,6 +1,7 @@
 "use client";
 
-import type { Action, dragDockMachine, DragSubject, DropResolution, Point } from "@dashfoo/core";
+import type { Action, DragSubject, Point } from "@dashfoo/core";
+import type { dragDockMachine, DropResolution } from "@dashfoo/core/internal";
 import { createContext } from "react";
 import type { ActorRefFrom } from "xstate";
 

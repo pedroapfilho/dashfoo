@@ -1,5 +1,5 @@
 import type { Action, DragSubject } from "@dashfoo/core";
-import { dragDockMachine } from "@dashfoo/core";
+import { dragDockMachine } from "@dashfoo/core/internal";
 import { describe, expect, test, vi } from "vitest";
 import { createActor } from "xstate";
 

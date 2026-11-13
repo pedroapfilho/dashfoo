@@ -1,7 +1,7 @@
 "use client";
 
 import type { Action, Dashfoo, DockLocation, TabNode, TabsetNode } from "@dashfoo/core";
-import { warnOnce } from "@dashfoo/core";
+import { warnOnce } from "@dashfoo/core/internal";
 import type { ComponentType, ReactNode } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useState } from "react";
 

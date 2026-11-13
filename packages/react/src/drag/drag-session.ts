@@ -1,5 +1,5 @@
 import type { DragSubject, Point } from "@dashfoo/core";
-import { dropAction } from "@dashfoo/core";
+import { dropAction } from "@dashfoo/core/internal";
 
 import type { DragActor, RegisteredLayer } from "./drag-context";
 import { sameDropResolution } from "./drag-hooks";

@@ -1,7 +1,8 @@
 "use client";
 
 import type { Dashfoo, MapTab } from "@dashfoo/core";
-import { restoreModel, toJSON, warn } from "@dashfoo/core";
+import { restoreModel, toJSON } from "@dashfoo/core";
+import { warn } from "@dashfoo/core/internal";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 type StorageAdapter = {

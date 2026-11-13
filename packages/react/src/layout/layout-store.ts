@@ -43,14 +43,13 @@ type LayoutState = {
 
   snap: SnapConfig | null;
   splitDock: boolean;
-  tablistSpace: TablistSpace;
   tabLocation: "bottom" | "top";
   tabsetMinSize: number;
   tabStripEnabled: boolean;
 };
 
 /** What the library reads and a host does not, kept apart so the published `LayoutState` does not grow with it. */
-type LayoutInternals = LayoutState & { model: Dashfoo };
+type LayoutInternals = LayoutState & { model: Dashfoo; tablistSpace: TablistSpace };
 
 type LayoutStore = StoreApi<LayoutInternals>;
 

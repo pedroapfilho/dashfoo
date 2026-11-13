@@ -6,9 +6,8 @@ import {
   dropIndicator,
   resolveDropIntent,
   standaloneModel,
-  warn,
-  warnOnce,
 } from "@dashfoo/core";
+import { warn, warnOnce } from "@dashfoo/core/internal";
 import type { ReactNode } from "react";
 import { useContext, useEffect, useId, useMemo } from "react";
 

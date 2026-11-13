@@ -1,5 +1,5 @@
 import type { Dashfoo, TabsetNode } from "@dashfoo/core";
-import { dragDockMachine } from "@dashfoo/core";
+import { dragDockMachine } from "@dashfoo/core/internal";
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { useContext, useEffect, useState } from "react";

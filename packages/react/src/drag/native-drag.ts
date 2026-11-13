@@ -1,6 +1,6 @@
 "use client";
 
-import { warn } from "@dashfoo/core";
+import { warn } from "@dashfoo/core/internal";
 import { useContext, useEffect, useMemo, useState } from "react";
 
 import type { LayoutStore } from "../layout/layout-store";

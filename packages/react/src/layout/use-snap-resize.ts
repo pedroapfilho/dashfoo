@@ -1,7 +1,7 @@
 "use client";
 
-import type { SnapGrid } from "@dashfoo/core";
-import { decideSnap, settleSnap } from "@dashfoo/core";
+import type { SnapGrid } from "@dashfoo/core/internal";
+import { decideSnap, settleSnap } from "@dashfoo/core/internal";
 import type { RefObject } from "react";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { GroupImperativeHandle, Layout, LayoutChangedMeta } from "react-resizable-panels";

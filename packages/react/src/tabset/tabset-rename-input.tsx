@@ -6,7 +6,7 @@ import { forwardRef, useEffect, useMemo, useRef } from "react";
 import { mergeRefs } from "../lib/merge-refs";
 import { useInlineRename } from "../lib/use-inline-rename";
 
-import { useTab, useTabset } from "./tabset-store";
+import { useTab, useTabset, useTabsetInternals } from "./tabset-store";
 
 type TabsetRenameInputProps = ComponentProps<"input">;
 
@@ -69,7 +69,7 @@ const TabsetRenameInput = forwardRef<HTMLInputElement, TabsetRenameInputProps>(
   (props, ref): ReactNode => {
     const { tab } = useTab();
     const editing = useTabset((state) => state.editingTabId === tab.id);
-    const registerRenameInput = useTabset((state) => state.registerRenameInput);
+    const registerRenameInput = useTabsetInternals((state) => state.registerRenameInput);
 
     useEffect(() => registerRenameInput(), [registerRenameInput]);
 

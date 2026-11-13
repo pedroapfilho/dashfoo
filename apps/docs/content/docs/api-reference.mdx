@@ -395,10 +395,7 @@ neighbour, else the left, or under `global.tabSetSelectOnRemove: "recent"` to th
 tab selected before it.
 
 Related exports: `actionSchema`, `dockLocationSchema`, `mutableNodeAttrsSchema`,
-`fallbackSelectedIndex` (`(tabset, removedIndex, policy?) => number`: the index of the tab
-that inherits the selection when the selected tab at `removedIndex` leaves, `-1`
-when none remains), `canCollapseTabset` (`(parent: RowNode, tabset) => boolean`:
-whether `setTabsetCollapsed` would collapse it), and the types `Action`, `MutableNodeAttrs`,
+and the types `Action`, `MutableNodeAttrs`,
 `DockLocation` (`"center" | "split-top" | "split-bottom" | "split-left" | "split-right"`),
 and `DropIntent` (`{ targetId: string; location: DockLocation; index?: number }`).
 See [drag & dock](/drag-and-dock) for how drops become actions.
@@ -568,6 +565,16 @@ because react-resizable-panels v4 commits one `adjustSplit` per release.
 
 One XState machine, for hosts that bypass the React binding. The document
 needs none: hold a `History` and step it with the functions above.
+
+The machine lives in `@dashfoo/core/internal`, the entry point for what a
+rendering layer builds on. It carries no semver promise, so a package that
+imports it pins `@dashfoo/core` to an exact version. The same entry point
+exports `fallbackSelectedIndex` (`(tabset, removedIndex, policy?) => number`:
+the index of the tab that inherits the selection when the selected tab at
+`removedIndex` leaves, `-1` when none remains), `canCollapseTabset`
+(`(parent: RowNode, tabset) => boolean`: whether `setTabsetCollapsed` would
+collapse it), the snap functions (`resolveSnapGrid`, `decideSnap`,
+`settleSnap`, `snapEnabled`) and `warn` / `warnOnce`.
 
 - `dragDockMachine`: the drag/dock interaction lifecycle. Events: `START`
   (`{ subject: DragSubject }`), `OVER` (`{ drop: DropResolution | null }`),

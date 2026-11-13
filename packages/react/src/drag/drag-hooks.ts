@@ -1,13 +1,8 @@
 "use client";
 
-import type {
-  DragSubject,
-  DropIndicator,
-  DropIntent,
-  DropResolution,
-  TabNode,
-} from "@dashfoo/core";
-import { warnOnce } from "@dashfoo/core";
+import type { DragSubject, DropIndicator, DropIntent, TabNode } from "@dashfoo/core";
+import type { DropResolution } from "@dashfoo/core/internal";
+import { warnOnce } from "@dashfoo/core/internal";
 import { Draggable, Droppable } from "@dnd-kit/dom";
 import { useSelector } from "@xstate/react";
 import { useCallback, useContext, useEffect, useId, useMemo, useRef } from "react";

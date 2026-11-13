@@ -1,7 +1,7 @@
 "use client";
 
 import type { Action, TabNode, TabsetNode } from "@dashfoo/core";
-import { warnOnce } from "@dashfoo/core";
+import { warnOnce } from "@dashfoo/core/internal";
 import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
 import { createStore, useStore } from "zustand";
@@ -26,18 +26,12 @@ type TabsetState = {
   isMaximized: boolean;
   node: TabsetNode;
   overflowItems: Array<OverflowItem>;
-  /** The tab a `closeTab` is waiting on, so a vetoed close cannot restore focus. */
-  pendingCloseTabId: string | null;
-  registerRenameInput: () => () => void;
-  registerTablist: (element: HTMLDivElement | null) => void;
-  renameInputCount: number;
   renameTab: (tabId: string, name: string) => void;
   selectOverflowTab: (tabId: string) => void;
   selectTab: (index: number, options?: { focus?: boolean }) => void;
   showMaximize: boolean;
   startEditing: (tabId: string) => void;
   stopEditing: () => void;
-  tablistElement: HTMLDivElement | null;
   /** Layout pixels the tabs leave free in the strip, negative once they overflow; `undefined` until measured. */
   tablistSpace: number | undefined;
   tabsClosable: boolean;
@@ -48,7 +42,15 @@ type TabsetState = {
 };
 
 /** What the library reads and a host does not, kept apart so the published `TabsetState` does not grow with it. */
-type TabsetInternals = TabsetState & { can: TabsetCapabilities };
+type TabsetInternals = TabsetState & {
+  can: TabsetCapabilities;
+  /** The tab a `closeTab` is waiting on, so a vetoed close cannot restore focus. */
+  pendingCloseTabId: string | null;
+  registerRenameInput: () => () => void;
+  registerTablist: (element: HTMLDivElement | null) => void;
+  renameInputCount: number;
+  tablistElement: HTMLDivElement | null;
+};
 
 type TabsetStore = StoreApi<TabsetInternals>;
 

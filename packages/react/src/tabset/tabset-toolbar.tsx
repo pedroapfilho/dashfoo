@@ -1,7 +1,7 @@
 "use client";
 
 import type { TabsetNode } from "@dashfoo/core";
-import { warnOnce } from "@dashfoo/core";
+import { warnOnce } from "@dashfoo/core/internal";
 import type { ComponentProps, MouseEvent, ReactNode } from "react";
 import { forwardRef, useMemo } from "react";
 

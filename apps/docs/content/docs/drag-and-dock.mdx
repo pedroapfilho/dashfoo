@@ -401,8 +401,9 @@ matches where the user released.
 
 ### 3. `dragDockMachine` runs the lifecycle
 
-The XState machine has two states, `idle` and `dragging`, and its context is one
-`DragState` rather than a pair of independent nullables:
+The XState machine, exported from `@dashfoo/core/internal`, has two states,
+`idle` and `dragging`, and its context is one `DragState` rather than a pair of
+independent nullables:
 
 ```ts
 type DragState =
