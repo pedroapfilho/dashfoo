@@ -35,7 +35,7 @@ jobs:
             turbo-${{ runner.os }}-${{ runner.arch }}-node24-test-${{ github.event.pull_request.number || github.ref_name }}-
             turbo-${{ runner.os }}-${{ runner.arch }}-node24-test-main-
       - name: Unit tests
-        run: node .github/ci/ci.mjs run test -- pnpm test
+        run: node .github/ci/ci.mjs run test -- pnpm test:coverage
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         name: Upload CI evidence
         if: ${{ !cancelled() }}
