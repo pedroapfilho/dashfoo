@@ -15,12 +15,13 @@ import type { DragGroupScope } from "../drag/drag-group";
 import { DashfooDragProvider } from "../drag/drag-root";
 import type { TearOffHandler } from "../drag/tear-off";
 import { useGroupDocument } from "../drag/use-group-document";
+import { PART } from "../lib/parts";
 import { useMirroredStore } from "../lib/use-mirrored-store";
 import type { TablistSpace } from "../tabset/tablist-space";
 import { createTablistSpace } from "../tabset/tablist-space";
 
 import type { LayoutState } from "./layout-store";
-import { createLayoutStore, LayoutStoreContext, useLayout } from "./layout-store";
+import { createLayoutStore, LayoutStoreContext, useLayoutInternals } from "./layout-store";
 
 const DEFAULT_TABSET_MIN_SIZE = 320;
 
@@ -199,6 +200,7 @@ const LayoutRoot = ({
     dispatch,
     documentId,
     maximizedTabsetId: model.maximizedTabsetId,
+    model,
     renderTab: renderers.tab,
     renderTabLabel: renderers.tabLabel,
     renderTabsetToolbar: renderers.tabsetToolbar,
@@ -217,7 +219,7 @@ const LayoutRoot = ({
     <LayoutStoreContext.Provider value={store}>
       <div
         {...props}
-        data-dashfoo="layout"
+        data-dashfoo={PART.layout}
         ref={rootRef}
         style={{ "--dashfoo-splitter-size": splitterSize(global) }}
       >
@@ -237,7 +239,7 @@ type LayoutOverridesProps = {
  * flags, so anything the parent changes keeps flowing into the subtree.
  */
 const LayoutOverrides = ({ children, overrides }: LayoutOverridesProps): ReactNode => {
-  const parentState = useLayout((state) => state);
+  const parentState = useLayoutInternals((state) => state);
   const store = useMirroredStore(createLayoutStore, { ...parentState, ...overrides });
 
   return <LayoutStoreContext.Provider value={store}>{children}</LayoutStoreContext.Provider>;

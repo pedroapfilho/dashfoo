@@ -9,6 +9,7 @@ import { useDraggedNodeId, useNodeDraggable } from "../drag/drag-hooks";
 import { useLayout } from "../layout/layout-store";
 import { panelDomId, tabDomId } from "../lib/dom-ids";
 import { mergeRefs } from "../lib/merge-refs";
+import { PART, partsIn } from "../lib/parts";
 import type { StatefulButtonProps } from "../lib/state-props";
 import { resolveStateProps } from "../lib/state-props";
 import { CloseIcon } from "../ui/icons";
@@ -51,7 +52,7 @@ const TabsetTab = forwardRef<HTMLSpanElement, TabsetTabProps>(
 
     useEffect(() => {
       if (wasEditing.current && !editing) {
-        itemRef.current?.querySelector<HTMLElement>('[data-dashfoo="tab"]')?.focus();
+        (itemRef.current && partsIn(itemRef.current, PART.tab).at(0))?.focus();
       }
 
       wasEditing.current = editing;
@@ -72,7 +73,7 @@ const TabsetTab = forwardRef<HTMLSpanElement, TabsetTabProps>(
       <TabContext.Provider value={contextValue}>
         <span
           {...props}
-          data-dashfoo="tab-item"
+          data-dashfoo={PART.tabItem}
           data-dragging={isDragging || undefined}
           data-tab-id={tab.id}
           ref={refCallback}
@@ -169,7 +170,7 @@ const TabsetTrigger = forwardRef<HTMLButtonElement, TabsetTriggerProps>(
         {...props}
         aria-controls={panelDomId(documentId, node.id)}
         aria-selected={selected}
-        data-dashfoo="tab"
+        data-dashfoo={PART.tab}
         data-tab-id={tab.id}
         id={tabDomId(documentId, node.id, tab.id)}
         onClick={handleClick}

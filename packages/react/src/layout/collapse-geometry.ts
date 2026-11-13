@@ -1,23 +1,26 @@
 import type { RowNode } from "@dashfoo/core";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 
+import { childParts, ownPart, PART, partsIn } from "../lib/parts";
+
 const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>): boolean =>
   a.size === b.size && [...a].every((id) => b.has(id));
 
 /**
  * The strip's thickness plus the tabset's border, which a collapsed panel
- * still shows. Collapsed in a side-by-side split the strip runs vertically,
- * so its thickness is its width.
+ * still shows. `vertical`: collapsed in a side-by-side split the strip runs
+ * vertically, so its thickness is its width.
  */
-const measureHeader = (panel: HTMLElement): number | undefined => {
-  const tabset = panel.querySelector<HTMLElement>('[data-dashfoo="tabset"]');
-  const strip = tabset?.querySelector<HTMLElement>('[data-dashfoo="tabstrip"]');
+const measureHeader = (panel: HTMLElement, vertical: boolean): number | undefined => {
+  const tabset = partsIn(panel, PART.tabset).at(0);
 
   if (!tabset) {
     return undefined;
   }
 
-  if (tabset.dataset.collapsed === "row") {
+  const strip = ownPart(tabset, PART.tabset, PART.tabstrip);
+
+  if (vertical) {
     return (strip?.offsetWidth ?? 0) + tabset.offsetWidth - tabset.clientWidth;
   }
 
@@ -103,8 +106,8 @@ const spaceForPanels = (group: HTMLElement, orientation: RowNode["orientation"])
 
   let space = sizeOf(group);
 
-  for (const separator of group.querySelectorAll(":scope > [data-separator]")) {
-    space -= sizeOf(separator);
+  for (const splitter of childParts(group, PART.splitter)) {
+    space -= sizeOf(splitter);
   }
 
   return space;

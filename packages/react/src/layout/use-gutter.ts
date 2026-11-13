@@ -3,12 +3,11 @@
 import { createContext, useContext, useLayoutEffect, useMemo, useState } from "react";
 
 import { cssPixels } from "../lib/css-pixels";
-
-const SPLITTER_SELECTOR = ':scope > [data-dashfoo="splitter"]';
+import { childParts, PART } from "../lib/parts";
 
 /** The layout pixels one boundary between siblings takes: its splitter plus the row's CSS `gap` on each side. */
 const measureGutter = (group: HTMLElement, horizontal: boolean): number | undefined => {
-  const splitters = [...group.querySelectorAll<HTMLElement>(SPLITTER_SELECTOR)];
+  const splitters = childParts(group, PART.splitter);
 
   if (splitters.length === 0) {
     return undefined;
@@ -62,7 +61,7 @@ const useGutter = (horizontal: boolean, panelCount: number): RowGutter => {
     measure();
     const observer = new ResizeObserver(measure);
 
-    for (const splitter of group.querySelectorAll(SPLITTER_SELECTOR)) {
+    for (const splitter of childParts(group, PART.splitter)) {
       observer.observe(splitter);
     }
 

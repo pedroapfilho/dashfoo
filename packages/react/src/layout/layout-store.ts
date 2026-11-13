@@ -1,6 +1,13 @@
 "use client";
 
-import type { Action, SelectOnRemove, SnapConfig, TabNode, TabsetNode } from "@dashfoo/core";
+import type {
+  Action,
+  Dashfoo,
+  SelectOnRemove,
+  SnapConfig,
+  TabNode,
+  TabsetNode,
+} from "@dashfoo/core";
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
@@ -42,14 +49,17 @@ type LayoutState = {
   tabStripEnabled: boolean;
 };
 
-type LayoutStore = StoreApi<LayoutState>;
+/** What the library reads and a host does not, kept apart so the published `LayoutState` does not grow with it. */
+type LayoutInternals = LayoutState & { model: Dashfoo };
 
-const createLayoutStore = (initial: LayoutState): LayoutStore =>
-  createStore<LayoutState>(() => initial);
+type LayoutStore = StoreApi<LayoutInternals>;
+
+const createLayoutStore = (initial: LayoutInternals): LayoutStore =>
+  createStore<LayoutInternals>(() => initial);
 
 const LayoutStoreContext = createContext<LayoutStore | null>(null);
 
-const useLayout = <T>(selector: (state: LayoutState) => T): T => {
+const useLayoutInternals = <T>(selector: (state: LayoutInternals) => T): T => {
   const store = useContext(LayoutStoreContext);
 
   if (store === null) {
@@ -59,6 +69,8 @@ const useLayout = <T>(selector: (state: LayoutState) => T): T => {
   return useStore(store, selector);
 };
 
-export { createLayoutStore, LayoutStoreContext, useLayout };
+const useLayout: <T>(selector: (state: LayoutState) => T) => T = useLayoutInternals;
 
-export type { LayoutState, LayoutStore };
+export { createLayoutStore, LayoutStoreContext, useLayout, useLayoutInternals };
+
+export type { LayoutInternals, LayoutState, LayoutStore };

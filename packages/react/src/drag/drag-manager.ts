@@ -3,10 +3,11 @@ import { Accessibility, DragDropManager, Feedback, PointerSensor } from "@dnd-ki
 
 import { isElement } from "../lib/dom";
 import { startsOnControl } from "../lib/interactive";
+import { closestPart, PART } from "../lib/parts";
 
 /** A press on a tab drags that tab or nothing: never the tabset whose header holds it. */
 const startsOnOtherTab = (target: EventTarget | null, source: Draggable): boolean => {
-  const item = isElement(target) ? target.closest('[data-dashfoo="tab-item"]') : null;
+  const item = isElement(target) ? closestPart(target, PART.tabItem) : null;
 
   return item !== null && !(source.element && item.contains(source.element));
 };

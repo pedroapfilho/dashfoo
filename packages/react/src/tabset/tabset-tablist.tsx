@@ -7,6 +7,7 @@ import { useNodeDraggable } from "../drag/drag-hooks";
 import { useLayout } from "../layout/layout-store";
 import { tabDomId } from "../lib/dom-ids";
 import { mergeRefs } from "../lib/merge-refs";
+import { PART } from "../lib/parts";
 
 import { useTablistSpace } from "./tablist-space";
 import type { OverflowItem } from "./tabset-store";
@@ -29,7 +30,7 @@ const TabsetTabStrip = forwardRef<HTMLDivElement, TabsetTabStripProps>(
 
     const refCallback = useMemo(() => mergeRefs<HTMLDivElement>(ref, userRef), [ref, userRef]);
 
-    return <div {...props} data-dashfoo="tabstrip" ref={refCallback} style={style} />;
+    return <div {...props} data-dashfoo={PART.tabstrip} ref={refCallback} style={style} />;
   },
 );
 

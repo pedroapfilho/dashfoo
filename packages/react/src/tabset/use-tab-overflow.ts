@@ -3,14 +3,14 @@
 import type { TabNode } from "@dashfoo/core";
 import { useEffect, useLayoutEffect, useRef } from "react";
 
-import type { OverflowItem } from "./tabset-store";
+import { PART, partsIn } from "../lib/parts";
 
-const TAB_SELECTOR = '[data-dashfoo="tab"]';
+import type { OverflowItem } from "./tabset-store";
 
 const overflowingIds = (tablist: Element): Array<string> => {
   const box = tablist.getBoundingClientRect();
 
-  return [...tablist.querySelectorAll<HTMLElement>(TAB_SELECTOR)].flatMap((tab) => {
+  return partsIn(tablist, PART.tab).flatMap((tab) => {
     const rect = tab.getBoundingClientRect();
     const clipped = rect.right > box.right + 1 || rect.left < box.left - 1;
     const tabId = tab.dataset.tabId;
@@ -67,7 +67,7 @@ const useTabOverflow = (
     const observer = new ResizeObserver(recompute);
     observer.observe(tablist);
 
-    for (const item of tablist.querySelectorAll('[data-dashfoo="tab-item"]')) {
+    for (const item of partsIn(tablist, PART.tabItem)) {
       observer.observe(item);
     }
 

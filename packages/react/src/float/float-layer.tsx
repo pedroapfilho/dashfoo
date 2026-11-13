@@ -4,6 +4,8 @@ import type { FloatNode } from "@dashfoo/core";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
+import { PART } from "../lib/parts";
+
 import { FloatLayerContext } from "./float-context";
 import { FloatPanel } from "./float-panel";
 
@@ -12,7 +14,7 @@ const FloatOverlay = ({ floats }: { floats: Array<FloatNode> }): ReactNode => {
   const [topId, setTopId] = useState<string | null>(null);
 
   return (
-    <div data-dashfoo="float-overlay">
+    <div data-dashfoo={PART.floatOverlay}>
       {floats.map((node) => (
         <FloatPanel
           key={node.id}
