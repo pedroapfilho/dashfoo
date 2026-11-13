@@ -5,6 +5,8 @@ import { isElement } from "../lib/dom";
 import { startsOnControl } from "../lib/interactive";
 import { closestPart, PART } from "../lib/parts";
 
+import { isNativeSource } from "./native-drag";
+
 /** A press on a tab drags that tab or nothing: never the tabset whose header holds it. */
 const startsOnOtherTab = (target: EventTarget | null, source: Draggable): boolean => {
   const item = isElement(target) ? closestPart(target, PART.tabItem) : null;
@@ -12,11 +14,10 @@ const startsOnOtherTab = (target: EventTarget | null, source: Draggable): boolea
   return item !== null && !(source.element && item.contains(source.element));
 };
 
-/** A mouse press on a node in a drag group is the browser's drag and drop to run, not dnd-kit's. */
 const preventActivation = (event: PointerEvent, source: Draggable): boolean =>
   startsOnControl(event.target, source.element) ||
   startsOnOtherTab(event.target, source) ||
-  (event.pointerType === "mouse" && source.element?.getAttribute("draggable") === "true");
+  (event.pointerType === "mouse" && isNativeSource(source.element));
 
 type DashfooDragManager = DragDropManager;
 

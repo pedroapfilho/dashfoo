@@ -6,6 +6,7 @@ import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from "react
 import { forwardRef, useContext, useEffect, useMemo, useRef } from "react";
 
 import { useDraggedNodeId, useNodeDraggable } from "../drag/drag-hooks";
+import { tabCapabilities } from "../layout/capabilities";
 import { useLayout } from "../layout/layout-store";
 import { panelDomId, tabDomId } from "../lib/dom-ids";
 import { mergeRefs } from "../lib/merge-refs";
@@ -15,12 +16,11 @@ import { resolveStateProps } from "../lib/state-props";
 import { CloseIcon } from "../ui/icons";
 
 import {
-  canCloseTab,
-  canRenameTab,
   TabContext,
   TabsetStoreContext,
   useTab,
   useTabset,
+  useTabsetInternals,
 } from "./tabset-store";
 
 type TabsetTabProps = ComponentProps<"span"> & { tab: TabNode };
@@ -58,13 +58,11 @@ const TabsetTab = forwardRef<HTMLSpanElement, TabsetTabProps>(
       wasEditing.current = editing;
     }, [editing]);
 
-    const closable = useTabset((state) => canCloseTab(state, tab));
-    const renamable = useTabset((state) => canRenameTab(state, tab));
-    const draggable = useLayout((state) => state.draggableTabs) && tab.enableDrag !== false;
+    const can = useTabsetInternals((state) => state.can);
 
     const contextValue = useMemo(
-      () => ({ closable, draggable, index, renamable, tab }),
-      [closable, draggable, index, renamable, tab],
+      () => ({ ...tabCapabilities(can, tab), index, tab }),
+      [can, index, tab],
     );
 
     const refCallback = useMemo(() => mergeRefs<HTMLSpanElement>(itemRef, userRef), [userRef]);

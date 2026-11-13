@@ -21,7 +21,9 @@ export type { DragLayerProps as LayoutDragLayerProps } from "../drag/drag-layer"
 
 export type { FloatLayerProps as LayoutFloatLayerProps } from "../float/float-layer";
 
-export type { LayoutOptions, LayoutRenderers, LayoutRootProps } from "./layout-root";
+export type { LayoutOptions } from "./capabilities";
+
+export type { LayoutRenderers, LayoutRootProps } from "./layout-root";
 
 export type { RowViewProps as LayoutRowsProps } from "./row-view";
 

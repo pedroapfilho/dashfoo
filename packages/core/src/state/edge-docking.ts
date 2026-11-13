@@ -1,10 +1,7 @@
 import { row } from "../model/builders";
 import type { SplitLocation } from "../model/dock-location";
-import { SPLIT_PLACEMENT } from "../model/dock-location";
+import { EDGE_DOCK_SHARE, SPLIT_PLACEMENT } from "../model/dock-location";
 import type { RowNode, TabsetNode } from "../model/schema";
-
-/** The share of the layout a tab or tabset docked at its edge takes, like a sidebar or a bottom panel. */
-const EDGE_DOCK_SHARE = 0.25;
 
 /** Keeps the root's id, so the layout stays addressable as a target after it wraps. */
 const placeAtEdge = (root: RowNode, placed: TabsetNode, location: SplitLocation): TabsetNode => {

@@ -1,4 +1,4 @@
-import type { RowNode, TabsetNode } from "../model/schema";
+import type { RowNode, TabsetNode } from "./schema";
 
 type RowChild = RowNode["children"][number];
 

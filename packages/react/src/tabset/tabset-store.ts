@@ -6,6 +6,8 @@ import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
 import { createStore, useStore } from "zustand";
 
+import type { TabsetCapabilities } from "../layout/capabilities";
+import { tabCapabilities } from "../layout/capabilities";
 import { findTabButton } from "../lib/dom-ids";
 
 type OverflowItem = { id: string; name: string };
@@ -45,11 +47,15 @@ type TabsetState = {
   visualSelected: number;
 };
 
-type TabsetStore = StoreApi<TabsetState>;
+/** What the library reads and a host does not, kept apart so the published `TabsetState` does not grow with it. */
+type TabsetInternals = TabsetState & { can: TabsetCapabilities };
+
+type TabsetStore = StoreApi<TabsetInternals>;
 
 type TabsetSnapshot = Pick<
-  TabsetState,
+  TabsetInternals,
   | "activeTab"
+  | "can"
   | "canCollapse"
   | "dispatch"
   | "documentId"
@@ -63,14 +69,8 @@ type TabsetSnapshot = Pick<
   | "visualSelected"
 >;
 
-const canCloseTab = (state: Pick<TabsetState, "tabsClosable">, tab: TabNode): boolean =>
-  state.tabsClosable && tab.enableClose !== false;
-
-const canRenameTab = (state: Pick<TabsetState, "tabsRenamable">, tab: TabNode): boolean =>
-  state.tabsRenamable && tab.enableRename !== false;
-
 const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
-  createStore<TabsetState>((set, get) => ({
+  createStore<TabsetInternals>((set, get) => ({
     ...initial,
     closeTab: (tabId) => {
       set({ pendingCloseTabId: tabId });
@@ -138,7 +138,7 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
       const state = get();
       const tab = state.node.children.find((child) => child.id === tabId);
 
-      if (!tab || !canRenameTab(state, tab)) {
+      if (!tab || !tabCapabilities(state.can, tab).renamable) {
         return;
       }
 
@@ -170,7 +170,7 @@ const createTabsetStore = (initial: TabsetSnapshot): TabsetStore =>
 
 const TabsetStoreContext = createContext<TabsetStore | null>(null);
 
-const useTabset = <T>(selector: (state: TabsetState) => T): T => {
+const useTabsetInternals = <T>(selector: (state: TabsetInternals) => T): T => {
   const store = useContext(TabsetStoreContext);
 
   if (store === null) {
@@ -179,6 +179,8 @@ const useTabset = <T>(selector: (state: TabsetState) => T): T => {
 
   return useStore(store, selector);
 };
+
+const useTabset: <T>(selector: (state: TabsetState) => T) => T = useTabsetInternals;
 
 /** The tab a part belongs to and what the user may do to it: the layout, tabset and tab flags combined. */
 type TabContextValue = {
@@ -201,14 +203,6 @@ const useTab = (): TabContextValue => {
   return value;
 };
 
-export {
-  canCloseTab,
-  canRenameTab,
-  createTabsetStore,
-  TabContext,
-  TabsetStoreContext,
-  useTab,
-  useTabset,
-};
+export { createTabsetStore, TabContext, TabsetStoreContext, useTab, useTabset, useTabsetInternals };
 
 export type { OverflowItem, TabContextValue, TabsetSnapshot, TabsetState, TabsetStore };

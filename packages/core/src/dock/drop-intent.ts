@@ -1,5 +1,5 @@
 import type { DockLocation, SplitLocation } from "../model/dock-location";
-import { SPLIT_PLACEMENT } from "../model/dock-location";
+import { EDGE_DOCK_SHARE, SPLIT_PLACEMENT } from "../model/dock-location";
 import type { TabNode } from "../model/schema";
 
 import type { Point, Rect } from "./geometry";
@@ -44,9 +44,6 @@ const INSERTION_LINE_WIDTH = 4;
 
 /** How close to the layout's edge, in pixels, a drop docks beside the whole layout. */
 const EDGE_BAND = 12;
-
-/** Matches the share the reducer gives an edge drop, so the indicator previews the landed size. */
-const EDGE_ZONE_SHARE = 0.25;
 
 const EDGE_LOCATIONS: ReadonlyArray<SplitLocation> = [
   "split-left",
@@ -240,7 +237,7 @@ const edgeZoneRect = (rect: Rect, edge: SplitLocation): Rect => {
   const { before, orientation } = SPLIT_PLACEMENT[edge];
 
   if (orientation === "row") {
-    const width = rect.width * EDGE_ZONE_SHARE;
+    const width = rect.width * EDGE_DOCK_SHARE;
 
     return {
       height: rect.height,
@@ -250,7 +247,7 @@ const edgeZoneRect = (rect: Rect, edge: SplitLocation): Rect => {
     };
   }
 
-  const height = rect.height * EDGE_ZONE_SHARE;
+  const height = rect.height * EDGE_DOCK_SHARE;
 
   return {
     height,

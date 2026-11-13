@@ -1,53 +1,20 @@
 "use client";
 
-import type {
-  Action,
-  Dashfoo,
-  GlobalAttributes,
-  SnapConfig,
-  TabNode,
-  TabsetNode,
-} from "@dashfoo/core";
+import type { Action, Dashfoo, GlobalAttributes, TabNode, TabsetNode } from "@dashfoo/core";
 import type { ComponentProps, ReactNode, Ref } from "react";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
-import type { DragGroupScope } from "../drag/drag-group";
+import { registerDocument } from "../drag/drag-group";
 import { DashfooDragProvider } from "../drag/drag-root";
-import type { TearOffHandler } from "../drag/tear-off";
-import { useGroupDocument } from "../drag/use-group-document";
 import { PART } from "../lib/parts";
 import { useMirroredStore } from "../lib/use-mirrored-store";
 import type { TablistSpace } from "../tabset/tablist-space";
 import { createTablistSpace } from "../tabset/tablist-space";
 
+import type { LayoutOptions } from "./capabilities";
+import { resolveLayoutOptions } from "./capabilities";
 import type { LayoutState } from "./layout-store";
 import { createLayoutStore, LayoutStoreContext, useLayoutInternals } from "./layout-store";
-
-const DEFAULT_TABSET_MIN_SIZE = 320;
-
-/** What a layout lets the user do. Every default lives in `resolveLayoutOptions`. */
-type LayoutOptions = {
-  closableTabs?: boolean;
-  draggableTabs?: boolean;
-  draggableTabsets?: boolean;
-  /** Layouts sharing a group exchange tabs and tabsets by drag, across windows and browser tabs of one origin. */
-  dragGroup?: string;
-  dragGroupScope?: DragGroupScope;
-  /** When false, tabs and tabsets can't be dropped at the layout's edges, beside everything else. */
-  edgeDocking?: boolean;
-  editable?: boolean;
-  floatable?: boolean;
-  /** `true` keeps inactive tabs mounted and hidden; `"activity"` keeps them in a hidden React `<Activity>`, which pauses their effects. */
-  keepMounted?: boolean | "activity";
-  maximizable?: boolean;
-  /** Called when a tab or tabset is released outside the window; return `true` to remove it. */
-  onTearOff?: TearOffHandler;
-  renamableTabs?: boolean;
-  resizableSplits?: boolean;
-  /** When false, the tree itself is frozen: no dragging, splitting or floating. Tabs stay closable and renamable. */
-  restructurable?: boolean;
-  snap?: SnapConfig;
-};
 
 type LayoutRenderers = {
   tab: (tab: TabNode) => ReactNode;
@@ -66,70 +33,6 @@ type LayoutRootProps = Omit<ComponentProps<"div">, "children" | "ref" | "style">
     tablistSpace?: TablistSpace;
   };
 
-type ResolvedOptions = Omit<
-  LayoutState,
-  | "dispatch"
-  | "documentId"
-  | "maximizedTabsetId"
-  | "renderTab"
-  | "renderTabLabel"
-  | "renderTabsetToolbar"
-  | "tablistSpace"
->;
-
-const noneSwitchedOff = (...switches: Array<boolean | undefined>): boolean =>
-  switches.every((value) => value !== false);
-
-/** A layout that cannot dock joins no group, so drags never land in or leave it. */
-const resolveDragGroup = (
-  structural: boolean,
-  { dragGroup, dragGroupScope = "origin" }: LayoutOptions,
-): Pick<ResolvedOptions, "dragGroup" | "dragGroupScope"> => ({
-  dragGroup: structural ? dragGroup : undefined,
-  dragGroupScope,
-});
-
-/** What the model's `global` decides with no host prop to weigh against it. */
-const resolveGlobalOptions = (
-  global: GlobalAttributes,
-): Pick<
-  ResolvedOptions,
-  "selectOnRemove" | "splitDock" | "tabLocation" | "tabsetMinSize" | "tabStripEnabled"
-> => ({
-  selectOnRemove: global.tabSetSelectOnRemove ?? "neighbor",
-  splitDock: global.enableSplitDock !== false,
-  tabLocation: global.tabLocation ?? "top",
-  tabsetMinSize: global.tabSetMinSize ?? DEFAULT_TABSET_MIN_SIZE,
-  tabStripEnabled: global.tabSetEnableTabStrip !== false,
-});
-
-/** The host's options and the model's `global` attributes, combined: either side can switch a capability off. */
-const resolveLayoutOptions = (
-  global: GlobalAttributes,
-  options: LayoutOptions,
-): ResolvedOptions => {
-  const editable = options.editable ?? true;
-  const structural = editable && options.restructurable !== false;
-
-  return {
-    canDock: structural,
-    closableTabs: noneSwitchedOff(editable, options.closableTabs, global.tabEnableClose),
-    draggableTabs: noneSwitchedOff(structural, options.draggableTabs, global.tabEnableDrag),
-    draggableTabsets: noneSwitchedOff(structural, options.draggableTabsets),
-    ...resolveDragGroup(structural, options),
-    edgeDocking: options.edgeDocking !== false,
-    editable,
-    floatable: structural && options.floatable === true,
-    keepMounted: options.keepMounted ?? false,
-    maximizable: noneSwitchedOff(options.maximizable, global.tabSetEnableMaximize),
-    onTearOff: options.onTearOff,
-    renamableTabs: noneSwitchedOff(editable, options.renamableTabs, global.tabEnableRename),
-    resizableSplits: noneSwitchedOff(structural, options.resizableSplits, global.enableSplitResize),
-    snap: options.snap ?? global.snap ?? null,
-    ...resolveGlobalOptions(global),
-  };
-};
-
 const splitterSize = ({ splitterSize: size }: GlobalAttributes): string | undefined =>
   size === undefined ? undefined : `${size}px`;
 
@@ -142,7 +45,7 @@ const useTablistSpaceOrOwn = (tablistSpace: TablistSpace | undefined): TablistSp
 
 type OwnRootProps = "children" | "dispatch" | "model" | "renderers" | "rootRef" | "tablistSpace";
 
-/** Separates the capability props from the ones forwarded to the root `div`. */
+/** `satisfies` every key: an option left out of the list would reach the root `div` as an attribute. */
 const splitLayoutOptions = ({
   closableTabs,
   draggableTabs,
@@ -177,7 +80,7 @@ const splitLayoutOptions = ({
     resizableSplits,
     restructurable,
     snap,
-  } satisfies LayoutOptions,
+  } satisfies Record<keyof LayoutOptions, unknown>,
   props,
 });
 
@@ -207,13 +110,7 @@ const LayoutRoot = ({
     tablistSpace: space,
   });
 
-  useGroupDocument({
-    dispatch,
-    documentId,
-    dragGroup: options.dragGroup,
-    dragGroupScope: options.dragGroupScope,
-    model,
-  });
+  useEffect(() => registerDocument(documentId, store), [documentId, store]);
 
   return (
     <LayoutStoreContext.Provider value={store}>
@@ -247,4 +144,4 @@ const LayoutOverrides = ({ children, overrides }: LayoutOverridesProps): ReactNo
 
 export { LayoutOverrides, LayoutRoot };
 
-export type { LayoutOptions, LayoutOverridesProps, LayoutRenderers, LayoutRootProps };
+export type { LayoutOverridesProps, LayoutRenderers, LayoutRootProps };

@@ -1,6 +1,5 @@
 "use client";
 
-import type { DragSubject } from "@dashfoo/core";
 import { warn } from "@dashfoo/core";
 import { useContext, useEffect, useMemo, useState } from "react";
 
@@ -8,13 +7,20 @@ import type { LayoutStore } from "../layout/layout-store";
 import { LayoutStoreContext, useLayout } from "../layout/layout-store";
 import { isHTMLElement, isNode } from "../lib/dom";
 
-import type { DragActor } from "./drag-context";
 import { DragContext } from "./drag-context";
 import type { InternalSubject, TransferNode } from "./drag-group";
-import { appId, setRemoteDocument, sourceDocument } from "./drag-group";
-import { createLayer, tearOffHandler } from "./drag-layer";
+import {
+  appId,
+  confirmAccepted,
+  offerRelease,
+  setRemoteDocument,
+  sourceDocument,
+  withdrawOffer,
+} from "./drag-group";
+import type { DragSession } from "./drag-session";
 import type { Marker } from "./native-wire";
-import { readAccepted, readMarker, readNode, writeTransfer } from "./native-wire";
+import { readMarker, readNode, writeTransfer } from "./native-wire";
+import { nativeRelease } from "./tear-off";
 
 /**
  * A cross-app drop confirms over a `BroadcastChannel`, which can land after
@@ -22,7 +28,9 @@ import { readAccepted, readMarker, readNode, writeTransfer } from "./native-wire
  */
 const ACCEPT_GRACE_MS = 250;
 
-const CHANNEL_NAME = "dashfoo-drag";
+/** A mouse press on a native source is the browser's drag and drop to run, so the pointer sensor leaves it alone. */
+const isNativeSource = (element: Element | undefined): boolean =>
+  element?.getAttribute("draggable") === "true";
 
 /** Another copy of the app can mint the same React ids, so its documents are namespaced by app. */
 const subjectOf = (marker: Marker): InternalSubject => ({
@@ -31,49 +39,9 @@ const subjectOf = (marker: Marker): InternalSubject => ({
   kind: marker.kind,
 });
 
-const pendingReleases = new Map<string, () => void>();
+type SourceOptions = { session: DragSession; store: LayoutStore; subject: InternalSubject };
 
-let channel: BroadcastChannel | null = null;
-
-const acceptChannel = (): BroadcastChannel | null => {
-  if (channel === null && typeof BroadcastChannel !== "undefined") {
-    channel = new BroadcastChannel(CHANNEL_NAME);
-    channel.addEventListener("message", (event) => {
-      const dragId = readAccepted(event);
-
-      if (dragId !== undefined) {
-        pendingReleases.get(dragId)?.();
-        pendingReleases.delete(dragId);
-      }
-    });
-  }
-
-  return channel;
-};
-
-/** The actor of the drag root that started the current native drag in this window, if any. */
-let sourceActor: DragActor | null = null;
-
-const startDrag = (actorRef: DragActor, subject: DragSubject): void => {
-  const { drag } = actorRef.getSnapshot().context;
-
-  if (drag.kind === "dragging" && JSON.stringify(drag.subject) === JSON.stringify(subject)) {
-    return;
-  }
-
-  actorRef.send({ type: "CANCEL" });
-  actorRef.send({ subject, type: "START" });
-};
-
-const isInsideWindow = (event: DragEvent, view: Window): boolean =>
-  event.screenX >= view.screenX &&
-  event.screenX < view.screenX + view.outerWidth &&
-  event.screenY >= view.screenY &&
-  event.screenY < view.screenY + view.outerHeight;
-
-type SourceOptions = { actorRef: DragActor; store: LayoutStore; subject: InternalSubject };
-
-const bindSource = (element: HTMLElement, { actorRef, store, subject }: SourceOptions) => {
+const bindSource = (element: HTMLElement, { session, store, subject }: SourceOptions) => {
   let dragId: string | null = null;
 
   const handleDragStart = (event: DragEvent): void => {
@@ -100,34 +68,26 @@ const bindSource = (element: HTMLElement, { actorRef, store, subject }: SourceOp
     };
 
     writeTransfer(event.dataTransfer, marker, node);
-    pendingReleases.set(dragId, () => {
+    offerRelease(dragId, () => {
       source.release(subject);
     });
-    acceptChannel();
-    sourceActor = actorRef;
-    startDrag(actorRef, subject);
+    session.start(subject, "own");
   };
 
   const handleDragEnd = (event: DragEvent): void => {
-    sourceActor = null;
-
-    if (actorRef.getSnapshot().context.drag.kind === "dragging") {
-      actorRef.send({ type: "CANCEL" });
-    }
+    session.cancel();
 
     const id = dragId;
     const view = element.ownerDocument.defaultView;
     const released = event.dataTransfer?.dropEffect !== "none";
-    const tearOff = released || !view || isInsideWindow(event, view) ? null : tearOffHandler(store);
-    const point = { x: event.screenX, y: event.screenY };
+
+    const tearOff =
+      released || !view ? null : session.tearOff(subject, element, nativeRelease(event, view));
 
     setTimeout(() => {
-      if (id === null || !pendingReleases.has(id)) {
-        return;
+      if (id !== null && withdrawOffer(id)) {
+        tearOff?.();
       }
-
-      pendingReleases.delete(id);
-      tearOff?.(subject, element, point);
     }, ACCEPT_GRACE_MS);
   };
 
@@ -142,13 +102,9 @@ const bindSource = (element: HTMLElement, { actorRef, store, subject }: SourceOp
   };
 };
 
-type TargetOptions = { actorRef: DragActor; layerId: string; store: LayoutStore; tabsetId: string };
+type TargetOptions = { layerId: string; session: DragSession; tabsetId: string };
 
-const bindTarget = (
-  element: HTMLElement,
-  { actorRef, layerId, store, tabsetId }: TargetOptions,
-) => {
-  const layer = createLayer(layerId, store);
+const bindTarget = (element: HTMLElement, { layerId, session, tabsetId }: TargetOptions) => {
   let remoteNode: TransferNode | undefined;
   let remoteDragId: string | null = null;
 
@@ -163,7 +119,7 @@ const bindTarget = (
         documentId: subject.documentId,
         group: marker.group,
         release: () => {
-          acceptChannel()?.postMessage({ accepted: marker.dragId });
+          confirmAccepted(marker.dragId);
         },
         scope: marker.scope,
         take: () => remoteNode,
@@ -180,13 +136,14 @@ const bindTarget = (
       return false;
     }
 
-    const subject = adopt(marker);
-    startDrag(actorRef, subject);
-    const point = { x: event.clientX, y: event.clientY };
-    const resolved = layer.resolveDrop(subject, tabsetId, element, point);
-    actorRef.send({ drop: resolved && { ...resolved, scope: layerId }, type: "OVER" });
+    session.start(adopt(marker));
 
-    return resolved !== null;
+    return session.over({
+      element,
+      layerId,
+      point: { x: event.clientX, y: event.clientY },
+      tabsetId,
+    });
   };
 
   const handleDragOver = (event: DragEvent): void => {
@@ -203,13 +160,13 @@ const bindTarget = (
       return;
     }
 
-    if (next === null && sourceActor !== actorRef) {
-      actorRef.send({ type: "CANCEL" });
+    if (next === null && !session.startedHere()) {
+      session.cancel();
 
       return;
     }
 
-    actorRef.send({ drop: null, type: "OVER" });
+    session.over(null);
   };
 
   const handleDrop = (event: DragEvent): void => {
@@ -223,12 +180,12 @@ const bindTarget = (
 
     if (remoteNode === undefined) {
       warn("a dragged node arrived without valid data; the drop was ignored");
-      actorRef.send({ type: "CANCEL" });
+      session.cancel();
 
       return;
     }
 
-    actorRef.send({ type: "DROP" });
+    session.drop();
     setRemoteDocument(null);
     remoteDragId = null;
   };
@@ -246,7 +203,7 @@ const bindTarget = (
   };
 };
 
-/** The layer, store and element a native binding needs; `null` until all are there and the layout is grouped. */
+/** The layer, session and element a native binding needs; `null` until all are there and the layout is grouped. */
 const useGroupedElement = () => {
   const context = useContext(DragContext);
   const store = useContext(LayoutStoreContext);
@@ -256,7 +213,7 @@ const useGroupedElement = () => {
 
   const binding =
     grouped && store && context && layerId !== null && isHTMLElement(element)
-      ? { actorRef: context.actorRef, element, layerId, store }
+      ? { element, layerId, session: context.session, store }
       : null;
 
   return { binding, setElement };
@@ -271,32 +228,32 @@ const useNativeSource = (
   const { binding, setElement } = useGroupedElement();
   const documentId = useLayout((state) => state.documentId);
   const subject = useMemo(() => ({ documentId, id, kind }), [documentId, id, kind]);
-  const { actorRef, element, store } = binding ?? {};
+  const { element, session, store } = binding ?? {};
 
   useEffect(() => {
-    if (!actorRef || !element || !store || disabled) {
+    if (!element || !session || !store || disabled) {
       return undefined;
     }
 
-    return bindSource(element, { actorRef, store, subject });
-  }, [actorRef, disabled, element, store, subject]);
+    return bindSource(element, { session, store, subject });
+  }, [disabled, element, session, store, subject]);
 
   return setElement;
 };
 
 const useNativeTarget = (tabsetId: string): ((element: Element | null) => void) => {
   const { binding, setElement } = useGroupedElement();
-  const { actorRef, element, layerId, store } = binding ?? {};
+  const { element, layerId, session } = binding ?? {};
 
   useEffect(() => {
-    if (!actorRef || !element || !store || layerId === undefined) {
+    if (!element || !session || layerId === undefined) {
       return undefined;
     }
 
-    return bindTarget(element, { actorRef, layerId, store, tabsetId });
-  }, [actorRef, element, layerId, store, tabsetId]);
+    return bindTarget(element, { layerId, session, tabsetId });
+  }, [element, layerId, session, tabsetId]);
 
   return setElement;
 };
 
-export { useNativeSource, useNativeTarget };
+export { isNativeSource, useNativeSource, useNativeTarget };

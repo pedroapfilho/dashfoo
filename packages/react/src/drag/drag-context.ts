@@ -6,6 +6,7 @@ import type { ActorRefFrom } from "xstate";
 
 import type { InternalSubject } from "./drag-group";
 import type { DashfooDragManager } from "./drag-manager";
+import type { DragSession } from "./drag-session";
 
 type DragActor = ActorRefFrom<typeof dragDockMachine>;
 
@@ -36,6 +37,7 @@ type DragContextValue = {
   layerId: string | null;
   manager: DashfooDragManager;
   registerLayer: (layer: RegisteredLayer) => () => void;
+  session: DragSession;
 };
 
 const DragContext = createContext<DragContextValue | null>(null);

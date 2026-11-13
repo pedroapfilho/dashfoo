@@ -1,5 +1,6 @@
 import { model, row, tabset } from "./builders";
 import type { Dashfoo } from "./schema";
+import { DEFAULT_WEIGHT } from "./schema";
 import { findTab, findTabset } from "./tree";
 
 /**
@@ -10,7 +11,10 @@ const standaloneModel = (source: Dashfoo, nodeId: string): Dashfoo | undefined =
   const tab = findTab(source, nodeId)?.tab;
   const node = tab ? tabset([tab]) : findTabset(source, nodeId);
 
-  return node && structuredClone(model(row([{ ...node, weight: 1 }]), { global: source.global }));
+  return (
+    node &&
+    structuredClone(model(row([{ ...node, weight: DEFAULT_WEIGHT }]), { global: source.global }))
+  );
 };
 
 export { standaloneModel };
