@@ -10,8 +10,8 @@ import {
   redoHistory,
   reducer,
   undoHistory,
-  warnOnce,
 } from "@dashfoo/core";
+import { warnOnce } from "@dashfoo/core/internal";
 import { useCallback, useMemo, useState } from "react";
 import { createStore, useStore } from "zustand";
 

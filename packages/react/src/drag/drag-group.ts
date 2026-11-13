@@ -1,5 +1,6 @@
 import type { Dashfoo, DragSubject, TabNode, TabsetNode } from "@dashfoo/core";
-import { findTab, findTabset, warn } from "@dashfoo/core";
+import { findTab, findTabset } from "@dashfoo/core";
+import { warn } from "@dashfoo/core/internal";
 
 import type { LayoutStore } from "../layout/layout-store";
 

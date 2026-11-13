@@ -1,4 +1,5 @@
-import type { Dashfoo, DropResolution, TabNode } from "@dashfoo/core";
+import type { Dashfoo, TabNode } from "@dashfoo/core";
+import type { DropResolution } from "@dashfoo/core/internal";
 import { act, render } from "@testing-library/react";
 import { useContext } from "react";
 import { assert, describe, expect, test } from "vitest";

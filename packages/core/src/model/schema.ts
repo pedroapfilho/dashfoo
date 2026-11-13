@@ -6,9 +6,9 @@ const DEFAULT_WEIGHT = 1;
 /** The title of a float that has no `name`, and the base new floats are numbered from. */
 const DEFAULT_FLOAT_NAME = "Panel";
 
-type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };
+type Json = string | number | boolean | null | Array<Json> | { [key: string]: Json };
 
-const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
+const jsonValueSchema: z.ZodType<Json> = z.lazy(() =>
   z.union([
     z.string(),
     z.number(),
@@ -130,8 +130,6 @@ const dashfooSchema = z.object({
   maximizedTabsetId: z.string().optional(),
   version: z.literal(1),
 });
-
-type Json = JsonValue;
 
 type Unit = z.infer<typeof unitSchema>;
 

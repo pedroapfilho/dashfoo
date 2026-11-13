@@ -1,5 +1,6 @@
 import type { DragSubject, TabNode } from "@dashfoo/core";
-import { tabNodeSchema, warn } from "@dashfoo/core";
+import { tabNodeSchema } from "@dashfoo/core";
+import { warn } from "@dashfoo/core/internal";
 import type { Data } from "@dnd-kit/abstract";
 import type { Draggable } from "@dnd-kit/dom";
 

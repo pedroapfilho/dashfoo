@@ -159,7 +159,8 @@ tab that was selected. If that tab is the one leaving, its right neighbour
 inherits the selection, else its left one. With
 `global.tabSetSelectOnRemove: "recent"` the tab selected before it inherits
 instead, read from the tabset's `selectionHistory`, which `normalize` keeps.
-`fallbackSelectedIndex(tabset, removedIndex, policy?)` returns the heir's index
+`fallbackSelectedIndex(tabset, removedIndex, policy?)`, from
+[`@dashfoo/core/internal`](#the-internal-entry-point), returns the heir's index
 in the strip as it stands, which is how a renderer previews a drag before the
 drop.
 
@@ -167,7 +168,8 @@ A tabset with `collapsible: true` can be collapsed to its strip with
 `setTabsetCollapsed`; `collapsed` is saved on the tabset and its `weight` stays
 the share it expands back to. Selecting one of its tabs expands it. A row
 always keeps one expanded child: `setTabsetCollapsed` refuses to collapse the
-last one (`canCollapseTabset(parent, tabset)` answers the same question), and
+last one (`canCollapseTabset(parent, tabset)`, from
+[`@dashfoo/core/internal`](#the-internal-entry-point), answers the same question), and
 `normalize` expands a row left with only collapsed children.
 
 ### Use the reducer directly
@@ -359,7 +361,8 @@ Exports: `resolveDropIntent`, `dropIndicator`; types `Direction`, `DragSubject`,
 
 Pure math for magnetic split-resize snapping, over ordered percentage arrays so
 it stays framework-free; the React adapter maps rrp's id-keyed layout to/from
-these arrays and supplies the dragged boundary index.
+these arrays and supplies the dragged boundary index. The four functions are
+exported from [`@dashfoo/core/internal`](#the-internal-entry-point).
 
 ```ts
 // resolveSnapGrid(config, panelCount).targets contains positions inside 0..100
@@ -449,6 +452,7 @@ const restored = restoreModel(JSON.parse(saved), {
 The drag/dock interaction is a real lifecycle, so it is an XState v5 machine.
 `@dashfoo/react` wires it to React, but it is framework-free and usable on its
 own. The document needs no machine: `@dashfoo/react` holds a `History` directly.
+The machine is exported from [`@dashfoo/core/internal`](#the-internal-entry-point).
 
 ### dragDockMachine
 
@@ -495,7 +499,7 @@ types `Dashfoo`, `DashfooInput`, `RowNodeInput`, `RowNode`, `TabsetNode`, `TabNo
 `actions`: `actionSchema`, `mutableNodeAttrsSchema`; types `Action`,
 `MutableNodeAttrs`.
 
-`reducer`: `reducer`. `docking`: `fallbackSelectedIndex`. `invariants`: `normalize`.
+`reducer`: `reducer`. `invariants`: `normalize`.
 
 `tree`: `collectRoots`, `collectTabsets`, `collectTabsetsInRow`, `getFirstTabset`,
 `findTabset`, `findTab`, `findFloat`, `findRow`, `findAttributedNode`,
@@ -503,19 +507,29 @@ types `Dashfoo`, `DashfooInput`, `RowNodeInput`, `RowNode`, `TabsetNode`, `TabNo
 types `AttributedNode`, `TabLocation`, `TabsetSlot`.
 
 `dock`: `dockLocationSchema`; `resolveDockTarget`, `dockZonePolygons`,
-`zoneRect`; `resolveDropIntent`, `dropIndicator`; `dragDockMachine`,
-`dropAction`; types `DockLocation`, `DockZone`, `Point`, `Rect`,
-`Direction`, `DragSubject`, `DropIntent`, `DropIntentOptions`, `DropIndicator`,
-`MeasuredLayout`, `MeasuredTabset`, `MeasuredStrip`, `MeasuredTab`, `DragState`,
-`DropResolution`.
-
-`snap`: `resolveSnapGrid`, `decideSnap`, `settleSnap`, `snapEnabled`;
-types `SnapGrid`, `SnapDecision`.
+`zoneRect`; `resolveDropIntent`, `dropIndicator`; types `DockLocation`,
+`DockZone`, `Point`, `Rect`, `Direction`, `DragSubject`, `DropIntent`,
+`DropIntentOptions`, `DropIndicator`, `MeasuredLayout`, `MeasuredTabset`,
+`MeasuredStrip`, `MeasuredTab`.
 
 `history`: `createHistory`, `dispatchToHistory`, `undoHistory`, `redoHistory`,
 `canUndoHistory`, `canRedoHistory`, `HISTORY_LIMIT`; type `History`.
 
 `serialize`: `toJSON`, `fromJSON`, `parseModel`, `restoreModel`; types `MapTab`, `RestoreOptions`.
+
+## The internal entry point
+
+`@dashfoo/core/internal` holds what a rendering layer builds on and an
+application does not call. It carries no semver promise: its exports can change
+in any release, so a package that imports it pins `@dashfoo/core` to an exact
+version, as `@dashfoo/react` does.
+
+`dock`: `dragDockMachine`, `dropAction`; types `DragState`, `DropResolution`.
+
+`snap`: `resolveSnapGrid`, `decideSnap`, `settleSnap`, `snapEnabled`;
+types `SnapGrid`, `SnapDecision`.
+
+`collapse`: `canCollapseTabset`. `detach`: `fallbackSelectedIndex`.
 
 `warn`: `warn`, `warnOnce`. Both prefix the message with `[dashfoo]` and write it
 with `console.warn`; `@dashfoo/react` reports its degraded paths through them.

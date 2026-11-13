@@ -1,7 +1,7 @@
 "use client";
 
 import type { Point } from "@dashfoo/core";
-import { dragDockMachine } from "@dashfoo/core";
+import { dragDockMachine } from "@dashfoo/core/internal";
 import type { Data } from "@dnd-kit/abstract";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/dom";
 import { useActorRef } from "@xstate/react";

@@ -1,7 +1,7 @@
 "use client";
 
 import type { RowNode, TabsetNode } from "@dashfoo/core";
-import { canCollapseTabset } from "@dashfoo/core";
+import { canCollapseTabset } from "@dashfoo/core/internal";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type {

@@ -1,7 +1,7 @@
 "use client";
 
 import type { TabsetNode } from "@dashfoo/core";
-import { fallbackSelectedIndex } from "@dashfoo/core";
+import { fallbackSelectedIndex } from "@dashfoo/core/internal";
 import type { ComponentProps, ReactNode } from "react";
 import { forwardRef, useEffect, useMemo, useRef } from "react";
 
