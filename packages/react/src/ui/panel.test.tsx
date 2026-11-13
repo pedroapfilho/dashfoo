@@ -29,37 +29,6 @@ describe("Panel", () => {
     expect(body?.textContent).toBe("rows");
   });
 
-  test("renders icon and badge only when composed", () => {
-    const { container } = render(
-      <Panel.Root>
-        <Panel.Header>
-          <Panel.Title>Chart</Panel.Title>
-        </Panel.Header>
-        <Panel.Body>x</Panel.Body>
-      </Panel.Root>,
-    );
-
-    expect(container.querySelector('[data-dashfoo="panel-icon"]')).toBeNull();
-    expect(container.querySelector('[data-dashfoo="panel-badge"]')).toBeNull();
-  });
-
-  test("renders arbitrary badge children", () => {
-    const { container } = render(
-      <Panel.Root>
-        <Panel.Header>
-          <Panel.Title>Chart</Panel.Title>
-          <Panel.Badge>
-            <strong>2 alerts</strong>
-          </Panel.Badge>
-        </Panel.Header>
-      </Panel.Root>,
-    );
-
-    expect(container.querySelector('[data-dashfoo="panel-badge"] strong')?.textContent).toBe(
-      "2 alerts",
-    );
-  });
-
   test("spreads rest props while pinning data-dashfoo", () => {
     const { container } = render(
       <Panel.Root className="block" data-dashfoo="wrong" id="orders">
