@@ -14,4 +14,6 @@ apps/docs/app/global-error.module.css
 apps/docs/app/use-error-heading.ts
 apps/docs/playwright.config.ts
 packages/config-typescript/base.json
+packages/portless-env/src/apps.ts
+packages/portless-env/src/index.ts
 tsdown.config.ts
