@@ -7,6 +7,7 @@
     "build": {
       "env": ["EXPOSE_TESTING_API"],
       "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsdown.config.ts"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", ".output/**"]
     },
     "lint": {
@@ -27,6 +28,7 @@
     },
     "test": {
       "dependsOn": ["^build"],
+      "env": ["CI", "LANG", "LC_ALL", "TZ"],
       "outputs": []
     },
     "test:coverage": {
@@ -38,6 +40,7 @@
     },
     "@dashfoo/theme#test": {
       "dependsOn": ["build", "^build"],
+      "env": ["CI", "LANG", "LC_ALL", "TZ"],
       "outputs": []
     }
   }
