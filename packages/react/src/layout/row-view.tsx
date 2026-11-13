@@ -10,6 +10,7 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 import { useTabsetDroppable } from "../drag/drag-hooks";
 import { resizePanelId } from "../lib/dom-ids";
 import { mergeRefs } from "../lib/merge-refs";
+import { PART } from "../lib/parts";
 import { TabsetView } from "../tabset/tabset-view";
 
 import { useLayout } from "./layout-store";
@@ -117,7 +118,7 @@ const RowSeparator = ({
   snapped,
 }: RowSeparatorProps): ReactNode => (
   <Separator
-    data-dashfoo="splitter"
+    data-dashfoo={PART.splitter}
     data-dashfoo-snapped={snapped ? "true" : undefined}
     disabled={disabled}
     onPointerDown={
@@ -243,7 +244,7 @@ const RowGroup = ({ isRoot = false, node, renderTabset }: RowGroupProps): ReactN
 
   return (
     <Group
-      data-dashfoo="row"
+      data-dashfoo={PART.row}
       data-dashfoo-snapping={snappedBoundary === null ? undefined : "true"}
       data-row-id={node.id}
       disabled={!resizableSplits}

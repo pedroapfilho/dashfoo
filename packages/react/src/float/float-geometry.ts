@@ -1,6 +1,8 @@
 import type { Geometry } from "@dashfoo/core";
 import { DEFAULT_FLOAT_GEOMETRY } from "@dashfoo/core";
 
+import { closestPart, ownPart, PART } from "../lib/parts";
+
 const MIN_WIDTH = 200;
 const MIN_HEIGHT = 120;
 
@@ -40,16 +42,14 @@ const clampToBounds = (rect: Geometry, bounds: Size, size: Size = rect): Geometr
 
 /** The float overlay of the layout `element` sits in, not of a layout nested inside it. */
 const ownFloatOverlay = (element: Element): HTMLElement | undefined => {
-  const layout = element.closest('[data-dashfoo="layout"]');
+  const layout = closestPart(element, PART.layout);
 
-  return [...(layout?.querySelectorAll<HTMLElement>('[data-dashfoo="float-overlay"]') ?? [])].find(
-    (overlay) => overlay.closest('[data-dashfoo="layout"]') === layout,
-  );
+  return layout ? ownPart(layout, PART.layout, PART.floatOverlay) : undefined;
 };
 
 /** Where a lifted tabset opens: over its old spot, in the overlay's layout pixels, kept inside it. */
 const measureFloatRect = (element: Element): Geometry => {
-  const tabsetElement = element.closest('[data-dashfoo="tabset"]') ?? element;
+  const tabsetElement = closestPart(element, PART.tabset) ?? element;
   const overlay = ownFloatOverlay(element);
   const scale = overlay ? layoutScale(overlay) : { x: 1, y: 1 };
 

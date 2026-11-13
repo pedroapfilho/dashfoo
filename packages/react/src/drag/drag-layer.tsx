@@ -1,14 +1,22 @@
 "use client";
 
-import type { Action, DragSubject, Point } from "@dashfoo/core";
-import { dropIndicator, resolveDropIntent, standaloneModel, warn, warnOnce } from "@dashfoo/core";
+import type { Action, Dashfoo, DragSubject, MeasuredLayout, Point } from "@dashfoo/core";
+import {
+  collectTabsetsInRow,
+  dropIndicator,
+  resolveDropIntent,
+  standaloneModel,
+  warn,
+  warnOnce,
+} from "@dashfoo/core";
 import type { ReactNode } from "react";
 import { useContext, useEffect, useId, useMemo } from "react";
 
 import { InsideFloatContext } from "../float/float-context";
 import type { LayoutState, LayoutStore } from "../layout/layout-store";
 import { LayoutStoreContext } from "../layout/layout-store";
-import { measureLayout, measureTabset } from "../tabset/measure-tabset";
+import { closestPart, PART } from "../lib/parts";
+import { measureRootRow, measureTabset } from "../tabset/measure-tabset";
 
 import type { DragContextValue, RegisteredLayer } from "./drag-context";
 import { DragContext } from "./drag-context";
@@ -70,7 +78,7 @@ const transfer = (state: LayoutState, action: Action, subject: InternalSubject):
 };
 
 const measuredSize = (element: Element | null): TearOffRequest["size"] => {
-  const rect = element?.closest('[data-dashfoo="tabset"]')?.getBoundingClientRect();
+  const rect = element && closestPart(element, PART.tabset)?.getBoundingClientRect();
 
   return { height: rect?.height ?? 0, width: rect?.width ?? 0 };
 };
@@ -104,6 +112,14 @@ const tearOffHandler = (store: LayoutStore): TearOff | null => {
   };
 };
 
+const measureEdges = ({ layout }: Dashfoo, element: HTMLElement): MeasuredLayout | undefined => {
+  const rect = measureRootRow(element);
+
+  return rect
+    ? { id: layout.id, rect, tabsetCount: collectTabsetsInRow(layout).length }
+    : undefined;
+};
+
 const createLayer = (layerId: string, store: LayoutStore, floating = false): RegisteredLayer => ({
   commit: (action, subject) => {
     const state = store.getState();
@@ -129,12 +145,11 @@ const createLayer = (layerId: string, store: LayoutStore, floating = false): Reg
     }
 
     const tabset = measureTabset(tabsetId, element);
-    const edges = state.edgeDocking ? measureLayout(element) : null;
 
     const options = {
-      edges: edges ?? undefined,
+      edges: state.edgeDocking ? measureEdges(state.model, element) : undefined,
       foreign: isForeign(state, subject),
-      splitDock: state.splitDock && element.dataset.dashfoo !== "layout-empty",
+      splitDock: state.splitDock && tabsetId !== state.model.layout.id,
     };
 
     const intent = resolveDropIntent(subject, tabset, point, options);

@@ -5,6 +5,7 @@ import { useLayoutEffect, useRef } from "react";
 
 import { cssPixels } from "../lib/css-pixels";
 import { isHTMLElement } from "../lib/dom";
+import { closestPart, PART, partsIn } from "../lib/parts";
 
 type TablistSpaceListener = (space: number) => void;
 
@@ -46,8 +47,6 @@ const createTablistSpace = (): TablistSpace => {
   };
 };
 
-const TAB_ITEM_SELECTOR = '[data-dashfoo="tab-item"]';
-
 const horizontalPadding = (element: HTMLElement): number => {
   const style = getComputedStyle(element);
 
@@ -56,7 +55,7 @@ const horizontalPadding = (element: HTMLElement): number => {
 
 /** The width `tablist` would take to show every tab: their extent plus its padding. */
 const tablistNeed = (tablist: HTMLElement): number => {
-  const items = [...tablist.querySelectorAll<HTMLElement>(TAB_ITEM_SELECTOR)];
+  const items = partsIn(tablist, PART.tabItem);
   const first = items[0];
   const last = items.at(-1);
   const extent = first && last ? last.offsetLeft + last.offsetWidth - first.offsetLeft : 0;
@@ -72,7 +71,7 @@ const tablistNeed = (tablist: HTMLElement): number => {
  * and still falling when the strip's other parts overflow it too.
  */
 const measureTablistSpace = (tablist: HTMLElement): number => {
-  const strip = tablist.closest<HTMLElement>('[data-dashfoo="tabstrip"]');
+  const strip = closestPart(tablist, PART.tabstrip);
 
   if (!strip) {
     return tablist.clientWidth - tablistNeed(tablist);
@@ -127,12 +126,9 @@ const useTablistSpace = (
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(tablist);
-    const strip = tablist.closest('[data-dashfoo="tabstrip"]');
+    const strip = closestPart(tablist, PART.tabstrip);
 
-    for (const element of [
-      ...(strip?.children ?? []),
-      ...tablist.querySelectorAll(TAB_ITEM_SELECTOR),
-    ]) {
+    for (const element of [...(strip?.children ?? []), ...partsIn(tablist, PART.tabItem)]) {
       observer.observe(element);
     }
 

@@ -10,6 +10,7 @@ import { useLayout } from "../layout/layout-store";
 import { useTabsetSlot } from "../layout/tabset-slot";
 import { findTabButton } from "../lib/dom-ids";
 import { mergeRefs } from "../lib/merge-refs";
+import { PART } from "../lib/parts";
 import { useMirroredStore } from "../lib/use-mirrored-store";
 
 import type { TabsetSnapshot } from "./tabset-store";
@@ -111,7 +112,7 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
           {...props}
           data-collapsed={slot.collapsed ? slot.orientation : undefined}
           data-collapsed-to-fit={slot.collapsedToFit || undefined}
-          data-dashfoo="tabset"
+          data-dashfoo={PART.tabset}
           data-dragging-source={isDragSource || undefined}
           data-tab-location={tabLocation}
           data-tabset-id={node.id}

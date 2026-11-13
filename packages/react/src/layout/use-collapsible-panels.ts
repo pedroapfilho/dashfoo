@@ -186,7 +186,8 @@ const useCollapsiblePanels = ({
 
     for (const child of node.children) {
       const element = elements.current.get(child.id);
-      const size = isCollapsible(child) && element ? measureHeader(element) : undefined;
+      const vertical = node.orientation === "row" && collapsedIds.has(child.id);
+      const size = isCollapsible(child) && element ? measureHeader(element, vertical) : undefined;
 
       if (size !== undefined) {
         sizes.set(child.id, size);
