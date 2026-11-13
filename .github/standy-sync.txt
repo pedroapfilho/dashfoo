@@ -10,6 +10,8 @@
 .github/workflows/release.yml
 .github/workflows/test.yml
 .github/workflows/typecheck.yml
+apps/docs/app/global-error.module.css
+apps/docs/app/use-error-heading.ts
 packages/config-typescript/base.json
 packages/portless-env/src/apps.ts
 packages/portless-env/src/index.ts
