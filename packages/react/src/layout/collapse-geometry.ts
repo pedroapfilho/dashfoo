@@ -56,7 +56,6 @@ type FitEntry = {
   minimum: number;
 };
 
-/** A shown-collapsed child needs its strip; any other needs its minimum. */
 const addToBudget = (
   budget: FitBudget,
   { eligible, handle, header, id, minimum }: FitEntry,

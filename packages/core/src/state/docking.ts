@@ -34,7 +34,6 @@ type DockingAction = Extract<
   }
 >;
 
-/** An explicit target must exist; without one, the active main tabset, else the first. */
 const locateMainTarget = (
   draft: Dashfoo,
   mainTabsets: Array<TabsetNode>,
