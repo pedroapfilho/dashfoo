@@ -9,8 +9,8 @@ import type { PersistInput } from "../store/persistence";
 import { useDashfooStore } from "../store/store";
 import { createTablistSpace } from "../tabset/tablist-space";
 
+import type { LayoutOptions } from "./capabilities";
 import { Layout } from "./layout";
-import type { LayoutOptions } from "./layout-root";
 import type { ResponsiveOptions } from "./responsive";
 import { useResponsiveLayout } from "./responsive";
 

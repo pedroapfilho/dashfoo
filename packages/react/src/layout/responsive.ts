@@ -3,7 +3,7 @@
 import type { Dashfoo, Orientation, RowNode } from "@dashfoo/core";
 import { useEffect, useMemo, useState } from "react";
 
-import type { LayoutOptions } from "./layout-root";
+import type { LayoutOptions } from "./capabilities";
 
 type ResponsiveOptions = { maxWidth: number; orientation?: Orientation };
 

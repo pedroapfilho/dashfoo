@@ -15,7 +15,7 @@ import type { StatefulButtonProps } from "../lib/state-props";
 import { resolveStateProps } from "../lib/state-props";
 import { CollapseIcon, FloatIcon, GripIcon, MaximizeIcon } from "../ui/icons";
 
-import { useTabset } from "./tabset-store";
+import { useTabset, useTabsetInternals } from "./tabset-store";
 
 type TabsetToolbarProps = ComponentProps<"div">;
 
@@ -35,10 +35,6 @@ type TabsetChrome = {
   overflow: boolean;
 };
 
-/** Moving a tabset moves every tab in it, so one tab that can't be dragged pins the whole tabset. */
-const canDragTabset = (node: TabsetNode): boolean =>
-  node.enableDrag !== false && node.children.every((tab) => tab.enableDrag !== false);
-
 /** The active tab's name, plus how many more tabs come along: "One (+2)". */
 const tabsetDragLabel = (node: TabsetNode, activeTabName: string): string =>
   node.children.length > 1 ? `${activeTabName} (+${node.children.length - 1})` : activeTabName;
@@ -48,10 +44,9 @@ const tabsetDragLabel = (node: TabsetNode, activeTabName: string): string =>
  * whether to render a toolbar at all, so the two cannot disagree.
  */
 const useTabsetChrome = (): TabsetChrome => {
-  const draggableTabsets = useLayout((state) => state.draggableTabsets);
   const floatable = useLayout((state) => state.floatable);
   const isMaximized = useTabset((state) => state.isMaximized);
-  const draggable = useTabset((state) => canDragTabset(state.node));
+  const draggable = useTabsetInternals((state) => state.can.draggable);
   const overflowCount = useTabset((state) => state.overflowItems.length);
   const showMaximize = useTabset((state) => state.showMaximize);
   const hasFloatLayer = useHasFloatLayer();
@@ -70,7 +65,7 @@ const useTabsetChrome = (): TabsetChrome => {
   return {
     collapse,
     float: floatable && !isMaximized && hasFloatLayer,
-    grip: draggableTabsets && !isMaximized && draggable,
+    grip: draggable && !isMaximized,
     maximize: showMaximize,
     overflow: overflowCount > 0,
   };
