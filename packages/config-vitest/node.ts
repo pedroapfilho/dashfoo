@@ -1,8 +1,6 @@
 import { defineConfig } from "vitest/config";
-import zodCompiler from "zod-compiler/vite";
 
 const nodeConfig = defineConfig({
-  plugins: [zodCompiler({ apply: "build" })],
   test: {
     coverage: {
       exclude: [
