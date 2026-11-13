@@ -8,9 +8,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "@dashfoo/core": "^3.0.0",
-    "@dashfoo/react": "^0.11.0",
-    "@dashfoo/theme": "^0.3.0",
+    "@dashfoo/core": "^4.0.0",
+    "@dashfoo/react": "^0.12.0",
+    "@dashfoo/theme": "^0.4.0",
     "next": "16.4.6",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

@@ -1,5 +1,83 @@
 # @dashfoo/react
 
+## 0.12.0
+
+### Minor Changes
+
+- c4232fc: Collapsible tabsets, and button parts that render from their state.
+
+  - `Tabset.CollapseButton` collapses a `collapsible` tabset to its strip or expands it, with `aria-expanded` and `aria-controls`. The default toolbar includes it. Dragging a splitter past the tabset's minimum also collapses it, and clicking one of its tabs expands it. `DashfooHandle` adds `collapseTabset` and `expandTabset`. Collapsed tabsets carry `data-collapsed` (`"column"`, or `"row"` side by side, where `styles.css` turns the strip vertical).
+  - When a split is too small for its minimums (a layout saved on a bigger screen, or a shrinking window), its collapsible tabsets are collapsed to fit without changing the model, and expand again once there is room. They carry `data-collapsed-to-fit`, and `useTabset` reports `isCollapsedToFit`, so their expand button stays hidden.
+  - `Tabset.MaximizeButton` renders nothing for the only tabset in the layout.
+  - `children`, `className`, `style` and `title` on `Tabset.CloseButton`, `Tabset.Grip`, `Tabset.CollapseButton` and `Tabset.MaximizeButton` can be functions of the part's state, e.g. `{({ isCollapsed }) => (isCollapsed ? "▸" : "▾")}`.
+  - `useTabset` adds `isCollapsed`, `isCollapsedToFit`, `canCollapse` and `toggleCollapsed`. The drag preview follows `global.tabSetSelectOnRemove`.
+
+- 3507dbc: Each package's entry point lists what it exports, and what only the React layer uses moves behind `@dashfoo/core/internal`.
+
+  Breaking in `@dashfoo/core`:
+
+  - These are no longer exported from `@dashfoo/core`. Import them from `@dashfoo/core/internal`: `dragDockMachine`, `dropAction`, `DragState`, `DropResolution`, `resolveSnapGrid`, `decideSnap`, `settleSnap`, `snapEnabled`, `SnapGrid`, `SnapDecision`, `canCollapseTabset`, `fallbackSelectedIndex`, `warn`, `warnOnce`.
+
+    ```diff
+    - import { dragDockMachine, warn } from "@dashfoo/core";
+    + import { dragDockMachine, warn } from "@dashfoo/core/internal";
+    ```
+
+  - `@dashfoo/core/internal` carries no semver promise: its exports can change in any release. A package that imports it should pin `@dashfoo/core` to an exact version, as `@dashfoo/react` does. Applications have no reason to import it.
+  - Everything else `@dashfoo/core` exported is still exported under the same name.
+
+  Breaking in `@dashfoo/react`:
+
+  - `useTabset` no longer exposes `pendingCloseTabId`, `registerRenameInput`, `registerTablist`, `renameInputCount` and `tablistElement`. They were the store's own bookkeeping for `Tabset.Tablist` and `Tabset.RenameInput`; compose those parts instead of calling them.
+  - `useLayout` no longer exposes `tablistSpace`, the registry object. Read a tabset's space with `useTabset((state) => state.tablistSpace)`, or pass your own `createTablistSpace()` to `Layout.Root`.
+  - Every other export of `@dashfoo/react` keeps its name and type.
+
+- 5f14f03: Dashboards can span windows.
+
+  - `onTearOff` on `DashfooLayout` / `Layout.Root` is called when a tab or tabset is released outside the window, with a standalone model of that node, the release point in screen pixels and the source tabset's size. Returning `true` removes it with the new `tearOff` action. The drag preview carries `data-tear-off` while a release would tear off.
+  - `dragGroup` lets layouts exchange tabs and tabsets by drag, including layouts portaled into popup windows and layouts in other browser tabs of the same origin. The receiver records the new `transferIn` action and the source `transferOut`. Tab ids must be unique within the group. Mouse drags in a grouped layout use the browser's drag and drop; `dragGroupScope: "app"` keeps a layout's drags within its copy of the app.
+  - Core adds `standaloneModel(model, nodeId)` and a `foreign` option on `resolveDropIntent`, so a node from another document that shares a tabset id is not a self-drop.
+  - A float's tabsets keep their grips, so dragging one out docks it anywhere. `DashfooHandle` gains `floatTabset` and `setFloatMinimized`.
+  - An empty layout still takes drops: docking actions that target an empty main layout's row id seed a tabset there, and `Layout.Rows` renders a `[data-dashfoo="layout-empty"]` drop target.
+  - The theme styles the tear-off chip: a dashed border and a "new window" hint.
+  - Layouts rendered into another window read that window: `vh`/`vw`/`em` panel sizes, float placement, drop hit testing and the overflow menu's outside click.
+
+- 215146f: Saved layouts, tablist space, gutters and zoom.
+
+  - `@dashfoo/core`: new `restoreModel(value, { mapTab })` for saved layouts. It returns `null` and warns instead of throwing when the value is not a model, and `mapTab` upgrades or drops each saved tab (floats included) before the model is normalized. The selected tab stays selected when tabs before it are dropped.
+  - `persist` loads through `restoreModel` and takes the same `mapTab` option, so layouts saved by an older version of an app still restore after a component is renamed or removed.
+  - Each tabset measures the free space in its tablist (negative once the tabs overflow, still falling once the strip itself overflows), before paint: `useTabset((state) => state.tablistSpace)`, the `--dashfoo-tablist-space` custom property on the tablist, and `getTablistSpace` / `onTablistSpaceChange` on `DashfooHandle`. `Layout.Root` takes a `tablistSpace` from the new `createTablistSpace()` for hand-built layouts.
+  - `keepMounted="activity"` keeps inactive tabs in a hidden React `<Activity>`: state survives, effects pause. Needs React 19.2; older React keeps them mounted and warns.
+  - Nested rows count the splitter and any CSS `gap` between tabsets toward their minimum size, so a nested split no longer squeezes its tabsets below `tabSetMinSize`.
+  - Split and float resizing follow the pointer under CSS `zoom` or a scale transform, and a new float opens inside a scaled layout instead of partly outside it (the float overlay is now always rendered, so placement uses its coordinates). Splits no longer drift by a fraction of a pixel with fractional sizes, e.g. at 150% display scaling.
+
+- 90d4782: Richer drag and drop: whole-tabset drags from the header, edge docking, one gliding drop indicator and right-to-left support.
+
+  - A whole tabset drags by the empty space in its header as well as its grip. The drag preview shows the extra tab count, like `Canvas (+2)`.
+  - Tabsets take an `enableDrag` flag. A tabset with it off, or holding a tab with it off, can't be dragged whole.
+  - Tabs and tabsets dock at the layout's edges, beside everything else, as a sidebar or bottom panel. It's on by default; turn it off with `edgeDocking={false}`. In the model, an edge dock is a `split-*` against the root row: `addNode`, `moveNode` and `moveTabset` accept `model.layout.id` as `targetId`. `resolveDropIntent` and `dropIndicator` take `edges` (a `MeasuredLayout`), and `DropIndicator.kind` gains `"edge"`.
+  - The dock indicator is one element for the whole drag, rendered by the drag root, so it can slide between tabsets. Off any target it stays put with `data-idle` and fades out. Inside a float it carries `data-floating`. The default `--dashfoo-dock-transition` adds `opacity 60ms`.
+  - Right-to-left layouts: the insertion index and line count from the right, left and right drops land on the screen side you dropped on, and ArrowLeft moves to the next tab. `MeasuredTabset` carries `direction`, and `measureTabset` reads it.
+  - Moving the pointer within the same drop target no longer re-renders anything; only a different target updates the indicator and the drop hooks.
+  - A tab or tabset turned undraggable while on screen (say `enableDrag` set to `false` after load) no longer still drags from its handle.
+
+### Patch Changes
+
+- 73b35ce: What the user may do with a layout, a tabset and a tab is decided in one internal module. No behaviour changes.
+- 0fa9380: A collapsed tabset is sized by its own tab strip. With `tabLocation: "bottom"` and a layout nested in one of its tabs, the nested layout's strip was measured instead.
+- 1323016: Pointer drags and the browser's drag and drop run through one internal drag session, and a layout registers its store instead of a copy of its model. A layout that cannot dock (`editable` or `restructurable` off) no longer hands a node over to a drop that was already in flight when it was frozen.
+- 5eb191a: Removed source comments that only restated the code under them. No behaviour changes.
+- 6fcd557: Row sizing computes panel shares in one internal function. No behaviour changes.
+- Updated dependencies [c4232fc]
+- Updated dependencies [9c47cb1]
+- Updated dependencies [3507dbc]
+- Updated dependencies [5f14f03]
+- Updated dependencies [5eb191a]
+- Updated dependencies [215146f]
+- Updated dependencies [90d4782]
+- Updated dependencies [1ac6f91]
+  - @dashfoo/core@4.0.0
+
 ## 0.11.0
 
 ### Minor Changes
