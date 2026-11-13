@@ -33,6 +33,7 @@
   "devDependencies": {
     "@next/playwright": "16.4.6",
     "@playwright/test": "^1.63.0",
+    "@repo/portless-env": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/mdx": "^2.0.14",
     "@types/node": "^26.6.2",

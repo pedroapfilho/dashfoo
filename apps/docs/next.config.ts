@@ -1,5 +1,8 @@
+import { applyPortlessUrls } from "@repo/portless-env";
 import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
+
+applyPortlessUrls(["NEXT_PUBLIC_DEMO_URL", "NEXT_PUBLIC_WEB_URL"]);
 
 const withMDX = createMDX();
 const exposeTestingApi = process.env.EXPOSE_TESTING_API === "1";
@@ -9,7 +12,6 @@ if (exposeTestingApi) {
 }
 
 const config: NextConfig = {
-  allowedDevOrigins: ["dashfoo.docs.localhost", "*.dashfoo.docs.localhost"],
   cacheComponents: true,
   experimental: {
     exposeTestingApiInProductionBuild: exposeTestingApi,
