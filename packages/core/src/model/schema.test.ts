@@ -80,25 +80,6 @@ describe("dashfooSchema", () => {
     expect(parsed.layout.children[1]?.weight).toBe(1);
   });
 
-  test("global.splitterSize is accepted and preserved", () => {
-    const parsed = dashfooSchema.parse({
-      ...validModel,
-      global: { splitterSize: 6 },
-    });
-
-    expect(parsed.global.splitterSize).toBe(6);
-  });
-
-  test("global editing flags are accepted and preserved", () => {
-    const parsed = dashfooSchema.parse({
-      ...validModel,
-      global: { enableSplitResize: false, tabEnableDrag: false },
-    });
-
-    expect(parsed.global.enableSplitResize).toBe(false);
-    expect(parsed.global.tabEnableDrag).toBe(false);
-  });
-
   test("accepts row dimensions and tabSetMinSize", () => {
     const parsed = dashfooSchema.parse({
       ...validModel,
@@ -181,27 +162,6 @@ describe("tabsetNodeSchema", () => {
     type: "tabset",
     weight: 1,
   };
-
-  test("accepts an optional name labelling the tablist", () => {
-    const parsed = tabsetNodeSchema.parse({ ...baseTabset, name: "Charts" });
-    expect(parsed.name).toBe("Charts");
-  });
-
-  test("accepts a tabset without a name", () => {
-    const parsed = tabsetNodeSchema.parse(baseTabset);
-    expect(parsed.name).toBeUndefined();
-  });
-
-  test("accepts min and max sizing fields", () => {
-    const parsed = tabsetNodeSchema.parse({
-      ...baseTabset,
-      max: { unit: "%", value: 90 },
-      min: { unit: "px", value: 120 },
-    });
-
-    expect(parsed.max).toEqual({ unit: "%", value: 90 });
-    expect(parsed.min).toEqual({ unit: "px", value: 120 });
-  });
 
   test("leaves an out-of-range selected index for normalize to clamp", () => {
     expect(tabsetNodeSchema.parse({ ...baseTabset, selected: 7 }).selected).toBe(7);

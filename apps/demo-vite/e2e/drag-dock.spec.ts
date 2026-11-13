@@ -100,13 +100,12 @@ test("a dock indicator appears while dragging over a tabset and clears after dro
   await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
   await page.mouse.move(leftX, midY, { steps: 16 });
   await page.mouse.move(leftX, midY);
-  await page.waitForTimeout(80);
 
-  await expect(indicator).toBeVisible();
-
-  const indicatorBox = await indicator.boundingBox();
-  expect(indicatorBox?.x ?? Infinity).toBeLessThan(canvas.x + 40);
-  expect(indicatorBox?.width ?? Infinity).toBeLessThan(canvas.width * 0.7);
+  await expect(async () => {
+    const indicatorBox = await indicator.boundingBox();
+    expect(indicatorBox?.x ?? Infinity).toBeLessThan(canvas.x + 40);
+    expect(indicatorBox?.width ?? Infinity).toBeLessThan(canvas.width * 0.7);
+  }).toPass();
 
   await page.mouse.up();
   await expect(indicator).toHaveCount(0);
@@ -130,16 +129,15 @@ test("the stack indicator is a thin insertion line in the tab bar", async ({ pag
   await page.mouse.move(box.x + box.width / 2 + 8, box.y + box.height / 2 + 8);
   await page.mouse.move(x, y, { steps: 16 });
   await page.mouse.move(x, y);
-  await page.waitForTimeout(80);
 
-  await expect(indicator).toBeVisible();
-  const ind = await indicator.boundingBox();
-
-  expect(ind?.width ?? Infinity).toBeLessThanOrEqual(6);
-  expect(Math.abs((ind?.height ?? 0) - strip.height)).toBeLessThanOrEqual(2);
-  expect(Math.abs((ind?.y ?? 0) - strip.y)).toBeLessThanOrEqual(2);
-  expect(ind?.x ?? -Infinity).toBeGreaterThanOrEqual(strip.x - 1);
-  expect((ind?.x ?? Infinity) + (ind?.width ?? 0)).toBeLessThanOrEqual(strip.x + strip.width + 1);
+  await expect(async () => {
+    const ind = await indicator.boundingBox();
+    expect(ind?.width ?? Infinity).toBeLessThanOrEqual(6);
+    expect(Math.abs((ind?.height ?? 0) - strip.height)).toBeLessThanOrEqual(2);
+    expect(Math.abs((ind?.y ?? 0) - strip.y)).toBeLessThanOrEqual(2);
+    expect(ind?.x ?? -Infinity).toBeGreaterThanOrEqual(strip.x - 1);
+    expect((ind?.x ?? Infinity) + (ind?.width ?? 0)).toBeLessThanOrEqual(strip.x + strip.width + 1);
+  }).toPass();
 
   await page.mouse.up();
 });
