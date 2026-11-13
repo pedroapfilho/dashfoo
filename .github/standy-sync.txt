@@ -12,5 +12,6 @@
 .github/workflows/typecheck.yml
 apps/docs/app/global-error.module.css
 apps/docs/app/use-error-heading.ts
+apps/docs/playwright.config.ts
 packages/config-typescript/base.json
 tsdown.config.ts
