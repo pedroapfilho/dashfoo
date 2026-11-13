@@ -91,7 +91,6 @@ const useCollapsiblePanels = ({
     [fitIds, node.children],
   );
 
-  /** Applies collapses and expands the model asked for. */
   const followModel = (targets: Set<string>): void => {
     for (const child of node.children) {
       const handle = handles.current.get(child.id);

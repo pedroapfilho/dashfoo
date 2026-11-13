@@ -86,7 +86,6 @@ const inheritSlot = (row: RowNode, survivor: RowChild): RowChild => {
   return sized;
 };
 
-/** Records the id of every tabset it keeps, in document order. */
 const normalizeRowChildren = (
   children: RowNode["children"],
   keptTabsetIds: Array<string>,

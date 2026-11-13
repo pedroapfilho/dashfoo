@@ -35,7 +35,6 @@ type TabsetChrome = {
   overflow: boolean;
 };
 
-/** The active tab's name, plus how many more tabs come along: "One (+2)". */
 const tabsetDragLabel = (node: TabsetNode, activeTabName: string): string =>
   node.children.length > 1 ? `${activeTabName} (+${node.children.length - 1})` : activeTabName;
 
