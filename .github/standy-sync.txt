@@ -11,3 +11,4 @@
 .github/workflows/test.yml
 .github/workflows/typecheck.yml
 packages/config-typescript/base.json
+tsdown.config.ts
