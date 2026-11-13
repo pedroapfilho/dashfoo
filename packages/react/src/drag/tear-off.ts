@@ -12,19 +12,35 @@ type TearOffRequest = {
 /** Returning `true` removes the node from the layout with a `tearOff` action. */
 type TearOffHandler = (request: TearOffRequest) => boolean;
 
+/** Where a drag let go, in screen pixels, and whether that is outside the window it started in. */
+type Release = { outside: boolean; screen: Point };
+
 const viewOf = (element: Element | null | undefined): Window | null =>
   element?.ownerDocument.defaultView ?? null;
 
-/** `point` is in the client pixels of `view`, the window the drag started in. */
-const isOutsideWindow = (point: Point, view: Window): boolean =>
-  point.x < 0 || point.y < 0 || point.x >= view.innerWidth || point.y >= view.innerHeight;
-
-/** Assumes the browser chrome sits above the viewport, which holds for every desktop browser. */
-const toScreenPoint = (point: Point, view: Window): Point => ({
-  x: Math.round(view.screenX + point.x),
-  y: Math.round(view.screenY + (view.outerHeight - view.innerHeight) + point.y),
+/**
+ * A pointer drag reports client pixels, so its bounds are the viewport. The
+ * screen point assumes the browser chrome sits above the viewport, which holds
+ * for every desktop browser.
+ */
+const pointerRelease = (point: Point, view: Window): Release => ({
+  outside: point.x < 0 || point.y < 0 || point.x >= view.innerWidth || point.y >= view.innerHeight,
+  screen: {
+    x: Math.round(view.screenX + point.x),
+    y: Math.round(view.screenY + (view.outerHeight - view.innerHeight) + point.y),
+  },
 });
 
-export { isOutsideWindow, toScreenPoint, viewOf };
+/** A native drag ends with screen pixels, so its bounds are the whole window, browser chrome included. */
+const nativeRelease = (event: Pick<MouseEvent, "screenX" | "screenY">, view: Window): Release => ({
+  outside:
+    event.screenX < view.screenX ||
+    event.screenX >= view.screenX + view.outerWidth ||
+    event.screenY < view.screenY ||
+    event.screenY >= view.screenY + view.outerHeight,
+  screen: { x: event.screenX, y: event.screenY },
+});
 
-export type { TearOffHandler, TearOffRequest };
+export { nativeRelease, pointerRelease, viewOf };
+
+export type { Release, TearOffHandler, TearOffRequest };
