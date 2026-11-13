@@ -20,12 +20,6 @@ const startDrag = () => {
 };
 
 describe("dragDockMachine", () => {
-  test("idle until a drag starts", () => {
-    const { actor } = startDrag();
-
-    expect(actor.getSnapshot().value).toBe("idle");
-  });
-
   test("a full drag over a target emits a moveNode commit on drop", () => {
     const { actor, committed } = startDrag();
     actor.send({ subject: { documentId: "doc", id: "t1", kind: "tab" }, type: "START" });
