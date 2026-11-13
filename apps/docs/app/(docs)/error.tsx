@@ -2,22 +2,12 @@
 
 import { DocsBody, DocsPage, DocsTitle } from "fumadocs-ui/page";
 import { RefreshCw } from "lucide-react";
-import { useEffect, useRef } from "react";
 
+import { type ErrorBoundaryProps, useErrorHeading } from "@/app/use-error-heading";
 import { Button } from "@/components/ui/button";
 
-type RouteErrorProps = {
-  error: Error & { digest?: string };
-  retry: () => void;
-};
-
-const RouteError = ({ error, retry }: RouteErrorProps) => {
-  const headingRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    console.error(error);
-    headingRef.current?.focus();
-  }, [error]);
+const RouteError = ({ error, retry }: ErrorBoundaryProps) => {
+  const headingRef = useErrorHeading(error);
 
   return (
     <DocsPage>
