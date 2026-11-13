@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { measureHeader } from "./collapse-geometry";
+import { measureHeader, sharesOf } from "./collapse-geometry";
 
 const BORDER = 2;
 
@@ -22,5 +22,17 @@ describe("measureHeader", () => {
     panel.append(part("tabset", 240, [part("tabcontent", 200, [nested]), part("tabstrip", 32)]));
 
     expect(measureHeader(panel, false)).toBe(32 + BORDER);
+  });
+});
+
+describe("sharesOf", () => {
+  test("collapsed panels keep their size and the rest is shared by weight", () => {
+    expect(
+      sharesOf([
+        { fixed: 10, weight: 5 },
+        { fixed: undefined, weight: 1 },
+        { fixed: undefined, weight: 2 },
+      ]),
+    ).toEqual([10, 30, 60]);
   });
 });

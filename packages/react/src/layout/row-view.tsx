@@ -27,7 +27,7 @@ const dimensionToPixels = (dimension: Dimension | undefined): number | undefined
 
 type LayoutChild = RowNode["children"][number];
 
-/** `gutter` is what each boundary inside a nested row adds along that row's axis. */
+/** In pixels, or `undefined` when a minimum is set in a relative unit. `gutter` is what each boundary inside a nested row adds along that row's axis. */
 const descendantMinSize = (
   child: LayoutChild,
   axis: RowNode["orientation"],
@@ -68,17 +68,6 @@ const descendantMinSize = (
     ? childMinimums.reduce((sum, value) => sum + value, 0) + gutter * (childMinimums.length - 1)
     : Math.max(...childMinimums);
 };
-
-/** A minimum in pixels, or `undefined` when it is set in a relative unit. */
-const minPixelsOf = (
-  child: LayoutChild,
-  axis: RowNode["orientation"],
-  tabsetMinSize: number,
-  gutter: number,
-): number | undefined =>
-  child.min === undefined
-    ? descendantMinSize(child, axis, tabsetMinSize, gutter)
-    : dimensionToPixels(child.min);
 
 const sizeConstraints = (
   child: LayoutChild,
@@ -131,6 +120,9 @@ const RowSeparator = ({
   />
 );
 
+const tabsetView = (node: TabsetNode, renderTabset: RowViewProps["renderTabset"]): ReactNode =>
+  renderTabset?.(node) ?? <TabsetView node={node} />;
+
 type RowPanelContentProps = Pick<RowViewProps, "renderTabset"> & {
   alone: boolean;
   child: LayoutChild;
@@ -149,7 +141,7 @@ const RowPanelContent = ({
     <RowGroup node={child} renderTabset={renderTabset} />
   ) : (
     <TabsetSlotContext.Provider value={collapse.slotFor(child, alone)}>
-      {renderTabset?.(child) ?? <TabsetView node={child} />}
+      {tabsetView(child, renderTabset)}
     </TabsetSlotContext.Provider>
   );
 
@@ -176,7 +168,7 @@ const useRowSizing = ({
   const { groupRef: gutterRef, gutter } = useGutter(horizontal, node.children.length);
 
   const collapse = useCollapsiblePanels({
-    minPixels: (child) => minPixelsOf(child, node.orientation, tabsetMinSize, gutter),
+    minPixels: (child) => descendantMinSize(child, node.orientation, tabsetMinSize, gutter),
     node,
     panelIdOf,
   });
@@ -314,7 +306,7 @@ const RowView = ({ node, renderTabset }: RowViewProps): ReactNode => {
       : collectTabsetsInRow(node).find((tabset) => tabset.id === maximizedTabsetId);
 
   if (maximized) {
-    return renderTabset?.(maximized) ?? <TabsetView node={maximized} />;
+    return tabsetView(maximized, renderTabset);
   }
 
   if (node.children.length === 0) {
