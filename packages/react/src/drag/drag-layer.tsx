@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
 import { useContext, useEffect, useId, useMemo } from "react";
 
 import { InsideFloatContext } from "../float/float-context";
-import type { LayoutState, LayoutStore } from "../layout/layout-store";
+import type { LayoutInternals, LayoutStore } from "../layout/layout-store";
 import { LayoutStoreContext } from "../layout/layout-store";
 import { closestPart, PART } from "../lib/parts";
 import { measureRootRow, measureTabset } from "../tabset/measure-tabset";
@@ -21,16 +21,16 @@ import { measureRootRow, measureTabset } from "../tabset/measure-tabset";
 import type { DragContextValue, RegisteredLayer } from "./drag-context";
 import { DragContext } from "./drag-context";
 import type { InternalSubject } from "./drag-group";
-import { canExchange, collides, localModel, sourceDocument } from "./drag-group";
+import { canExchange, collides, sourceDocument } from "./drag-group";
 import type { TearOffRequest } from "./tear-off";
 
 type DragLayerProps = { children: ReactNode };
 
-const isForeign = (state: LayoutState, subject: DragSubject): subject is InternalSubject =>
+const isForeign = (state: LayoutInternals, subject: DragSubject): subject is InternalSubject =>
   subject.kind !== "external" && subject.documentId !== state.documentId;
 
 /** A foreign node is acceptable from a source in the same drag group, unless its tab ids are taken here. */
-const canDrop = (state: LayoutState, subject: DragSubject): boolean => {
+const canDrop = (state: LayoutInternals, subject: DragSubject): boolean => {
   if (!state.canDock) {
     return false;
   }
@@ -46,22 +46,20 @@ const canDrop = (state: LayoutState, subject: DragSubject): boolean => {
   }
 
   const node = source.take(subject);
-  const model = localModel(state.documentId);
 
-  return node === undefined || model === undefined || !collides(model, node);
+  return node === undefined || !collides(state.model, node);
 };
 
 /** A move whose source lives in another layout lands as a `transferIn` here and a `transferOut` there. */
-const transfer = (state: LayoutState, action: Action, subject: InternalSubject): void => {
+const transfer = (state: LayoutInternals, action: Action, subject: InternalSubject): void => {
   if (action.type !== "moveNode" && action.type !== "moveTabset") {
     return;
   }
 
   const source = sourceDocument(subject.documentId);
   const node = source?.take(subject);
-  const model = localModel(state.documentId);
 
-  if (!source || !node || (model && collides(model, node))) {
+  if (!source || !node || collides(state.model, node)) {
     warn(`transfer of "${subject.id}" dropped: its source no longer offers it`);
 
     return;
@@ -87,15 +85,14 @@ type TearOff = (subject: InternalSubject, source: Element | null, screen: Point)
 
 /** `null` when the layout takes no tear-offs. */
 const tearOffHandler = (store: LayoutStore): TearOff | null => {
-  const { canDock, dispatch, documentId, onTearOff } = store.getState();
+  const { canDock, dispatch, onTearOff } = store.getState();
 
   if (!canDock || !onTearOff) {
     return null;
   }
 
   return (subject, source, screen) => {
-    const model = localModel(documentId);
-    const detached = model && standaloneModel(model, subject.id);
+    const detached = standaloneModel(store.getState().model, subject.id);
 
     if (
       detached &&
@@ -192,6 +189,6 @@ const DragLayer = ({ children }: DragLayerProps): ReactNode => {
   return <DragContext.Provider value={layer}>{children}</DragContext.Provider>;
 };
 
-export { createLayer, DragLayer, tearOffHandler };
+export { createLayer, DragLayer };
 
 export type { DragLayerProps };

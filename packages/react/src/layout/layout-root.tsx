@@ -2,10 +2,10 @@
 
 import type { Action, Dashfoo, GlobalAttributes, TabNode, TabsetNode } from "@dashfoo/core";
 import type { ComponentProps, ReactNode, Ref } from "react";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
+import { registerDocument } from "../drag/drag-group";
 import { DashfooDragProvider } from "../drag/drag-root";
-import { useGroupDocument } from "../drag/use-group-document";
 import { PART } from "../lib/parts";
 import { useMirroredStore } from "../lib/use-mirrored-store";
 import type { TablistSpace } from "../tabset/tablist-space";
@@ -110,13 +110,7 @@ const LayoutRoot = ({
     tablistSpace: space,
   });
 
-  useGroupDocument({
-    dispatch,
-    documentId,
-    dragGroup: options.dragGroup,
-    dragGroupScope: options.dragGroupScope,
-    model,
-  });
+  useEffect(() => registerDocument(documentId, store), [documentId, store]);
 
   return (
     <LayoutStoreContext.Provider value={store}>

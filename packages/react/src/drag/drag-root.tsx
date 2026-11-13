@@ -1,7 +1,7 @@
 "use client";
 
-import type { DragSubject, Point } from "@dashfoo/core";
-import { dragDockMachine, dropAction } from "@dashfoo/core";
+import type { Point } from "@dashfoo/core";
+import { dragDockMachine } from "@dashfoo/core";
 import type { Data } from "@dnd-kit/abstract";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/dom";
 import { useActorRef } from "@xstate/react";
@@ -11,95 +11,53 @@ import { useCallback, useContext, useEffect, useInsertionEffect, useMemo, useSta
 import { isHTMLElement } from "../lib/dom";
 
 import { DockIndicator } from "./dock-indicator";
-import type { DragActor, DragContextValue, RegisteredLayer } from "./drag-context";
+import type { DragContextValue, RegisteredLayer } from "./drag-context";
 import { DragContext } from "./drag-context";
-import { sameDropResolution } from "./drag-hooks";
 import type { DashfooDragManager } from "./drag-manager";
 import { createDragManager } from "./drag-manager";
 import { DragPreviewOverlay } from "./drag-preview";
+import type { DragSession } from "./drag-session";
+import { createDragSession } from "./drag-session";
 import { subjectFor } from "./drag-subject";
-import { isOutsideWindow, toScreenPoint, viewOf } from "./tear-off";
-
-type LayerTarget = { element: HTMLElement; layer: RegisteredLayer; tabsetId: string };
+import { pointerRelease, viewOf } from "./tear-off";
 
 type LayerTargetData = Data & { layerId: string; tabsetId: string };
 
 const isLayerTargetData = (data: Data): data is LayerTargetData =>
   typeof data.layerId === "string" && typeof data.tabsetId === "string";
 
-/** The tear-off a release at `point` would perform, or `null`: inside the window, or the layout takes none. */
+/** The tear-off a pointer release at `point` would perform, or `null`. */
 const pendingTearOff = (
-  layers: Map<string, RegisteredLayer>,
-  subject: DragSubject,
+  session: DragSession,
   source: Element | null | undefined,
   point: Point,
 ): (() => void) | null => {
+  const subject = session.subject();
   const view = viewOf(source);
 
-  if (subject.kind === "external" || !view || !isOutsideWindow(point, view)) {
-    return null;
-  }
-
-  const documentId = subject.documentId;
-  const layer = [...layers.values()].find((candidate) => candidate.documentId() === documentId);
-  const tearOff = layer?.tearOff();
-
-  return tearOff
-    ? () => {
-        tearOff(subject, source ?? null, toScreenPoint(point, view));
-      }
+  return subject && view
+    ? session.tearOff(subject, source ?? null, pointerRelease(point, view))
     : null;
 };
 
-// One listener set and one actor for the whole tree: per layer, a float that
-// did not own the target resolved a null intent and swallowed the drop.
-const useDragMonitor = (
-  manager: DashfooDragManager,
-  actorRef: DragActor,
-  layers: Map<string, RegisteredLayer>,
-): void => {
+/** dnd-kit as a source of the session's events: one listener set for the whole tree. */
+const usePointerDrags = (manager: DashfooDragManager, session: DragSession): void => {
   useEffect(() => {
-    const layerTarget = (): LayerTarget | null => {
+    const resolve = (): void => {
       const target = manager.dragOperation.target;
       const data = target?.data;
       const element = target?.element;
 
-      if (!data || !isLayerTargetData(data) || !isHTMLElement(element)) {
-        return null;
-      }
-
-      const layer = layers.get(data.layerId);
-
-      return layer ? { element, layer, tabsetId: data.tabsetId } : null;
-    };
-
-    const syncIntent = (): void => {
-      const drag = actorRef.getSnapshot().context.drag;
-
-      if (drag.kind !== "dragging") {
-        return;
-      }
-
-      const found = layerTarget();
-
-      const resolved =
-        found === null
-          ? null
-          : found.layer.resolveDrop(
-              drag.subject,
-              found.tabsetId,
-              found.element,
-              manager.dragOperation.position.current,
-            );
-
-      const drop =
-        resolved === null || found === null ? null : { ...resolved, scope: found.layer.layerId };
-
-      // Every pointer move resolves a fresh object; an unchanged drop must not
-      // wake every subscriber, so only a different one reaches the actor.
-      if (!sameDropResolution(drag.drop, drop)) {
-        actorRef.send({ drop, type: "OVER" });
-      }
+      session.over(
+        data && isLayerTargetData(data) && isHTMLElement(element)
+          ? {
+              element,
+              layerId: data.layerId,
+              point: manager.dragOperation.position.current,
+              tabsetId: data.tabsetId,
+            }
+          : null,
+      );
     };
 
     const handleStart = (event: DragStartEvent): void => {
@@ -117,12 +75,12 @@ const useDragMonitor = (
         return;
       }
 
-      actorRef.send({ subject, type: "START" });
+      session.start(subject, "own");
     };
 
     // `dragmove` and `collision` both fire per frame and each resolve measures
     // the target strip. The drop path stays synchronous: a deferred resolve
-    // would land after the actor had already been asked to commit.
+    // would land after the session had already been asked to drop.
     let frame: number | null = null;
 
     const scheduleResolve = (): void => {
@@ -132,7 +90,7 @@ const useDragMonitor = (
 
       frame = requestAnimationFrame(() => {
         frame = null;
-        syncIntent();
+        resolve();
       });
     };
 
@@ -147,31 +105,25 @@ const useDragMonitor = (
       cancelPendingResolve();
 
       if (event.canceled) {
-        actorRef.send({ type: "CANCEL" });
+        session.cancel();
 
         return;
       }
 
-      syncIntent();
-      const { drag } = actorRef.getSnapshot().context;
+      resolve();
 
-      const tearOff =
-        drag.kind === "dragging" && dropAction(drag) === null
-          ? pendingTearOff(
-              layers,
-              drag.subject,
-              event.operation.source?.element,
-              event.operation.position.current,
-            )
-          : null;
+      const tearOff = pendingTearOff(
+        session,
+        event.operation.source?.element,
+        event.operation.position.current,
+      );
 
-      actorRef.send({ type: "DROP" });
-      tearOff?.();
+      if (!session.drop()) {
+        tearOff?.();
+      }
     };
 
-    const commitSubscription = actorRef.on("COMMIT", (emitted) => {
-      layers.get(emitted.scope)?.commit(emitted.action, emitted.subject);
-    });
+    const stopListening = session.listen();
 
     manager.monitor.addEventListener("dragstart", handleStart);
     manager.monitor.addEventListener("dragmove", scheduleResolve);
@@ -180,13 +132,13 @@ const useDragMonitor = (
 
     return () => {
       cancelPendingResolve();
-      commitSubscription.unsubscribe();
+      stopListening();
       manager.monitor.removeEventListener("dragstart", handleStart);
       manager.monitor.removeEventListener("dragmove", scheduleResolve);
       manager.monitor.removeEventListener("collision", scheduleResolve);
       manager.monitor.removeEventListener("dragend", handleEnd);
     };
-  }, [actorRef, layers, manager]);
+  }, [manager, session]);
 };
 
 const OwnedDragRoot = ({ children }: { children: ReactNode }): ReactNode => {
@@ -203,6 +155,7 @@ const OwnedDragRoot = ({ children }: { children: ReactNode }): ReactNode => {
   const actorRef = useActorRef(dragDockMachine);
 
   const [layers] = useState(() => new Map<string, RegisteredLayer>());
+  const [session] = useState(() => createDragSession(actorRef, layers));
 
   const registerLayer = useCallback(
     (layer: RegisteredLayer): (() => void) => {
@@ -215,7 +168,7 @@ const OwnedDragRoot = ({ children }: { children: ReactNode }): ReactNode => {
     [layers],
   );
 
-  useDragMonitor(manager, actorRef, layers);
+  usePointerDrags(manager, session);
 
   const isFloating = useCallback(
     (scope: string): boolean => layers.get(scope)?.floating === true,
@@ -223,20 +176,14 @@ const OwnedDragRoot = ({ children }: { children: ReactNode }): ReactNode => {
   );
 
   const isTearOff = useCallback(
-    (point: Point): boolean => {
-      const { drag } = actorRef.getSnapshot().context;
-
-      return (
-        drag.kind === "dragging" &&
-        pendingTearOff(layers, drag.subject, manager.dragOperation.source?.element, point) !== null
-      );
-    },
-    [actorRef, layers, manager],
+    (point: Point): boolean =>
+      pendingTearOff(session, manager.dragOperation.source?.element, point) !== null,
+    [manager, session],
   );
 
   const value = useMemo<DragContextValue>(
-    () => ({ actorRef, layerId: null, manager, registerLayer }),
-    [actorRef, manager, registerLayer],
+    () => ({ actorRef, layerId: null, manager, registerLayer, session }),
+    [actorRef, manager, registerLayer, session],
   );
 
   return (

@@ -9,6 +9,7 @@ import { createActor } from "xstate";
 import type { DragContextValue } from "../drag/drag-context";
 import { DragContext } from "../drag/drag-context";
 import { createDragManager } from "../drag/drag-manager";
+import { createDragSession } from "../drag/drag-session";
 import { Layout } from "../layout/layout";
 import { useLayout } from "../layout/layout-store";
 import { useDashfooStore } from "../store/store";
@@ -60,6 +61,7 @@ const DraggedSoleTabset = ({ keepMounted }: { keepMounted: boolean }): ReactNode
       layerId: null,
       manager: createDragManager(),
       registerLayer: () => () => {},
+      session: createDragSession(actorRef, new Map()),
     };
   });
 
