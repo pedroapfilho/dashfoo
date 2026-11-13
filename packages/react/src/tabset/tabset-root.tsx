@@ -6,6 +6,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { forwardRef, useEffect, useMemo, useRef } from "react";
 
 import { useDraggedNodeId, useTabsetDroppable } from "../drag/drag-hooks";
+import { tabsetCapabilities } from "../layout/capabilities";
 import { useLayout } from "../layout/layout-store";
 import { useTabsetSlot } from "../layout/tabset-slot";
 import { findTabButton } from "../lib/dom-ids";
@@ -31,6 +32,8 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
   ): ReactNode => {
     const closableTabs = useLayout((state) => state.closableTabs);
     const dispatch = useLayout((state) => state.dispatch);
+    const draggableTabs = useLayout((state) => state.draggableTabs);
+    const draggableTabsets = useLayout((state) => state.draggableTabsets);
     const maximizable = useLayout((state) => state.maximizable);
     const maximizedTabsetId = useLayout((state) => state.maximizedTabsetId);
     const renamableTabs = useLayout((state) => state.renamableTabs);
@@ -46,10 +49,14 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
 
     const isMaximized = maximizedTabsetId === node.id;
 
-    const showMaximize =
-      maximizable && node.enableMaximize !== false && (isMaximized || !slot.alone);
-
-    const tabsClosable = closableTabs && node.enableClose !== false;
+    const can = useMemo(
+      () =>
+        tabsetCapabilities(
+          { closableTabs, draggableTabs, draggableTabsets, maximizable, renamableTabs },
+          node,
+        ),
+      [closableTabs, draggableTabs, draggableTabsets, maximizable, node, renamableTabs],
+    );
 
     const draggingTabIndex = node.children.findIndex((tab) => tab.id === draggedTabId);
 
@@ -62,6 +69,7 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
 
     const snapshot: TabsetSnapshot = {
       activeTab,
+      can,
       canCollapse: slot.canCollapse,
       dispatch,
       documentId,
@@ -69,9 +77,9 @@ const TabsetRoot = forwardRef<HTMLDivElement, TabsetRootProps>(
       isCollapsedToFit: slot.collapsedToFit,
       isMaximized,
       node,
-      showMaximize,
-      tabsClosable,
-      tabsRenamable: renamableTabs,
+      showMaximize: can.maximizable && (isMaximized || !slot.alone),
+      tabsClosable: can.closableTabs,
+      tabsRenamable: can.renamableTabs,
       visualSelected,
     };
 

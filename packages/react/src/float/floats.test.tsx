@@ -272,6 +272,16 @@ describe("floating panels", () => {
     expect(panel.querySelector('[data-dashfoo="float-resize"]')).toBeNull();
   });
 
+  test("a frozen tree (restructurable=false) still docks a float back", () => {
+    const m: Dashfoo = { ...model(), floats: [floatNode("f1", "ft1", "chart", "Chart")] };
+    render(<DashfooLayout components={components} defaultModel={m} restructurable={false} />);
+
+    fireEvent.click(within(floatPanel()!).getByLabelText("Dock panel back into the main layout"));
+
+    expect(floatPanel()).toBeNull();
+    expect(screen.getAllByRole("tab")).toHaveLength(3);
+  });
+
   test("a static layout's float cannot be renamed or moved", () => {
     const m: Dashfoo = { ...model(), floats: [floatNode("f1", "ft1", "chart", "Chart")] };
     render(<DashfooLayout components={components} defaultModel={m} editable={false} />);

@@ -6,6 +6,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { useRef, useState } from "react";
 
 import { DragLayer } from "../drag/drag-layer";
+import { INSIDE_FLOAT } from "../layout/capabilities";
 import { LayoutOverrides } from "../layout/layout-root";
 import type { LayoutState } from "../layout/layout-store";
 import { useLayout } from "../layout/layout-store";
@@ -20,12 +21,7 @@ import { useFloatGesture } from "./use-float-gesture";
 const floatTitle = (node: FloatNode): string => node.name ?? DEFAULT_FLOAT_NAME;
 
 /** `maximizedTabsetId` is cleared here, not only by `normalize`: the parent store syncs after render. */
-const FLOAT_OVERRIDES: Partial<LayoutState> = {
-  edgeDocking: false,
-  floatable: false,
-  maximizable: false,
-  maximizedTabsetId: undefined,
-};
+const FLOAT_OVERRIDES: Partial<LayoutState> = { ...INSIDE_FLOAT, maximizedTabsetId: undefined };
 
 type TitleProps = { dispatch: (action: Action) => void; node: FloatNode };
 
@@ -102,6 +98,7 @@ type FloatPanelProps = {
 
 const FloatPanel = ({ node, onFocus, zIndex }: FloatPanelProps): ReactNode => {
   const dispatch = useLayout((state) => state.dispatch);
+  // Not `canDock`: a frozen tree (the compact view) still docks a float back, or one saved on a wide screen could never rejoin it.
   const editable = useLayout((state) => state.editable);
 
   const minimized = node.minimized === true;
