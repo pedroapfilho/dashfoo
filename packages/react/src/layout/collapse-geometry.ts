@@ -96,6 +96,24 @@ const collapseUntilFit = (budget: FitBudget, targets: Set<string>): void => {
   }
 };
 
+type SharedPanel = { fixed: number | undefined; weight: number };
+
+/** Out of 100: a collapsed panel takes its `fixed` size, and the expanded ones share the rest by weight. */
+const sharesOf = (panels: ReadonlyArray<SharedPanel>): Array<number> => {
+  let fixedTotal = 0;
+  let weightTotal = 0;
+
+  for (const panel of panels) {
+    if (panel.fixed === undefined) {
+      weightTotal += panel.weight;
+    } else {
+      fixedTotal += panel.fixed;
+    }
+  }
+
+  return panels.map((panel) => panel.fixed ?? ((100 - fixedTotal) * panel.weight) / weightTotal);
+};
+
 /** Read from the DOM, not from the panel group, whose sizes lag a container resize. */
 const spaceForPanels = (group: HTMLElement, orientation: RowNode["orientation"]): number => {
   const sizeOf = (element: Element): number => {
@@ -151,6 +169,7 @@ export {
   keepCollapsedWeights,
   measureHeader,
   sameSet,
+  sharesOf,
   spaceForPanels,
 };
 

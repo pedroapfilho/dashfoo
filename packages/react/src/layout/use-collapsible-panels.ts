@@ -19,6 +19,7 @@ import {
   keepCollapsedWeights,
   measureHeader,
   sameSet,
+  sharesOf,
   spaceForPanels,
 } from "./collapse-geometry";
 import { useLayout } from "./layout-store";
@@ -147,8 +148,8 @@ const useCollapsiblePanels = ({
 
   /**
    * The group refuses `collapse()` while its layout breaks the minimums (a saved
-   * layout that never fit), so the whole layout is set instead: collapsed
-   * panels at their strip size, the rest sharing what is left by weight.
+   * layout that never fit), so the whole layout is set instead, with the
+   * collapsed panels at their strip size.
    */
   const forceCollapsed = (targets: ReadonlySet<string>): void => {
     const group = groupRef.current;
@@ -158,20 +159,21 @@ const useCollapsiblePanels = ({
     }
 
     const available = spaceForPanels(groupElement, node.orientation);
-    const shares = node.children.map((child) => (targets.has(child.id) ? undefined : child.weight));
-    const collapsedPercent = (id: string): number => ((headerSizes.get(id) ?? 0) / available) * 100;
-    const rest = 100 - [...targets].reduce((sum, id) => sum + collapsedPercent(id), 0);
-    const weightTotal = shares.reduce<number>((sum, share) => sum + (share ?? 0), 0);
 
-    const layout: Record<string, number> = {};
+    const shares = sharesOf(
+      node.children.map((child) => ({
+        fixed: targets.has(child.id)
+          ? ((headerSizes.get(child.id) ?? 0) / available) * 100
+          : undefined,
+        weight: child.weight,
+      })),
+    );
 
-    for (const [index, child] of node.children.entries()) {
-      const share = shares[index];
-      layout[panelIdOf(child.id)] =
-        share === undefined ? collapsedPercent(child.id) : (rest * share) / weightTotal;
-    }
-
-    group.setLayout(layout);
+    group.setLayout(
+      Object.fromEntries(
+        node.children.map((child, index) => [panelIdOf(child.id), shares[index] ?? 0]),
+      ),
+    );
   };
 
   /** A panel handle throws until its group has registered the panel. */

@@ -6,6 +6,8 @@ import type { RefObject } from "react";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { GroupImperativeHandle, Layout, LayoutChangedMeta } from "react-resizable-panels";
 
+import { sharesOf } from "./collapse-geometry";
+
 const WEIGHT_EPSILON = 0.01;
 
 type ResizePanels = ReadonlyArray<{ collapsed?: boolean; id: string; weight: number }>;
@@ -118,25 +120,14 @@ const percentagesOf = (panels: ResizePanels): Array<number> => {
   return panels.map((child) => (child.weight / total) * 100);
 };
 
-/** A collapsed panel keeps the size it has; the expanded ones share the rest by weight. */
-const targetSizes = (current: Array<number>, panels: ResizePanels): Array<number> => {
-  let collapsedTotal = 0;
-  let weightTotal = 0;
-
-  for (const [index, child] of panels.entries()) {
-    if (child.collapsed === true) {
-      collapsedTotal += current[index] ?? 0;
-    } else {
-      weightTotal += child.weight;
-    }
-  }
-
-  return panels.map((child, index) =>
-    child.collapsed === true
-      ? (current[index] ?? 0)
-      : ((100 - collapsedTotal) * child.weight) / weightTotal,
+/** A collapsed panel keeps the size it has. */
+const targetSizes = (current: Array<number>, panels: ResizePanels): Array<number> =>
+  sharesOf(
+    panels.map((child, index) => ({
+      fixed: child.collapsed === true ? (current[index] ?? 0) : undefined,
+      weight: child.weight,
+    })),
   );
-};
 
 type SnapResizeOptions = {
   groupRef: RefObject<GroupImperativeHandle | null>;
