@@ -107,7 +107,6 @@ const isSelfDrop = (subject: DragSubject, tabset: MeasuredTabset): boolean => {
   return subject.kind === "tab" && tabs.length === 1 && tabs[0]?.id === subject.id;
 };
 
-/** How far inside `rect` the pointer is from one of its screen edges. */
 const edgeDistance = (point: Point, rect: Rect, edge: SplitLocation): number => {
   const { before, orientation } = SPLIT_PLACEMENT[edge];
   const row = orientation === "row";
@@ -119,7 +118,6 @@ const edgeDistance = (point: Point, rect: Rect, edge: SplitLocation): number => 
 
 type NearestEdge = { distance: number; edge: SplitLocation | null };
 
-/** The nearest screen edge of the layout the pointer is within `EDGE_BAND` of. */
 const nearEdge = (point: Point, rect: Rect): SplitLocation | null => {
   if (!pointInRect(point, rect)) {
     return null;

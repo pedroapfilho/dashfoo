@@ -57,7 +57,6 @@ const removeTabset = (draft: Dashfoo, tabsetId: string): void => {
   }
 };
 
-/** A tab or a whole tabset, wherever it lives. */
 const removeNode = (draft: Dashfoo, nodeId: string): void => {
   if (findTab(draft, nodeId)) {
     removeTab(draft, nodeId);

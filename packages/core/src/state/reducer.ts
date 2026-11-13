@@ -45,7 +45,6 @@ const parseNodeAttrs = (node: AttributedNode, attrs: MutableNodeAttrs): MutableN
   }
 };
 
-/** An id that does not resolve leaves the draft untouched. */
 const applyAction = (draft: Dashfoo, action: Action): void => {
   switch (action.type) {
     case "addNode":
