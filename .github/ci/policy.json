@@ -2,6 +2,9 @@
   "version": 1,
   "profile": "library",
   "mode": "affected",
+  "test": {
+    "coverage": true
+  },
   "packaging": {
     "steps": [
       {

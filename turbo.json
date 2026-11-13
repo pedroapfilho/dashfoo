@@ -33,7 +33,8 @@
     },
     "test:coverage": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "cache": false
     },
     "clean": {
       "cache": false
@@ -42,6 +43,11 @@
       "dependsOn": ["build", "^build"],
       "env": ["CI", "LANG", "LC_ALL", "TZ"],
       "outputs": []
+    },
+    "@dashfoo/theme#test:coverage": {
+      "dependsOn": ["build", "^build"],
+      "outputs": ["coverage/**"],
+      "cache": false
     }
   }
 }
