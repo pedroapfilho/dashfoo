@@ -1,21 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
 import styles from "./global-error.module.css";
+import { type ErrorBoundaryProps, useErrorHeading } from "./use-error-heading";
 
-type GlobalErrorProps = {
-  error: Error & { digest?: string };
-  retry: () => void;
-};
-
-const GlobalError = ({ error, retry }: GlobalErrorProps) => {
-  const headingRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    console.error(error);
-    headingRef.current?.focus();
-  }, [error]);
+const GlobalError = ({ error, retry }: ErrorBoundaryProps) => {
+  const headingRef = useErrorHeading(error);
 
   return (
     <html className={styles.document} lang="en">
