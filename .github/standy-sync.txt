@@ -11,4 +11,6 @@
 .github/workflows/test.yml
 .github/workflows/typecheck.yml
 packages/config-typescript/base.json
+packages/portless-env/src/apps.ts
+packages/portless-env/src/index.ts
 tsdown.config.ts
