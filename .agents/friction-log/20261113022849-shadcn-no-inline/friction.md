@@ -1,6 +1,7 @@
 ---
 title: 'shadcn no-inline-styles forces the float''s CSS variables to be named in two files'
 severity: 'minor'
+issue: 'pedroapfilho/dashfoo#242'
 ---
 
 ### Expected Behavior

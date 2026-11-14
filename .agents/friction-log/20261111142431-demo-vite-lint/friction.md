@@ -1,6 +1,7 @@
 ---
 title: 'demo-vite lint skips e2e/, so pnpm verify passes specs the pre-commit hook rejects'
 severity: 'minor'
+issue: 'pedroapfilho/dashfoo#217'
 ---
 
 ### Expected Behavior
