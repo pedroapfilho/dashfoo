@@ -1,6 +1,7 @@
 ---
 title: 'demo-vite e2e reuses whatever server holds port 5174, even from another worktree'
 severity: 'minor'
+issue: 'pedroapfilho/dashfoo#215'
 ---
 
 ### Expected Behavior
