@@ -5,7 +5,6 @@ import type { Dashfoo, RowNode, TabNode, TabsetNode } from "./schema";
 import { dashfooSchema } from "./schema";
 import { findDuplicateIds } from "./tree";
 
-// oxlint-disable-next-line anti-slop/no-unknown-parameters -- parseModel is the public I/O boundary that runs dashfooSchema on untrusted input
 const parseModel = (value: unknown): Dashfoo => {
   const model = normalize(dashfooSchema.parse(value));
   const duplicates = findDuplicateIds(model);
@@ -49,7 +48,6 @@ const mapRow = (row: RowNode, mapTab: MapTab): RowNode => ({
  * warns and yields `null` instead of throwing, and `mapTab` upgrades or drops
  * tabs an older version of the app saved before the model is tidied.
  */
-// oxlint-disable-next-line anti-slop/no-unknown-parameters -- restoreModel reads untrusted saved data
 const restoreModel = (value: unknown, options: RestoreOptions = {}): Dashfoo | null => {
   const result = dashfooSchema.safeParse(value);
 
