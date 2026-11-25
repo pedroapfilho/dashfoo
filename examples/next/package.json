@@ -8,8 +8,8 @@
     "start": "next start"
   },
   "dependencies": {
-    "@dashfoo/core": "^4.0.0",
-    "@dashfoo/react": "^0.12.0",
+    "@dashfoo/core": "^4.0.1",
+    "@dashfoo/react": "^0.12.1",
     "@dashfoo/theme": "^0.4.0",
     "next": "16.4.6",
     "react": "^19.3.0",
