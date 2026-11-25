@@ -1,5 +1,13 @@
 # @dashfoo/react
 
+## 0.12.1
+
+### Patch Changes
+
+- f159044: Bump runtime dependency ranges to the current non-major line: xstate ^5.33.4, @dnd-kit/abstract and @dnd-kit/dom ^0.5.3, react-resizable-panels ^4.24.1, zustand ^5.1.0.
+- Updated dependencies [f159044]
+  - @dashfoo/core@4.0.1
+
 ## 0.12.0
 
 ### Minor Changes
