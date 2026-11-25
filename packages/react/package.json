@@ -42,26 +42,26 @@
   },
   "dependencies": {
     "@dashfoo/core": "workspace:*",
-    "@dnd-kit/abstract": "^0.5.0",
-    "@dnd-kit/dom": "^0.5.0",
+    "@dnd-kit/abstract": "^0.5.3",
+    "@dnd-kit/dom": "^0.5.3",
     "@xstate/react": "^6.1.0",
-    "react-resizable-panels": "^4.21.0",
-    "xstate": "^5.33.2",
+    "react-resizable-panels": "^4.24.1",
+    "xstate": "^5.33.4",
     "zod": "^4.6.7",
-    "zustand": "^5.0.15"
+    "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@repo/config-vitest": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/jest-dom": "^8.0.0",
     "@testing-library/react": "^16.3.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "jsdom": "^31.0.0",
+    "jsdom": "^31.0.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "typescript": "^7.0.2",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.0.0",

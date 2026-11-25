@@ -8,6 +8,7 @@ for (const theme of ["light", "dark"] as const) {
       await page.setViewportSize({ height: 1000, width });
       await page.goto("http://localhost:4110");
       await expect(page.getByRole("tab", { exact: true, name: "Overview" })).toBeVisible();
+      await expect(page.locator("pre.shiki span[style*='--shiki-dark']").first()).toBeVisible();
       await expect(
         page.getByRole("link", { exact: true, name: "Get started" }).first(),
       ).toHaveAttribute("href", /\/getting-started$/v);
