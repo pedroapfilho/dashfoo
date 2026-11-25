@@ -31,22 +31,22 @@
     "check:shadcn": "node .github/ci/check-shadcn.mjs"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.13.0",
+    "@axe-core/playwright": "^4.14.1",
     "@changesets/cli": "^3.0.3",
-    "@playwright/test": "^1.65.0",
-    "@shadcn/lint": "0.2.0",
+    "@playwright/test": "^1.65.1",
+    "@shadcn/lint": "0.2.5",
     "@types/node": "^26.6.6",
-    "fallow": "^3.28.0",
+    "fallow": "^3.48.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.5.1",
+    "lint-staged": "^17.6.2",
     "oxfmt": "^0.70.0",
     "oxlint": "^1.94.0",
     "oxlint-config-awesomeness": "^5.1.0",
-    "oxlint-plugin-react-doctor": "^0.9.14",
+    "oxlint-plugin-react-doctor": "^0.9.23",
     "tsdown": "^0.23.7",
     "tsrs": "0.25.0-ts7.1.0-beta",
-    "turbo": "^2.11.3",
-    "zod-compiler": "^2.0.7"
+    "turbo": "^2.11.13",
+    "zod-compiler": "^2.0.14"
   },
   "lint-staged": {
     "!(*.d).{ts,tsx,mts,cts,js,jsx,mjs,cjs}": [
