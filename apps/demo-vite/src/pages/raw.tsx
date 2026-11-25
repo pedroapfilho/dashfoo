@@ -34,7 +34,7 @@ const TabCountBadge = (): ReactNode => {
   const count = useTabset((state) => state.node.children.length);
 
   return (
-    <span className="text-foreground-disabled dark:text-foreground-muted px-1.5 text-xs tabular-nums">
+    <span className="text-foreground-subtle dark:text-foreground-muted px-1.5 text-xs tabular-nums">
       {count}&nbsp;tabs
     </span>
   );
